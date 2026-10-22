@@ -1,24 +1,40 @@
-# Verification — 22 October 2026
+# Verification — 23 October 2026
 
-The initial, unchanged Android starter assembled successfully using its existing Gradle 9.5.1 / AGP 9.1.1 / Kotlin 2.4.20 setup. No original Android dependency/version failure was reproduced. The exploratory root `build` was stopped while linking iOS frameworks; it is not reported as a successful full multiplatform build.
+## Build compatibility
 
-The implemented Android app passed:
+The project uses Gradle 9.1.0, AGP 9.0.0, Kotlin 2.3.21, Compose Multiplatform 1.11.1, Material 3 1.11.0-alpha07, Lifecycle 2.10.0, and compile/target SDK 36. This resolves the installed Android Studio's AGP compatibility error without bypassing dependency metadata checks. Android Studio should resync with **Sync Project with Gradle Files**.
+
+## Shared application
+
+Android and iPhone now host the same Compose `App()`, screens, navigation and lifecycle ViewModel. API/session handling, JSON contracts, coupon dates, formatting and content are shared. File dialogs, sharing, preferences, HTTP transports, PDF extraction and OCR have native adapters. See [ARCHITECTURE.md](ARCHITECTURE.md).
+
+The following checks passed during the refactor:
+
+- 13 core tests on JVM, Android host and iOS simulator: coupon schedules/tax/accrual/maturity, JSON records, Origin/cookies, session clearing, redirects, API errors, origin/path policy and oversized response rejection.
+- 5 shared presentation tests on Android host and iOS simulator: formatting/PDF envelope validation, expired-session cleanup, account isolation on server changes, and duplicate-action prevention.
+- 16 JavaScript tests, including native-bundle parity with the original projection and purchase-parsing modules.
+- 3 Android integration tests on each of Pixel 9 Pro API 36 and Medium Phone API 36.1: actual Android HTTP cookies/Origin, local engine projection, and synthetic equity PDF extraction through bundled PDF.js.
+- 3 native iOS tests: JavaScriptCore projection, PDFKit text-PDF purchase extraction, and Vision scanned-PDF OCR feeding the same shared purchase parser. Fixtures are generated synthetic documents.
+- Android debug APK assembly and lint (no errors); server tests; Kotlin compilation for physical iPhone arm64.
+- Xcode Debug simulator app build and installation on iPhone 16 Pro / iOS 18.6. A [runtime screenshot](screenshots/ios-shared-sign-in.png) confirms the shared portfolio sign-in screen replaces the Click-me/Hello-Compose starter.
+
+The iOS app tests require a booted simulator. Kotlin's default `simctl --standalone` mode returned empty Vision observations for the same fixture that passed in a normal simulator process. The shared test task therefore disables standalone mode and selects `booted`; use `-PiosTestDevice=<UDID>` to select a specific booted simulator. All 8 shared/native iOS tests pass with this configuration.
+
+Commands:
 
 ```sh
-./gradlew :app:androidApp:assembleDebug \
-  :app:androidApp:testDebugUnitTest \
-  :app:androidApp:lintDebug \
-  :app:androidApp:connectedDebugAndroidTest
+./gradlew :core:jvmTest :core:testAndroidHostTest :core:iosSimulatorArm64Test \
+  :app:shared:testAndroidHostTest :app:shared:iosSimulatorArm64Test \
+  :app:shared:compileKotlinIosArm64 \
+  :app:androidApp:assembleDebug :app:androidApp:lintDebug :server:test
+./gradlew :app:androidApp:connectedDebugAndroidTest
 node --test tests/*.test.mjs
+xcodebuild -project app/iosApp/iosApp.xcodeproj -scheme iosApp \
+  -configuration Debug -sdk iphonesimulator \
+  -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.6' \
+  CODE_SIGNING_ALLOWED=NO build
 ```
 
-- 7 host tests: coupon schedules, withholding tax, accrual boundaries, maturity behavior, month-end dates, Origin header, session cookies, rejected API paths, and server errors.
-- 14 JavaScript tests: original PDF field extraction, explicit coupon schedules, OCR review flags, ambiguous allocations, malformed dates, hostile PDF trailers, equity fee totals, contribution periods, and cash injections.
-- 3 device tests on Medium Phone API 36.1: Android Origin/cookie behavior, projection through the attached local engine, and a generated synthetic equity PDF through the actual bundled PDF.js parser.
-- Android lint: no errors. Remaining warnings concern newer dependency versions and starter launcher icon resources.
+## Limits
 
-PDF/OCR and simulation run in a restricted local WebView that must be attached to an Android window for posted bridge callbacks. The device tests use a debug-only host activity to match the app's view lifecycle.
-
-The screenshots use synthetic investments from a temporary local API. They contain no production account data. Private sign-in, real document exports, production mutations, and scanned broker PDFs were not exercised with the owner's credentials.
-
-The Android screens are implemented; the existing iOS/shared starter is unchanged. Owner account deletion and password-hash setup remain available in the original website. An exact feature-for-feature native copy of every advanced web table control is not claimed.
+Screenshots and import tests use synthetic records, not private account data. Real account login, private document downloads, broker-specific scanned PDFs, and production mutations were not exercised with the owner's credentials. Physical-device signing and deployment remain dependent on the existing Xcode signing setup. Owner account deletion and password-hash setup remain available on the original website; exact parity with every advanced web table control is not claimed.

@@ -1,11 +1,73 @@
+# Gradle and Kotlin generated files
 .gradle/
 .kotlin/
+.konan/
 **/build/
+kotlin-js-store/
+
+# Android build outputs and local SDK configuration
 local.properties
-.idea/workspace.xml
-.idea/caches/
-.DS_Store
+.cxx/
+.externalNativeBuild/
+captures/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
 *.hprof
+
+# Android Studio / IntelliJ machine-specific metadata
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Xcode and Swift local build / user state
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.xcarchive
+*.dSYM/
+*.ipa
+.swiftpm/
+.build/
+*.xcresult/
+*.xcactivitylog
+
+# Local signing credentials and environment configuration
+*.jks
+*.keystore
+keystore.properties
+signing.properties
 .env
 .env.*
 !.env.example
+!.env.*.example
+
+# Script dependencies and Python caches
+node_modules/
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Local logs, test coverage and temporary editor files
+*.log
+*.log.*
+coverage/
+.nyc_output/
+.coverage
+.coverage.*
+htmlcov/
+*.swp
+*.swo
+*~
+
+# macOS metadata
+.DS_Store
+._*
+
+# Keep bundled PDF/OCR runtime assets (bcmap, fonts, wasm, traineddata and licenses).
+# They are app dependencies, not local build outputs; fresh checkouts need them.

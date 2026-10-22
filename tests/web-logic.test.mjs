@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { DEFAULT_ASSUMPTIONS, calculateProjection, summarizeProjection } from '../app/androidApp/src/main/assets/engine/calculations.js';
-import { parsePurchasePdfText } from '../app/androidApp/src/main/assets/engine/equity-pdf-parser.js';
-import { validateBondPdfEnvelope } from '../app/androidApp/src/main/assets/engine/pdf-import-errors.js';
+import { DEFAULT_ASSUMPTIONS, calculateProjection, summarizeProjection } from '../app/shared/src/commonMain/composeResources/files/engine/calculations.js';
+import { parsePurchasePdfText } from '../app/shared/src/commonMain/composeResources/files/engine/equity-pdf-parser.js';
+import { validateBondPdfEnvelope } from '../app/shared/src/commonMain/composeResources/files/engine/pdf-import-errors.js';
 
 test('one year without allocation preserves all contributions in cash', () => {
   const assumptions = {...DEFAULT_ASSUMPTIONS, horizonYears:1, auctionFillRate:0, contributionPeriods:[]};
@@ -37,4 +37,22 @@ test('equity PDF text detection preserves fees, dates and purchase totals', () =
 test('PDF envelope rejects trailing executable content', () => {
   assert.doesNotThrow(()=>validateBondPdfEnvelope(Buffer.from('%PDF-1.4\nbody\n%%EOF\n')));
   assert.throws(()=>validateBondPdfEnvelope(Buffer.from('%PDF-1.4\nbody\n%%EOF\n<script>bad()</script>')));
+});
+
+test('portable JavaScriptCore bundle matches the shared ESM calculation module', async () => {
+  const vm = await import('node:vm');
+  const context = vm.createContext({});
+  vm.runInContext(fs.readFileSync(new URL('../app/shared/src/commonMain/composeResources/files/engine/logic.js', import.meta.url), 'utf8'), context);
+  const assumptions = {...DEFAULT_ASSUMPTIONS, horizonYears:2, contributionPeriods:[]};
+  const rows = calculateProjection(assumptions);
+  const expected = {rows, summary:summarizeProjection(rows, assumptions)};
+  const actual = context.PortfolioLogic.project({assumptions,purchases:[],includeHoldings:false});
+  assert.deepEqual(JSON.parse(JSON.stringify(actual)), JSON.parse(JSON.stringify(expected)));
+});
+test('portable JavaScriptCore bundle preserves the purchase parser results', async () => {
+  const vm = await import('node:vm');
+  const context = vm.createContext({});
+  vm.runInContext(fs.readFileSync(new URL('../app/shared/src/commonMain/composeResources/files/engine/logic.js', import.meta.url), 'utf8'), context);
+  const text = fs.readFileSync(new URL('./fixtures/equity-purchase.txt',import.meta.url),'utf8');
+  assert.deepEqual(JSON.parse(JSON.stringify(context.PortfolioLogic.parse(text,false))), parsePurchasePdfText(text));
 });

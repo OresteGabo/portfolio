@@ -3,7 +3,6 @@ package dev.orestegabo.portfolio.investments
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.core.app.ActivityScenario
 import kotlinx.coroutines.runBlocking
-import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -36,8 +35,8 @@ class LocalEngineTest {
         val scenario = ActivityScenario.launch(EngineHostActivity::class.java)
         scenario.onActivity { engine = it.engine }
         try {
-            val result = engine.run("projection", JSONObject().put("assumptions", JSONObject()
-                .put("horizonYears", 1).put("auctionFillRate", 0).put("contributionPeriods", org.json.JSONArray())))
+            val result = engine.run("projection", JsonRecord().put("assumptions", JsonRecord()
+                .put("horizonYears", 1).put("auctionFillRate", 0).put("contributionPeriods", JsonList())))
             assertEquals(12, result.getJSONArray("rows").length())
             assertEquals(3_600_000.0, result.getJSONObject("summary").getDouble("finalAccountValue"), .01)
         } finally { scenario.close() }

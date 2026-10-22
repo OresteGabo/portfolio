@@ -14,15 +14,9 @@ dependencies {
     implementation(project(":app:shared"))
 
     implementation(libs.androidx.activity.compose)
-    implementation(libs.compose.material3)
-    implementation(libs.compose.foundation)
-    implementation(libs.compose.ui)
     implementation(libs.compose.runtime)
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     androidTestImplementation(libs.androidx.testExt.junit)
     androidTestImplementation("androidx.test:runner:1.7.0")
-    testImplementation(libs.junit)
-    testImplementation("org.json:json:20250517")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 
     implementation(libs.compose.uiToolingPreview)
@@ -64,9 +58,4 @@ android {
         compose = true
         buildConfig = true
     }
-}
-// Desktop HttpURLConnection restricts Origin by default; Android's implementation permits it.
-// Allow it in host tests so they exercise the same request contract as the device.
-tasks.withType<Test>().configureEach {
-    systemProperty("sun.net.http.allowRestrictedHeaders", "true")
 }

@@ -4,7 +4,6 @@ import java.net.ServerSocket
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.runBlocking
-import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -31,8 +30,8 @@ class DeviceApiTest {
             }
         }
         try {
-            val api = PortfolioApi(origin)
-            api.request("/api/bonds/auth/login", "POST", JSONObject().put("email", "demo@example.test"))
+            val api = PortfolioApi(origin, allowHttp = true)
+            api.request("/api/bonds/auth/login", "POST", JsonRecord().put("email", "demo@example.test"))
             api.request("/api/bonds/purchases")
             val requests = captured.get(15, TimeUnit.SECONDS)
             assertTrue(requests[0].any { it.equals("Origin: $origin", true) })

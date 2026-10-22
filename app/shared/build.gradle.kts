@@ -43,6 +43,8 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)
+            implementation(libs.androidx.activity.compose)
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
         }
         commonMain.dependencies {
             api(project(":core"))
@@ -57,10 +59,18 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.ktor.client.mock)
+            implementation(libs.kotlinx.coroutines.test)
         }
     }
 }
 
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
+}
+// Vision needs the simulator's normal OS services; simctl --standalone returns no OCR observations.
+// Boot an iPhone simulator first, or choose one with -PiosTestDevice=<UDID>.
+tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest>().configureEach {
+    standalone.set(false)
+    device.set(providers.gradleProperty("iosTestDevice").orElse("booted"))
 }

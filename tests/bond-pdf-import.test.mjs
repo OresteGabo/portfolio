@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseBondPdfText } from "../app/androidApp/src/main/assets/engine/pdf-import-parser.js";
+import { parseBondPdfText } from "../app/shared/src/commonMain/composeResources/files/engine/pdf-import-parser.js";
 
 const terms = `NATIONAL BANK OF RWANDA
 ISSUANCE NUMBER FXD1/2026/20YR

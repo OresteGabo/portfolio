@@ -55,6 +55,6 @@ class Extract(HTMLParser):
 
 parser = Extract()
 parser.feed(Path('/private/tmp/portfolio-education.html').read_text())
-output = Path(__file__).resolve().parent.parent / 'app/androidApp/src/main/assets/education.json'
+output = Path(__file__).resolve().parent.parent / 'app/shared/src/commonMain/composeResources/files/education.json'
 output.write_text(json.dumps(parser.blocks, ensure_ascii=False, indent=2) + '\n')
 print(f'Copied {len(parser.blocks)} native education blocks.')
