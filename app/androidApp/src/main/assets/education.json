@@ -1,0 +1,1010 @@
+[
+  {
+    "kind": "text",
+    "text": "Bond Education"
+  },
+  {
+    "kind": "a",
+    "text": "Portfolio"
+  },
+  {
+    "kind": "a",
+    "text": "Calendar"
+  },
+  {
+    "kind": "text",
+    "text": "No finance knowledge required"
+  },
+  {
+    "kind": "h1",
+    "text": "Rwanda bondsfrom absolute zero."
+  },
+  {
+    "kind": "p",
+    "text": "Start here even if words such as coupon, par, yield, or maturity mean nothing to you yet. The course first explains borrowing and lending with one simple RWF 100,000 example. Each level then adds one new idea, repeats the important definitions in context, and gradually builds toward evaluating real Rwanda Treasury bonds on the Rwanda Stock Exchange."
+  },
+  {
+    "kind": "p",
+    "text": "Level 0"
+  },
+  {
+    "kind": "p",
+    "text": "Understand the promise"
+  },
+  {
+    "kind": "p",
+    "text": "Who borrows, who lends, what gets paid, and when."
+  },
+  {
+    "kind": "p",
+    "text": "Levels 1–2"
+  },
+  {
+    "kind": "p",
+    "text": "Understand the numbers"
+  },
+  {
+    "kind": "p",
+    "text": "Face value, coupon cash, price, tax, and yield."
+  },
+  {
+    "kind": "p",
+    "text": "Level 3 · Advanced"
+  },
+  {
+    "kind": "p",
+    "text": "Evaluate and execute"
+  },
+  {
+    "kind": "p",
+    "text": "Compare listings, contact a broker, and place an order."
+  },
+  {
+    "kind": "a",
+    "text": "00 · Start from zero"
+  },
+  {
+    "kind": "a",
+    "text": "01 · Learn the numbers"
+  },
+  {
+    "kind": "a",
+    "text": "02 · Avoid bad deals"
+  },
+  {
+    "kind": "a",
+    "text": "03 · Execute the deal"
+  },
+  {
+    "kind": "p",
+    "text": "Learning path"
+  },
+  {
+    "kind": "a",
+    "text": "00Start from zeroDefinitions, 100k units, and beginner FAQ"
+  },
+  {
+    "kind": "a",
+    "text": "01Learn the numbersFace value, coupon, price, and tax"
+  },
+  {
+    "kind": "a",
+    "text": "02Avoid bad dealsYTM, premiums, and reinvestment risk"
+  },
+  {
+    "kind": "a",
+    "text": "03Execute the dealBroker orders, discounts, and RSE screening"
+  },
+  {
+    "kind": "p",
+    "text": "Educational analysis only. Confirm live prices, settlement amounts, tax treatment, and security terms with the official prospectus and your broker."
+  },
+  {
+    "kind": "p",
+    "text": "Level 0 · Start here"
+  },
+  {
+    "kind": "h2",
+    "text": "A bond is a formal government I.O.U."
+  },
+  {
+    "kind": "p",
+    "text": "Imagine lending money to someone who gives you a written promise showing how much they borrowed, when they will pay you interest, and the date they will return your original money. A Treasury bond is the Government version of that promise. It has more rules and an electronic ownership record, but the basic idea is still lending."
+  },
+  {
+    "kind": "p",
+    "text": "First definition"
+  },
+  {
+    "kind": "h3",
+    "text": "What Is a Rwanda Treasury Bond?"
+  },
+  {
+    "kind": "p",
+    "text": "When the Government of Rwanda needs money for public financing, it can issue Treasury bonds. The Government is the issuer: it creates the promise and owes the payments. You are the investor: you provide the money and receive the promised cash flows. You are lending to the Government, not buying a piece of it."
+  },
+  {
+    "kind": "p",
+    "text": "The bond identifies how much principal exists, how interest is calculated, when interest is scheduled to be paid, and when principal is scheduled to be returned. Rwanda Treasury bonds commonly pay interest twice per year, but each bond series has its own exact dates. A buyer must read the prospectus or confirmation for that particular series rather than assuming that every bond pays in the same months."
+  },
+  {
+    "kind": "p",
+    "text": "Treasury bonds are often described as lower-credit-risk investments because payment is backed by the Government. Lower credit risk does not make every purchase price good and does not make the account value permanently stable. If the investor sells before maturity, the selling price can be above or below the original purchase price. Inflation can also reduce what future Rwandan francs can buy."
+  },
+  {
+    "kind": "p",
+    "text": "A familiar comparison is a brand-new high-end smartphone. The manufacturer releases one model with fixed specifications, but later owners may resell that same phone for different prices. Someone who urgently needs cash might sell cheaply; strong demand might push another resale price higher. A bond behaves similarly on the secondary market: its face value, coupon, and maturity stay attached to the bond, while the price buyers and sellers agree to can move."
+  },
+  {
+    "kind": "p",
+    "text": "The whole bond in one sentence"
+  },
+  {
+    "kind": "p",
+    "text": "You provide money now; the issuer promises interest on scheduled dates and principal at maturity."
+  },
+  {
+    "kind": "p",
+    "text": "One slow example"
+  },
+  {
+    "kind": "h3",
+    "text": "Follow RWF 100,000 from Purchase to Maturity"
+  },
+  {
+    "kind": "p",
+    "text": "Imagine a new Treasury bond with RWF 100,000 of face value, a 12% annual coupon rate, two coupon payments per year, and a five-year maturity. For this first example, assume it is bought at its original issue for exactly RWF 100,000 and ignore tax and fees temporarily. Removing those extra details lets us see the basic promise clearly."
+  },
+  {
+    "kind": "p",
+    "text": "The annual interest calculation is RWF 100,000 multiplied by 12%, which equals RWF 12,000 per year. Because payment happens twice per year, each scheduled coupon is half of RWF 12,000, or RWF 6,000. The investor does not normally receive a little interest every day in the bank account. Interest accumulates economically, but cash arrives on the scheduled coupon dates."
+  },
+  {
+    "kind": "p",
+    "text": "If the investor holds the bond for all five years and the Government pays as agreed, the investor receives ten coupon payments of RWF 6,000. Total gross coupon cash is therefore RWF 60,000. On the maturity date, the investor also receives the RWF 100,000 principal. The principal repayment is not an extra RWF 100,000 profit; it is the original amount lent being returned."
+  },
+  {
+    "kind": "p",
+    "text": "You provide"
+  },
+  {
+    "kind": "p",
+    "text": "RWF 100,000"
+  },
+  {
+    "kind": "p",
+    "text": "The original amount lent in this simplified example."
+  },
+  {
+    "kind": "p",
+    "text": "You receive during 5 years"
+  },
+  {
+    "kind": "p",
+    "text": "10 × RWF 6,000"
+  },
+  {
+    "kind": "p",
+    "text": "Gross semiannual coupons before tax."
+  },
+  {
+    "kind": "p",
+    "text": "You receive at maturity"
+  },
+  {
+    "kind": "p",
+    "text": "RWF 100,000"
+  },
+  {
+    "kind": "p",
+    "text": "The principal is returned if payment occurs as agreed."
+  },
+  {
+    "kind": "summary",
+    "text": "Why can't I invest an arbitrary RWF 97,000 from the start? Why is it tied to the 100k unit rule?"
+  },
+  {
+    "kind": "p",
+    "text": "A Government bond is a standardized loan certificate, not a savings account that accepts any balance. BNR auction notices commonly structure non-competitive amounts in multiples of RWF 100,000. You choose how many face-value blocks you want."
+  },
+  {
+    "kind": "p",
+    "text": "The market price of a block can move, just as a used smartphone can resell above or below its launch price. A block priced at 97 costs RWF 97,000 clean, but it remains a RWF 100,000 face-value block in the securities record."
+  },
+  {
+    "kind": "p",
+    "text": "1 block = RWF 100,000 face value 5 blocks = RWF 500,000 face value At price 97, 5 blocks cost RWF 485,000 clean"
+  },
+  {
+    "kind": "p",
+    "text": "Words you will see repeatedly"
+  },
+  {
+    "kind": "h3",
+    "text": "The Beginner Vocabulary"
+  },
+  {
+    "kind": "p",
+    "text": "Principal is the amount borrowed and expected to be repaid at maturity. Face value or par value is the principal amount printed in the bond records and used to calculate coupon cash. In everyday discussion, these terms often point to the same contractual amount."
+  },
+  {
+    "kind": "p",
+    "text": "Interest is the compensation paid for using someone else's money. A coupon is one scheduled interest payment. The coupon rate is the annual percentage applied to face value to determine coupon cash. A 12% coupon rate on RWF 100,000 face value means RWF 12,000 gross interest per full year, not necessarily a 12% return on whatever market price a later buyer pays."
+  },
+  {
+    "kind": "p",
+    "text": "Maturity is the contractual end date when principal is due. Tenor describes the bond's length, often measured from original issuance to maturity. Remaining maturity describes how much time is left today. A bond originally issued with a 20-year tenor may have only 12 years remaining when you discover it."
+  },
+  {
+    "kind": "p",
+    "text": "Price is what a buyer must pay to acquire the bond. Price and face value can be different after issuance. Yield is a way of expressing the return created by the cash flows relative to the price paid. The coupon rate belongs to the bond; yield changes when the market price or remaining time changes."
+  },
+  {
+    "kind": "p",
+    "text": "Where a purchase happens"
+  },
+  {
+    "kind": "h3",
+    "text": "Primary Market, Secondary Market, Broker, and CSD"
+  },
+  {
+    "kind": "p",
+    "text": "The primary market is where newly issued or reopened Government debt is offered. The National Bank of Rwanda acts as fiscal agent in the issuance process. Investors submit orders or bids through the permitted channels, often with assistance from an intermediary such as BK Capital. Money raised in the primary market goes toward the Government financing operation."
+  },
+  {
+    "kind": "p",
+    "text": "The secondary market is where an existing investor sells a bond to another investor after issuance. The Government is not creating a new bond in that trade. The buyer pays the seller through the market's trading and settlement process. Because buyers and sellers negotiate under current market conditions, an existing bond can trade at 97, 100, 107, or another price."
+  },
+  {
+    "kind": "p",
+    "text": "A broker helps communicate orders, locate available bonds, execute trades, and provide a contract note or confirmation. The Central Securities Depository, commonly shortened to CSD, maintains electronic ownership and supports settlement. You do not normally receive a paper certificate that must be hidden at home; ownership is recorded electronically."
+  },
+  {
+    "kind": "p",
+    "text": "Beginner checkpoint"
+  },
+  {
+    "kind": "p",
+    "text": "At this point, you only need four ideas: a bond is a loan, coupons are interest payments, maturity is when principal is due, and an existing bond's market price can differ from its face value. The next level explains why that price difference changes your real return."
+  },
+  {
+    "kind": "summary",
+    "text": "If an investor sells a RWF 100,000 bond block for 97k, can I pay 97k and still own 100k face value?"
+  },
+  {
+    "kind": "p",
+    "text": "Yes. Think of it like a high-end smartphone that originally came with a fixed specification. A person who urgently needs cash may resell that same phone for less, but the phone does not lose its original storage capacity. Here, the previous investor accepts RWF 97,000 clean for a bond block registered with RWF 100,000 face value."
+  },
+  {
+    "kind": "p",
+    "text": "After settlement, the electronic ownership record moves to your CSD account. Coupon cash and maturity principal follow the RWF 100,000 face value, not the RWF 97,000 bargain price. Your final debit can still include accrued interest and fees."
+  },
+  {
+    "kind": "p",
+    "text": "Clean price: RWF 97,000 Face value owned: RWF 100,000 12% annual gross coupon: RWF 12,000 Principal due at maturity: RWF 100,000"
+  },
+  {
+    "kind": "p",
+    "text": "Level 1 · Learn the numbers"
+  },
+  {
+    "kind": "h2",
+    "text": "Now separate the bond's promise from the price you pay."
+  },
+  {
+    "kind": "p",
+    "text": "Level 0 used a new bond bought for exactly its face value. Real secondary-market purchases are less tidy. The bond keeps its original coupon and maturity date, but its price moves. This level introduces one distinction at a time: face value versus price, coupon rate versus yield, clean price versus total settlement cash, and gross coupon versus after-tax coupon."
+  },
+  {
+    "kind": "p",
+    "text": "Level 1.1 · Price"
+  },
+  {
+    "kind": "h3",
+    "text": "Face Value (Par) vs. Market Price"
+  },
+  {
+    "kind": "p",
+    "text": "Face value, also called par value, is the number written on the bond's official record. It is the amount used to calculate coupon cash and the principal expected back at maturity. If you own RWF 1,000,000 face value with a 12% coupon, the gross annual coupon is RWF 120,000, even if you bought that position for less or more than RWF 1,000,000."
+  },
+  {
+    "kind": "p",
+    "text": "Bond prices are commonly expressed as a percentage of par. When an RSE or broker quote is identified as a clean price, 100 means RWF 100 of principal costs RWF 100 before accrued interest and transaction charges. A clean price of 97 is a discount: RWF 1,000,000 face value has a clean market cost of RWF 970,000. A clean price of 107 is a premium: the same face value has a clean market cost of RWF 1,070,000. The coupon amount remains tied to RWF 1,000,000 face value, not to the market cash paid."
+  },
+  {
+    "kind": "p",
+    "text": "At maturity, the issuer pays face value, not whatever price you happened to pay another investor. Buy below 100 and you can receive more principal than your clean purchase price. Buy above 100 and part of your purchase price disappears when principal returns to 100. This movement back toward face value is called pull to par."
+  },
+  {
+    "kind": "p",
+    "text": "Translate a quoted price into clean cash"
+  },
+  {
+    "kind": "math",
+    "text": "Clean consideration equals face value multiplied by quoted price divided by 100."
+  },
+  {
+    "kind": "figcaption",
+    "text": "Cclean is the clean consideration, F is face value, and q is the quoted clean price."
+  },
+  {
+    "kind": "p",
+    "text": "For RWF 1,000,000 face at 107, the clean consideration is RWF 1,070,000. That is not yet the final settlement amount: accrued interest and broker or market charges may still be added."
+  },
+  {
+    "kind": "p",
+    "text": "Level 1.2 · Return"
+  },
+  {
+    "kind": "h3",
+    "text": "Coupon Rate vs. Yield to Maturity (YTM)"
+  },
+  {
+    "kind": "p",
+    "text": "The coupon rate is the interest percentage printed on the bond. It determines coupon cash by multiplying that percentage by face value. With semiannual payments, a 13.5% bond with RWF 1,000,000 face value pays RWF 67,500 gross every six months. The rate does not adjust merely because the bond later trades above or below 100."
+  },
+  {
+    "kind": "p",
+    "text": "Yield to maturity is the fairer comparison number. It asks what annualized return the whole deal represents when you include today's price, every remaining coupon, and the principal paid at maturity. A high-coupon bond bought at an expensive premium can therefore have a lower YTM than a lower-coupon bond bought cheaply."
+  },
+  {
+    "kind": "p",
+    "text": "YTM in beginner language"
+  },
+  {
+    "kind": "p",
+    "text": "YTM asks: “If I pay this price today, receive all remaining coupons, receive principal at maturity, and the issuer pays as promised, what single annualized rate makes those cash flows equivalent to my purchase price?” A lower purchase price usually raises YTM. A higher purchase price usually lowers YTM."
+  },
+  {
+    "kind": "p",
+    "text": "Quoted YTM is not a promise that the investor will realize exactly that annual compound return. It normally assumes the bond is held to maturity, every contractual payment occurs on time, and interim coupons can be reinvested at a rate consistent with the calculated yield. Selling early replaces the known maturity payment with an unknown sale price. Reinvesting coupons at lower rates reduces realized compound return even when the issuer pays every coupon exactly as scheduled."
+  },
+  {
+    "kind": "p",
+    "text": "The comparison equation"
+  },
+  {
+    "kind": "math",
+    "text": "Dirty price equals the sum from t equals 1 to N of coupon at period t divided by one plus annual yield over two raised to period t, plus face value divided by one plus annual yield over two raised to N."
+  },
+  {
+    "kind": "figcaption",
+    "text": "Pdirty is the dirty price, Ct is the coupon paid in period t, y is annual YTM, N is the number of semiannual periods remaining, and F is face value."
+  },
+  {
+    "kind": "p",
+    "text": "For a semiannual bond, the model solves for annualized yield y. A net-of-tax version reduces coupon cash flows by applicable withholding tax before solving. Principal repayment should not be casually reduced by coupon withholding tax because it is a return of principal rather than coupon interest."
+  },
+  {
+    "kind": "p",
+    "text": "Level 1.3 · Settlement"
+  },
+  {
+    "kind": "h3",
+    "text": "Accrued Interest and Clean vs. Dirty Price"
+  },
+  {
+    "kind": "p",
+    "text": "Accrued interest sounds technical, but the household version is simple. Imagine you move into a rented house on the 15th of the month. At month-end, the electricity bill covers all 30 days. The previous tenant used electricity for the first half of the month, so you should not keep the benefit of that whole bill calculation for yourself. You settle up for the days they were there."
+  },
+  {
+    "kind": "p",
+    "text": "Bonds have the same idea. Coupon interest builds up day by day, but the cash is paid only on scheduled coupon dates. If you buy from a seller halfway through a six-month coupon period, the seller has already earned roughly half of that coupon period. You usually pay them that earned portion on settlement day. Later, when the full coupon arrives in your account, part of it is really reimbursing money you already advanced to the seller."
+  },
+  {
+    "kind": "p",
+    "text": "The clean price is the simple market quote before that interest adjustment. The dirty price is the fuller settlement price after accrued interest is added. Your final cash debit can also include broker commission and other charges. So a clean quote of 101.50 is useful, but it is not automatically the exact amount leaving your bank account."
+  },
+  {
+    "kind": "p",
+    "text": "The exact accrued-interest calculation depends on the prospectus day-count convention, coupon-period dates, and settlement date. A simplified actual-days illustration helps explain the economics: assume RWF 1,000,000 face, a 12% annual coupon, a RWF 60,000 gross semiannual coupon, and 90 elapsed days in a 182-day coupon period. Approximate accrued interest is RWF 60,000 x 90 / 182, or RWF 29,670. If the clean price is 101.50, clean consideration is RWF 1,015,000 and approximate dirty consideration is RWF 1,044,670 before fees."
+  },
+  {
+    "kind": "p",
+    "text": "Why the next coupon is not free money"
+  },
+  {
+    "kind": "p",
+    "text": "If the buyer soon receives the full RWF 60,000 gross coupon, approximately RWF 29,670 of that economic value was already paid to the seller through accrued interest. Only the post-settlement portion belongs economically to the buyer's holding period. Treating the full next coupon as immediate profit would double count the pre-purchase accrual."
+  },
+  {
+    "kind": "summary",
+    "text": "If I buy a bond right before a coupon date and get the next interest check almost immediately, is that free money?"
+  },
+  {
+    "kind": "p",
+    "text": "No. The coupon may arrive soon, but the seller did not give away the interest they earned during the current six-month cycle. On settlement day, you normally compensate the seller for the days they already held the bond. When the full coupon later lands in your account, part of it is simply the system returning cash you advanced at purchase."
+  },
+  {
+    "kind": "p",
+    "text": "Semiannual coupon: RWF 60,000 Seller held roughly half the period Accrued interest paid to seller: about RWF 30,000 Next coupon received by you: RWF 60,000 gross"
+  },
+  {
+    "kind": "p",
+    "text": "The first coupon can feel exciting, but it is not pure profit if you paid accrued interest upfront."
+  },
+  {
+    "kind": "p",
+    "text": "Level 1.4 · Tax"
+  },
+  {
+    "kind": "h3",
+    "text": "Rwandan Sovereign Withholding Tax Treatment"
+  },
+  {
+    "kind": "p",
+    "text": "Tax is removed before coupon cash reaches your account. Rwanda's Law No. 027/2022 provides a reduced 5% withholding treatment for interest from Treasury bonds with a maturity of at least three years. That is why this planner normally shows 5% rather than the broader 15% withholding rate mentioned for other covered payments."
+  },
+  {
+    "kind": "p",
+    "text": "For a qualifying Rwanda Treasury bond modeled at a 5% withholding rate, a 12% gross coupon becomes an 11.4% annual coupon cash rate after withholding: 12% x 95%. On RWF 1,000,000 face value, RWF 120,000 gross annual coupon becomes RWF 114,000 net, normally split according to the security's payment schedule. Tax reduces coupon cash; it does not change the bond's contractual coupon printed in the prospectus."
+  },
+  {
+    "kind": "p",
+    "text": "Do not guess the tax from the countdown shown in a market table. Confirm the bond's classification, current law, and the broker or paying agent's treatment. Personal residence, taxpayer status, and later legal changes can affect the answer."
+  },
+  {
+    "kind": "p",
+    "text": "Tax is an input, not a permanent law of nature"
+  },
+  {
+    "kind": "p",
+    "text": "This page reflects official materials checked on June 7, 2026. Tax legislation and administrative interpretation can change. Before committing capital, verify the current RRA law, the prospectus, and the withholding shown by BK Capital or the paying agent. The application uses 5% for its Rwanda Treasury-bond projections, but a projection is not a tax ruling."
+  },
+  {
+    "kind": "summary",
+    "text": "How exactly does the 5% withholding tax incentive work in Rwanda?"
+  },
+  {
+    "kind": "p",
+    "text": "Rwanda's income-tax law provides a reduced 5% withholding treatment for interest from Treasury bonds with a maturity of at least three years. In everyday terms, the tax is taken out of the interest payment before the net coupon reaches you. The bond still has the same gross coupon rate; your cash account receives the amount after withholding."
+  },
+  {
+    "kind": "p",
+    "text": "Raw semiannual interest: RWF 60,000 Withholding tax at 5%: RWF 3,000 Net cash received: RWF 57,000"
+  },
+  {
+    "kind": "p",
+    "text": "Always confirm the current tax treatment from the prospectus, RRA rules, and the broker confirmation, especially if your taxpayer status is unusual."
+  },
+  {
+    "kind": "p",
+    "text": "Level 2 · Avoid bad deals"
+  },
+  {
+    "kind": "h2",
+    "text": "A large coupon can still produce a disappointing return."
+  },
+  {
+    "kind": "p",
+    "text": "You now know that coupon rate and return are not the same number. This level combines price, time, tax, and maturity in worked examples. Read it slowly: each example begins with the attractive headline, identifies the hidden cost, and then explains how that cost changes the result."
+  },
+  {
+    "kind": "p",
+    "text": "Level 2.1 · Worked scenario"
+  },
+  {
+    "kind": "h3",
+    "text": "The Premium Price Trap: 13.5% Coupon at 107"
+  },
+  {
+    "kind": "p",
+    "text": "Consider RWF 1,000,000 face value of a Treasury bond paying a 13.5% annual coupon in two semiannual installments. The annual gross coupon is RWF 135,000, and each gross payment is RWF 67,500. At 5% withholding, annual coupon cash falls to RWF 128,250 and each net semiannual payment is RWF 64,125. Those figures look attractive when viewed without the purchase price."
+  },
+  {
+    "kind": "p",
+    "text": "Now assume the bond has approximately 3.2 years remaining and trades at a clean price of 107. The investor pays RWF 1,070,000 clean for RWF 1,000,000 face value, before accrued interest and fees. At maturity, the issuer repays RWF 1,000,000, not RWF 1,070,000. The RWF 70,000 premium is gradually consumed through pull to par and becomes an explicit capital loss at redemption. The high coupons must first compensate for that loss before they produce excess return."
+  },
+  {
+    "kind": "th",
+    "text": "Simplified comparison"
+  },
+  {
+    "kind": "th",
+    "text": "13.5% bond"
+  },
+  {
+    "kind": "th",
+    "text": "11.5% bond"
+  },
+  {
+    "kind": "td",
+    "text": "Clean price"
+  },
+  {
+    "kind": "td",
+    "text": "107.00"
+  },
+  {
+    "kind": "td",
+    "text": "100.00"
+  },
+  {
+    "kind": "td",
+    "text": "Remaining life"
+  },
+  {
+    "kind": "td",
+    "text": "Approx. 3.2 years"
+  },
+  {
+    "kind": "td",
+    "text": "Approx. 3.2 years"
+  },
+  {
+    "kind": "td",
+    "text": "Approx. gross YTM"
+  },
+  {
+    "kind": "td",
+    "text": "11.03%"
+  },
+  {
+    "kind": "td",
+    "text": "11.50%"
+  },
+  {
+    "kind": "td",
+    "text": "Approx. after-tax YTM"
+  },
+  {
+    "kind": "td",
+    "text": "10.39%"
+  },
+  {
+    "kind": "td",
+    "text": "10.93%"
+  },
+  {
+    "kind": "td",
+    "text": "Principal at maturity"
+  },
+  {
+    "kind": "td",
+    "text": "RWF 1,000,000"
+  },
+  {
+    "kind": "td",
+    "text": "RWF 1,000,000"
+  },
+  {
+    "kind": "p",
+    "text": "Under a simplified seven-period semiannual model, excluding accrued interest and fees, the premium bond's approximate gross YTM is 11.03% and its approximate after-tax yield is 10.39%. A par-priced 11.5% bond with the same simplified remaining term produces an 11.5% gross yield and approximately 10.93% after coupon withholding. The supposedly more generous 13.5% coupon therefore delivers the lower modeled return because the buyer overpays for the cash-flow stream and loses the premium at maturity."
+  },
+  {
+    "kind": "p",
+    "text": "Critical analytical rule"
+  },
+  {
+    "kind": "p",
+    "text": "Never rank a secondary-market bond by coupon rate before converting the quoted price and remaining cash-flow schedule into YTM."
+  },
+  {
+    "kind": "p",
+    "text": "The exact result changes with settlement date, coupon dates, accrued interest, fees, tax status, and day-count method. The example demonstrates the mechanism; it is not a quote for a particular security."
+  },
+  {
+    "kind": "summary",
+    "text": "Should I always buy the bond with the highest printed coupon rate?"
+  },
+  {
+    "kind": "p",
+    "text": "Absolutely not. The coupon is the attractive number printed on the bond, but the purchase price decides how expensive those coupons are for you. If a 13.5% bond trades at 107, one RWF 1,000,000 face-value position costs RWF 1,070,000 clean. At maturity, the issuer returns RWF 1,000,000, so the RWF 70,000 premium disappears through the pull back to par."
+  },
+  {
+    "kind": "p",
+    "text": "The premium trap"
+  },
+  {
+    "kind": "p",
+    "text": "Clean purchase price: RWF 1,070,000 Principal returned at maturity: RWF 1,000,000 Premium lost at maturity: RWF 70,000"
+  },
+  {
+    "kind": "p",
+    "text": "Compare listings by Yield to Maturity, not coupon alone. YTM combines the price you pay, every remaining coupon, and the principal returned at maturity."
+  },
+  {
+    "kind": "p",
+    "text": "Level 2.2 · Time risk"
+  },
+  {
+    "kind": "h3",
+    "text": "Reinvestment Risk and Short Remaining Duration"
+  },
+  {
+    "kind": "p",
+    "text": "A bond can offer an excellent current YTM and still be a poor fit for a long compounding objective. A security with only 3.2 years remaining returns principal relatively soon. The investor then has to find a new home for that principal. If market yields have fallen, the attractive rate cannot be extended merely because the original bond once paid 13%. This uncertainty is reinvestment risk."
+  },
+  {
+    "kind": "p",
+    "text": "Assume RWF 10,000,000 face value of a par-priced 13% bond with 3.2 years remaining. At 5% coupon withholding, its annual net coupon rate is 12.35%, producing RWF 1,235,000 of net coupon cash per full year while it remains outstanding. Compare it with a par-priced 11.8% bond that can maintain a 15-year exposure. The longer bond's annual net coupon rate is 11.21%, producing RWF 1,121,000. The short bond initially pays RWF 114,000 more per year, but its rate disappears when principal returns."
+  },
+  {
+    "kind": "p",
+    "text": "Suppose, purely as a stress scenario, that reinvestment opportunities after year 3.2 offer only 8% gross, or 7.6% after the same assumed withholding. A rough time-weighted rate over a 15-year objective becomes approximately 8.61% for the strategy that earns 12.35% for 3.2 years and 7.6% for the remaining 11.8 years. The 15-year 11.8% bond preserves an 11.21% net coupon rate over the assumed horizon. This simple comparison omits changing prices and detailed coupon reinvestment, but it shows why a temporarily higher rate can lose to a durable rate lock."
+  },
+  {
+    "kind": "p",
+    "text": "Duration is not automatically good or bad"
+  },
+  {
+    "kind": "p",
+    "text": "Long maturity protects the investor from having to replace principal quickly when rates fall, but it also creates greater price sensitivity when rates rise. The appropriate choice depends on the date the money will be needed, tolerance for market-value fluctuations, and whether the investor can genuinely hold to maturity. Long-term compounding favors runway; near-term spending favors matching maturity to the liability."
+  },
+  {
+    "kind": "summary",
+    "text": "What is reinvestment risk, and how can it ruin long-term compounding?"
+  },
+  {
+    "kind": "p",
+    "text": "Imagine finding a wonderful 13% bond that matures in only two years. You enjoy that rate for 24 months, and then the Government returns your principal. Now you must find a new place for the money. If market rates have fallen to 8%, the high-rate part of your plan is over."
+  },
+  {
+    "kind": "p",
+    "text": "A slightly lower 11.8% bond with 15 or 20 years remaining may be more useful for a long-term income plan because the rate stays attached to the principal for much longer. That does not make long bonds universally better: their market prices can move more, and they are unsuitable if you need the money soon."
+  },
+  {
+    "kind": "p",
+    "text": "The hidden question"
+  },
+  {
+    "kind": "p",
+    "text": "Do not ask only, “What rate do I get today?” Also ask, “How soon will I be forced to find another investment?”"
+  },
+  {
+    "kind": "summary",
+    "text": "Starting with RWF 1,000,000 in a 12% Treasury bond, how long should it take to reach RWF 2,000,000 if I reinvest every net coupon? Please include the 5% tax, semiannual payments, the RWF 100,000 purchase unit, idle coupon cash, optional personal top-ups, and coupons pooled from other bonds."
+  },
+  {
+    "kind": "p",
+    "text": "This is the clearer version of the question because it separates four things that are easy to mix together: the printed 12% coupon, the 5% tax on coupon cash, the fact that coupons arrive only twice per year, and the rule that new bond purchases must be made in RWF 100,000 face-value chunks."
+  },
+  {
+    "kind": "p",
+    "text": "After 5% withholding, the net annual coupon rate is 11.4%. With two payments per year, each six-month payment is 5.7% of the bond face value. Your first RWF 1,000,000 position therefore pays RWF 57,000 net every six months."
+  },
+  {
+    "kind": "p",
+    "text": "Paper theory: fractional semiannual reinvestment"
+  },
+  {
+    "kind": "math",
+    "text": "The net six-month rate is 12 percent multiplied by one minus 5 percent tax, divided by 2, which equals 5.7 percent. To double, 2 equals 1.057 raised to n, so n equals the natural logarithm of 2 divided by the natural logarithm of 1.057, approximately 12.5 periods."
+  },
+  {
+    "kind": "figcaption",
+    "text": "n counts six-month coupon periods, not calendar years."
+  },
+  {
+    "kind": "p",
+    "text": "But cash is paid only on coupon dates"
+  },
+  {
+    "kind": "p",
+    "text": "After 12 payments: about RWF 1,944,912"
+  },
+  {
+    "kind": "p",
+    "text": "After 13 payments: about RWF 2,055,771"
+  },
+  {
+    "kind": "p",
+    "text": "The equation's decimal answer is approximately 6.25 years, but you cannot reinvest half of a coupon period before the coupon is paid. On an actual semiannual payment calendar, perfect fractional reinvestment first passes RWF 2,000,000 at payment 13, around 6.5 years."
+  },
+  {
+    "kind": "p",
+    "text": "Now apply the RWF 100,000 purchase rule. At month six, the RWF 57,000 coupon waits as cash. At month twelve, another RWF 57,000 raises cash to RWF 114,000, allowing one RWF 100,000 bond purchase and leaving RWF 14,000 idle. The same process repeats, but the coupon grows as more RWF 100,000 blocks are added."
+  },
+  {
+    "kind": "p",
+    "text": "Simplified RWF 100,000-lot result"
+  },
+  {
+    "kind": "p",
+    "text": "Month 12: RWF 1,100,000 bonds + RWF 14,000 cash"
+  },
+  {
+    "kind": "p",
+    "text": "Month 36: RWF 1,300,000 bonds + RWF 81,900 cash"
+  },
+  {
+    "kind": "p",
+    "text": "Month 60: RWF 1,700,000 bonds + RWF 12,500 cash"
+  },
+  {
+    "kind": "p",
+    "text": "Month 72: RWF 1,900,000 bonds + RWF 12,000 cash"
+  },
+  {
+    "kind": "p",
+    "text": "Month 78: RWF 2,000,000 bonds + RWF 20,300 cash"
+  },
+  {
+    "kind": "p",
+    "text": "Under these simplified assumptions, the unassisted portfolio also reaches RWF 2,000,000 of bond face value at month 78, which is 6.5 years. Cash drag is still real: perfect fractional reinvestment would be worth about RWF 2,055,771 at that point, while the chunked strategy is about RWF 2,020,300. The minimum-unit rule costs roughly RWF 35,471 of modeled value by that date, but it does not push this particular first doubling into year seven."
+  },
+  {
+    "kind": "p",
+    "text": "Be careful when adding personal top-ups"
+  },
+  {
+    "kind": "p",
+    "text": "Adding your own cash to complete each RWF 100,000 block is a useful strategy because it keeps coupons invested. It can make the account balance reach RWF 2,000,000 earlier. However, part of that second million came from your new contributions. That is not the same as the original RWF 1,000,000 doubling from investment returns alone."
+  },
+  {
+    "kind": "p",
+    "text": "Pooling coupons from several bonds, using income from other investments, or staggering coupon dates can improve the percentage of cash that stays invested and reduce the average waiting time. As the portfolio becomes larger, a leftover below RWF 100,000 becomes a smaller percentage of total wealth, so performance moves closer to the theoretical line. A practical planning estimate is therefore approximately 6.5 years without extra contributions, assuming 12% gross coupon, 5% withholding, stable reinvestment at similar rates, immediate RWF 100,000 purchases when cash permits, and no fees or price premiums."
+  },
+  {
+    "kind": "p",
+    "text": "Level 2.3 · Suitability"
+  },
+  {
+    "kind": "h3",
+    "text": "A Yield Can Be Correct and the Purchase Can Still Be Wrong"
+  },
+  {
+    "kind": "p",
+    "text": "YTM is a return calculation, not a complete suitability test. A high YTM may be compensation for poor liquidity, a stale quote, unusual settlement terms, credit uncertainty outside sovereign debt, or a maturity date that conflicts with the investor's cash needs. A screen that ranks yield correctly can still encourage a bad decision if the investor ignores the conditions under which that yield is realizable."
+  },
+  {
+    "kind": "p",
+    "text": "A displayed closing price may represent a small historical trade rather than a currently executable offer. An investor should distinguish the last traded price, the broker's current ask, and the final all-in settlement amount. A model using 97.00 can overstate return if the available seller requires 100.50, or if accrued interest and fees are omitted. Likewise, a published RSE YTM can become stale when no new trade resets the market price."
+  },
+  {
+    "kind": "p",
+    "text": "The final discipline is matching the bond to your real-life need for cash. Money reserved for school fees in four years should not be placed reflexively into a 20-year bond merely because its strategy score is higher. Selling before maturity exposes the investor to the market price then available. Government payment reliability reduces credit risk, but it does not eliminate interest-rate risk, inflation risk, liquidity risk, execution risk, or the personal risk of needing cash at an inconvenient time."
+  },
+  {
+    "kind": "p",
+    "text": "Level 3 · Execute the deal"
+  },
+  {
+    "kind": "h2",
+    "text": "Move from understanding a bond to placing an order."
+  },
+  {
+    "kind": "p",
+    "text": "You do not need to operate the market's professional systems yourself. Your job is to identify the bond, decide the face-value amount you want, understand the likely price and risks, and give clear instructions to a licensed intermediary. The broker or authorized bank channel handles the market and CSD workflow on your behalf."
+  },
+  {
+    "kind": "p",
+    "text": "Level 3.1 · Your buying path"
+  },
+  {
+    "kind": "h3",
+    "text": "From an RSE Listing to a Confirmed Purchase"
+  },
+  {
+    "kind": "p",
+    "text": "Start by opening or confirming your investment and CSD account details with a licensed intermediary. CMA's public licensee list includes securities brokers and investment banks such as BK Capital. BNR auction notices explain that authorized bank treasurers and brokers use the CSD platform to submit bids for their clients."
+  },
+  {
+    "kind": "p",
+    "text": "For a primary auction or reopening, ask for the official notice and prospectus. Decide how much face value you want, whether your instruction is competitive or non-competitive where applicable, and the deadline for making funds available. For a secondary-market purchase, ask for a current executable offer, the face value available, accrued interest, fees, settlement date, and total cash required."
+  },
+  {
+    "kind": "p",
+    "text": "Do not fund a trade from a website screenshot alone. The RSE closing price is useful market information, but the broker must confirm whether a seller is currently available and the final all-in settlement amount. Keep the order email, prospectus, contract note, payment proof, and CSD record together."
+  },
+  {
+    "kind": "summary",
+    "text": "Can I buy these bonds myself electronically, or do I need an intermediary?"
+  },
+  {
+    "kind": "p",
+    "text": "As an individual, you normally give the order through an authorized market intermediary or bank channel rather than logging directly into the professional CSD bidding interface. BNR auction notices state that authorized commercial-bank treasurers and brokers submit CSD bids for their clients."
+  },
+  {
+    "kind": "p",
+    "text": "BK Capital appears on CMA's licensee list as an investment bank. Other licensed intermediaries also exist, so verify the current CMA licensee list before sending money or identity documents. The intermediary can help open or reference your CSD account, clarify the order type, confirm settlement funding, and provide the trade confirmation."
+  },
+  {
+    "kind": "p",
+    "text": "Protect the order"
+  },
+  {
+    "kind": "p",
+    "text": "Use verified contact details from the institution or CMA licensee list. Do not send funds to an account supplied only through an unverified message."
+  },
+  {
+    "kind": "summary",
+    "text": "What is the simplest way to start a trade by email with BK Capital?"
+  },
+  {
+    "kind": "p",
+    "text": "Send a clear instruction that identifies you, your CSD account, the exact security, the order type, and the desired face value. Ask the trading desk to confirm the price or auction terms, fees, accrued interest, settlement amount, deadline, funding method, and documents before execution."
+  },
+  {
+    "kind": "p",
+    "text": "Sample order email"
+  },
+  {
+    "kind": "text",
+    "text": "Copy email"
+  },
+  {
+    "kind": "pre",
+    "text": "Subject: Fixed Income Order - Primary Auction [or Secondary Market] Dear BK Capital Trading Desk, Please execute the following fixed-income order on my behalf: Investor Name: Oreste MUHIRWA GABO CSD Account Number: [Your CSD Account ID] Bond Security Ticker: FXD 1/2026/10YRS Order Type: Primary Re-opening Auction (Non-Competitive Bid) Face Value Target Amount: RWF 2,000,000 Please confirm the required settlement amount, funding instructions, fees, documents, order deadline, and whether any additional authorization is required before execution. Best regards, Oreste MUHIRWA GABO"
+  },
+  {
+    "kind": "p",
+    "text": "This is a communication template, not proof that an order has been accepted. Replace every placeholder, verify the ticker against the current official notice, and wait for BK Capital to confirm the instructions and settlement amount."
+  },
+  {
+    "kind": "p",
+    "text": "Level 3.2 · Secondary market"
+  },
+  {
+    "kind": "h3",
+    "text": "Spotting Discount Sovereigns Below Par"
+  },
+  {
+    "kind": "p",
+    "text": "Start with the RSE Fixed Income Board to identify the bond code, issue date, maturity date, coupon rate, and published YTM. Then cross-check the RSE Bond Market page for a recent closing price, trade volume, and value. A Treasury bond below 100 deserves investigation because the investor receives the contractual coupons and, if held to maturity and paid as agreed, receives 100 of principal for less than 100 of clean purchase price."
+  },
+  {
+    "kind": "p",
+    "text": "Consider a 15-year remaining bond with an 11.5% coupon trading at 97. For RWF 1,000,000 face value, clean consideration is RWF 970,000. The annual gross coupon remains RWF 115,000, or RWF 109,250 after an assumed 5% withholding rate. At maturity, the investor receives RWF 1,000,000, adding RWF 30,000 of pull-to-par value relative to the clean purchase price. In a simplified semiannual model, gross YTM rises to approximately 11.93% and after-tax YTM to approximately 11.35%, both above the nominal coupon comparison implied by price 100."
+  },
+  {
+    "kind": "p",
+    "text": "The discount is not automatically a bargain. It may reflect higher market yields, a seller's liquidity need, weak trading depth, or a quote that is no longer executable. Before treating the discount as opportunity, request a live bid or offer from BK Capital, confirm face value available, settlement date, accrued interest, commission, and any custody charges. Re-run YTM using the all-in dirty cash amount rather than the website closing price alone."
+  },
+  {
+    "kind": "p",
+    "text": "Discount return has two engines"
+  },
+  {
+    "kind": "math",
+    "text": "Hold-to-maturity return equals the sum of net coupons plus face value minus clean purchase price, minus costs."
+  },
+  {
+    "kind": "figcaption",
+    "text": "The pull-to-par term is positive when the clean purchase price is below face value."
+  },
+  {
+    "kind": "p",
+    "text": "A discount increases yield because coupon cash is earned on face value while less clean capital is paid, and because par redemption exceeds the clean purchase price. Both effects must still be placed on the correct dates to calculate YTM."
+  },
+  {
+    "kind": "p",
+    "text": "Level 3.3 · Primary market"
+  },
+  {
+    "kind": "h3",
+    "text": "How Re-opened BNR Issues Work"
+  },
+  {
+    "kind": "p",
+    "text": "A reopening allows the Government of Rwanda, through the National Bank of Rwanda, to issue an additional amount of an existing Treasury-bond series instead of creating an entirely new bond. The reopened tranche normally keeps the existing series' coupon rate and final maturity date. Because time has passed since the original issue and market yields may have changed, investors compete through the auction price or yield rather than receiving a newly reset coupon."
+  },
+  {
+    "kind": "p",
+    "text": "Imagine a 20-year FXD series originally issued with a 13.15% coupon. If BNR reopens it later, the additional bonds may have roughly 19 years remaining but still pay the original 13.15% coupon and mature on the original date. If prevailing required yield is below 13.15%, successful pricing may be above par. If required yield is above the coupon, pricing may be below par. The coupon headline therefore does not reveal the auction return; the accepted dirty price and resulting yield do."
+  },
+  {
+    "kind": "p",
+    "text": "Reopenings can make an existing bond series larger and easier to trade. They also let an investor buy long-dated cash flows without waiting for a brand-new maturity. Through a broker such as BK Capital, the investor should obtain the official reopening prospectus, auction timetable, bond code and ISIN, coupon dates, remaining tenor, minimum denomination, bidding instructions, settlement amount, and published auction result. The investor should verify that the new allocation is truly the same bond series rather than assuming it solely from a similar name."
+  },
+  {
+    "kind": "p",
+    "text": "Reopening decision"
+  },
+  {
+    "kind": "p",
+    "text": "Focus on the auction yield and total settlement cash. A reopening with a 13.15% coupon can be less attractive than a new 12% bond if competitive demand pushes its price high enough. Conversely, a reopened high-coupon series offered at a reasonable price can provide a strong long-duration yield and a larger, potentially more actively traded issue."
+  },
+  {
+    "kind": "p",
+    "text": "Level 3.4 · Full analysis"
+  },
+  {
+    "kind": "h3",
+    "text": "A Full RSE-to-Broker Evaluation Process"
+  },
+  {
+    "kind": "li",
+    "text": "01Establish the exact security identity.Record the full bond name, ISIN or security code, original issue date, final maturity date, coupon rate, coupon frequency, and whether the row is an original issue or reopening. Similar FXD labels are not interchangeable, and two rows with similar coupons can have materially different remaining lives."
+  },
+  {
+    "kind": "li",
+    "text": "02Separate live execution data from reference data.Treat the Fixed Income Board coupon and published YTM as reference fields. Look for a recent closing price and trading activity on the Bond Market page, then ask the broker for an executable quote. Record the observation time because a price without a timestamp can mislead."
+  },
+  {
+    "kind": "li",
+    "text": "03Build the remaining cash-flow calendar.List every future coupon date and the maturity principal. Do not assume all Rwanda Treasury bonds pay in January and July; each issuance follows its own schedule. Determine whether settlement occurs before or after the record-date conventions used by the paying system."
+  },
+  {
+    "kind": "li",
+    "text": "04Calculate clean, accrued, dirty, and all-in cost.Convert quoted price into clean consideration, add accrued interest, then add broker commission and other confirmed charges. The all-in debit is the correct initial cash outflow for investor return calculations."
+  },
+  {
+    "kind": "li",
+    "text": "05Solve gross and after-tax YTM.Use the actual settlement date and remaining payments. Solve once with contractual gross coupons and once with coupons reduced by the applicable withholding assumption. If no recent price exists, label any published-YTM tax adjustment as an approximation rather than a fully repriced result."
+  },
+  {
+    "kind": "li",
+    "text": "06Measure runway and reinvestment exposure.Compare remaining maturity with the investor's objective. A high yield with three years left may be useful for a three-year liability but weak for a 20-year income plan. A long bond locks the rate longer but carries greater price volatility if sold before maturity."
+  },
+  {
+    "kind": "li",
+    "text": "07Stress the decision rather than admiring one number.Recalculate at a higher purchase price, lower reinvestment rate, earlier forced-sale date, and delayed execution. Ask how much of the expected return comes from coupons, discount accretion, or an assumption that cannot be guaranteed."
+  },
+  {
+    "kind": "li",
+    "text": "08Preserve the evidence after purchase.Store the broker confirmation, prospectus, settlement amount, accrued interest, fees, tax withheld, coupon dates, and maturity date in the private portfolio. Tracking actual cash flows against the original expected schedule turns a theoretical yield into an auditable investment record."
+  },
+  {
+    "kind": "h3",
+    "text": "Evidence of potential relative value"
+  },
+  {
+    "kind": "p",
+    "text": "A recent executable price below par, an after-tax YTM that remains strong after all costs, a long remaining runway, adequate issue size, confirmed coupon dates, and a maturity aligned with the investor's plan together form a stronger case than any single high coupon."
+  },
+  {
+    "kind": "h3",
+    "text": "Evidence that the apparent bargain may be false"
+  },
+  {
+    "kind": "p",
+    "text": "A stale closing price, no available seller, large accrued interest, an expensive premium, short remaining life, conflicting security identifiers, uncertain payment dates, or a maturity that forces an early sale can erase the screen's apparent advantage."
+  },
+  {
+    "kind": "p",
+    "text": "Primary references"
+  },
+  {
+    "kind": "h2",
+    "text": "Verify the instrument before funding the trade."
+  },
+  {
+    "kind": "p",
+    "text": "Market pages can change, and a broker quote can differ from the last published trade. Use these official sources to validate the live market row, issuance documents, auction result, and current tax law. For a real purchase, the prospectus and broker confirmation control the transaction details, not an educational example on this page."
+  },
+  {
+    "kind": "a",
+    "text": "RSE Fixed Income BoardBond codes, maturity dates, coupon rates, and published YTM.",
+    "url": "https://www.rse.rw/fixed-income-board"
+  },
+  {
+    "kind": "a",
+    "text": "RSE Bond MarketRecent closing prices, trading volume, and market value.",
+    "url": "https://www.rse.rw/bond-market"
+  },
+  {
+    "kind": "a",
+    "text": "BNR Money Market InstrumentsProspectuses, reopening notices, calendars, and auction results.",
+    "url": "https://www.bnr.rw/mminstruments"
+  },
+  {
+    "kind": "a",
+    "text": "RRA Income Tax LawsThe 2022 income-tax law and its 2023 and 2025 amendments.",
+    "url": "https://www.rra.gov.rw/en/taxes-fees/domestic-taxes/income-tax/about-income-tax"
+  },
+  {
+    "kind": "p",
+    "text": "Put the mechanics to work"
+  },
+  {
+    "kind": "h2",
+    "text": "Compare the lesson with live RSE listings, then model the cash flows."
+  },
+  {
+    "kind": "p",
+    "text": "The market table calculates an after-tax yield estimate, remaining maturity, price score, data confidence, and long-term strategy score. The simulator then shows how repeated purchases and coupon reinvestment may develop over time. Neither replaces a current executable quote or the official prospectus."
+  },
+  {
+    "kind": "a",
+    "text": "Open my portfolio"
+  },
+  {
+    "kind": "a",
+    "text": "Open the simulator"
+  },
+  {
+    "kind": "p",
+    "text": "Rwanda Treasury Bond Lab · Detailed educational material, analytical simulations, and private position tracking"
+  }
+]

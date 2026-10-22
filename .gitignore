@@ -1,0 +1,11 @@
+.gradle/
+.kotlin/
+**/build/
+local.properties
+.idea/workspace.xml
+.idea/caches/
+.DS_Store
+*.hprof
+.env
+.env.*
+!.env.example
