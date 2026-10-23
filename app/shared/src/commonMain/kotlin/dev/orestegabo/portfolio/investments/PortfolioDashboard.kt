@@ -187,12 +187,9 @@ private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, pri
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("Estimated net worth", Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = Color(0xFFE8E4D3))
-                        Surface(shape = RoundedCornerShape(8.dp), color = Color.White.copy(alpha = .1f), contentColor = Color(0xFFE8E4D3)) {
-                            Text(total.currency, Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall)
-                        }
                         IconButton(onClick = { showBasis = true }, modifier = Modifier.size(48.dp)) { Icon(Icons.Outlined.Info, "Valuation basis", tint = Color(0xFFE8E4D3), modifier = Modifier.size(20.dp)) }
                     }
-                    Text("RWF ${formatNumber(valuation.estimatedNetWorth)}", modifier = Modifier.semantics { contentDescription = money(valuation.estimatedNetWorth, total.currency) }, style = MaterialTheme.typography.headlineSmall,
+                    Text(money(valuation.estimatedNetWorth, total.currency), modifier = Modifier.semantics { contentDescription = money(valuation.estimatedNetWorth, total.currency) }, style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold, maxLines = 2)
                 }
                 HorizontalDivider(color = DashboardGold.copy(alpha = .2f))
@@ -211,7 +208,7 @@ private fun MoneyMetric(label: String, value: Double, currency: String, icon: an
     Column(modifier, verticalArrangement = Arrangement.spacedBy(7.dp)) {
         Icon(icon, null, Modifier.size(20.dp), tint = DashboardGold)
         Text(label, style = MaterialTheme.typography.labelSmall, minLines = 2, color = Color(0xFFDAD7C6))
-        Text("RWF ${formatNumber(value)}", modifier = Modifier.semantics { contentDescription = money(value, currency) },
+        Text(money(value, currency), modifier = Modifier.semantics { contentDescription = money(value, currency) },
             style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
     }
 }
@@ -229,7 +226,7 @@ private fun insightAccent(style: InsightStyle): Color {
 }
 
 @Composable
-private fun InsightCard(title: String, currency: String, style: InsightStyle, modifier: Modifier, content: @Composable ColumnScope.() -> Unit) {
+private fun InsightCard(title: String, style: InsightStyle, modifier: Modifier, content: @Composable ColumnScope.() -> Unit) {
     val dark = MaterialTheme.colorScheme.background.luminance() < .5f
     val accent = insightAccent(style)
     val palette = when (style) {
@@ -264,7 +261,6 @@ private fun InsightCard(title: String, currency: String, style: InsightStyle, mo
             Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                    Text(currency, style = MaterialTheme.typography.labelSmall, color = foreground.copy(alpha = .58f))
                 }
                 content()
             }
@@ -276,7 +272,7 @@ private fun InsightCard(title: String, currency: String, style: InsightStyle, mo
 private fun AllocationCard(total: CurrencyInvestment, modifier: Modifier) {
     val fraction = if (total.investedCash > 0) (total.shareCashCost / total.investedCash).toFloat().coerceIn(0f, 1f) else 0f
     val foreground = LocalContentColor.current
-    InsightCard("Cash allocation", total.currency, InsightStyle.ALLOCATION, modifier) {
+    InsightCard("Cash allocation", InsightStyle.ALLOCATION, modifier) {
         Row(Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
             Box(Modifier.size(112.dp).semantics { contentDescription = "Shares ${percent(fraction.toDouble())}, bonds ${percent(if (total.investedCash > 0) 1.0 - fraction else 0.0)} of cash cost" }, contentAlignment = Alignment.Center) {
                 Canvas(Modifier.fillMaxSize().padding(7.dp)) {
@@ -334,12 +330,12 @@ private fun CouponIncomeCard(
         .mapNotNull { it.terms()?.let { terms -> trackBond(terms, Today) } }
     val accent = insightAccent(InsightStyle.INCOME)
     val next = coupons.firstOrNull()
-    InsightCard("Coupon income", total.currency, InsightStyle.INCOME, modifier) {
+    InsightCard("Coupon income", InsightStyle.INCOME, modifier) {
         Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             listOf("Annual net" to total.netAnnualCoupon, "Accrued" to tracks.sumOf { it.accruedCoupon }).forEach { (label, amount) ->
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(label, style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current.copy(alpha = .68f))
-                    Text(formatNumber(amount), Modifier.semantics { contentDescription = money(amount, total.currency) },
+                    Text(money(amount, total.currency), Modifier.semantics { contentDescription = money(amount, total.currency) },
                         style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
             }
@@ -366,7 +362,7 @@ private fun CouponIncomeCard(
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Next coupon · ${next.date.year}", style = MaterialTheme.typography.labelSmall,
                         color = LocalContentColor.current.copy(alpha = .68f))
-                    Text(formatNumber(amount), Modifier.semantics { contentDescription = money(amount, total.currency) },
+                    Text(money(amount, total.currency), Modifier.semantics { contentDescription = money(amount, total.currency) },
                         style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
                 Icon(Icons.Outlined.ChevronRight, null, Modifier.size(20.dp), tint = accent)
