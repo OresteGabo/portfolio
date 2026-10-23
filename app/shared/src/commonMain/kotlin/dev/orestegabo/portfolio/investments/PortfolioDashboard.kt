@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.datetime.LocalDate
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import org.jetbrains.compose.resources.painterResource
@@ -37,7 +38,7 @@ private val DashboardGold = Color(0xFFECC75F)
 private val AllocationGreen = Color(0xFF739A87)
 
 @Composable
-fun PortfolioScreen(model: PortfolioModel, seeAll: () -> Unit, detail: (JsonRecord) -> Unit) {
+fun PortfolioScreen(model: PortfolioModel, seeAll: () -> Unit, openCalendar: (LocalDate) -> Unit, detail: (JsonRecord) -> Unit) {
     var kind by rememberSaveable { mutableStateOf("all") }
     var status by rememberSaveable { mutableStateOf("all") }
     val recentBonds = model.portfolio.recentBonds(Today)
@@ -59,7 +60,7 @@ fun PortfolioScreen(model: PortfolioModel, seeAll: () -> Unit, detail: (JsonReco
                         scope.launch { insights.animateScrollToItem((insights.firstVisibleItemIndex - 1).coerceAtLeast(0)) }
                     }) { Icon(Icons.Outlined.ChevronLeft, "Previous insight") }
                     IconButton(enabled = insights.canScrollForward, onClick = {
-                        scope.launch { insights.animateScrollToItem((insights.firstVisibleItemIndex + 1).coerceAtMost(summary.size * 3 - 1)) }
+                        scope.launch { insights.animateScrollToItem((insights.firstVisibleItemIndex + 1).coerceAtMost(summary.size * 2 - 1)) }
                     }) { Icon(Icons.Outlined.ChevronRight, "Next insight") }
                 }
                 BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -67,10 +68,9 @@ fun PortfolioScreen(model: PortfolioModel, seeAll: () -> Unit, detail: (JsonReco
                     LazyRow(state = insights, contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         summary.forEach { total ->
                             item(key = "allocation:${total.currency}") { AllocationCard(total, Modifier.width(cardWidth)) }
-                            item(key = "income:${total.currency}") { CouponIncomeCard(total, model.portfolio, Modifier.width(cardWidth)) }
-                            item(key = "next:${total.currency}") {
-                                val upcoming = payments.filter { it.date >= Today && it.record.text("currency") == total.currency }
-                                NextPaymentCard(upcoming, total.currency, Modifier.width(cardWidth))
+                            item(key = "income:${total.currency}") {
+                                val coupons = payments.filter { it.category == CalendarCategory.COUPON && it.date >= Today && it.record.text("currency") == total.currency }
+                                CouponIncomeCard(total, model.portfolio, coupons, Modifier.width(cardWidth), openCalendar)
                             }
                         }
                     }
@@ -192,7 +192,7 @@ private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, pri
                         }
                         IconButton(onClick = { showBasis = true }, modifier = Modifier.size(48.dp)) { Icon(Icons.Outlined.Info, "Valuation basis", tint = Color(0xFFE8E4D3), modifier = Modifier.size(20.dp)) }
                     }
-                    Text(formatNumber(valuation.estimatedNetWorth), modifier = Modifier.semantics { contentDescription = money(valuation.estimatedNetWorth, total.currency) }, style = MaterialTheme.typography.headlineLarge,
+                    Text("RWF ${formatNumber(valuation.estimatedNetWorth)}", modifier = Modifier.semantics { contentDescription = money(valuation.estimatedNetWorth, total.currency) }, style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold, maxLines = 2)
                 }
                 HorizontalDivider(color = DashboardGold.copy(alpha = .2f))
@@ -211,7 +211,7 @@ private fun MoneyMetric(label: String, value: Double, currency: String, icon: an
     Column(modifier, verticalArrangement = Arrangement.spacedBy(7.dp)) {
         Icon(icon, null, Modifier.size(20.dp), tint = DashboardGold)
         Text(label, style = MaterialTheme.typography.labelSmall, minLines = 2, color = Color(0xFFDAD7C6))
-        Text(formatNumber(value), modifier = Modifier.semantics { contentDescription = money(value, currency) },
+        Text("RWF ${formatNumber(value)}", modifier = Modifier.semantics { contentDescription = money(value, currency) },
             style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
     }
 }
@@ -323,57 +323,53 @@ private fun InsightIcon(icon: ImageVector, accent: Color) {
 }
 
 @Composable
-private fun IncomeMetric(label: String, amount: Double, currency: String, icon: ImageVector, accent: Color, modifier: Modifier) {
-    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        InsightIcon(icon, accent)
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Text(label, style = MaterialTheme.typography.bodyMedium, color = LocalContentColor.current.copy(alpha = .68f))
-            Text(money(amount, currency), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-private fun CouponIncomeCard(total: CurrencyInvestment, portfolio: PortfolioSnapshot, modifier: Modifier) {
+private fun CouponIncomeCard(
+    total: CurrencyInvestment,
+    portfolio: PortfolioSnapshot,
+    coupons: List<InvestmentCalendarEvent>,
+    modifier: Modifier,
+    openCalendar: (LocalDate) -> Unit,
+) {
     val tracks = portfolio.purchases.filter { it.text("currency") == total.currency && it.text("status") == "active" }
         .mapNotNull { it.terms()?.let { terms -> trackBond(terms, Today) } }
     val accent = insightAccent(InsightStyle.INCOME)
+    val next = coupons.firstOrNull()
     InsightCard("Coupon income", total.currency, InsightStyle.INCOME, modifier) {
-        IncomeMetric("Annual net coupon", total.netAnnualCoupon, total.currency, Icons.Outlined.Spa, accent, Modifier.weight(1f))
+        Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            listOf("Annual net" to total.netAnnualCoupon, "Accrued" to tracks.sumOf { it.accruedCoupon }).forEach { (label, amount) ->
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(label, style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current.copy(alpha = .68f))
+                    Text(formatNumber(amount), Modifier.semantics { contentDescription = money(amount, total.currency) },
+                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
         HorizontalDivider(color = accent.copy(alpha = .2f))
-        IncomeMetric("Accrued coupon", tracks.sumOf { it.accruedCoupon }, total.currency, Icons.Outlined.Savings, accent, Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun NextPaymentCard(events: List<InvestmentCalendarEvent>, currency: String, modifier: Modifier) {
-    val next = events.firstOrNull()
-    val accent = insightAccent(InsightStyle.PAYMENT)
-    InsightCard("Next payment", currency, InsightStyle.PAYMENT, modifier) {
         if (next == null) {
-            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 InsightIcon(Icons.Outlined.EventAvailable, accent)
-                Text("No upcoming payments", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text("No upcoming coupons", style = MaterialTheme.typography.bodyMedium)
             }
         } else {
-            val sameDay = events.filter { it.date == next.date }
-            Row(Modifier.weight(1f).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                Surface(shape = RoundedCornerShape(18.dp), color = accent.copy(alpha = .12f)) {
-                    Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            val amount = coupons.filter { it.date == next.date }.sumOf { it.amount ?: 0.0 }
+            Row(Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(14.dp))
+                .clickable(onClickLabel = "Open coupon in calendar") { openCalendar(next.date) }
+                .padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Surface(shape = RoundedCornerShape(14.dp), color = accent.copy(alpha = .12f)) {
+                    Column(Modifier.padding(horizontal = 12.dp, vertical = 7.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(next.date.monthLabel().take(3).uppercase(), style = MaterialTheme.typography.labelSmall, color = accent)
-                        Text(next.date.day.toString(), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = accent)
+                        Text(next.date.day.toString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = accent)
                     }
                 }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Text(money(sameDay.sumOf { it.amount ?: 0.0 }, currency), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text(if (sameDay.size == 1) next.title else "${sameDay.size} payments", maxLines = 2, overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current.copy(alpha = .68f))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Next coupon · ${next.date.year}", style = MaterialTheme.typography.labelSmall,
+                        color = LocalContentColor.current.copy(alpha = .68f))
+                    Text(formatNumber(amount), Modifier.semantics { contentDescription = money(amount, total.currency) },
+                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
-            }
-            HorizontalDivider(color = accent.copy(alpha = .2f))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("${next.date.day} ${next.date.monthLabel()} ${next.date.year}", style = MaterialTheme.typography.labelMedium)
-                Text("Expected", style = MaterialTheme.typography.labelMedium, color = accent)
+                Icon(Icons.Outlined.ChevronRight, null, Modifier.size(20.dp), tint = accent)
             }
         }
     }
