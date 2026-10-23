@@ -1,0 +1,40 @@
+<svg width="400" height="100" viewBox="0 0 400 100" xmlns="http://www.w3.org/2000/svg">
+    <rect width="400" height="100" rx="24" fill="#fff9ee" />
+
+    <defs>
+        <style>
+            .gabo-letter {
+            stroke: #6d5e0f;
+            stroke-width: 9;
+            stroke-linejoin: round;
+            stroke-linecap: round;
+            fill: none;
+            }
+            .gabo-dot {
+            fill: #6d5e0f;
+            }
+        </style>
+    </defs>
+
+    <path
+            d="M70 28 H42 L25 50 L42 72 H70 M58 50 H80"
+            class="gabo-letter"
+    />
+    <circle cx="80" cy="50" r="4.5" class="gabo-dot" />
+
+    <path
+            d="M142 72 L125 50 L142 28 H170 L187 50 L170 72 M142 50 H170"
+            class="gabo-letter"
+    />
+
+    <path
+            d="M220 28 H248 Q265 28 265 40 Q265 50 248 50 H220 V72 H248 Q265 72 265 60 Q265 50 248 50"
+            class="gabo-letter"
+    />
+
+    <path
+            d="M320 28 H348 L365 50 L348 72 H320 L303 50 L320 28 Z"
+            class="gabo-letter"
+    />
+
+</svg>
