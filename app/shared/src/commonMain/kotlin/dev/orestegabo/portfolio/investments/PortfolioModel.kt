@@ -28,6 +28,9 @@ class PortfolioModel(
     private var foreground = true
     var user by mutableStateOf<JsonRecord?>(null)
         private set
+    // Invited accounts use random UUIDv4 IDs. Environment-managed friends use UUIDv8.
+    val canDeleteAccount get() = user?.optBoolean("isOwner") == false &&
+        user?.text("id")?.matches(Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}")) == true
     var busy by mutableStateOf(false)
         private set
     var error by mutableStateOf<String?>(null)
@@ -280,6 +283,21 @@ class PortfolioModel(
             if (failure is ApiException && failure.status == 401) throw failure
             error("$success Could not refresh the portfolio. Tap Sync to update; do not submit it again.")
         }
+    }
+
+    fun deleteAccount(password: String) = action {
+        check(canDeleteAccount) { "Only invited accounts can be deleted here." }
+        val response = api.request("/api/bonds/auth/account", "DELETE", JsonRecord().put("password", password))
+        check(response.optBoolean("deleted")) { "Account deletion was not confirmed. Please try again." }
+        var credentialRemoved = true
+        try { vault?.delete(origin) }
+        catch (_: Exception) { credentialRemoved = false }
+        finally {
+            secureSignInEnabled = false; locked = false
+            api.clearSession(); clearPrivateData()
+        }
+        message = if (credentialRemoved) "Your account and its data have been deleted."
+            else "Your account has been deleted. Saved sign-in could not be cleared from this device."
     }
 
     fun logout() = action {
