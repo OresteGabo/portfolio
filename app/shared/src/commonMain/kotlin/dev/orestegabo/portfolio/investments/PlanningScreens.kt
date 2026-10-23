@@ -3,6 +3,8 @@ package dev.orestegabo.portfolio.investments
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.UploadFile
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -24,11 +26,29 @@ fun PdfImportButton(model: PortfolioModel, engine: InvestmentEngine, imported: (
         finally { engine.onProgress = {}; progress = "" }
     }
     Panel {
-        Text("Import a purchase PDF", fontWeight = FontWeight.Bold)
+        Text("Import from PDF", fontWeight = FontWeight.Bold)
         Text("Use a BNR bond result or RSE equity purchase contract note. We’ll detect the purchase type for you.", style = MaterialTheme.typography.bodySmall)
         if (progress.isNotBlank()) Text(progress, color = MaterialTheme.colorScheme.primary)
-        Button(enabled = !model.busy, onClick = ::choosePdf) { Text("Choose PDF") }
+        Button(enabled = !model.busy, onClick = ::choosePdf, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+            Icon(Icons.Outlined.UploadFile, null); Spacer(Modifier.width(8.dp)); Text(if (progress.isNotBlank()) "Reading PDF…" else "Choose purchase PDF")
+        }
         Text("The PDF and recognized text stay on this device. Review the extracted details before saving.", style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+fun PurchaseEntryScreen(model: PortfolioModel, engine: InvestmentEngine, imported: (JsonRecord) -> Unit, manualBond: () -> Unit, manualShares: () -> Unit) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+        item { PageTitle("New purchase", "Start with your PDF", "Select your broker’s document and we’ll fill in the purchase details for you.") }
+        item { PdfImportButton(model, engine, imported) }
+        item { Panel {
+            Text("Or enter manually", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Don’t have a PDF? You can still record a purchase yourself.", style = MaterialTheme.typography.bodySmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(onClick = manualBond, enabled = !model.busy, modifier = Modifier.weight(1f)) { Text("Bond") }
+                OutlinedButton(onClick = manualShares, enabled = !model.busy, modifier = Modifier.weight(1f)) { Text("Shares") }
+            }
+        } }
     }
 }
 

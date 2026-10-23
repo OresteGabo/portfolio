@@ -25,13 +25,13 @@ Kotlin 2.3.21 also avoids Kotlin 2.4 metadata errors in AGP 9.0’s bundled D8 c
 ## Native screens
 
 - **Portfolio:** authenticated bond and share purchases, separate currency totals, net coupon income, scheduled past coupons, accrued income, search, status filters, bond details, coupon schedule, add/edit/delete bonds, and add shares.
-- **PDF import:** select a BNR result or RSE equity purchase note, extract text/OCR locally, review warnings and every field, then explicitly save through the original API. PDFs are limited to 10 MB and 10 pages, matching the web importer.
+- **Add purchase → PDF import:** a prominent portfolio action opens PDF import first. Select a BNR result or RSE equity purchase note, extract text/OCR locally, automatically fill the bond/share form, review warnings and every field, then explicitly save through the original API. PDFs are limited to 10 MB and 10 pages, matching the web importer.
 - **Calendar:** the web app's complete published FY 2026/2027 issuance data, status and date-based alerts, recorded applications, and upcoming portfolio coupons. This schedule is bundled, just as it is hardcoded in the web app; it does not automatically acquire later BNR calendars.
 - **Documents:** authenticated library, search/category filters, full supplied facts/charges/flow/sections, and authenticated PDF export through the native document picker. Owner-only visibility follows the existing API.
 - **Stocks:** the same ten-company watchlist, source freshness/status, active holding valuations, purchase-cost comparison, saved daily history, and bond market results ranked by the API strategy score.
 - **Simulator:** original web calculation engine, contribution periods, one-time cash injections, allowed tenors, tenor coupon assumptions, fill and reinvestment rates, purchase charges, optional active RWF holdings, milestones, chart, and monthly results.
 - **Learn:** original web education text rendered into native reading blocks with search.
-- **Account:** server selection, sign-in, invitation-token registration, sign-out, owner account summaries and invitation management. Password setup and the full website remain accessible through explicit browser links; the browser has a separate session.
+- **Account tab:** profile, sign-out, persistent System/Light/Dark appearance, privacy information, owner account summaries and invitation management. Sign-in and invitation-token registration are shown before entering the app. Password setup and the full website remain accessible through explicit browser links; the browser has a separate session.
 
 All product screens, navigation, ViewModel state, API rules, JSON records, date/coupon calculations, formatting, and content are shared. Android's activity and iOS's SwiftUI wrapper only host `App()`. Native file pickers, PDF export, URL opening, sharing, preferences and HTTP engines are implemented behind platform interfaces. See [the architecture map](docs/ARCHITECTURE.md) for the exact boundaries.
 
@@ -39,9 +39,9 @@ The original calculation and purchase-parsing rules are bundled once for both pl
 
 ## API and privacy
 
-The client uses the existing `/api/bonds/` endpoints, sends the selected server's `Origin` header for writes, and retains the server's HttpOnly session cookie in a shared in-memory Ktor cookie jar. The Darwin transport disables native cookie persistence and caching. Passwords, investment records, PDFs, invitations, and session cookies are not persisted by the app. Sign in again after the process exits. Only the server origin is saved. Android backup is disabled. Exported PDFs are saved only where the user explicitly chooses.
+The client uses the existing `/api/bonds/` endpoints, sends the selected server's `Origin` header for writes, and retains the server's HttpOnly session cookie in a shared in-memory Ktor cookie jar. The Darwin transport disables native cookie persistence and caching. Passwords, investment records, PDFs, invitations, and session cookies are not persisted by the app. Sign in again after the process exits. The app saves only connection configuration and the theme preference. Connection details are not shown in the end-user interface. Android backup is disabled. Exported PDFs are saved only where the user explicitly chooses.
 
-The default server requires HTTPS. Debug builds allow HTTP for local development; release builds do not. For an Android emulator and a local web server use `http://10.0.2.2:3000` in Account. For the iPhone simulator use `http://localhost:3000`. Physical phones need a reachable HTTPS server (or a local development host in a debug build). For your web app's host-based route rewriting, configure a host reachable from the device and set `BONDS_APP_ORIGIN` consistently on that server. The selected origin must match the server's origin check. API errors appear visibly; the app never supplies fabricated holdings or market prices.
+The app connects to the configured production API automatically, without exposing a server editor. The default server requires HTTPS; release builds reject HTTP. Internal debug configuration still supports local emulator development and tests. API errors appear visibly; the app never supplies fabricated holdings or market prices.
 
 No backend or private web files were modified or copied. The app has no access to credentials in the web project's `.data` or environment files.
 

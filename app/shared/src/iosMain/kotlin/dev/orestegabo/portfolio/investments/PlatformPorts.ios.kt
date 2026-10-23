@@ -28,6 +28,8 @@ internal fun presentingController(): UIViewController {
 }
 @Composable
 actual fun rememberServerSettings(): ServerSettings = remember { object : ServerSettings {
+    override fun readTheme() = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.theme")
+    override fun writeTheme(theme: String) { NSUserDefaults.standardUserDefaults.setObject(theme, forKey = "portfolio.theme") }
     override fun readOrigin() = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.serverOrigin")
     override fun writeOrigin(origin: String) { NSUserDefaults.standardUserDefaults.setObject(origin, forKey = "portfolio.serverOrigin") }
 } }

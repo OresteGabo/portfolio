@@ -4,6 +4,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -214,20 +216,28 @@ fun HistoryGraph(values: List<Double>, title: String = "Saved closing prices") {
 }
 
 @Composable
-fun AccountScreen(model: PortfolioModel) {
-    var origin by rememberSaveable { mutableStateOf(model.origin) }
+fun AccountScreen(model: PortfolioModel, theme: String, changeTheme: (String) -> Unit) {
     var accounts by remember { mutableStateOf<JsonRecord?>(null) }
     var registration by remember { mutableStateOf<JsonRecord?>(null) }
     var inviteEmail by rememberSaveable { mutableStateOf("") }
     val actions = LocalNativeActions.current
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        item { PageTitle("Settings", "Your account", model.user?.text("email") ?: "Connect to your existing investment app.") }
+        item { PageTitle("Settings", "Your account", "Manage your profile, appearance, and preferences.") }
         item { Panel {
-            Text("Server connection", fontWeight = FontWeight.Bold)
-            Field("Server origin", origin, { origin = it }, helper = "For example https://bonds.orestegabo.dev")
-            Text("Changing server signs you out. Debug builds also allow HTTP for a local development server.", style = MaterialTheme.typography.bodySmall)
-            Button(onClick = { accounts = null; registration = null; model.connect(origin) }, enabled = !model.busy) { Text("Connect") }
-            if (model.user != null) OutlinedButton(enabled = !model.busy, onClick = model::logout) { Text("Sign out") }
+            Text(model.user?.text("email").orEmpty(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(if (model.user?.optBoolean("isOwner") == true) "Owner account" else "Personal account", style = MaterialTheme.typography.bodySmall)
+            OutlinedButton(enabled = !model.busy, onClick = model::logout, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.AutoMirrored.Filled.Logout, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Sign out")
+            }
+        } }
+        item { Panel {
+            Text("Appearance", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Choose a theme, or follow your device’s appearance.", style = MaterialTheme.typography.bodySmall)
+            ChoiceRow(listOf("System", "Light", "Dark"), theme.replaceFirstChar { it.uppercase() }) { changeTheme(it.lowercase()) }
+        } }
+        item { Panel {
+            Text("Privacy", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("PDF imports are read on your device. Review the filled details before saving a purchase to your account.", style = MaterialTheme.typography.bodySmall)
         } }
         if (model.user?.optBoolean("isOwner") == true) {
             item { Panel {
@@ -264,9 +274,9 @@ fun AccountScreen(model: PortfolioModel) {
 fun OnlineTools(model: PortfolioModel) {
     val actions = LocalNativeActions.current
     Panel {
-        Text("Connected web tools", fontWeight = FontWeight.Bold)
+        Text("Website & help", fontWeight = FontWeight.Bold)
         Text("Open your existing tools online. Your browser has its own sign-in session.", style = MaterialTheme.typography.bodySmall)
-        listOf("/portfolio" to "PDF import & full portfolio tools", "/simulator" to "Investment simulator", "/education" to "Bond education", "/create-password" to "Password setup").forEach { (path, title) ->
+        listOf("/portfolio" to "Open portfolio website", "/simulator" to "Investment simulator", "/education" to "Bond education", "/create-password" to "Password setup").forEach { (path, title) ->
             TextButton(onClick = { actions.openUrl(model.origin + path) }) { Text("$title ↗") }
         }
     }

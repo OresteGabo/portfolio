@@ -6,6 +6,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 interface ServerSettings {
     fun readOrigin(): String?
     fun writeOrigin(origin: String)
+    fun readTheme(): String? = null
+    fun writeTheme(theme: String) {}
 }
 interface NativeActions {
     suspend fun pickPdf(): ByteArray?

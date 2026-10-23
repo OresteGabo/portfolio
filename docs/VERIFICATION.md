@@ -38,3 +38,9 @@ xcodebuild -project app/iosApp/iosApp.xcodeproj -scheme iosApp \
 ## Limits
 
 Screenshots and import tests use synthetic records, not private account data. Real account login, private document downloads, broker-specific scanned PDFs, and production mutations were not exercised with the owner's credentials. Physical-device signing and deployment remain dependent on the existing Xcode signing setup. Owner account deletion and password-hash setup remain available on the original website; exact parity with every advanced web table control is not claimed.
+
+## Native branding and navigation follow-up
+
+The shared header now uses the original web Gabo mark, with Material icons for account/theme actions and a standard app bar/back button. The four bottom destinations use labeled Material icons with selected states. Secondary screens hide the root navigation bar. Heading sizes and sign-in spacing are compact, and colors follow the cream/olive logo. Android adaptive/legacy and iOS launcher artwork use the same mark; sources and regeneration instructions are in `branding/README.md`.
+
+Android debug assembly, lint and shared host tests passed; physical-iPhone Kotlin compilation and the Xcode simulator build passed. The [signed-in iPhone preview](screenshots/ios-material-navigation.png) uses a temporary local API with synthetic holdings. The preview process was restarted without its temporary server override and the mock server stopped afterward.

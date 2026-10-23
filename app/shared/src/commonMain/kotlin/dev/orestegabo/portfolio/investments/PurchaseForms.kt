@@ -26,7 +26,7 @@ private val bondFields = listOf(
 )
 
 @Composable
-fun PurchaseEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit) {
+fun PurchaseEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit, imported: JsonRecord? = null) {
     val id = existing.text("id").takeIf { it.isNotBlank() }
     val values = remember(existing) {
         mutableStateMapOf<String, String>().apply {
@@ -46,6 +46,7 @@ fun PurchaseEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit
     var confidence by rememberSaveable { mutableStateOf(existing.text("scheduleConfidence").ifBlank { "estimated" }) }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { TextButton(onClick = back) { Text("← Cancel") }; PageTitle("Record keeping", if (id == null) "Add bond purchase" else "Edit purchase", "Save the broker-confirmed terms. This updates the same portfolio as your web app.") }
+        imported?.let { item { PdfReviewNotice(it) } }
         item { Text("Instrument", fontWeight = FontWeight.Bold); ChoiceRow(listOf("treasury", "government", "corporate", "municipal", "other"), instrument) { instrument = it } }
         item { Text("Market", fontWeight = FontWeight.Bold); ChoiceRow(listOf("primary", "secondary", "other"), market) { market = it } }
         bondFields.forEach { field -> item {
@@ -104,12 +105,13 @@ private val equityFields = listOf(
 )
 
 @Composable
-fun EquityEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit) {
-    val values = remember { mutableStateMapOf<String, String>().apply { equityFields.forEach { this[it.key] = if (existing.has(it.key)) existing.text(it.key) else it.initial } } }
+fun EquityEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit, imported: JsonRecord? = null) {
+    val values = remember(existing) { mutableStateMapOf<String, String>().apply { equityFields.forEach { this[it.key] = if (existing.has(it.key)) existing.text(it.key) else it.initial } } }
     val gross = (values["shares"]?.toDoubleOrNull() ?: 0.0) * (values["pricePerShare"]?.toDoubleOrNull() ?: 0.0)
     val fees = listOf("brokerageCommission", "rseTransactionFee", "csdTransactionLevy", "cmaTransactionFee").sumOf { values[it]?.toDoubleOrNull() ?: 0.0 }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { TextButton(onClick = back) { Text("← Cancel") }; PageTitle("Record keeping", "Add share purchase", "Record the details from your RSE purchase contract note.") }
+        imported?.let { item { PdfReviewNotice(it) } }
         equityFields.forEach { field -> item { Field(field.label, values[field.key].orEmpty(), { values[field.key] = it }, if (field.numeric) KeyboardType.Decimal else KeyboardType.Text) } }
         item { Panel { Fact("Gross consideration", money(gross)); Fact("Total charges", money(fees)); Fact("Net amount payable", money(gross + fees)) } }
         item { Button(enabled = !model.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), onClick = {
@@ -127,4 +129,13 @@ fun EquityEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit) 
             }.onFailure { model.error = it.message ?: "Check the share details." }
         }) { Text("Save share purchase") } }
     }
+}
+
+@Composable
+private fun PdfReviewNotice(review: JsonRecord) = Panel {
+    Text("Filled from your PDF", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+    Text("Review the extracted dates, amounts, and fees below. Nothing is saved until you confirm.", style = MaterialTheme.typography.bodySmall)
+    if (review.optBoolean("usedOcr")) Text("Text recognition was used. Check every field carefully.", style = MaterialTheme.typography.bodySmall)
+    review.optJSONArray("warnings")?.let { warnings -> (0 until warnings.length()).forEach { Text(warnings.getString(it), style = MaterialTheme.typography.bodySmall) } }
+    review.optJSONArray("missingFields")?.let { missing -> if (missing.length() > 0) Text("Please complete: " + (0 until missing.length()).joinToString { missing.getString(it) }, style = MaterialTheme.typography.bodySmall) }
 }
