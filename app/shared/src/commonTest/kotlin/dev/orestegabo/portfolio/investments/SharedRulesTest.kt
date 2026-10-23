@@ -4,7 +4,12 @@ import kotlin.test.*
 class SharedRulesTest {
     @Test fun formattingIsIdenticalWithoutPlatformFormatters() {
         assertEquals("RWF 1,000,000", money(1_000_000.0))
-        assertEquals("RWF 340,728.5", money(340728.5))
+        assertEquals("RWF 340,728", money(340728.5))
+        assertEquals("RWF 100", money(100.99))
+        assertEquals("RWF 0", money(.99))
+        assertEquals("RWF −101", money(-100.01))
+        assertEquals("USD 100.99", money(100.99, "USD"))
+        assertEquals("RWF Unavailable", money(Double.NaN))
         assertEquals("11.5%", percent(.115))
         assertEquals("RWF −100", money(-100.0))
         assertEquals("Unavailable", formatNumber(Double.NaN))
