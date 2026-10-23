@@ -137,22 +137,21 @@ fun StocksScreen(model: PortfolioModel) {
                     }
                 }
             } }
-            val positions = model.portfolio.sharePositions(Today)
+            val positions = model.portfolio.valuedShares(Today, model.quotes)
             item { Text("Your holdings", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
             if (positions.isEmpty() && !model.busy) item {
                 EmptyState("No active share holdings", EmptyArtwork.SHARES, compact = true)
             }
-            items(positions) { position ->
+            items(positions) { valuation ->
+                val position = valuation.position
                 val shares = position.shares
                 val cost = position.cashCost
-                val quote = quoteRows.find { it.text("ticker") == position.ticker }
                 Panel(Modifier.clickable { ticker = position.ticker.takeIf { value -> watchlist.any { it.first == value } } ?: ticker }) {
                     Text("${position.ticker} · ${shares.toLong()} shares", fontWeight = FontWeight.Bold)
                     Fact("Cost", money(cost, position.currency))
-                    if (quote != null && position.currency == "RWF") {
-                        val value = shares * quote.optDouble("closing", 0.0)
-                        Fact("Market value", money(value)); Fact("Gain / loss", money(value - cost))
-                    }
+                    Fact("Estimated value", money(valuation.estimatedValue, position.currency))
+                    valuation.gainLoss?.let { Fact("Gain / loss", money(it, position.currency)) }
+                    if (valuation.closingPrice == null) Text("Purchase cost used", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             item { Text("Watchlist", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }

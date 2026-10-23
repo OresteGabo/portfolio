@@ -21,6 +21,8 @@ class PortfolioModelTest {
         var equityWrites = 0
         var equitySaved = false
         var updatedBonds = false
+        var failQuotes = false
+        var quotePrice = 400
         val settings = Settings()
         val store = ViewModelStore()
     }
@@ -38,6 +40,8 @@ class PortfolioModelTest {
                             if (request.method == HttpMethod.Post) { scenario.equityWrites++; scenario.equitySaved = true }
                             respond(if (scenario.equitySaved) """{"holdings":[{"id":"bk-purchase","ticker":"BOK","securityName":"BK","currency":"RWF","status":"active","tradeDate":"2026-01-01","shares":100,"netAmountPayable":36500}]}""" else """{"holdings":[]}""")
                         }
+                        "/api/bonds/rse/quotes" -> if (scenario.failQuotes) respond("""{"error":"Prices unavailable"}""", HttpStatusCode.ServiceUnavailable)
+                            else respond("""{"source":{"publishedAt":"2026-01-01","stale":false},"quotes":[{"ticker":"BOK","closing":${scenario.quotePrice}}]}""")
                         "/api/bonds/documents" -> if (scenario.failDocuments) respond("""{"error":"Unavailable"}""", HttpStatusCode.ServiceUnavailable) else respond("""{"documents":[]}""")
                         else -> respond("{}")
                     }
@@ -134,4 +138,34 @@ class PortfolioModelTest {
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
 
+
+    @Test fun quotesLoadWithThePortfolioAndOptionalFailuresPreservePurchasesAndLastKnownPrices() = runTest {
+        val scenario = Scenario().apply { equitySaved = true; failQuotes = true }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle()
+            assertNotNull(model.user)
+            assertEquals(1, model.holdings.size)
+            assertTrue(model.quoteRefreshFailed)
+            assertNull(model.error)
+            scenario.failQuotes = false
+            model.refresh()
+            advanceUntilIdle()
+            assertEquals(400.0, model.quotes?.rows("quotes")?.single()?.optDouble("closing"))
+            assertFalse(model.quoteRefreshFailed)
+            scenario.failQuotes = true
+            model.refresh()
+            advanceUntilIdle()
+            assertEquals(1, model.holdings.size)
+            assertEquals(400.0, model.quotes?.rows("quotes")?.single()?.optDouble("closing"))
+            assertTrue(model.quoteRefreshFailed)
+            assertNull(model.error)
+            scenario.failQuotes = false
+            scenario.quotePrice = 500
+            model.refresh()
+            advanceUntilIdle()
+            assertEquals(500.0, model.quotes?.rows("quotes")?.single()?.optDouble("closing"))
+            assertFalse(model.quoteRefreshFailed)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
 }

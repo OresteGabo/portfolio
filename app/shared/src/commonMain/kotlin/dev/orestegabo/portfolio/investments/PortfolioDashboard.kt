@@ -41,12 +41,14 @@ fun PortfolioScreen(model: PortfolioModel, detail: (JsonRecord) -> Unit) {
     var kind by rememberSaveable { mutableStateOf("all") }
     var status by rememberSaveable { mutableStateOf("all") }
     val summary = model.portfolio.summary(Today)
+    val valuation = model.portfolio.valuation(Today, model.quotes)
     val insights = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val payments = remember(model.portfolio) { investmentCalendarEvents(emptyList(), model.portfolio) }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 108.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        item { PortfolioHero(summary, model.busy, model::refresh) }
+        item { PortfolioHero(valuation, model.busy, model.quoteRefreshFailed || model.quotes?.optJSONObject("source")?.optBoolean("stale") == true,
+            model.quotes?.optJSONObject("source")?.text("publishedAt").orEmpty().take(10), model::refresh) }
         if (summary.isNotEmpty()) item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -104,7 +106,7 @@ fun PortfolioScreen(model: PortfolioModel, detail: (JsonRecord) -> Unit) {
 }
 
 @Composable
-private fun PortfolioHero(totals: List<CurrencyInvestment>, busy: Boolean, refresh: () -> Unit) {
+private fun PortfolioHero(totals: List<CurrencyValuation>, busy: Boolean, stale: Boolean, priceDate: String, refresh: () -> Unit) {
     val background = MaterialTheme.colorScheme.background
     Box(Modifier.fillMaxWidth()) {
         Box(Modifier.fillMaxWidth().height(300.dp)) {
@@ -129,7 +131,7 @@ private fun PortfolioHero(totals: List<CurrencyInvestment>, busy: Boolean, refre
             }
             if (totals.isEmpty()) {
                 Spacer(Modifier.height(46.dp))
-            } else totals.forEach { total -> PortfolioMoneyCard(total) }
+            } else totals.forEach { total -> PortfolioMoneyCard(total, stale, priceDate) }
         }
     }
 }
@@ -155,21 +157,38 @@ private fun ImigongoMotif(modifier: Modifier, color: Color) {
 }
 
 @Composable
-private fun PortfolioMoneyCard(total: CurrencyInvestment) {
+private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, priceDate: String) {
+    val total = valuation.cost
+    var showBasis by remember { mutableStateOf(false) }
+    if (showBasis) AlertDialog(onDismissRequest = { showBasis = false },
+        title = { Text("About this estimate") },
+        text = { Text("Tracked investments only. Bonds use principal value; shares use the latest available RSE closing price. Unpriced shares use purchase cash cost. Cash balances, liabilities, dividends and selling fees are excluded. Annual coupons are shown separately.") },
+        confirmButton = { TextButton(onClick = { showBasis = false }) { Text("Done") } })
     Surface(shape = RoundedCornerShape(28.dp), color = Color.Transparent, contentColor = Color.White,
         border = BorderStroke(1.dp, DashboardGold.copy(alpha = .24f))) {
         Box(Modifier.background(Brush.linearGradient(listOf(Color(0xF02E321C), Color(0xF24D4117), Color(0xFA20251B))))) {
             ImigongoMotif(Modifier.align(Alignment.CenterEnd).size(200.dp).offset(x = 75.dp), DashboardGold.copy(alpha = .075f))
             Column(Modifier.fillMaxWidth().padding(22.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Total cash cost", style = MaterialTheme.typography.labelLarge, color = Color(0xFFE8E4D3))
-                    Text(money(total.investedCash, total.currency), style = MaterialTheme.typography.headlineLarge,
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Estimated net worth", Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = Color(0xFFE8E4D3))
+                        IconButton(onClick = { showBasis = true }, modifier = Modifier.size(48.dp)) { Icon(Icons.Outlined.Info, "Valuation basis", tint = Color(0xFFE8E4D3), modifier = Modifier.size(20.dp)) }
+                    }
+                    Text(money(valuation.estimatedNetWorth, total.currency), style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold, maxLines = 2)
                 }
+                val priceLabel = when {
+                    valuation.unpricedShares > 0 && valuation.pricedShares == 0 -> "Shares at purchase cost"
+                    valuation.unpricedShares > 0 -> "Some shares at purchase cost"
+                    valuation.pricedShares > 0 -> if (stale) "Cached closing prices" else "Latest closing prices"
+                    else -> "Bonds at principal value"
+                }
+                Text(priceLabel + if (valuation.pricedShares > 0 && calendarDate(priceDate) != null) " · $priceDate" else "",
+                    style = MaterialTheme.typography.labelSmall, color = Color(0xFFDAD7C6))
                 HorizontalDivider(color = DashboardGold.copy(alpha = .2f))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     MoneyMetric("Bond principal", money(total.bondFaceValue, total.currency), Icons.Outlined.AccountBalance, Modifier.weight(1f))
-                    MoneyMetric("RSE equity cost", money(total.shareCashCost, total.currency), Icons.Outlined.BarChart, Modifier.weight(1f))
+                    MoneyMetric("RSE equity value", money(valuation.shareValue, total.currency), Icons.Outlined.BarChart, Modifier.weight(1f))
                     MoneyMetric("Annual net coupon", money(total.netAnnualCoupon, total.currency), Icons.Outlined.Percent, Modifier.weight(1f))
                 }
             }
@@ -266,6 +285,11 @@ private fun AllocationCard(total: CurrencyInvestment, modifier: Modifier) {
                 AllocationLegend("Shares", total.shareCashCost, total.currency, DashboardGold)
                 AllocationLegend("Bonds", total.bondCashCost, total.currency, AllocationGreen)
             }
+        }
+        HorizontalDivider(color = insightAccent(InsightStyle.ALLOCATION).copy(alpha = .2f))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Total cash cost", style = MaterialTheme.typography.labelMedium)
+            Text(money(total.investedCash, total.currency), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
         }
     }
 }

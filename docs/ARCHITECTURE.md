@@ -82,3 +82,9 @@ Shared sign-in invokes its transient `onAuthenticated` callback only after a suc
 The insight cards use the same `PortfolioSnapshot` and dated calendar events as the rest of the app: cash-cost allocation by currency, annual net/accrued coupons, and the next expected payment(s) on a date. Currencies are kept separate. These are record-based amounts; the AI reference’s performance chart/gain figures are not reused. Carousel arrows supplement touch scrolling and expose labeled actions to accessibility.
 
 `InvestmentLogo.kt` maps known symbols to supplied brand resources and provides a text fallback. `PortfolioPurchaseTiles.kt` uses BNR for bonds and issuer logos for shares without tinting the marks; Stocks watchlist rows share the same component. Asset origins are recorded in `ASSETS.md`. SwiftUI observes the existing `portfolio.theme` preference so native iOS appearance follows the app’s theme selection without introducing a second setting.
+
+### Estimated investment net worth
+
+`PortfolioValuation.kt` is the shared valuation source for Portfolio and Stocks. It combines saved active bond principal with active share positions valued at available positive, finite RWF closing prices. Quotes never reprice non-RWF holdings; missing/invalid/future-dated quotes fall back to each position’s purchase cash cost and are counted for UI disclosure. Annual coupon income is not capitalized into net worth. Cash balances and liabilities are not tracked by this estimate. Cash allocation continues to use saved purchase cash cost, including fees.
+
+Private-data refresh also fetches optional equity quotes when active shares exist, so Portfolio values update without opening Stocks. Optional quote failures preserve the saved snapshot and any last-known prices. The header shows quote date, cached-price status or purchase-cost fallback, with a tap-to-read valuation basis. Existing quote state is shared rather than introducing another value cache.

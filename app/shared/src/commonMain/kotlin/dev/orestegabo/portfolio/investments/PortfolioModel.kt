@@ -41,6 +41,8 @@ class PortfolioModel(
         private set
     var quotes by mutableStateOf<JsonRecord?>(null)
         private set
+    var quoteRefreshFailed by mutableStateOf(false)
+        private set
     var calendar by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
     var education by mutableStateOf<List<JsonRecord>>(emptyList())
@@ -203,12 +205,29 @@ class PortfolioModel(
         val holdings = api.request("/api/bonds/equities").rows("holdings")
         val documents = api.request("/api/bonds/documents").rows("documents")
         portfolio = PortfolioSnapshot(purchases, holdings, documents)
+        if (portfolio.activeShares(Today).isNotEmpty()) refreshEquityQuotes()
+    }
+
+    // Prices enrich the saved snapshot. An optional quote failure must not hide saved purchases.
+    private suspend fun refreshEquityQuotes() {
+        try {
+            val latest = api.request("/api/bonds/rse/quotes?kind=equities")
+            if (latest.rows("quotes").isNotEmpty()) {
+                quotes = latest
+                quoteRefreshFailed = latest.optJSONObject("source")?.text("status") == "error"
+            } else {
+                quoteRefreshFailed = true
+            }
+        } catch (failure: CancellationException) { throw failure }
+        catch (_: Exception) { quoteRefreshFailed = true }
     }
 
     fun refresh() = action { loadPrivateData(); message = "Portfolio updated from your server." }
     fun loadMarket(refresh: Boolean = false) = action {
         market = api.request("/api/bonds/rse/market" + if (refresh) "?refresh=1" else "")
-        quotes = api.request("/api/bonds/rse/quotes?kind=equities" + if (refresh) "&refresh=1" else "")
+        val latest = api.request("/api/bonds/rse/quotes?kind=equities" + if (refresh) "&refresh=1" else "")
+        if (latest.rows("quotes").isNotEmpty()) { quotes = latest; quoteRefreshFailed = false }
+        else quoteRefreshFailed = true
     }
 
     fun savePurchase(purchase: JsonRecord, id: String?, completed: () -> Unit) = action {
@@ -254,5 +273,6 @@ class PortfolioModel(
         portfolio = PortfolioSnapshot()
         market = null
         quotes = null
+        quoteRefreshFailed = false
     }
 }

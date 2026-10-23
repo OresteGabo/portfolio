@@ -98,7 +98,7 @@ fun SharePurchaseTile(holding: JsonRecord) {
     var expanded by rememberSaveable(holding.text("id")) { mutableStateOf(false) }
     val currency = holding.text("currency")
     PurchaseTile(listOf(holding.text("securityName"), holding.text("ticker")).filter { it.isNotBlank() }.joinToString(" · "),
-        "${holding.text("shares")} shares · ${money(holding.optDouble("netAmountPayable", 0.0), currency)}",
+        "${holding.text("shares")} shares · Cost ${money(holding.optDouble("netAmountPayable", 0.0), currency)}",
         expanded, { expanded = !expanded }, logo = { InvestmentLogo(ticker = holding.text("ticker")) }) {
         listOf("ticker" to "Ticker", "isin" to "ISIN", "exchange" to "Exchange", "currency" to "Currency",
             "status" to "Status", "tradeDate" to "Trade date", "settlementDate" to "Settlement", "shares" to "Shares",
