@@ -64,6 +64,7 @@ fun JsonRecord.terms(): BondTerms? = runCatching {
 @Composable
 fun InvestmentApp(model: PortfolioModel) {
     var tab by rememberSaveable { mutableStateOf("Portfolio") }
+    var calendarFocus by rememberSaveable { mutableStateOf<String?>(null) }
     var investmentHistory by rememberSaveable { mutableStateOf(false) }
     var detail by remember { mutableStateOf<JsonRecord?>(null) }
     var editor by remember { mutableStateOf<JsonRecord?>(null) }
@@ -79,7 +80,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var theme by rememberSaveable { mutableStateOf(preferences.readTheme()?.takeIf { it in listOf("system", "light", "dark") } ?: "system") }
     val dark = when (theme) { "light" -> false; "dark" -> true; else -> systemDark }
     LaunchedEffect(model.user) {
-        if (model.user == null) { investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; newPurchase = false; simulator = false; education = false }
+        if (model.user == null) { calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; newPurchase = false; simulator = false; education = false }
     }
     fun imported(review: JsonRecord) {
         importReview = review
@@ -169,8 +170,9 @@ fun InvestmentApp(model: PortfolioModel) {
                     education -> EducationScreen(model) { education = false }
                     detail != null -> PurchaseDetails(model, detail!!, { detail = null }, { editor = detail; detail = null })
                     investmentHistory -> InvestmentHistoryScreen(model) { detail = it }
-                    tab == "Portfolio" -> PortfolioScreen(model, seeAll = { investmentHistory = true }) { importReview = null; detail = it }
-                    tab == "Calendar" -> CalendarScreen(model)
+                    tab == "Portfolio" -> PortfolioScreen(model, seeAll = { investmentHistory = true },
+                        openCalendar = { date -> calendarFocus = date.toString(); tab = "Calendar" }) { importReview = null; detail = it }
+                    tab == "Calendar" -> CalendarScreen(model, initialDate = calendarFocus?.let(::calendarDate))
                     tab == "Documents" -> DocumentsScreen(model)
                     tab == "Stocks" -> StocksScreen(model)
                 }
