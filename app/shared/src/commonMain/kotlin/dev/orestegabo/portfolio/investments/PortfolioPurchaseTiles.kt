@@ -29,7 +29,7 @@ private fun PurchaseTile(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .3f))) {
         Column {
             ListItem(
-                headlineContent = { Text(title, maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold) },
+                headlineContent = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold) },
                 supportingContent = { Text(subtitle, style = MaterialTheme.typography.bodySmall) },
                 leadingContent = logo,
                 trailingContent = { Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null) },
@@ -40,6 +40,7 @@ private fun PurchaseTile(
                 Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     HorizontalDivider()
+                    Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     content()
                 }
             }

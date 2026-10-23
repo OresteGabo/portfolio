@@ -20,6 +20,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -184,16 +186,58 @@ private fun MoneyMetric(label: String, value: String, icon: androidx.compose.ui.
     }
 }
 
+private enum class InsightStyle { ALLOCATION, INCOME, PAYMENT }
+
 @Composable
-private fun InsightCard(title: String, currency: String, modifier: Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Surface(modifier.heightIn(min = 228.dp), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .35f))) {
-        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                Text(currency, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun insightAccent(style: InsightStyle): Color {
+    val dark = MaterialTheme.colorScheme.background.luminance() < .5f
+    return when (style) {
+        InsightStyle.ALLOCATION -> if (dark) DashboardGold else Color(0xFF9A731B)
+        InsightStyle.INCOME -> if (dark) Color(0xFFD5CC7D) else Color(0xFF63732E)
+        InsightStyle.PAYMENT -> if (dark) Color(0xFFACCECB) else Color(0xFF386D71)
+    }
+}
+
+@Composable
+private fun InsightCard(title: String, currency: String, style: InsightStyle, modifier: Modifier, content: @Composable ColumnScope.() -> Unit) {
+    val dark = MaterialTheme.colorScheme.background.luminance() < .5f
+    val accent = insightAccent(style)
+    val palette = when (style) {
+        InsightStyle.ALLOCATION -> if (dark) listOf(Color(0xFF303021), Color(0xFF1C2119)) else listOf(Color(0xFFF8F0D8), Color(0xFFF3F5EC))
+        InsightStyle.INCOME -> if (dark) listOf(Color(0xFF303025), Color(0xFF20251A)) else listOf(Color(0xFFF1F1D9), Color(0xFFE8F0E3))
+        InsightStyle.PAYMENT -> if (dark) listOf(Color(0xFF263334), Color(0xFF1B2423)) else listOf(Color(0xFFE4F0EB), Color(0xFFF2F0DF))
+    }
+    val foreground = if (dark) Color(0xFFF4F1E6) else Color(0xFF252C24)
+    // One explicit shared height, scaled for accessibility, keeps every carousel edge aligned.
+    val height = 236.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)
+    Surface(modifier.height(height), shape = RoundedCornerShape(26.dp), color = Color.Transparent, contentColor = foreground,
+        border = BorderStroke(1.dp, accent.copy(alpha = if (dark) .2f else .16f))) {
+        Box(Modifier.background(Brush.linearGradient(palette))) {
+            Canvas(Modifier.matchParentSize().clipToBounds()) {
+                val center = Offset(size.width * .97f, size.height * .12f)
+                drawCircle(Brush.radialGradient(listOf(accent.copy(alpha = .14f), Color.Transparent), center = center,
+                    radius = size.width * .8f), radius = size.width * .8f, center = center)
+                if (style == InsightStyle.PAYMENT) {
+                    for (index in 0..3) {
+                        val path = Path().apply {
+                            moveTo(size.width * .45f, size.height + index * 18.dp.toPx())
+                            cubicTo(size.width * .6f, size.height * .3f, size.width * .9f, size.height * 1.1f,
+                                size.width * 1.1f, size.height * .35f + index * 14.dp.toPx())
+                        }
+                        drawPath(path, accent.copy(alpha = .08f), style = Stroke(1.dp.toPx()))
+                    }
+                } else {
+                    for (index in 0..3) drawCircle(accent.copy(alpha = .055f), size.width * (.3f + index * .1f),
+                        Offset(size.width * 1.02f, size.height * .95f), style = Stroke(1.dp.toPx()))
+                }
             }
-            content()
+            Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text(currency, style = MaterialTheme.typography.labelSmall, color = foreground.copy(alpha = .58f))
+                }
+                content()
+            }
         }
     }
 }
@@ -201,16 +245,16 @@ private fun InsightCard(title: String, currency: String, modifier: Modifier, con
 @Composable
 private fun AllocationCard(total: CurrencyInvestment, modifier: Modifier) {
     val fraction = if (total.investedCash > 0) (total.shareCashCost / total.investedCash).toFloat().coerceIn(0f, 1f) else 0f
-    val ringBackground = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .25f)
-    InsightCard("Cash allocation", total.currency, modifier) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+    val foreground = LocalContentColor.current
+    InsightCard("Cash allocation", total.currency, InsightStyle.ALLOCATION, modifier) {
+        Row(Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
             Box(Modifier.size(112.dp).semantics { contentDescription = "Shares ${percent(fraction.toDouble())}, bonds ${percent(if (total.investedCash > 0) 1.0 - fraction else 0.0)} of cash cost" }, contentAlignment = Alignment.Center) {
                 Canvas(Modifier.fillMaxSize().padding(7.dp)) {
                     val stroke = Stroke(13.dp.toPx(), cap = StrokeCap.Butt)
-                    drawArc(ringBackground, -90f, 360f, false, style = stroke)
+                    drawArc(foreground.copy(alpha = .08f), -90f, 360f, false, style = stroke)
                     if (total.investedCash > 0) {
                         drawArc(AllocationGreen, -90f, 360f, false, style = stroke)
-                        drawArc(DashboardGold, -90f, fraction * 360f, false, style = stroke)
+                        drawArc(Brush.sweepGradient(listOf(DashboardGold, Color(0xFFF6DC87), DashboardGold)), -90f, fraction * 360f, false, style = stroke)
                     }
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -218,7 +262,7 @@ private fun AllocationCard(total: CurrencyInvestment, modifier: Modifier) {
                     Text(if (total.investedCash <= 0) "No cost" else if (fraction >= .5f) "Shares" else "Bonds", style = MaterialTheme.typography.labelSmall)
                 }
             }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 AllocationLegend("Shares", total.shareCashCost, total.currency, DashboardGold)
                 AllocationLegend("Bonds", total.bondCashCost, total.currency, AllocationGreen)
             }
@@ -227,12 +271,30 @@ private fun AllocationCard(total: CurrencyInvestment, modifier: Modifier) {
 }
 
 @Composable private fun AllocationLegend(label: String, cost: Double, currency: String, color: Color) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Canvas(Modifier.size(7.dp)) { drawCircle(color) }
-            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(label, style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current.copy(alpha = .65f))
         }
-        Text(money(cost, currency), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+        Text(money(cost, currency), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
+private fun InsightIcon(icon: ImageVector, accent: Color) {
+    Surface(shape = RoundedCornerShape(18.dp), color = accent.copy(alpha = .12f)) {
+        Icon(icon, null, Modifier.padding(13.dp).size(25.dp), tint = accent)
+    }
+}
+
+@Composable
+private fun IncomeMetric(label: String, amount: Double, currency: String, icon: ImageVector, accent: Color, modifier: Modifier) {
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        InsightIcon(icon, accent)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = LocalContentColor.current.copy(alpha = .68f))
+            Text(money(amount, currency), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        }
     }
 }
 
@@ -240,27 +302,44 @@ private fun AllocationCard(total: CurrencyInvestment, modifier: Modifier) {
 private fun CouponIncomeCard(total: CurrencyInvestment, portfolio: PortfolioSnapshot, modifier: Modifier) {
     val tracks = portfolio.purchases.filter { it.text("currency") == total.currency && it.text("status") == "active" }
         .mapNotNull { it.terms()?.let { terms -> trackBond(terms, Today) } }
-    InsightCard("Coupon income", total.currency, modifier) {
-        Icon(Icons.Outlined.Savings, null, tint = MaterialTheme.colorScheme.primary)
-        Text(money(total.netAnnualCoupon, total.currency), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Text("Annual net coupon", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Fact("Accrued coupon", money(tracks.sumOf { it.accruedCoupon }, total.currency))
+    val accent = insightAccent(InsightStyle.INCOME)
+    InsightCard("Coupon income", total.currency, InsightStyle.INCOME, modifier) {
+        IncomeMetric("Annual net coupon", total.netAnnualCoupon, total.currency, Icons.Outlined.Spa, accent, Modifier.weight(1f))
+        HorizontalDivider(color = accent.copy(alpha = .2f))
+        IncomeMetric("Accrued coupon", tracks.sumOf { it.accruedCoupon }, total.currency, Icons.Outlined.Savings, accent, Modifier.weight(1f))
     }
 }
 
 @Composable
 private fun NextPaymentCard(events: List<InvestmentCalendarEvent>, currency: String, modifier: Modifier) {
     val next = events.firstOrNull()
-    InsightCard("Next payment", currency, modifier) {
-        if (next == null) EmptyState("No upcoming payments", EmptyArtwork.CALENDAR, compact = true, framed = false)
-        else {
+    val accent = insightAccent(InsightStyle.PAYMENT)
+    InsightCard("Next payment", currency, InsightStyle.PAYMENT, modifier) {
+        if (next == null) {
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                InsightIcon(Icons.Outlined.EventAvailable, accent)
+                Text("No upcoming payments", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            }
+        } else {
             val sameDay = events.filter { it.date == next.date }
-            Icon(Icons.Outlined.EventAvailable, null, tint = MaterialTheme.colorScheme.primary)
-            Text(money(sameDay.sumOf { it.amount ?: 0.0 }, currency), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text("${next.date.day} ${next.date.monthLabel()} ${next.date.year}", style = MaterialTheme.typography.titleSmall)
-            Text(if (sameDay.size == 1) next.title else "${sameDay.size} payments", maxLines = 1, overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Expected · confirm receipt", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(Modifier.weight(1f).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Surface(shape = RoundedCornerShape(18.dp), color = accent.copy(alpha = .12f)) {
+                    Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(next.date.monthLabel().take(3).uppercase(), style = MaterialTheme.typography.labelSmall, color = accent)
+                        Text(next.date.day.toString(), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = accent)
+                    }
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text(money(sameDay.sumOf { it.amount ?: 0.0 }, currency), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(if (sameDay.size == 1) next.title else "${sameDay.size} payments", maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current.copy(alpha = .68f))
+                }
+            }
+            HorizontalDivider(color = accent.copy(alpha = .2f))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("${next.date.day} ${next.date.monthLabel()} ${next.date.year}", style = MaterialTheme.typography.labelMedium)
+                Text("Expected", style = MaterialTheme.typography.labelMedium, color = accent)
+            }
         }
     }
 }
