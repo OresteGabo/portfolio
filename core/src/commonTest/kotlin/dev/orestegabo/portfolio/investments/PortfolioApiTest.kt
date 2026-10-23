@@ -72,4 +72,32 @@ class PortfolioApiTest {
         try { assertFailsWith<IllegalArgumentException> { api.request("/api/bonds/documents") } }
         finally { api.close() }
     }
+    @Test fun sessionSnapshotRestoresCookiesWithoutExtendingServerExpiry() = runTest {
+        val original = PortfolioApi("https://bonds.example.test", MockEngine {
+            respond("{}", headers = headersOf(HttpHeaders.SetCookie, "__Host-bonds_session=saved-token; Path=/; HttpOnly; Secure; Max-Age=43200"))
+        })
+        val requests = mutableListOf<HttpRequestData>()
+        val restored = PortfolioApi("https://bonds.example.test", MockEngine { request -> requests += request; respond("{}") })
+        try {
+            original.request("/api/bonds/auth/login", "POST")
+            val snapshot = original.sessionSnapshot()
+            restored.restoreSession(snapshot)
+            restored.request("/api/bonds/purchases")
+            assertTrue(requests.single().headers[HttpHeaders.Cookie].orEmpty().contains("saved-token"))
+            val before = JsonRecord(snapshot).rows("cookies").single().text("expiresAt")
+            val after = JsonRecord(restored.sessionSnapshot()).rows("cookies").single().text("expiresAt")
+            assertEquals(before, after)
+        } finally { original.close(); restored.close() }
+    }
+    @Test fun snapshotsAreOriginBoundAndExpiredCookiesAreNotRestored() = runTest {
+        val requests = mutableListOf<HttpRequestData>()
+        val api = PortfolioApi("https://bonds.example.test", MockEngine { request -> requests += request; respond("{}") })
+        try {
+            assertFailsWith<IllegalArgumentException> { api.restoreSession(JsonRecord().put("origin", "https://other.example.test").put("cookies", JsonList()).toString()) }
+            val cookie = JsonRecord().put("name", "session").put("value", "expired-secret").put("domain", "bonds.example.test").put("path", "/").put("encoding", "RAW").put("expiresAt", 1)
+            api.restoreSession(JsonRecord().put("origin", api.origin).put("cookies", JsonList(listOf(cookie))).toString())
+            api.request("/api/bonds/purchases")
+            assertFalse(requests.single().headers[HttpHeaders.Cookie].orEmpty().contains("expired-secret"))
+        } finally { api.close() }
+    }
 }

@@ -34,6 +34,13 @@ actual fun rememberServerSettings(): ServerSettings = remember { object : Server
     override fun writeOrigin(origin: String) { NSUserDefaults.standardUserDefaults.setObject(origin, forKey = "portfolio.serverOrigin") }
 } }
 private class IosActions : NativeActions {
+    private var savingPassword = false
+    override val interactingWithSystem get() = picker != null || savingPassword
+    override suspend fun offerPasswordSave(origin: String, email: String, password: String) = withContext(Dispatchers.Main) {
+        savingPassword = true
+        try { offerIosPasswordSave(origin, email, password) }
+        finally { savingPassword = false }
+    }
     private var delegate: UIDocumentPickerDelegateProtocol? = null
     private var picker: UIDocumentPickerViewController? = null
     private suspend fun select(controller: UIDocumentPickerViewController): NSURL? = suspendCancellableCoroutine { result ->
@@ -41,12 +48,18 @@ private class IosActions : NativeActions {
         picker = controller
         delegate = object : NSObject(), UIDocumentPickerDelegateProtocol {
             override fun documentPicker(controller: UIDocumentPickerViewController, didPickDocumentsAtURLs: List<*>) {
-                if (result.isActive) result.resume(didPickDocumentsAtURLs.firstOrNull() as? NSURL)
-                picker = null; delegate = null
+                val selected = didPickDocumentsAtURLs.firstOrNull() as? NSURL
+                // Finish UIKit's picker transition before shared UI opens the review screen.
+                controller.dismissViewControllerAnimated(true) {
+                    if (result.isActive) result.resume(selected)
+                    picker = null; delegate = null
+                }
             }
             override fun documentPickerWasCancelled(controller: UIDocumentPickerViewController) {
-                if (result.isActive) result.resume(null)
-                picker = null; delegate = null
+                controller.dismissViewControllerAnimated(true) {
+                    if (result.isActive) result.resume(null)
+                    picker = null; delegate = null
+                }
             }
         }
         controller.delegate = delegate

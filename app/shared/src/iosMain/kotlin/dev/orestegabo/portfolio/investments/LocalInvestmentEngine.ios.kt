@@ -27,7 +27,7 @@ class IosInvestmentEngine : InvestmentEngine {
                 withTimeout(150_000) {
                     if (command == "pdf") {
                         val (text, ocr) = extract(requireNotNull(pdf))
-                        evaluate("PortfolioLogic.parse(${JsonRecord.quote(text)},$ocr)")
+                        evaluate("PortfolioLogic.parse(${JsonRecord.quote(text)},$ocr)", pdfImport = true)
                     } else {
                         require(command == "projection") { "Unknown investment operation." }
                         evaluate("PortfolioLogic.project($payload)")
@@ -36,15 +36,20 @@ class IosInvestmentEngine : InvestmentEngine {
             } finally { job = null }
         }
     }
-    private suspend fun evaluate(expression: String): JsonRecord = withContext(Dispatchers.Main) {
+    private suspend fun evaluate(expression: String, pdfImport: Boolean = false): JsonRecord = withContext(Dispatchers.Main) {
         val js = context ?: JSContext().also {
             it.evaluateScript(readSharedAsset("engine/logic.js").decodeToString())
             context = it
         }
         js.exception = null
-        val value = js.evaluateScript("JSON.stringify($expression)")
-        check(js.exception == null && value != null && !value.isUndefined()) { "The investment operation could not be completed. Check the input and try again." }
-        JsonRecord(value.toString())
+        // Keep only our typed error code, never JavaScript errors containing recognized document text.
+        val value = js.evaluateScript("""(function(){try{return JSON.stringify({result:($expression)})}catch(e){return JSON.stringify({errorCode:typeof e.code==='string'?e.code:'operation_failed'})}})()""")
+        val generic = if (pdfImport) "Could not read this purchase PDF. Try a clearer copy or enter the purchase manually."
+            else "The investment operation could not be completed. Check the input and try again."
+        check(js.exception == null && value != null && !value.isUndefined()) { generic }
+        val envelope = JsonRecord(value.toString())
+        envelope.optJSONObject("result") ?: error(if (pdfImport && envelope.text("errorCode") == "not_bond_result")
+            "Could not recognize a bond result or share purchase. Try a clearer PDF or enter the purchase manually." else generic)
     }
     private suspend fun extract(bytes: ByteArray): Pair<String, Boolean> = withContext(Dispatchers.Default) {
         validatePdfEnvelope(bytes)
@@ -112,7 +117,11 @@ class IosInvestmentEngine : InvestmentEngine {
         }
         val handler = VNImageRequestHandler(data = requireNotNull(UIImagePNGRepresentation(image)), options = emptyMap<Any?, Any?>())
         require(handler.performRequests(listOf(request), error = null)) { PDF_READ_ERROR }
-        request.results.orEmpty().filterIsInstance<VNRecognizedTextObservation>().joinToString("\n") { it.topCandidates(1u).firstOrNull()?.let { candidate -> (candidate as VNRecognizedText).string }.orEmpty() }.also { require(it.isNotBlank()) { PDF_READ_ERROR } }
+        val blocks = request.results.orEmpty().filterIsInstance<VNRecognizedTextObservation>().mapNotNull { observation ->
+            val text = (observation.topCandidates(1u).firstOrNull() as? VNRecognizedText)?.string ?: return@mapNotNull null
+            observation.boundingBox.useContents { OcrTextBlock(text, origin.x, origin.y, size.height) }
+        }
+        layoutOcrText(blocks).also { require(it.isNotBlank()) { PDF_READ_ERROR } }
     }
     override fun cancel() { job?.cancel() }
     override fun destroy() { destroyed = true; cancel(); context = null }

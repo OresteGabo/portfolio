@@ -44,6 +44,7 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)
             implementation(libs.androidx.activity.compose)
+            implementation("androidx.biometric:biometric:1.1.0")
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
         }
         commonMain.dependencies {

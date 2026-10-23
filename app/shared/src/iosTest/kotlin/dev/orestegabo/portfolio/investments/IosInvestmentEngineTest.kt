@@ -43,9 +43,60 @@ class IosInvestmentEngineTest {
             assertEquals(.12, result.getJSONObject("fields").getDouble("couponRate"), .0001)
         } finally { engine.destroy(); Dispatchers.resetMain() }
     }
+    @Test fun scannedTableKeepsSeparateLabelAndValueColumnsTogether() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val engine = IosInvestmentEngine()
+        try {
+            val result = withContext(Dispatchers.Default) { engine.run("pdf", pdf = scannedTablePdf()) }
+            assertEquals("bond", result.text("kind"))
+            assertTrue(result.optBoolean("usedOcr"))
+            val fields = result.getJSONObject("fields")
+            assertEquals("FXD1/2026/7YR", fields.text("bondName"))
+            assertEquals(99.0, fields.getDouble("pricePercent"), .01)
+            assertEquals(.12, fields.getDouble("couponRate"), .0001)
+            assertEquals("2026-07-17", fields.text("settlementDate"))
+            assertEquals("2033-07-08", fields.text("maturityDate"))
+            assertEquals("2027-01-17", fields.text("firstCouponDate"))
+        } finally { engine.destroy(); Dispatchers.resetMain() }
+    }
+
+    @Test fun unrecognizedPdfShowsAnActionableErrorWithoutItsContents() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val engine = IosInvestmentEngine()
+        try {
+            val pdf = bondPdf(false, "Unrelated PRIVATE_TEST_SENTINEL document. This is a long ordinary page with enough text for native extraction, but no investment results or purchase information.")
+            val failure = assertFailsWith<IllegalStateException> { withContext(Dispatchers.Default) { engine.run("pdf", pdf = pdf) } }
+            assertTrue(failure.message.orEmpty().contains("Could not recognize"))
+            assertFalse(failure.message.orEmpty().contains("PRIVATE_TEST_SENTINEL"))
+        } finally { engine.destroy(); Dispatchers.resetMain() }
+    }
+
     @Suppress("CAST_NEVER_SUCCEEDS")
-    private fun bondPdf(scanned: Boolean): ByteArray {
-        val text = """
+    private fun scannedTablePdf(): ByteArray {
+        val rows = listOf("ISSUER" to "GOVERNMENT OF RWANDA", "ISSUANCE NUMBER" to "FXD1/2026/7YR",
+            "BOND CODE" to "RWTEST000007/MN", "AMOUNT" to "RWF 10 billion", "TENOR" to "7 Years",
+            "PRICE" to "99", "Coupon Interest rate" to "12.00%", "COUPON PAYMENT DATES" to "17-Jan-2027 17-Jul-2027",
+            "SETTLEMENT DATE" to "17/07/2026", "REDEMPTION DATE" to "08/07/2033")
+        val image = UIGraphicsImageRenderer(size = CGSizeMake(1100.0, 1400.0)).imageWithActions {
+            UIColor.whiteColor.setFill(); UIRectFill(CGRectMake(0.0, 0.0, 1100.0, 1400.0))
+            val style: Map<Any?, Any?> = mapOf(NSFontAttributeName to UIFont.systemFontOfSize(18.0))
+            ("NATIONAL BANK OF RWANDA" as NSString).drawAtPoint(CGPointMake(40.0, 80.0), withAttributes = style)
+            rows.forEachIndexed { index, (label, value) ->
+                (label as NSString).drawAtPoint(CGPointMake(40.0, 200.0 + index * 40.0), withAttributes = style)
+                (value as NSString).drawAtPoint(CGPointMake(530.0, 200.0 + index * 40.0), withAttributes = style)
+            }
+            ("1. INVESTOR RESULTS" as NSString).drawAtPoint(CGPointMake(40.0, 760.0), withAttributes = style)
+            ("Investor Bank Applied Amount Allocation Settlement Amount Coupon Amount" as NSString).drawAtPoint(CGPointMake(40.0, 810.0), withAttributes = style)
+            ("TEST INVESTOR BK CAPITAL 2,000,000 1,000,000 990,000 60,000" as NSString).drawAtPoint(CGPointMake(40.0, 860.0), withAttributes = style)
+        }
+        return UIGraphicsPDFRenderer(bounds = CGRectMake(0.0, 0.0, 1100.0, 1400.0)).PDFDataWithActions { output ->
+            output!!.beginPage(); image.drawInRect(CGRectMake(0.0, 0.0, 1100.0, 1400.0))
+        }.toBytes()
+    }
+
+    @Suppress("CAST_NEVER_SUCCEEDS")
+    private fun bondPdf(scanned: Boolean, textOverride: String? = null): ByteArray {
+        val text = textOverride ?: """
             NATIONAL BANK OF RWANDA
             ISSUANCE NUMBER FXD1/2026/20YR
             BOND CODE RWTEST000001/MN

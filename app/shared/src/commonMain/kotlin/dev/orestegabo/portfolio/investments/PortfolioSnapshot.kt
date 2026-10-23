@@ -1,0 +1,49 @@
+package dev.orestegabo.portfolio.investments
+
+import kotlinx.datetime.LocalDate
+
+/** The server records behind every private list and summary. No separate cached totals. */
+data class PortfolioSnapshot(
+    val purchases: List<JsonRecord> = emptyList(),
+    val holdings: List<JsonRecord> = emptyList(),
+    val documents: List<JsonRecord> = emptyList(),
+) {
+    fun activeShares(today: LocalDate) = holdings.filter {
+        it.text("status") == "active" && onOrBefore(it.text("tradeDate"), today)
+    }
+
+    fun sharePositions(today: LocalDate): List<SharePosition> = activeShares(today)
+        .groupBy { it.text("ticker") to it.text("currency") }
+        .map { (key, lots) -> SharePosition(key.first, key.second,
+            lots.sumOf { it.optDouble("shares", 0.0) }, lots.sumOf { it.optDouble("netAmountPayable", 0.0) }) }
+
+    fun summary(today: LocalDate): List<CurrencyInvestment> {
+        val bonds = purchases.filter { it.text("status") == "active" && onOrBefore(it.text("purchaseDate"), today) }
+        val shares = activeShares(today)
+        return (purchases + holdings).map { it.text("currency") }.distinct().sorted().map { currency ->
+            val currencyBonds = bonds.filter { it.text("currency") == currency }
+            val currencyShares = shares.filter { it.text("currency") == currency }
+            CurrencyInvestment(currency,
+                currencyBonds.sumOf { it.optDouble("faceValue", 0.0) },
+                currencyBonds.sumOf { it.bondCashCost() },
+                currencyShares.sumOf { it.optDouble("netAmountPayable", 0.0) }, currencyBonds.size, currencyShares.size,
+                currencyBonds.filter { calendarDate(it.text("maturityDate"))?.let { maturity -> maturity > today } == true }
+                    .sumOf { it.netAnnualBondCoupon() })
+        }
+    }
+}
+
+data class SharePosition(val ticker: String, val currency: String, val shares: Double, val cashCost: Double)
+data class CurrencyInvestment(val currency: String, val bondFaceValue: Double, val bondCashCost: Double,
+    val shareCashCost: Double, val bondCount: Int, val shareCount: Int, val netAnnualCoupon: Double = 0.0) {
+    val investedCash get() = bondCashCost + shareCashCost
+}
+
+private fun onOrBefore(value: String, today: LocalDate) =
+    runCatching { LocalDate.parse(value) <= today }.getOrDefault(false)
+
+internal fun JsonRecord.bondCashCost() = optDouble("faceValue", 0.0) * optDouble("pricePercent", 100.0) / 100 +
+    optDouble("accruedInterestPaid", 0.0) + optDouble("feesPaid", 0.0)
+
+internal fun JsonRecord.netAnnualBondCoupon() = optDouble("faceValue", 0.0) * optDouble("couponRate", 0.0) *
+    (1 - optDouble("withholdingTaxRate", 0.0))

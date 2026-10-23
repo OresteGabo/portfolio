@@ -3,6 +3,8 @@ package dev.orestegabo.portfolio.investments
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,6 +24,9 @@ import portfolio.app.shared.generated.resources.Res
 import portfolio.app.shared.generated.resources.gabo_mark
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalAutofillManager
+import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
@@ -81,7 +86,7 @@ fun InvestmentApp(model: PortfolioModel) {
         if (review.text("kind") == "equity") { equityEditor = fields; editor = null } else { editor = fields; equityEditor = null }
         newPurchase = false
     }
-    val colors = if (dark) darkColorScheme(primary = BrandCream, onPrimary = Ink, primaryContainer = Color(0xFF514716), onPrimaryContainer = BrandCream, secondary = BrandCream, secondaryContainer = Color(0xFF514716), onSecondaryContainer = BrandCream, background = Color(0xFF17160F), surface = Color(0xFF211F17))
+    val colors = if (dark) darkColorScheme(primary = BrandCream, onPrimary = Ink, primaryContainer = Color(0xFF514716), onPrimaryContainer = BrandCream, secondary = BrandCream, secondaryContainer = Color(0xFF514716), onSecondaryContainer = BrandCream, background = Color(0xFF11150F), surface = Color(0xFF1D2219), onSurface = Color(0xFFF3F1E8), onSurfaceVariant = Color(0xFFC5C7BA), outlineVariant = Color(0xFF414735))
         else lightColorScheme(primary = BrandOlive, onPrimary = Color.White, primaryContainer = BrandCream, onPrimaryContainer = Ink, secondary = BrandOlive, secondaryContainer = BrandCream, onSecondaryContainer = Ink, background = Color(0xFFFAF8F2), surface = Color.White, onSurface = Ink)
     MaterialTheme(colorScheme = colors, typography = Typography()) {
         val nested = detail != null || editor != null || equityEditor != null || newPurchase || simulator || education
@@ -94,12 +99,14 @@ fun InvestmentApp(model: PortfolioModel) {
             education -> "Learn"
             detail != null -> "Bond details"
             model.user == null -> "Gabo"
+            tab == "Account" -> "Settings"
             else -> tab
         }
+        val portfolioHome = model.user != null && !model.locked && !nested && tab == "Portfolio"
         PlatformBackHandler(nested, back)
         Scaffold(
             topBar = {
-                TopAppBar(
+                if (!portfolioHome) TopAppBar(
                     title = {
                         Column {
                             Text(screenTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
@@ -111,20 +118,20 @@ fun InvestmentApp(model: PortfolioModel) {
                         else Image(painterResource(Res.drawable.gabo_mark), "Gabo logo", Modifier.padding(start = 16.dp, end = 4.dp).size(40.dp))
                     },
                     actions = {
-                        if (model.user != null && !nested && tab == "Portfolio") IconButton(onClick = model::refresh, enabled = !model.busy) { Icon(Icons.Outlined.Sync, "Sync portfolio") }
+                        if (model.user != null && !model.locked && !nested && tab == "Portfolio") IconButton(onClick = model::refresh, enabled = !model.busy) { Icon(Icons.Outlined.Sync, "Sync portfolio") }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
                 )
             },
             floatingActionButton = {
-                if (model.user != null && !nested && tab == "Portfolio") ExtendedFloatingActionButton(
+                if (model.user != null && !model.locked && !nested && tab == "Portfolio") ExtendedFloatingActionButton(
                     onClick = { importReview = null; newPurchase = true },
                     modifier = Modifier.semantics { contentDescription = "Add purchase" },
                     icon = { Icon(Icons.Filled.Add, null) }, text = { Text("Add purchase") }
                 )
             },
             bottomBar = {
-                if (model.user != null && !nested) NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
+                if (model.user != null && !model.locked && !nested) NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
                     destinations.forEach { destination ->
                         val selected = tab == destination.title
                         NavigationBarItem(
@@ -144,23 +151,19 @@ fun InvestmentApp(model: PortfolioModel) {
                 model.error?.let { Notice(it, true) { model.error = null } }
                 model.message?.let { Notice(it, false) { model.message = null } }
                 when {
+                    model.locked -> UnlockScreen(model)
                     model.user == null -> SignInScreen(model)
                     newPurchase -> PurchaseEntryScreen(model, engine, ::imported,
                         manualBond = { importReview = null; newPurchase = false; editor = JsonRecord() },
                         manualShares = { importReview = null; newPurchase = false; equityEditor = JsonRecord() })
-                    tab == "Account" && !nested -> AccountScreen(model, theme) { value -> theme = value; preferences.writeTheme(value) }
+                    tab == "Account" && !nested -> AccountScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
+                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it })
                     editor != null -> PurchaseEditor(model, editor!!, { editor = null; importReview = null }, importReview)
                     equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null; importReview = null }, importReview)
                     simulator -> SimulatorScreen(model, engine) { simulator = false }
                     education -> EducationScreen(model) { education = false }
                     detail != null -> PurchaseDetails(model, detail!!, { detail = null }, { editor = detail; detail = null })
-                    tab == "Portfolio" -> PortfolioScreen(model, { importReview = null; detail = it },
-                        tools = {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedButton(onClick = { simulator = true }, enabled = !model.busy, modifier = Modifier.weight(1f)) { Text("Simulator") }
-                                OutlinedButton(onClick = { education = true }, modifier = Modifier.weight(1f)) { Text("Learn") }
-                            }
-                        })
+                    tab == "Portfolio" -> PortfolioScreen(model) { importReview = null; detail = it }
                     tab == "Calendar" -> CalendarScreen(model)
                     tab == "Documents" -> DocumentsScreen(model)
                     tab == "Stocks" -> StocksScreen(model)
@@ -204,125 +207,85 @@ fun Fact(label: String, value: String) {
     }
 }
 
-@Composable
-fun EmptyState(title: String, body: String) = Panel {
-    Text(title, fontWeight = FontWeight.Bold)
-    Text(body, color = MaterialTheme.colorScheme.onSurfaceVariant)
-}
 
 @Composable
 private fun SignInScreen(model: PortfolioModel) {
+    val actions = LocalNativeActions.current
+    val autofill = LocalAutofillManager.current
     var email by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var invitation by remember { mutableStateOf("") }
     var confirmation by remember { mutableStateOf("") }
     var register by rememberSaveable { mutableStateOf(false) }
+    var savePassword by rememberSaveable { mutableStateOf(false) }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
         item { PageTitle("Your investment journal", if (register) "Get started" else "Welcome back", "Track your investments, coupon income, and what comes next.") }
         item { Panel {
             Text(if (register) "Create your account" else "Sign in to your portfolio", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Text(if (register) "Your invitation works once. Your portfolio stays private to your account." else "Use your email and password to access your own investments.", style = MaterialTheme.typography.bodySmall)
-            Field("Email", email, { email = it }, keyboard = KeyboardType.Email)
-            OutlinedTextField(password, { password = it.take(128) }, Modifier.fillMaxWidth(), label = { Text("Password") }, singleLine = true,
-                visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
+            Field("Email", email, { email = it }, keyboard = KeyboardType.Email, autofill = ContentType.Username, enabled = !model.busy)
+            OutlinedTextField(password, { password = it.take(128) }, Modifier.fillMaxWidth().semantics { contentType = if (register) ContentType.NewPassword else ContentType.Password }, label = { Text("Password") }, singleLine = true, enabled = !model.busy,
+                visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password,
+                    platformImeOptions = credentialImeOptions(if (register) CredentialInput.NEW_PASSWORD else CredentialInput.PASSWORD)))
             if (register) {
-                OutlinedTextField(confirmation, { confirmation = it.take(128) }, Modifier.fillMaxWidth(), label = { Text("Confirm password") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
-                Field("Invitation token", invitation, { invitation = it })
+                OutlinedTextField(confirmation, { confirmation = it.take(128) }, Modifier.fillMaxWidth().semantics { contentType = ContentType.NewPassword },
+                    label = { Text("Confirm password") }, singleLine = true, enabled = !model.busy, visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, platformImeOptions = credentialImeOptions(CredentialInput.NEW_PASSWORD)))
+                Field("Invitation token", invitation, { invitation = it }, enabled = !model.busy)
                 Text("Use at least 15 characters. A long, unique passphrase works well.", style = MaterialTheme.typography.bodySmall)
+            }
+            Row(Modifier.fillMaxWidth().toggleable(value = savePassword, enabled = model.secureSignInAvailable && !model.busy, role = Role.Checkbox, onValueChange = { savePassword = it }), verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(savePassword, null, enabled = model.secureSignInAvailable && !model.busy)
+                Column {
+                    Text("Save sign-in with ${model.unlockLabel}", style = MaterialTheme.typography.bodyMedium)
+                    Text(if (model.secureSignInAvailable) "Securely saved on this device" else "Set up device authentication first", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
             Button(onClick = {
                 if (register && (password.length < 15 || password != confirmation || invitation.isBlank())) model.error = "Enter an invitation and matching passwords of at least 15 characters."
-                else model.login(email, password, if (register) invitation else "")
+                else {
+                    val submittedEmail = email.trim()
+                    val submittedPassword = password
+                    val submittedOrigin = model.origin
+                    model.login(submittedEmail, submittedPassword, if (register) invitation else "", savePassword = savePassword) {
+                        autofill?.commit()
+                        actions.offerPasswordSave(submittedOrigin, submittedEmail, submittedPassword)
+                    }
+                }
             }, enabled = !model.busy && email.isNotBlank() && password.isNotEmpty(), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(if (register) "Create account" else "Open private portfolio") }
-            TextButton(onClick = { register = !register }) { Text(if (register) "Already have an account? Sign in" else "Use an invitation") }
+            TextButton(onClick = { register = !register }, enabled = !model.busy) { Text(if (register) "Already have an account? Sign in" else "Use an invitation") }
         } }
         item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Outlined.Lock, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant); Spacer(Modifier.width(6.dp)); Text("Your portfolio stays private", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) } }
     }
 }
 
 @Composable
-fun Field(label: String, value: String, change: (String) -> Unit, keyboard: KeyboardType = KeyboardType.Text, helper: String? = null) {
-    OutlinedTextField(value, change, Modifier.fillMaxWidth(), label = { Text(label) }, singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboard), supportingText = helper?.let { { Text(it) } })
+private fun UnlockScreen(model: PortfolioModel) {
+    Column(Modifier.fillMaxSize().padding(32.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+        Image(painterResource(Res.drawable.gabo_mark), "Gabo", Modifier.size(80.dp))
+        Spacer(Modifier.height(24.dp))
+        Text("Portfolio locked", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(12.dp))
+        Text("Your saved sign-in is protected on this device.", style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.height(24.dp))
+        Button(onClick = model::unlock, enabled = !model.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+            Icon(when (model.unlockLabel) { "Face ID" -> Icons.Outlined.Face; "Touch ID" -> Icons.Outlined.Fingerprint; else -> Icons.Outlined.Lock }, null); Spacer(Modifier.width(8.dp))
+            Text(if (model.busy) "Unlocking…" else "Unlock with ${model.unlockLabel}")
+        }
+        TextButton(onClick = model::usePassword, enabled = !model.busy) { Text("Use password instead") }
+    }
 }
 
 @Composable
-private fun PortfolioScreen(model: PortfolioModel, detail: (JsonRecord) -> Unit, tools: @Composable () -> Unit) {
-    var query by rememberSaveable { mutableStateOf("") }
-    var status by rememberSaveable { mutableStateOf("all") }
-    val currencies = model.purchases.groupBy { it.text("currency") }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 100.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        item { PageTitle("Overview", "Your portfolio", "A private record of what you own, what you earn, and what comes next.") }
-        item {
-            Surface(shape = RoundedCornerShape(28.dp), color = BrandOlive, contentColor = Color.White) {
-                Box(Modifier.fillMaxWidth()) {
-                    Canvas(Modifier.matchParentSize()) {
-                        val path = Path().apply { moveTo(size.width * .65f, 0f); lineTo(size.width, size.height * .7f); lineTo(size.width * .8f, size.height); lineTo(size.width * .45f, 0f); close() }
-                        drawPath(path, Color.White.copy(alpha = .06f))
-                    }
-                    Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text("RECORDED INVESTMENTS", letterSpacing = 2.sp, fontSize = 10.sp, color = BrandCream)
-                        if (currencies.isEmpty()) Text("No purchases yet", fontSize = 27.sp, fontWeight = FontWeight.Bold)
-                        currencies.forEach { (currency, rows) ->
-                            Text(money(rows.filter { it.text("status") == "active" }.sumOf { it.optDouble("faceValue", 0.0) }, currency), fontSize = 29.sp, fontWeight = FontWeight.Bold)
-                        }
-                        Text("Active bond face value • ${model.purchases.count { it.text("status") == "active" }} holdings", fontSize = 12.sp)
-                        HorizontalDivider(color = Color.White.copy(alpha = .2f))
-                        Text("${model.holdings.size} share purchases  /  ${model.documents.size} documents", fontSize = 12.sp)
-                    }
-                }
-            }
-        }
-        items(currencies.entries.toList()) { (currency, rows) ->
-            val active = rows.filter { it.text("status") == "active" }
-            val tracked = active.mapNotNull { row -> row.terms()?.let { trackBond(it, Today) } }
-            Panel {
-                Text("Income · $currency", fontWeight = FontWeight.Bold)
-                Fact("Net annual coupon income", money(active.filter { it.text("maturityDate") > Today.toString() && it.text("purchaseDate") <= Today.toString() }.sumOf { it.optDouble("faceValue", 0.0) * it.optDouble("couponRate", 0.0) * (1 - it.optDouble("withholdingTaxRate", 0.0)) }, currency))
-                Fact("Scheduled coupons to date", money(tracked.sumOf { it.couponsPaid }, currency))
-                Fact("Accrued coupon", money(tracked.sumOf { it.accruedCoupon }, currency))
-                Text("Schedule estimates; confirm payments with your broker. Cash cost includes fees and accrued interest.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-        item { Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { tools() } }
-        item { Field("Search bonds, ISIN, broker", query, { query = it }) }
-        item { ChoiceRow(listOf("all", "active", "submitted", "sold", "matured"), status) { status = it } }
-        val filtered = model.purchases.filter { (status == "all" || it.text("status") == status) && listOf("bondName", "isin", "broker").any { key -> it.text(key).contains(query, true) } }
-        if (filtered.isEmpty()) item { EmptyState("No bond purchases", "Add a purchase or change your filters. Saved records synchronize with your web portfolio.") }
-        items(filtered, key = { it.text("id") }) { purchase -> BondCard(purchase) { detail(purchase) } }
-        if (model.holdings.isNotEmpty()) item { Text("Share purchases", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
-        items(model.holdings) { holding -> Panel {
-            Text("${holding.text("securityName")} · ${holding.text("ticker")}", fontWeight = FontWeight.Bold)
-            Fact("Shares", holding.text("shares"))
-            Fact("Cash cost", money(holding.optDouble("netAmountPayable", 0.0), holding.text("currency")))
-            Fact("Trade date", holding.text("tradeDate"))
-            Fact("Broker", holding.text("broker"))
-        } }
-    }
+fun Field(label: String, value: String, change: (String) -> Unit, keyboard: KeyboardType = KeyboardType.Text, helper: String? = null, autofill: ContentType? = null, enabled: Boolean = true) {
+    OutlinedTextField(value, change, Modifier.fillMaxWidth().then(if (autofill != null) Modifier.semantics { contentType = autofill } else Modifier), label = { Text(label) }, singleLine = true, enabled = enabled,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboard, platformImeOptions = if (autofill == ContentType.Username) credentialImeOptions(CredentialInput.USERNAME) else null), supportingText = helper?.let { { Text(it) } })
 }
 
 @Composable
 fun ChoiceRow(choices: List<String>, selected: String, choose: (String) -> Unit) {
     androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items(choices) { item -> FilterChip(selected = item == selected, onClick = { choose(item) }, label = { Text(item.replaceFirstChar { it.uppercase() }) }) }
-    }
-}
-
-@Composable
-fun BondCard(purchase: JsonRecord, click: () -> Unit) {
-    Panel(Modifier.clickable(onClick = click)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(purchase.text("bondName"), Modifier.weight(1f), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            SuggestionChip(onClick = click, label = { Text(purchase.text("status")) })
-        }
-        Text(money(purchase.optDouble("faceValue", 0.0), purchase.text("currency")), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Fact("Coupon / maturity", "${percent(purchase.optDouble("couponRate", 0.0))} · ${purchase.text("maturityDate")}")
-        purchase.terms()?.let { terms ->
-            val tracking = trackBond(terms, Today)
-            LinearProgressIndicator(progress = { tracking.progress }, modifier = Modifier.fillMaxWidth())
-            Fact("Next coupon", tracking.nextCoupon?.toString() ?: "No remaining coupons")
-        }
-        Text("View purchase →", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
     }
 }
 
@@ -334,15 +297,7 @@ private fun PurchaseDetails(model: PortfolioModel, purchase: JsonRecord, back: (
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
         item { TextButton(onClick = back) { Text("← Portfolio") }; PageTitle("Purchase details", purchase.text("bondName"), purchase.text("isin")) }
         item { Panel {
-            listOf("issuer" to "Issuer", "instrumentType" to "Instrument", "currency" to "Currency", "market" to "Market", "status" to "Status", "purchaseDate" to "Purchase", "settlementDate" to "Settlement", "maturityDate" to "Maturity", "broker" to "Broker", "accountReference" to "Account", "scheduleConfidence" to "Schedule").forEach { (key, label) -> Fact(label, purchase.text(key)) }
-            Fact("Face value", money(purchase.optDouble("faceValue"), purchase.text("currency")))
-            Fact("Price", "${purchase.text("pricePercent")}%")
-            Fact("Fees", money(purchase.optDouble("feesPaid"), purchase.text("currency")))
-            Fact("Accrued interest paid", money(purchase.optDouble("accruedInterestPaid"), purchase.text("currency")))
-            Fact("Total cash cost", money(purchase.optDouble("amountInvested"), purchase.text("currency")))
-            Fact("Coupon rate", percent(purchase.optDouble("couponRate")))
-            Fact("Withholding tax", percent(purchase.optDouble("withholdingTaxRate")))
-            Text(purchase.text("notes"))
+            BondPurchaseFacts(purchase)
         } }
         purchase.terms()?.let { terms ->
             val tracking = trackBond(terms, Today)

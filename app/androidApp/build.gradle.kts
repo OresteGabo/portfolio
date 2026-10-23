@@ -14,6 +14,8 @@ dependencies {
     implementation(project(":app:shared"))
 
     implementation(libs.androidx.activity.compose)
+    implementation("androidx.fragment:fragment:1.8.9")
+    implementation(libs.androidx.appcompat)
     implementation(libs.compose.runtime)
     androidTestImplementation(libs.androidx.testExt.junit)
     androidTestImplementation("androidx.test:runner:1.7.0")

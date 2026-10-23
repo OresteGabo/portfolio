@@ -28,6 +28,7 @@ actual fun rememberServerSettings(): ServerSettings {
     } }
 }
 private class AndroidActions(private val context: Context) : NativeActions {
+    override val interactingWithSystem get() = picked != null || saved != null
     var pickLauncher: () -> Unit = {}
     var saveLauncher: (String) -> Unit = {}
     var picked: CompletableDeferred<Uri?>? = null

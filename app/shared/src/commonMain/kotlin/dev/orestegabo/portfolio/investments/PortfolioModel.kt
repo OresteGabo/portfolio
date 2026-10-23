@@ -5,28 +5,38 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 
 class PortfolioModel(
     private val settings: ServerSettings,
     private val assets: suspend (String) -> ByteArray = ::readSharedAsset,
+    private val vault: SecureSignIn? = null,
     private val apiFactory: (String) -> PortfolioApi = { PortfolioApi(it) },
 ) : ViewModel() {
     var origin by mutableStateOf(settings.readOrigin() ?: DEFAULT_ORIGIN)
         private set
     var api = apiFactory(origin)
         private set
+    val secureSignInAvailable get() = vault?.available == true
+    val unlockLabel get() = vault?.unlockLabel ?: "Device unlock"
+    var secureSignInEnabled by mutableStateOf(vault?.hasSaved(origin) == true)
+        private set
+    var locked by mutableStateOf(secureSignInEnabled)
+        private set
+    private var activeJob: Job? = null
+    private var generation = 0
+    private var foreground = true
     var user by mutableStateOf<JsonRecord?>(null)
         private set
     var busy by mutableStateOf(false)
         private set
     var error by mutableStateOf<String?>(null)
     var message by mutableStateOf<String?>(null)
-    var purchases by mutableStateOf<List<JsonRecord>>(emptyList())
+    var portfolio by mutableStateOf(PortfolioSnapshot())
         private set
-    var holdings by mutableStateOf<List<JsonRecord>>(emptyList())
-        private set
-    var documents by mutableStateOf<List<JsonRecord>>(emptyList())
-        private set
+    val purchases get() = portfolio.purchases
+    val holdings get() = portfolio.holdings
+    val documents get() = portfolio.documents
     var market by mutableStateOf<JsonRecord?>(null)
         private set
     var quotes by mutableStateOf<JsonRecord?>(null)
@@ -36,30 +46,126 @@ class PortfolioModel(
     var education by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
 
-    init { action {
-        calendar = JsonList(assets("issuance-calendar.json").decodeToString()).objects()
-        education = JsonList(assets("education.json").decodeToString()).objects()
-        checkSession()
+    init { runAction(allowLocked = true) {
+        loadPublicData()
+        if (!locked) checkSession()
     } }
 
-    fun action(block: suspend () -> Unit) {
-        if (busy) return
+    private suspend fun loadPublicData() {
+        calendar = JsonList(assets("issuance-calendar.json").decodeToString()).objects()
+        education = JsonList(assets("education.json").decodeToString()).objects()
+    }
+    fun action(block: suspend () -> Unit) = runAction(false, block)
+    private fun runAction(allowLocked: Boolean, block: suspend () -> Unit) {
+        if (busy || (locked && !allowLocked)) return
         busy = true
         error = null
         message = null
-        viewModelScope.launch {
+        val token = ++generation
+        activeJob = viewModelScope.launch {
             try { block() }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) {
-                if (failure is ApiException && failure.status == 401) { api.clearSession(); clearPrivateData() }
-                error = failure.message?.takeIf { it.isNotBlank() } ?: "Could not connect. Please try again."
-            } finally { busy = false }
+                if (token == generation) {
+                    if (failure is ApiException && failure.status == 401) {
+                        api.clearSession(); clearPrivateData()
+                        locked = secureSignInEnabled
+                        if (locked) vault?.lock()
+                    }
+                    if (locked) { vault?.lock(); api.close(); api = apiFactory(origin); clearPrivateData() }
+                    error = failure.message?.takeIf { it.isNotBlank() } ?: "Could not connect. Please try again."
+                }
+            } finally { if (token == generation) { busy = false; activeJob = null } }
         }
+    }
+    fun foreground() { foreground = true }
+    fun background(systemInteraction: Boolean = false) {
+        foreground = false
+        if (!systemInteraction && vault?.authenticating != true) lock()
+    }
+    fun lock() {
+        if (!secureSignInEnabled) return
+        ++generation
+        activeJob?.cancel(); activeJob = null; busy = false
+        vault?.lock()
+        api.close(); api = apiFactory(origin)
+        clearPrivateData()
+        locked = true
+        error = null; message = null
+    }
+    fun usePassword() = runAction(allowLocked = true) {
+        vault?.delete(origin)
+        secureSignInEnabled = false; locked = false
+        api.close(); api = apiFactory(origin)
+        clearPrivateData(); error = null; message = null
+    }
+    fun disableSecureSignIn() = action {
+        vault?.delete(origin)
+        secureSignInEnabled = false
+        message = "Saved sign-in removed from this device."
+    }
+    private suspend fun saveSignIn(email: String, password: String): Boolean {
+        val storage = requireNotNull(vault) { "Device authentication is unavailable." }
+        val value = JsonRecord().put("origin", origin).put("email", email.trim()).put("password", password).put("session", api.sessionSnapshot()).toString()
+        val saved = storage.save(origin, value)
+        secureSignInEnabled = storage.hasSaved(origin)
+        if (!foreground && secureSignInEnabled) lock()
+        return saved
+    }
+    fun enableSecureSignIn(password: String) = action {
+        require(secureSignInAvailable) { "Set up device authentication first." }
+        val account = requireNotNull(user)
+        val email = account.text("email")
+        val response = try { api.request("/api/bonds/auth/login", "POST", JsonRecord().put("email", email).put("password", password)) }
+        catch (failure: ApiException) {
+            if (failure.status == 401 || failure.status == 403) error("Password did not match. Try again.")
+            throw failure
+        }
+        require(response.getJSONObject("user").text("id") == account.text("id")) { "Sign-in account did not match." }
+        if (saveSignIn(email, password)) message = "Secure sign-in enabled on this device."
+    }
+    fun unlock() = runAction(allowLocked = true) {
+        val storage = requireNotNull(vault)
+        val raw = storage.read(origin) ?: return@runAction
+        require(raw.length <= 48_000) { "Saved sign-in is invalid." }
+        val saved = runCatching { JsonRecord(raw) }.getOrElse { error("Saved sign-in is invalid. Use your password to sign in again.") }
+        require(saved.text("origin") == origin) { "Saved sign-in belongs to another server." }
+        val email = saved.text("email")
+        val password = saved.text("password")
+        require(email.isNotBlank() && password.length in 1..128) { "Saved sign-in is invalid." }
+        if (!foreground) { lock(); return@runAction }
+        try { api.restoreSession(saved.text("session")) }
+        catch (failure: CancellationException) { throw failure }
+        catch (_: Exception) { api.clearSession() }
+        val session = try { api.request("/api/bonds/auth/session") }
+        catch (failure: ApiException) { if (failure.status == 401) JsonRecord().put("authenticated", false) else throw failure }
+        var account = session.optJSONObject("user").takeIf { session.optBoolean("authenticated") && it?.text("email").equals(email, ignoreCase = true) }
+        if (account == null) {
+            api.clearSession()
+            try {
+                account = api.request("/api/bonds/auth/login", "POST", JsonRecord().put("email", email).put("password", password)).getJSONObject("user")
+            } catch (failure: ApiException) {
+                if (failure.status == 401 || failure.status == 403) {
+                    storage.delete(origin); secureSignInEnabled = false; locked = false
+                    throw ApiException(failure.status, "Your saved sign-in no longer works. Sign in with your password.")
+                }
+                throw failure
+            }
+        }
+        require(account.text("email").equals(email, ignoreCase = true)) { "Sign-in account did not match." }
+        if (calendar.isEmpty() && education.isEmpty()) loadPublicData()
+        loadPrivateData()
+        storage.save(origin, JsonRecord().put("origin", origin).put("email", email).put("password", password).put("session", api.sessionSnapshot()).toString())
+        if (!foreground) { lock(); return@runAction }
+        user = account
+        locked = false
     }
 
     fun connect(value: String) = action {
         val candidate = value.trim().trimEnd('/')
         val next = apiFactory(candidate)
+        vault?.delete(origin)
+        secureSignInEnabled = false; locked = false
         clearPrivateData()
         api.clearSession()
         api.close()
@@ -75,19 +181,28 @@ class PortfolioModel(
         if (user != null) loadPrivateData()
     }
 
-    fun login(email: String, password: String, invitation: String = "") = action {
+    fun login(email: String, password: String, invitation: String = "", savePassword: Boolean = false,
+        onAuthenticated: suspend () -> Unit = {}) = action {
         val register = invitation.isNotBlank()
         val response = api.request("/api/bonds/auth/${if (register) "register" else "login"}", "POST",
             JsonRecord().put("email", email.trim()).put("password", password).apply { if (register) put("invite", invitation.trim()) })
-        user = response.getJSONObject("user")
+        val account = response.getJSONObject("user")
+        // Only submit the password-manager form after the server accepts these credentials.
+        // Declining/failing a password save must not turn a successful login into a failed one.
+        try { onAuthenticated() }
+        catch (failure: CancellationException) { throw failure }
+        catch (_: Exception) { message = "Signed in. Your password could not be saved to the password manager." }
+        user = account
         loadPrivateData()
+        if (savePassword) saveSignIn(email, password)
     }
 
     suspend fun loadPrivateData() {
-        // Apply each result only after it succeeds; a failure remains visible instead of looking like an empty portfolio.
-        purchases = api.request("/api/bonds/purchases").rows("purchases")
-        holdings = api.request("/api/bonds/equities").rows("holdings")
-        documents = api.request("/api/bonds/documents").rows("documents")
+        // Publish one complete server snapshot; a failed refresh keeps the previous consistent view.
+        val purchases = api.request("/api/bonds/purchases").rows("purchases")
+        val holdings = api.request("/api/bonds/equities").rows("holdings")
+        val documents = api.request("/api/bonds/documents").rows("documents")
+        portfolio = PortfolioSnapshot(purchases, holdings, documents)
     }
 
     fun refresh() = action { loadPrivateData(); message = "Portfolio updated from your server." }
@@ -98,38 +213,45 @@ class PortfolioModel(
 
     fun savePurchase(purchase: JsonRecord, id: String?, completed: () -> Unit) = action {
         api.request("/api/bonds/purchases" + (id?.let { "/$it" } ?: ""), if (id == null) "POST" else "PUT", purchase)
-        loadPrivateData()
         completed()
-        message = "Purchase saved to your portfolio."
+        refreshAfterWrite("Purchase saved to your portfolio.")
     }
 
     fun deletePurchase(id: String, completed: () -> Unit) = action {
         api.request("/api/bonds/purchases/$id", "DELETE")
-        loadPrivateData()
         completed()
-        message = "Purchase deleted."
+        refreshAfterWrite("Purchase deleted.")
     }
 
     fun saveEquity(holding: JsonRecord, completed: () -> Unit) = action {
         api.request("/api/bonds/equities", "POST", holding)
-        loadPrivateData()
         completed()
-        message = "Share purchase saved."
+        refreshAfterWrite("Share purchase saved.")
+    }
+
+    private suspend fun refreshAfterWrite(success: String) {
+        message = success
+        try { loadPrivateData() }
+        catch (failure: CancellationException) { throw failure }
+        catch (failure: Exception) {
+            if (failure is ApiException && failure.status == 401) throw failure
+            error("$success Could not refresh the portfolio. Tap Sync to update; do not submit it again.")
+        }
     }
 
     fun logout() = action {
-        api.request("/api/bonds/auth/logout", "POST")
-        api.clearSession()
-        clearPrivateData()
+        try { api.request("/api/bonds/auth/logout", "POST") }
+        finally {
+            try { vault?.delete(origin) }
+            finally { secureSignInEnabled = false; locked = false; api.clearSession(); clearPrivateData() }
+        }
     }
 
-    override fun onCleared() { api.close() }
+    override fun onCleared() { vault?.lock(); api.close() }
 
     private fun clearPrivateData() {
         user = null
-        purchases = emptyList()
-        holdings = emptyList()
-        documents = emptyList()
+        portfolio = PortfolioSnapshot()
         market = null
         quotes = null
     }

@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>GaboPasswordSharingEnabled</key>
+    <string>$(GABO_PASSWORD_SHARING_ENABLED)</string>
+    <key>NSFaceIDUsageDescription</key>
+    <string>Use Face ID to unlock your securely saved portfolio sign-in.</string>
 	<key>NSAppTransportSecurity</key>
     <dict><key>NSAllowsLocalNetworking</key><true/></dict>
     <key>NSLocalNetworkUsageDescription</key>

@@ -8,6 +8,8 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.utils.io.*
+import io.ktor.util.date.GMTDate
+import kotlin.time.Clock
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -19,13 +21,44 @@ expect val allowsDevelopmentHttp: Boolean
 private class SessionCookies : CookiesStorage {
     private val mutex = Mutex()
     private var delegate = AcceptAllCookiesStorage()
+    private val saved = mutableMapOf<String, Pair<Cookie, Long?>>()
     override suspend fun get(requestUrl: Url) = mutex.withLock { delegate.get(requestUrl) }
-    override suspend fun addCookie(requestUrl: Url, cookie: Cookie) = mutex.withLock { delegate.addCookie(requestUrl, cookie) }
-    suspend fun clear() = mutex.withLock { delegate.close(); delegate = AcceptAllCookiesStorage() }
+    override suspend fun addCookie(requestUrl: Url, cookie: Cookie) = mutex.withLock {
+        delegate.addCookie(requestUrl, cookie)
+        val expiry = cookie.maxAge?.let { Clock.System.now().toEpochMilliseconds() + it.toLong() * 1000 } ?: cookie.expires?.timestamp
+        val normalized = cookie.copy(domain = cookie.domain ?: requestUrl.host, path = cookie.path ?: "/")
+        saved["${normalized.name}|${normalized.domain}|${normalized.path}"] = normalized to expiry
+    }
+    suspend fun snapshot(origin: String): String = mutex.withLock {
+        val now = Clock.System.now().toEpochMilliseconds()
+        JsonRecord().put("origin", origin).put("cookies", JsonList(saved.values.filter { (cookie, expiry) -> cookie.name in setOf("__Host-bonds_session", "bonds_session_v2") && (expiry == null || expiry > now) }.map { (cookie, expiry) ->
+            JsonRecord().put("name", cookie.name).put("value", cookie.value).put("domain", cookie.domain).put("path", cookie.path)
+                .put("secure", cookie.secure).put("httpOnly", cookie.httpOnly).put("encoding", cookie.encoding.name).put("expiresAt", expiry)
+        })).toString()
+    }
+    suspend fun restore(origin: String, snapshot: String) {
+        require(snapshot.length <= 32_768) { "Saved session is invalid." }
+        val record = JsonRecord(snapshot)
+        require(record.text("origin") == origin) { "Saved session belongs to another server." }
+        val url = Url(origin)
+        val now = Clock.System.now().toEpochMilliseconds()
+        val rows = record.rows("cookies")
+        require(rows.size <= 16) { "Saved session is invalid." }
+        val restored = rows.mapNotNull { row ->
+            val expires = row.text("expiresAt").toLongOrNull()
+            if (expires != null && expires <= now) return@mapNotNull null
+            require(row.text("domain") == url.host && row.text("path").startsWith('/') && !row.text("path").contains("..")) { "Saved session is invalid." }
+            require(row.text("name").matches(Regex("[A-Za-z0-9_!#$%&'*+.^`|~-]{1,128}")) && row.text("value").length <= 8192 && row.text("value").none { it == '\r' || it == '\n' || it == ';' }) { "Saved session is invalid." }
+            Cookie(row.text("name"), row.text("value"), CookieEncoding.valueOf(row.text("encoding")), expires = expires?.let(::GMTDate), domain = url.host, path = row.text("path"), secure = row.optBoolean("secure"), httpOnly = row.optBoolean("httpOnly"))
+        }
+        clear()
+        restored.forEach { addCookie(url, it) }
+    }
+    suspend fun clear() = mutex.withLock { delegate.close(); delegate = AcceptAllCookiesStorage(); saved.clear() }
     override fun close() { delegate.close() }
 }
 
-/** Identical origin, redirect, error and in-memory session policy on Android and iOS. */
+/** Shared transport policy. Session snapshots are only persisted by the native authenticated vault. */
 class PortfolioApi(
     val origin: String,
     engine: HttpClientEngine = createPlatformHttpEngine(),
@@ -85,6 +118,8 @@ class PortfolioApi(
             bytes
         }
     }
+    suspend fun sessionSnapshot(): String = cookies.snapshot(origin)
+    suspend fun restoreSession(snapshot: String) = cookies.restore(origin, snapshot)
     suspend fun clearSession() = cookies.clear()
     fun close() = client.close()
 }

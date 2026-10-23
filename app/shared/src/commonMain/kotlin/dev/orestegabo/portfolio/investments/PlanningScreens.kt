@@ -136,7 +136,7 @@ fun SimulatorScreen(model: PortfolioModel, engine: InvestmentEngine, back: () ->
             }) { Text("Calculate projection") } }
         } else {
             val summary = result?.optJSONObject("summary")
-            if (summary == null) item { EmptyState("No projection yet", "Configure assumptions and calculate a projection.") }
+            if (summary == null) item { EmptyState("No projection yet", EmptyArtwork.PROJECTION, actionLabel = "Edit assumptions", onAction = { resultsOnly = false }) }
             else {
                 item { Panel {
                     Text("Projected account value", fontWeight = FontWeight.Bold)
@@ -168,8 +168,15 @@ fun EducationScreen(model: PortfolioModel, back: () -> Unit) {
     var search by rememberSaveable { mutableStateOf("") }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item { TextButton(onClick = back) { Text("← Portfolio") }; PageTitle("Learning library", "Bond education", "The educational content from your web app, adapted for reading on a phone.") }
-        item { Field("Search lessons", search, { search = it }) }
-        items(blocks.filter { it.text("text").contains(search, true) }) { block ->
+        if (blocks.isNotEmpty()) item { Field("Search lessons", search, { search = it }) }
+        val filtered = blocks.filter { it.text("text").contains(search, true) }
+        if (filtered.isEmpty()) item {
+            if (model.busy) LoadingState()
+            else if (blocks.isEmpty()) EmptyState("No lessons available", EmptyArtwork.DOCUMENTS, compact = true)
+            else EmptyState("No matches", EmptyArtwork.SEARCH, compact = true,
+                actionLabel = "Clear search", onAction = { search = "" })
+        }
+        items(filtered) { block ->
             val kind = block.text("kind")
             Text(block.text("text"), style = when (kind) {
                 "h1", "h2" -> MaterialTheme.typography.headlineSmall

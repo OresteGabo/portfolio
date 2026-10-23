@@ -10,6 +10,8 @@ interface ServerSettings {
     fun writeTheme(theme: String) {}
 }
 interface NativeActions {
+    val interactingWithSystem: Boolean get() = false
+    suspend fun offerPasswordSave(origin: String, email: String, password: String) {}
     suspend fun pickPdf(): ByteArray?
     suspend fun savePdf(fileName: String, bytes: ByteArray): Boolean
     fun openUrl(url: String)
