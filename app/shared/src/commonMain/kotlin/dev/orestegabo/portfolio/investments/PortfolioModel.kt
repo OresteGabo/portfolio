@@ -34,6 +34,9 @@ class PortfolioModel(
     var message by mutableStateOf<String?>(null)
     var portfolio by mutableStateOf(PortfolioSnapshot())
         private set
+    var historyComplete by mutableStateOf(false)
+        private set
+    private var compactOverviewSupported: Boolean? = null
     val purchases get() = portfolio.purchases
     val holdings get() = portfolio.holdings
     val documents get() = portfolio.documents
@@ -173,6 +176,7 @@ class PortfolioModel(
         api.close()
         api = next
         origin = candidate
+        compactOverviewSupported = null
         settings.writeOrigin(origin)
         checkSession()
     }
@@ -200,12 +204,32 @@ class PortfolioModel(
     }
 
     suspend fun loadPrivateData() {
-        // Publish one complete server snapshot; a failed refresh keeps the previous consistent view.
-        val purchases = api.request("/api/bonds/purchases").rows("purchases")
-        val holdings = api.request("/api/bonds/equities").rows("holdings")
+        val overview = if (compactOverviewSupported == false) null else try {
+            val response = api.request("/api/bonds/mobile-overview")
+            if (response.optInt("version") == 1 && response.has("recentPurchaseIds") && response.has("recentHoldingIds")) {
+                compactOverviewSupported = true
+                response
+            } else { compactOverviewSupported = false; null }
+        } catch (failure: ApiException) {
+            if (failure.status == 404 || failure.status == 405) { compactOverviewSupported = false; null } else throw failure
+        }
+        val purchases = overview?.rows("purchases") ?: api.request("/api/bonds/purchases").rows("purchases")
+        val holdings = overview?.rows("holdings") ?: api.request("/api/bonds/equities").rows("holdings")
         val documents = api.request("/api/bonds/documents").rows("documents")
-        portfolio = PortfolioSnapshot(purchases, holdings, documents)
+        fun ids(key: String): Set<String>? = overview?.optJSONArray(key)?.let { rows -> (0 until rows.length()).map { rows.getString(it) }.toSet() }
+        portfolio = PortfolioSnapshot(purchases, holdings, documents, ids("recentPurchaseIds"), ids("recentHoldingIds"))
+        historyComplete = overview == null
         if (portfolio.activeShares(Today).isNotEmpty()) refreshEquityQuotes()
+    }
+
+    fun loadInvestmentHistory(force: Boolean = false) {
+        if (historyComplete && !force) return
+        action {
+            val purchases = api.request("/api/bonds/purchases").rows("purchases")
+            val holdings = api.request("/api/bonds/equities").rows("holdings")
+            portfolio = PortfolioSnapshot(purchases, holdings, portfolio.documents)
+            historyComplete = true
+        }
     }
 
     // Prices enrich the saved snapshot. An optional quote failure must not hide saved purchases.
@@ -271,6 +295,7 @@ class PortfolioModel(
     private fun clearPrivateData() {
         user = null
         portfolio = PortfolioSnapshot()
+        historyComplete = false
         market = null
         quotes = null
         quoteRefreshFailed = false

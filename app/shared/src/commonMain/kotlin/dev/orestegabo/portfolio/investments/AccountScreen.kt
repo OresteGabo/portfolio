@@ -151,20 +151,23 @@ fun AccountScreen(model: PortfolioModel, theme: String, changeTheme: (String) ->
         confirmButton = { TextButton(enabled = !model.busy, onClick = { dialog = null; model.logout() }) { Text("Sign out", color = MaterialTheme.colorScheme.error) } },
         dismissButton = { TextButton(onClick = { dialog = null }) { Text("Cancel") } })
 
+    LaunchedEffect(ownerSection, model.historyComplete, model.busy) {
+        if (ownerSection == "bonds" && !model.historyComplete && !model.busy && model.error == null) model.loadInvestmentHistory()
+    }
     if (ownerSection != null && (owner || ownerSection == "bonds")) ModalBottomSheet(onDismissRequest = { ownerSection = null }) {
         LazyColumn(Modifier.fillMaxWidth().navigationBarsPadding(), contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             item { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(when (ownerSection) { "accounts" -> "Accounts"; "bonds" -> "Bond purchases"; else -> "Invitations" }, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                IconButton(enabled = !model.busy, onClick = { if (ownerSection == "bonds") model.refresh() else loadOwner(ownerSection!!) }) { Icon(Icons.Outlined.Refresh, "Refresh ${ownerSection}") }
+                IconButton(enabled = !model.busy, onClick = { if (ownerSection == "bonds") model.loadInvestmentHistory(force = true) else loadOwner(ownerSection!!) }) { Icon(Icons.Outlined.Refresh, "Refresh ${ownerSection}") }
                 IconButton(onClick = { ownerSection = null }) { Icon(Icons.Outlined.Close, "Close") }
             } }
             if (model.busy) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
             model.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
             if (ownerSection == "bonds") {
                 if (model.purchases.isNotEmpty()) item { Field("Search bonds, ISIN, broker", bondSearch, { bondSearch = it }) }
-                val bonds = model.purchases.filter { purchase -> listOf("bondName", "isin", "broker").any { purchase.text(it).contains(bondSearch, ignoreCase = true) } }
-                if (bonds.isEmpty() && !model.busy) item {
+                val bonds = (if (model.historyComplete) model.purchases else emptyList()).filter { purchase -> listOf("bondName", "isin", "broker").any { purchase.text(it).contains(bondSearch, ignoreCase = true) } }
+                if (bonds.isEmpty() && !model.busy && model.historyComplete) item {
                     EmptyState(if (model.purchases.isEmpty()) "No bond purchases yet" else "No matches",
                         if (model.purchases.isEmpty()) EmptyArtwork.BONDS else EmptyArtwork.SEARCH, compact = true,
                         actionLabel = if (bondSearch.isNotBlank()) "Clear search" else null,

@@ -64,6 +64,7 @@ fun JsonRecord.terms(): BondTerms? = runCatching {
 @Composable
 fun InvestmentApp(model: PortfolioModel) {
     var tab by rememberSaveable { mutableStateOf("Portfolio") }
+    var investmentHistory by rememberSaveable { mutableStateOf(false) }
     var detail by remember { mutableStateOf<JsonRecord?>(null) }
     var editor by remember { mutableStateOf<JsonRecord?>(null) }
     var equityEditor by remember { mutableStateOf<JsonRecord?>(null) }
@@ -78,7 +79,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var theme by rememberSaveable { mutableStateOf(preferences.readTheme()?.takeIf { it in listOf("system", "light", "dark") } ?: "system") }
     val dark = when (theme) { "light" -> false; "dark" -> true; else -> systemDark }
     LaunchedEffect(model.user) {
-        if (model.user == null) { tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; newPurchase = false; simulator = false; education = false }
+        if (model.user == null) { investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; newPurchase = false; simulator = false; education = false }
     }
     fun imported(review: JsonRecord) {
         importReview = review
@@ -89,8 +90,11 @@ fun InvestmentApp(model: PortfolioModel) {
     val colors = if (dark) darkColorScheme(primary = BrandCream, onPrimary = Ink, primaryContainer = Color(0xFF514716), onPrimaryContainer = BrandCream, secondary = BrandCream, secondaryContainer = Color(0xFF514716), onSecondaryContainer = BrandCream, background = Color(0xFF11150F), surface = Color(0xFF1D2219), onSurface = Color(0xFFF3F1E8), onSurfaceVariant = Color(0xFFC5C7BA), outlineVariant = Color(0xFF414735))
         else lightColorScheme(primary = BrandOlive, onPrimary = Color.White, primaryContainer = BrandCream, onPrimaryContainer = Ink, secondary = BrandOlive, secondaryContainer = BrandCream, onSecondaryContainer = Ink, background = Color(0xFFFAF8F2), surface = Color.White, onSurface = Ink)
     MaterialTheme(colorScheme = colors, typography = Typography()) {
-        val nested = detail != null || editor != null || equityEditor != null || newPurchase || simulator || education
-        val back = { detail = null; editor = null; equityEditor = null; newPurchase = false; importReview = null; simulator = false; education = false }
+        val nested = investmentHistory || detail != null || editor != null || equityEditor != null || newPurchase || simulator || education
+        val back = {
+            if (detail == null && editor == null && equityEditor == null && !newPurchase && !simulator && !education) investmentHistory = false
+            detail = null; editor = null; equityEditor = null; newPurchase = false; importReview = null; simulator = false; education = false
+        }
         val screenTitle = when {
             newPurchase -> "Add purchase"
             editor != null -> if (importReview != null) "Review bond" else if (editor!!.text("id").isBlank()) "Add bond" else "Edit bond"
@@ -98,6 +102,7 @@ fun InvestmentApp(model: PortfolioModel) {
             simulator -> "Simulator"
             education -> "Learn"
             detail != null -> "Bond details"
+            investmentHistory -> "All investments"
             model.user == null -> "Gabo"
             tab == "Account" -> "Settings"
             else -> tab
@@ -163,7 +168,8 @@ fun InvestmentApp(model: PortfolioModel) {
                     simulator -> SimulatorScreen(model, engine) { simulator = false }
                     education -> EducationScreen(model) { education = false }
                     detail != null -> PurchaseDetails(model, detail!!, { detail = null }, { editor = detail; detail = null })
-                    tab == "Portfolio" -> PortfolioScreen(model) { importReview = null; detail = it }
+                    investmentHistory -> InvestmentHistoryScreen(model) { detail = it }
+                    tab == "Portfolio" -> PortfolioScreen(model, seeAll = { investmentHistory = true }) { importReview = null; detail = it }
                     tab == "Calendar" -> CalendarScreen(model)
                     tab == "Documents" -> DocumentsScreen(model)
                     tab == "Stocks" -> StocksScreen(model)
@@ -295,7 +301,7 @@ private fun PurchaseDetails(model: PortfolioModel, purchase: JsonRecord, back: (
     if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("Delete purchase?") }, text = { Text("This removes ${purchase.text("bondName")} from your synchronized portfolio.") },
         confirmButton = { TextButton(enabled = !model.busy, onClick = { model.deletePurchase(purchase.text("id"), back); confirmDelete = false }) { Text("Delete") } }, dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep purchase") } })
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        item { TextButton(onClick = back) { Text("← Portfolio") }; PageTitle("Purchase details", purchase.text("bondName"), purchase.text("isin")) }
+        item { TextButton(onClick = back) { Text("← Back") }; PageTitle("Purchase details", purchase.text("bondName"), purchase.text("isin")) }
         item { Panel {
             BondPurchaseFacts(purchase)
         } }

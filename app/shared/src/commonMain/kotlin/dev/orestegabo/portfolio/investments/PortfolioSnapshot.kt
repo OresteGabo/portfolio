@@ -1,13 +1,18 @@
 package dev.orestegabo.portfolio.investments
 
-import kotlinx.datetime.LocalDate
+import kotlinx.datetime.*
 
 /** The server records behind every private list and summary. No separate cached totals. */
 data class PortfolioSnapshot(
     val purchases: List<JsonRecord> = emptyList(),
     val holdings: List<JsonRecord> = emptyList(),
     val documents: List<JsonRecord> = emptyList(),
+    val recentPurchaseIds: Set<String>? = null,
+    val recentHoldingIds: Set<String>? = null,
 ) {
+    fun recentBonds(today: LocalDate) = recentRows(purchases, "purchaseDate", today, recentPurchaseIds)
+    fun recentShares(today: LocalDate) = recentRows(holdings, "tradeDate", today, recentHoldingIds)
+
     fun activeShares(today: LocalDate) = holdings.filter {
         it.text("status") == "active" && onOrBefore(it.text("tradeDate"), today)
     }
@@ -26,7 +31,7 @@ data class PortfolioSnapshot(
             CurrencyInvestment(currency,
                 currencyBonds.sumOf { it.optDouble("faceValue", 0.0) },
                 currencyBonds.sumOf { it.bondCashCost() },
-                currencyShares.sumOf { it.optDouble("netAmountPayable", 0.0) }, currencyBonds.size, currencyShares.size,
+                currencyShares.sumOf { it.optDouble("netAmountPayable", 0.0) }, currencyBonds.size, currencyShares.sumOf { it.optInt("lotCount", 1) },
                 currencyBonds.filter { calendarDate(it.text("maturityDate"))?.let { maturity -> maturity > today } == true }
                     .sumOf { it.netAnnualBondCoupon() })
         }
@@ -47,3 +52,11 @@ internal fun JsonRecord.bondCashCost() = optDouble("faceValue", 0.0) * optDouble
 
 internal fun JsonRecord.netAnnualBondCoupon() = optDouble("faceValue", 0.0) * optDouble("couponRate", 0.0) *
     (1 - optDouble("withholdingTaxRate", 0.0))
+
+private fun recentRows(rows: List<JsonRecord>, dateKey: String, today: LocalDate, ids: Set<String>?): List<JsonRecord> {
+    val start = today.minus(DatePeriod(years = 1))
+    return rows.filter { row ->
+        val date = calendarDate(row.text(dateKey))
+        date != null && date >= start && date <= today && (ids == null || row.text("id") in ids)
+    }.sortedWith(compareByDescending<JsonRecord> { it.text(dateKey) }.thenByDescending { it.text("createdAt") }.thenBy { it.text("id") }).take(12)
+}

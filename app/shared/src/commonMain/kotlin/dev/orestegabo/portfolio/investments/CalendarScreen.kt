@@ -1,6 +1,8 @@
 package dev.orestegabo.portfolio.investments
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -30,39 +32,38 @@ import kotlinx.datetime.LocalDate
 fun CalendarScreen(model: PortfolioModel) {
     val today = Today
     var selectedValue by rememberSaveable { mutableStateOf(today.toString()) }
-    var filter by rememberSaveable { mutableStateOf(CalendarFilter.ALL) }
     var expanded by rememberSaveable { mutableStateOf<String?>(null) }
     var showInfo by rememberSaveable { mutableStateOf(false) }
     val selected = calendarDate(selectedValue) ?: today
-    val allEvents = remember(model.calendar, model.portfolio) { investmentCalendarEvents(model.calendar, model.portfolio) }
-    val events = remember(allEvents, filter) { allEvents.filter { it.matches(filter) } }
+    val events = remember(model.calendar, model.portfolio) { investmentCalendarEvents(model.calendar, model.portfolio) }
     val byDate = remember(events) { events.groupBy { it.date } }
     val ranges = remember(model.calendar) { calendarSubscriptionRanges(model.calendar) }
-    val monthRanges = if (filter == CalendarFilter.PAYMENTS) emptyList() else subscriptionRangesInMonth(ranges, selected)
-    val focusedRange = preferredSubscriptionRange(monthRanges, selected)
     val selectedEvents = byDate[selected].orEmpty()
     val next = events.firstOrNull { it.date > selected }
     fun select(date: LocalDate) { selectedValue = date.toString(); expanded = null }
+    val changeMonth by rememberUpdatedState<(Int) -> Unit> { offset -> select(shiftCalendarMonth(selected, offset)) }
 
     LazyColumn(
         Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                SingleChoiceSegmentedButtonRow(Modifier.weight(1f)) {
-                    CalendarFilter.entries.forEachIndexed { index, option ->
-                        SegmentedButton(selected = filter == option, onClick = { filter = option; expanded = null },
-                            shape = SegmentedButtonDefaults.itemShape(index, CalendarFilter.entries.size), icon = {}) {
-                            Text(option.label, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+            Surface(modifier = Modifier.pointerInput(Unit) {
+                var distance = 0f
+                val threshold = (size.width * .18f).coerceIn(48.dp.toPx(), 96.dp.toPx())
+                detectHorizontalDragGestures(
+                    onDragStart = { distance = 0f },
+                    onHorizontalDrag = { change, amount -> change.consume(); distance += amount },
+                    onDragCancel = { distance = 0f },
+                    onDragEnd = {
+                        when {
+                            distance <= -threshold -> changeMonth(1)
+                            distance >= threshold -> changeMonth(-1)
                         }
+                        distance = 0f
                     }
-                }
-                IconButton(onClick = { showInfo = true }) { Icon(Icons.Outlined.Info, "About this calendar") }
-            }
-        }
-        item {
-            Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface,
+                )
+            }, shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .4f))) {
                 Column(Modifier.padding(horizontal = 8.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -76,29 +77,40 @@ fun CalendarScreen(model: PortfolioModel) {
                             Icon(Icons.Outlined.ChevronRight, "Next month")
                         }
                     }
-                    focusedRange?.let { range ->
-                        SubscriptionRangeHeader(range) { select(range.start) }
-                    }
-                    Row(Modifier.fillMaxWidth()) {
-                        listOf("M", "T", "W", "T", "F", "S", "S").forEach { day ->
-                            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                                Text(day, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    AnimatedContent(
+                        targetState = LocalDate(selected.year, selected.month, 1),
+                        transitionSpec = {
+                            val forward = targetState > initialState
+                            (slideInHorizontally { width -> if (forward) width else -width } + fadeIn()) togetherWith
+                                (slideOutHorizontally { width -> if (forward) -width else width } + fadeOut())
+                        }, label = "Calendar month"
+                    ) { displayMonth ->
+                        val monthRanges = subscriptionRangesInMonth(ranges, displayMonth)
+                        val focusedRange = preferredSubscriptionRange(monthRanges, selected)
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            focusedRange?.let { range ->
+                                SubscriptionRangeHeader(range) { select(range.start) }
                             }
-                        }
-                    }
-                    Column {
-                        calendarMonthDays(selected).chunked(7).filter { week -> week.any { it.month == selected.month } }.forEach { week ->
                             Row(Modifier.fillMaxWidth()) {
-                                week.forEach { date ->
-                                    CalendarDay(date, selected, today, byDate[date].orEmpty(), monthRanges, focusedRange, Modifier.weight(1f)) { select(date) }
+                                listOf("M", "T", "W", "T", "F", "S", "S").forEach { day ->
+                                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                                        Text(day, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                            }
+                            Column {
+                                calendarMonthDays(displayMonth).chunked(7).filter { week -> week.any { it.month == displayMonth.month } }.forEach { week ->
+                                    Row(Modifier.fillMaxWidth()) {
+                                        week.forEach { date ->
+                                            CalendarDay(date, selected, today, byDate[date].orEmpty(), monthRanges, focusedRange, Modifier.weight(1f)) { select(date) }
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                     Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)) {
-                        CalendarCategory.entries.filter { category ->
-                            filter == CalendarFilter.ALL || (filter == CalendarFilter.ISSUANCES) == (category == CalendarCategory.ISSUANCE)
-                        }.forEach { category ->
+                        CalendarCategory.entries.forEach { category ->
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                                 EventDot(category.color())
                                 Text(if (category == CalendarCategory.ISSUANCE) "Subscription window" else category.label, style = MaterialTheme.typography.labelSmall)
@@ -117,11 +129,12 @@ fun CalendarScreen(model: PortfolioModel) {
                 }
                 Text("${selectedEvents.size} ${if (selectedEvents.size == 1) "event" else "events"}",
                     style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                IconButton(onClick = { showInfo = true }) { Icon(Icons.Outlined.Info, "About this calendar") }
             }
         }
         if (selectedEvents.isEmpty()) item {
             EmptyState(
-                title = if (filter == CalendarFilter.PAYMENTS && events.isEmpty()) "No payments scheduled" else "No events",
+                title = "No events",
                 artwork = EmptyArtwork.CALENDAR,
                 compact = true,
                 actionLabel = next?.let { "Next · ${it.date.day} ${it.date.monthLabel()}" },

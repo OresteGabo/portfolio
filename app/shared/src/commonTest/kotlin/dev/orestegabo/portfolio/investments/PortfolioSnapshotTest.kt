@@ -50,4 +50,27 @@ class PortfolioSnapshotTest {
         assertEquals(9500.0, totals.getValue("USD").netAnnualCoupon)
         assertEquals(0.0, PortfolioSnapshot(holdings = listOf(share("BOK", 100.0))).summary(today).single().netAnnualCoupon)
     }
+
+    @Test fun homeShowsOnlyOneYearOfRecentRecordsAndNeverMoreThanTwelveOfEachKind() {
+        val rows = (1..20).map { index -> JsonRecord().put("id", "bond-$index").put("purchaseDate", "2026-01-01").put("createdAt", index.toString().padStart(2, '0')) }
+        val boundary = JsonRecord().put("id", "boundary").put("purchaseDate", "2025-10-23")
+        val old = JsonRecord().put("id", "old").put("purchaseDate", "2025-10-22")
+        val future = JsonRecord().put("id", "future").put("purchaseDate", "2027-01-01")
+        val snapshot = PortfolioSnapshot(purchases = rows + boundary + old + future)
+        assertEquals(12, snapshot.recentBonds(today).size)
+        assertEquals("bond-20", snapshot.recentBonds(today).first().text("id"))
+        assertEquals(listOf("boundary"), PortfolioSnapshot(purchases = listOf(old, boundary, future)).recentBonds(today).map { it.text("id") })
+        assertEquals(listOf("bond-1"), snapshot.copy(recentPurchaseIds = setOf("bond-1")).recentBonds(today).map { it.text("id") })
+        val lots = (1..20).map { share("BOK", 100.0).put("id", "lot-$it") }
+        assertEquals(12, PortfolioSnapshot(holdings = lots).recentShares(today).size)
+        assertEquals(20, PortfolioSnapshot(holdings = lots).holdings.size)
+    }
+
+    @Test fun compactHistoricalPositionsPreserveAllTimeCostsAndShareCounts() {
+        val full = PortfolioSnapshot(holdings = listOf(share("BOK", 36500.0), share("BOK", 40000.0)))
+        val compact = PortfolioSnapshot(holdings = listOf(share("BOK", 76500.0).put("shares", 200).put("lotCount", 2)), recentHoldingIds = emptySet())
+        assertEquals(full.summary(today), compact.summary(today))
+        assertEquals(full.sharePositions(today), compact.sharePositions(today))
+        assertTrue(compact.recentShares(today).isEmpty())
+    }
 }

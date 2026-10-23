@@ -178,3 +178,21 @@ The main card now shows estimated net worth (tracked bond principal plus current
 Six new shared regressions cover changing prices/multiple lots, bond principal versus purchase fees, exclusion of annual income, missing quotes, invalid/future prices, inactive/future holdings, currency isolation, automatic quote loading and preserving data/cached quotes on refresh failures. The initial malformed-price fixture incorrectly attempted to construct non-finite JSON numbers; corrected it to use malformed API string values. All 40 Android host and 45 iOS tests then passed. Final Android assembly/lint and iPhone ARM64 Kotlin compilation passed; the signed Xcode simulator build passed for the valuation screen before the final per-row “Cost” label adjustment.
 
 Verified on iPhone 16 Pro with synthetic records: a BOK quote change from RWF 400 to 500 changes share value from 40,000 to 50,000 and total net worth from 140,000 to 150,000, while allocation cash cost stays 136,500. A zero quote produces an explicit purchase-cost fallback. Verified the valuation-basis dialog. No real purchases or quotes were modified; restored the normal server after preview. [Net-worth preview](screenshots/ios-estimated-net-worth.png).
+
+## Compact currency-aware hero
+
+Removed the closing-price status/date line from the visible hero, moved that information into the valuation-basis dialog, and reduced padding/spacing. A single currency badge near the heading scopes all four amount-only figures. Screen-reader descriptions retain full currency-qualified values. Each currency keeps its own card.
+
+Android assembly/lint, iPhone ARM64 Kotlin compilation and signed Xcode simulator build passed. Inspected the shortened card on iPhone 16 Pro with synthetic data and confirmed price details remain available through the info button. Restored the normal server after preview. [Compact hero](screenshots/ios-compact-net-worth.png).
+
+## Swipeable combined calendar
+
+Removed All events/Issuances/My payments tabs. Issuance windows and personal payments are now shown together, with the existing category dots and legend. The calendar surface handles horizontal drag gestures: left advances one month and right goes back one month after a directional distance threshold; cancellation resets the gesture. Vertical scrolling remains with the outer list. Month-body transitions slide in the corresponding direction, while tapping dates within a month does not animate the grid. Existing previous/next arrows and Today remain accessible; source information moved beside the agenda heading.
+
+Android assembly/lint, iPhone ARM64 Kotlin compilation and signed Xcode simulator build passed. Verified the tab-free layout, combined settlement/coupon date, next-month range changes, day selection and Today on iPhone 16 Pro with synthetic records. Native automated drag injection produced a date tap instead of a drag; physical swipe behavior could not be exercised through that automation interface. Restored the normal server after verification. [Calendar without tabs](screenshots/ios-calendar-no-tabs.png).
+
+## Recent investments and on-demand history
+
+Portfolio now previews the past 12 months with a maximum of 12 purchases per investment type. See all opens a separate full-history screen. Shared regressions cover date boundaries, future records, preview limits, aggregate valuation/count preservation, lazy full-history fetching, repeat visits, sync invalidation and compatibility with older servers. All 44 Android host and 49 iOS simulator tests pass. Android assembly/lint, iPhone ARM64 compilation and the signed Xcode simulator build pass.
+
+The companion web overview API passes six tests and TypeScript checking, including account isolation and a 530-lot fixture reduced to 13 transferred records without changing totals. Publication was handed to the user after GitHub integration writes were denied and Git had no saved HTTPS credential. The prepared local web branch `codex/mobile-portfolio-overview` contains only the three API files and excludes the older Apple Passwords commit. Transfer reduction requires this API to be deployed; until then, the app uses its compatible full-response fallback.

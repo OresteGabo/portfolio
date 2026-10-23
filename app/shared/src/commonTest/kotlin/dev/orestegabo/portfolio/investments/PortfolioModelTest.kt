@@ -23,6 +23,10 @@ class PortfolioModelTest {
         var updatedBonds = false
         var failQuotes = false
         var quotePrice = 400
+        var compact = false
+        var overviewReads = 0
+        var purchaseReads = 0
+        var equityReads = 0
         val settings = Settings()
         val store = ViewModelStore()
     }
@@ -34,9 +38,14 @@ class PortfolioModelTest {
                 this.dispatcher = dispatcher
                 addHandler { request ->
                     when (request.url.encodedPath) {
+                        "/api/bonds/mobile-overview" -> {
+                            scenario.overviewReads++
+                            respond(if (scenario.compact) """{"version":1,"purchases":[{"id":"old-active","status":"active","currency":"RWF","purchaseDate":"2020-01-01","faceValue":100000}],"holdings":[{"id":"aggregate:BOK","ticker":"BOK","currency":"RWF","status":"active","tradeDate":"2020-01-01","shares":100,"netAmountPayable":36500,"lotCount":2}],"recentPurchaseIds":[],"recentHoldingIds":[]}""" else "{}")
+                        }
                         "/api/bonds/auth/session" -> respond(if (origin.contains("first")) """{"authenticated":true,"user":{"id":"one","email":"one@example.test","isOwner":false}}""" else """{"authenticated":false}""")
-                        "/api/bonds/purchases" -> if (scenario.expired) respond("""{"error":"Authentication required."}""", HttpStatusCode.Unauthorized) else respond(if (scenario.updatedBonds) """{"purchases":[{"id":"new-purchase","currency":"RWF"}]}""" else """{"purchases":[{"id":"private-purchase","currency":"RWF"}]}""")
+                        "/api/bonds/purchases" -> { if (request.method == HttpMethod.Get) scenario.purchaseReads++; if (scenario.expired) respond("""{"error":"Authentication required."}""", HttpStatusCode.Unauthorized) else respond(if (scenario.updatedBonds) """{"purchases":[{"id":"new-purchase","currency":"RWF"}]}""" else """{"purchases":[{"id":"private-purchase","currency":"RWF"}]}""") }
                         "/api/bonds/equities" -> {
+                            if (request.method == HttpMethod.Get) scenario.equityReads++
                             if (request.method == HttpMethod.Post) { scenario.equityWrites++; scenario.equitySaved = true }
                             respond(if (scenario.equitySaved) """{"holdings":[{"id":"bk-purchase","ticker":"BOK","securityName":"BK","currency":"RWF","status":"active","tradeDate":"2026-01-01","shares":100,"netAmountPayable":36500}]}""" else """{"holdings":[]}""")
                         }
@@ -166,6 +175,49 @@ class PortfolioModelTest {
             advanceUntilIdle()
             assertEquals(500.0, model.quotes?.rows("quotes")?.single()?.optDouble("closing"))
             assertFalse(model.quoteRefreshFailed)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun compactOverviewDefersFullHistoryAndReusesItUntilTheNextSync() = runTest {
+        val scenario = Scenario().apply { compact = true }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle()
+            assertFalse(model.historyComplete)
+            assertEquals(0, scenario.purchaseReads)
+            assertEquals(0, scenario.equityReads)
+            assertTrue(model.portfolio.recentBonds(Today).isEmpty())
+            assertTrue(model.portfolio.recentShares(Today).isEmpty())
+            assertEquals(140000.0, model.portfolio.valuation(Today, model.quotes).single().estimatedNetWorth)
+            model.loadInvestmentHistory()
+            advanceUntilIdle()
+            assertTrue(model.historyComplete)
+            assertEquals(1, scenario.purchaseReads)
+            assertEquals(1, scenario.equityReads)
+            model.loadInvestmentHistory()
+            advanceUntilIdle()
+            assertEquals(1, scenario.purchaseReads)
+            model.refresh()
+            advanceUntilIdle()
+            assertFalse(model.historyComplete)
+            assertEquals(2, scenario.overviewReads)
+            assertEquals(1, scenario.purchaseReads)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun legacyServersAreProbedOnceAndOpeningHistoryDoesNotRefetchExistingRecords() = runTest {
+        val scenario = Scenario()
+        val model = model(scenario)
+        try {
+            advanceUntilIdle()
+            assertTrue(model.historyComplete)
+            model.loadInvestmentHistory()
+            advanceUntilIdle()
+            assertEquals(1, scenario.purchaseReads)
+            model.refresh()
+            advanceUntilIdle()
+            assertEquals(1, scenario.overviewReads)
+            assertEquals(2, scenario.purchaseReads)
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
 }

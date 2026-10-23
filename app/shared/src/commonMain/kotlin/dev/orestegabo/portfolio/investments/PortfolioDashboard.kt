@@ -37,9 +37,11 @@ private val DashboardGold = Color(0xFFECC75F)
 private val AllocationGreen = Color(0xFF739A87)
 
 @Composable
-fun PortfolioScreen(model: PortfolioModel, detail: (JsonRecord) -> Unit) {
+fun PortfolioScreen(model: PortfolioModel, seeAll: () -> Unit, detail: (JsonRecord) -> Unit) {
     var kind by rememberSaveable { mutableStateOf("all") }
     var status by rememberSaveable { mutableStateOf("all") }
+    val recentBonds = model.portfolio.recentBonds(Today)
+    val recentShares = model.portfolio.recentShares(Today)
     val summary = model.portfolio.summary(Today)
     val valuation = model.portfolio.valuation(Today, model.quotes)
     val insights = rememberLazyListState()
@@ -76,25 +78,31 @@ fun PortfolioScreen(model: PortfolioModel, detail: (JsonRecord) -> Unit) {
             }
         }
         item { Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Your investments", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Your investments", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text("Past 12 months", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                TextButton(onClick = seeAll) { Text("See all") }
+            }
             ChoiceRow(listOf("all", "shares", "bonds"), kind) { kind = it }
         } }
-        if (model.busy && model.purchases.isEmpty() && model.holdings.isEmpty()) item { LoadingState() }
+        if (model.busy && recentBonds.isEmpty() && recentShares.isEmpty()) item { LoadingState() }
         else {
             if (kind != "shares") {
                 if (kind == "all") item { SectionLabel("Bonds") }
-                if (model.purchases.isEmpty()) item { Inset { EmptyState("No bonds yet", EmptyArtwork.BONDS, compact = true) } }
-                if (kind == "bonds" && model.purchases.isNotEmpty()) item { Inset { ChoiceRow(listOf("all", "active", "submitted", "sold", "matured"), status) { status = it } } }
-                val bonds = model.purchases.filter { kind != "bonds" || status == "all" || it.text("status") == status }
-                if (bonds.isEmpty() && model.purchases.isNotEmpty()) item { Inset {
+                if (recentBonds.isEmpty()) item { Inset { EmptyState("No bonds in the past year", EmptyArtwork.BONDS, compact = true) } }
+                if (kind == "bonds" && recentBonds.isNotEmpty()) item { Inset { ChoiceRow(listOf("all", "active", "submitted", "sold", "matured"), status) { status = it } } }
+                val bonds = recentBonds.filter { kind != "bonds" || status == "all" || it.text("status") == status }
+                if (bonds.isEmpty() && recentBonds.isNotEmpty()) item { Inset {
                     EmptyState("No $status bonds", EmptyArtwork.SEARCH, compact = true, actionLabel = "Show all", onAction = { status = "all" })
                 } }
                 items(bonds, key = { "bond:${it.text("id")}" }) { purchase -> Inset { BondPurchaseTile(purchase) { detail(purchase) } } }
             }
             if (kind != "bonds") {
                 if (kind == "all") item { SectionLabel("Shares") }
-                if (model.holdings.isEmpty()) item { Inset { EmptyState("No shares yet", EmptyArtwork.SHARES, compact = true) } }
-                items(model.holdings, key = { "share:${it.text("id")}" }) { holding -> Inset { SharePurchaseTile(holding) } }
+                if (recentShares.isEmpty()) item { Inset { EmptyState("No shares in the past year", EmptyArtwork.SHARES, compact = true) } }
+                items(recentShares, key = { "share:${it.text("id")}" }) { holding -> Inset { SharePurchaseTile(holding) } }
             }
         }
     }
@@ -159,37 +167,39 @@ private fun ImigongoMotif(modifier: Modifier, color: Color) {
 @Composable
 private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, priceDate: String) {
     val total = valuation.cost
+    val priceLabel = when {
+        valuation.unpricedShares > 0 && valuation.pricedShares == 0 -> "Shares at purchase cost"
+        valuation.unpricedShares > 0 -> "Some shares at purchase cost"
+        valuation.pricedShares > 0 -> if (stale) "Cached closing prices" else "Latest closing prices"
+        else -> "Bonds at principal value"
+    }
+    val priceBasis = priceLabel + if (valuation.pricedShares > 0 && calendarDate(priceDate) != null) " · $priceDate" else ""
     var showBasis by remember { mutableStateOf(false) }
     if (showBasis) AlertDialog(onDismissRequest = { showBasis = false },
         title = { Text("About this estimate") },
-        text = { Text("Tracked investments only. Bonds use principal value; shares use the latest available RSE closing price. Unpriced shares use purchase cash cost. Cash balances, liabilities, dividends and selling fees are excluded. Annual coupons are shown separately.") },
+        text = { Text("$priceBasis\n\nTracked investments only. Bonds use principal value; shares use the latest available RSE closing price. Unpriced shares use purchase cash cost. Cash balances, liabilities, dividends and selling fees are excluded. Annual coupons are shown separately.") },
         confirmButton = { TextButton(onClick = { showBasis = false }) { Text("Done") } })
     Surface(shape = RoundedCornerShape(28.dp), color = Color.Transparent, contentColor = Color.White,
         border = BorderStroke(1.dp, DashboardGold.copy(alpha = .24f))) {
         Box(Modifier.background(Brush.linearGradient(listOf(Color(0xF02E321C), Color(0xF24D4117), Color(0xFA20251B))))) {
             ImigongoMotif(Modifier.align(Alignment.CenterEnd).size(200.dp).offset(x = 75.dp), DashboardGold.copy(alpha = .075f))
-            Column(Modifier.fillMaxWidth().padding(22.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("Estimated net worth", Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = Color(0xFFE8E4D3))
+                        Surface(shape = RoundedCornerShape(8.dp), color = Color.White.copy(alpha = .1f), contentColor = Color(0xFFE8E4D3)) {
+                            Text(total.currency, Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall)
+                        }
                         IconButton(onClick = { showBasis = true }, modifier = Modifier.size(48.dp)) { Icon(Icons.Outlined.Info, "Valuation basis", tint = Color(0xFFE8E4D3), modifier = Modifier.size(20.dp)) }
                     }
-                    Text(money(valuation.estimatedNetWorth, total.currency), style = MaterialTheme.typography.headlineLarge,
+                    Text(formatNumber(valuation.estimatedNetWorth), modifier = Modifier.semantics { contentDescription = money(valuation.estimatedNetWorth, total.currency) }, style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold, maxLines = 2)
                 }
-                val priceLabel = when {
-                    valuation.unpricedShares > 0 && valuation.pricedShares == 0 -> "Shares at purchase cost"
-                    valuation.unpricedShares > 0 -> "Some shares at purchase cost"
-                    valuation.pricedShares > 0 -> if (stale) "Cached closing prices" else "Latest closing prices"
-                    else -> "Bonds at principal value"
-                }
-                Text(priceLabel + if (valuation.pricedShares > 0 && calendarDate(priceDate) != null) " · $priceDate" else "",
-                    style = MaterialTheme.typography.labelSmall, color = Color(0xFFDAD7C6))
                 HorizontalDivider(color = DashboardGold.copy(alpha = .2f))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    MoneyMetric("Bond principal", money(total.bondFaceValue, total.currency), Icons.Outlined.AccountBalance, Modifier.weight(1f))
-                    MoneyMetric("RSE equity value", money(valuation.shareValue, total.currency), Icons.Outlined.BarChart, Modifier.weight(1f))
-                    MoneyMetric("Annual net coupon", money(total.netAnnualCoupon, total.currency), Icons.Outlined.Percent, Modifier.weight(1f))
+                    MoneyMetric("Bond principal", total.bondFaceValue, total.currency, Icons.Outlined.AccountBalance, Modifier.weight(1f))
+                    MoneyMetric("RSE equity value", valuation.shareValue, total.currency, Icons.Outlined.BarChart, Modifier.weight(1f))
+                    MoneyMetric("Annual net coupon", total.netAnnualCoupon, total.currency, Icons.Outlined.Percent, Modifier.weight(1f))
                 }
             }
         }
@@ -197,11 +207,12 @@ private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, pri
 }
 
 @Composable
-private fun MoneyMetric(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier) {
+private fun MoneyMetric(label: String, value: Double, currency: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(7.dp)) {
         Icon(icon, null, Modifier.size(20.dp), tint = DashboardGold)
         Text(label, style = MaterialTheme.typography.labelSmall, minLines = 2, color = Color(0xFFDAD7C6))
-        Text(value, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+        Text(formatNumber(value), modifier = Modifier.semantics { contentDescription = money(value, currency) },
+            style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
     }
 }
 
