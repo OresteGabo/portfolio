@@ -29,9 +29,9 @@ import androidx.compose.ui.unit.dp
 import kotlinx.datetime.LocalDate
 
 @Composable
-fun CalendarScreen(model: PortfolioModel) {
+fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null) {
     val today = Today
-    var selectedValue by rememberSaveable { mutableStateOf(today.toString()) }
+    var selectedValue by rememberSaveable(initialDate) { mutableStateOf((initialDate ?: today).toString()) }
     var expanded by rememberSaveable { mutableStateOf<String?>(null) }
     var showInfo by rememberSaveable { mutableStateOf(false) }
     val selected = calendarDate(selectedValue) ?: today
