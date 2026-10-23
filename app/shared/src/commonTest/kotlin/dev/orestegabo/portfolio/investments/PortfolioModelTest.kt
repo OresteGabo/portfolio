@@ -16,7 +16,11 @@ class PortfolioModelTest {
         override fun writeOrigin(origin: String) { value = origin }
     }
     private class Scenario {
+        var vault: SecureSignIn? = null
         var expired = false
+        var deletionStatus = HttpStatusCode.OK
+        var deletionConfirmed = true
+        var deletionRequests = 0
         var failDocuments = false
         var equityWrites = 0
         var equitySaved = false
@@ -33,7 +37,7 @@ class PortfolioModelTest {
     private fun TestScope.model(scenario: Scenario): PortfolioModel {
         val dispatcher = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(dispatcher)
-        return PortfolioModel(scenario.settings, assets = { "[]".encodeToByteArray() }, apiFactory = { origin ->
+        return PortfolioModel(scenario.settings, vault = scenario.vault, assets = { "[]".encodeToByteArray() }, apiFactory = { origin ->
             val engine = MockEngine(MockEngineConfig().apply {
                 this.dispatcher = dispatcher
                 addHandler { request ->
@@ -42,7 +46,13 @@ class PortfolioModelTest {
                             scenario.overviewReads++
                             respond(if (scenario.compact) """{"version":1,"purchases":[{"id":"old-active","status":"active","currency":"RWF","purchaseDate":"2020-01-01","faceValue":100000}],"holdings":[{"id":"aggregate:BOK","ticker":"BOK","currency":"RWF","status":"active","tradeDate":"2020-01-01","shares":100,"netAmountPayable":36500,"lotCount":2}],"recentPurchaseIds":[],"recentHoldingIds":[]}""" else "{}")
                         }
-                        "/api/bonds/auth/session" -> respond(if (origin.contains("first")) """{"authenticated":true,"user":{"id":"one","email":"one@example.test","isOwner":false}}""" else """{"authenticated":false}""")
+                        "/api/bonds/auth/account" -> {
+                            assertEquals(HttpMethod.Delete, request.method)
+                            scenario.deletionRequests++
+                            respond(if (scenario.deletionStatus == HttpStatusCode.OK) """{"deleted":${scenario.deletionConfirmed}}"""
+                                else """{"error":"Account deletion failed."}""", scenario.deletionStatus)
+                        }
+                        "/api/bonds/auth/session" -> respond(if (origin.contains("first")) """{"authenticated":true,"user":{"id":"11111111-1111-4111-8111-111111111111","email":"one@example.test","isOwner":false}}""" else """{"authenticated":false}""")
                         "/api/bonds/purchases" -> { if (request.method == HttpMethod.Get) scenario.purchaseReads++; if (scenario.expired) respond("""{"error":"Authentication required."}""", HttpStatusCode.Unauthorized) else respond(if (scenario.updatedBonds) """{"purchases":[{"id":"new-purchase","currency":"RWF"}]}""" else """{"purchases":[{"id":"private-purchase","currency":"RWF"}]}""") }
                         "/api/bonds/equities" -> {
                             if (request.method == HttpMethod.Get) scenario.equityReads++
@@ -58,6 +68,58 @@ class PortfolioModelTest {
             })
             PortfolioApi(origin, engine)
         }).also { scenario.store.put("portfolio", it) }
+    }
+    @Test fun confirmedAccountDeletionClearsThePrivateSnapshotAndSession() = runTest {
+        val scenario = Scenario()
+        var removedOrigin: String? = null
+        scenario.vault = object : SecureSignIn {
+            override val available = true
+            override val unlockLabel = "Device unlock"
+            override fun hasSaved(origin: String) = false
+            override suspend fun read(origin: String): String? = null
+            override suspend fun save(origin: String, value: String) = true
+            override fun delete(origin: String) { removedOrigin = origin }
+            override fun lock() {}
+        }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle()
+            assertNotNull(model.user)
+            assertTrue(model.purchases.isNotEmpty())
+            model.deleteAccount("synthetic password")
+            advanceUntilIdle()
+            assertEquals(1, scenario.deletionRequests)
+            assertEquals("https://first.example.test", removedOrigin)
+            assertNull(model.user)
+            assertTrue(model.purchases.isEmpty())
+            assertTrue(model.holdings.isEmpty())
+            assertTrue(model.documents.isEmpty())
+            assertNull(model.quotes)
+            assertFalse(model.secureSignInEnabled)
+            assertFalse(model.locked)
+            assertEquals("Your account and its data have been deleted.", model.message)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+    @Test fun failedOrUnconfirmedDeletionKeepsTheAccountAndItsData() = runTest {
+        val scenario = Scenario()
+        val model = model(scenario)
+        try {
+            advanceUntilIdle()
+            scenario.deletionStatus = HttpStatusCode.Forbidden
+            model.deleteAccount("incorrect password")
+            advanceUntilIdle()
+            assertNotNull(model.user)
+            assertTrue(model.purchases.isNotEmpty())
+            assertEquals("Account deletion failed.", model.error)
+            scenario.deletionStatus = HttpStatusCode.OK
+            scenario.deletionConfirmed = false
+            model.deleteAccount("synthetic password")
+            advanceUntilIdle()
+            assertNotNull(model.user)
+            assertTrue(model.purchases.isNotEmpty())
+            assertNull(model.message)
+            assertEquals(2, scenario.deletionRequests)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
     @Test fun expiredSessionClearsPrivateRecordsAndShowsTheFailure() = runTest {
         val scenario = Scenario()
