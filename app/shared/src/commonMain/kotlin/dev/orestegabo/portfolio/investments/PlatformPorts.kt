@@ -3,7 +3,14 @@ package dev.orestegabo.portfolio.investments
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 
+@Composable expect fun PlatformSystemBarAppearance(darkTheme: Boolean)
+
 interface ServerSettings {
+    fun readNumbersHidden(): Boolean = false
+    fun writeNumbersHidden(hidden: Boolean) {}
+    fun forgetMonthlyTarget(account: String) {}
+    fun readMonthlyTarget(account: String): Long? = null
+    fun writeMonthlyTarget(account: String, amount: Long) {}
     fun readOrigin(): String?
     fun writeOrigin(origin: String)
     fun readChartStyle(): String? = null
@@ -14,7 +21,7 @@ interface ServerSettings {
 interface NativeActions {
     val interactingWithSystem: Boolean get() = false
     suspend fun offerPasswordSave(origin: String, email: String, password: String) {}
-    suspend fun pickPdf(): ByteArray?
+    suspend fun pickPdf(onSelected: () -> Unit = {}): ByteArray?
     suspend fun savePdf(fileName: String, bytes: ByteArray): Boolean
     fun openUrl(url: String)
     fun shareText(text: String)
