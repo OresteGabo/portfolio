@@ -1,0 +1,23 @@
+BK CAPITAL
+CLIENT STATEMENT
+Client Code : SYNTHETIC
+From Date : 01-Jul-2026
+To Date : 30-Sep-2026
+Account Summary Balance (RWF)
+Equity And Bonds
+Opening Balance As On 01-07-2026 0.00 0.00
+14-Jul-2026 Receipt RCT-DEMO TRANSFER
+Purchase funding 0.00 1,511,000.00
+17-Jul-2026 Journal 1 July Bond Cost 1,500,000.00 0.00
+17-Jul-2026 Journal 1 Bond Fee 5,000.00 0.00
+17-Jul-2026 Journal 1 Bank charges 5,900.00 0.00
+22-Jul-2026 Purchase 10000000001#
+01
+Purchase of IMR 200 @ 90.00 on 22-07-2026 by
+BROKER; Ref. No : DEMO;
+200 90.00 18,400.00 0.00
+17-Aug-2026 Journal 1 August Bond Cost 2,000,000.00 0.00
+24-Sep-2026 Purchase 10000000002# Purchase of BOK 300 @ 600.00 on 24-09-2026
+01 by BROKER; Ref. No : DEMO; 300 600.00 184,000.00 0.00
+Closing Balance As On 30-Sep-2026 : 100.00 Cr
+*** End Of Report ***
