@@ -65,6 +65,10 @@ fun JsonRecord.terms(): BondTerms? = runCatching {
 fun InvestmentApp(model: PortfolioModel) {
     var tab by rememberSaveable { mutableStateOf("Portfolio") }
     var calendarFocus by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingIssueId by rememberSaveable { mutableStateOf<String?>(null) }
+    var missingDocuments by rememberSaveable { mutableStateOf(false) }
+    var pendingEntry by rememberSaveable { mutableStateOf(false) }
+    var confirmationTarget by remember { mutableStateOf<JsonRecord?>(null) }
     var investmentHistory by rememberSaveable { mutableStateOf(false) }
     var detail by remember { mutableStateOf<JsonRecord?>(null) }
     var editor by remember { mutableStateOf<JsonRecord?>(null) }
@@ -72,6 +76,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var simulator by rememberSaveable { mutableStateOf(false) }
     var education by rememberSaveable { mutableStateOf(false) }
     var importReview by remember { mutableStateOf<JsonRecord?>(null) }
+    val actions = LocalNativeActions.current
     val engine = rememberInvestmentEngine()
     DisposableEffect(engine) { onDispose { engine.destroy() } }
     var newPurchase by rememberSaveable { mutableStateOf(false) }
@@ -81,24 +86,49 @@ fun InvestmentApp(model: PortfolioModel) {
     var chartStyle by rememberSaveable { mutableStateOf(preferences.readChartStyle()?.takeIf { it in listOf("area", "line", "bars") } ?: "area") }
     val dark = when (theme) { "light" -> false; "dark" -> true; else -> systemDark }
     LaunchedEffect(model.user) {
-        if (model.user == null) { calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; newPurchase = false; simulator = false; education = false }
+        if (model.user == null) { missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; newPurchase = false; simulator = false; education = false }
+    }
+    LaunchedEffect(model, model.messageRevision) {
+        val revision = model.messageRevision
+        if (model.message != null) {
+            kotlinx.coroutines.delay(3_000)
+            if (model.messageRevision == revision) model.message = null
+        }
+    }
+    LaunchedEffect(model, model.errorRevision) {
+        val revision = model.errorRevision
+        if (model.error != null) {
+            kotlinx.coroutines.delay(5_000)
+            if (model.errorRevision == revision) model.error = null
+        }
     }
     fun imported(review: JsonRecord) {
         importReview = review
-        val fields = review.optJSONObject("fields") ?: JsonRecord()
-        if (review.text("kind") == "equity") { equityEditor = fields; editor = null } else { editor = fields; equityEditor = null }
-        newPurchase = false
+        missingDocuments = false
+        editor = null; equityEditor = null; newPurchase = false; pendingEntry = false
+    }
+    fun uploadPendingPurchase(purchase: JsonRecord) = model.importPurchasePdf(actions, engine, bondOnly = true) { review ->
+        confirmationTarget = purchase
+        imported(review)
+    }
+    fun uploadMissing(item: JsonRecord) = model.importPurchasePdf(actions, engine, bondOnly = item.text("kind") == "bond", expectedStatement = item) { review ->
+        confirmationTarget = null
+        imported(review)
     }
     val colors = if (dark) darkColorScheme(primary = BrandCream, onPrimary = Ink, primaryContainer = Color(0xFF514716), onPrimaryContainer = BrandCream, secondary = BrandCream, secondaryContainer = Color(0xFF514716), onSecondaryContainer = BrandCream, background = Color(0xFF11150F), surface = Color(0xFF1D2219), onSurface = Color(0xFFF3F1E8), onSurfaceVariant = Color(0xFFC5C7BA), outlineVariant = Color(0xFF414735))
         else lightColorScheme(primary = BrandOlive, onPrimary = Color.White, primaryContainer = BrandCream, onPrimaryContainer = Ink, secondary = BrandOlive, secondaryContainer = BrandCream, onSecondaryContainer = Ink, background = Color(0xFFFAF8F2), surface = Color.White, onSurface = Ink)
-    CompositionLocalProvider(LocalChartStyle provides chartStyle) {
+    CompositionLocalProvider(LocalChartStyle provides chartStyle, LocalNumbersHidden provides model.numbersHidden) {
     MaterialTheme(colorScheme = colors, typography = Typography()) {
-        val nested = investmentHistory || detail != null || editor != null || equityEditor != null || newPurchase || simulator || education
+        val nested = missingDocuments || pendingEntry || importReview != null || investmentHistory || detail != null || editor != null || equityEditor != null || newPurchase || simulator || education
         val back = {
-            if (detail == null && editor == null && equityEditor == null && !newPurchase && !simulator && !education) investmentHistory = false
-            detail = null; editor = null; equityEditor = null; newPurchase = false; importReview = null; simulator = false; education = false
+            if (detail == null && editor == null && equityEditor == null && importReview == null && !pendingEntry && !newPurchase && !simulator && !education) investmentHistory = false
+            missingDocuments = false; detail = null; editor = null; equityEditor = null; newPurchase = false; pendingEntry = false; confirmationTarget = null; importReview = null; simulator = false; education = false
         }
         val screenTitle = when {
+            missingDocuments -> "Missing documents"
+            importReview?.text("kind") == "statement" -> "Statement review"
+            pendingEntry -> "Pending purchase"
+            importReview != null -> "Review purchase"
             newPurchase -> "Add purchase"
             editor != null -> if (importReview != null) "Review bond" else if (editor!!.text("id").isBlank()) "Add bond" else "Edit bond"
             equityEditor != null -> if (importReview != null) "Review shares" else "Add shares"
@@ -111,8 +141,13 @@ fun InvestmentApp(model: PortfolioModel) {
             else -> tab
         }
         val portfolioHome = model.user != null && !model.locked && !nested && tab == "Portfolio"
+        model.pdfImportProgress?.takeIf { model.user != null && !model.locked }?.let { progress ->
+            PdfImportProgressDialog(progress, model::cancelPdfImport)
+        }
+        PlatformSystemBarAppearance(dark)
         PlatformBackHandler(nested, back)
         Scaffold(
+            contentWindowInsets = if (portfolioHome) WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal) else ScaffoldDefaults.contentWindowInsets,
             topBar = {
                 if (!portfolioHome) TopAppBar(
                     title = {
@@ -125,15 +160,13 @@ fun InvestmentApp(model: PortfolioModel) {
                         if (nested) IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                         else Image(painterResource(Res.drawable.gabo_mark), "Gabo logo", Modifier.padding(start = 16.dp, end = 4.dp).size(40.dp))
                     },
-                    actions = {
-                        if (model.user != null && !model.locked && !nested && tab == "Portfolio") IconButton(onClick = model::refresh, enabled = !model.busy) { Icon(Icons.Outlined.Sync, "Sync portfolio") }
-                    },
+                    actions = { if (model.user != null && !model.locked) NumberVisibilityButton(model.numbersHidden, model::toggleNumberVisibility) },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
                 )
             },
             floatingActionButton = {
                 if (model.user != null && !model.locked && !nested && tab == "Portfolio") ExtendedFloatingActionButton(
-                    onClick = { importReview = null; newPurchase = true },
+                    onClick = { importReview = null; confirmationTarget = null; newPurchase = true },
                     modifier = Modifier.semantics { contentDescription = "Add purchase" },
                     icon = { Icon(Icons.Filled.Add, null) }, text = { Text("Add purchase") }
                 )
@@ -153,17 +186,21 @@ fun InvestmentApp(model: PortfolioModel) {
                 }
             }
         ) { padding ->
-            Column(Modifier.fillMaxSize().padding(padding).imePadding()) {
+            Column(Modifier.fillMaxSize().padding(padding).imePadding().portfolioStatusBarFade(portfolioHome)) {
                 InvestmentEngineHost(engine)
-                if (model.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-                model.error?.let { Notice(it, true) { model.error = null } }
-                model.message?.let { Notice(it, false) { model.message = null } }
+                if (!portfolioHome) {
+                    if (model.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+                    model.error?.let { Notice(it, true) { model.error = null } }
+                    model.message?.let { Notice(it, false) { model.message = null } }
+                }
                 when {
                     model.locked -> UnlockScreen(model)
                     model.user == null -> SignInScreen(model)
-                    newPurchase -> PurchaseEntryScreen(model, engine, ::imported,
-                        manualBond = { importReview = null; newPurchase = false; editor = JsonRecord() },
-                        manualShares = { importReview = null; newPurchase = false; equityEditor = JsonRecord() })
+                    missingDocuments && importReview == null -> MissingDocumentsScreen(model, ::uploadMissing)
+                    pendingEntry -> PendingBondScreen(model, pendingIssueId) { pendingEntry = false; pendingIssueId = null }
+                    importReview?.text("kind") == "statement" -> StatementReviewScreen(model, importReview!!, ::uploadMissing)
+                    importReview != null -> PurchaseImportReview(model, importReview!!, confirmationTarget) { importReview = null; confirmationTarget = null; detail = null }
+                    newPurchase -> PurchaseEntryScreen(model, engine, ::imported)
                     tab == "Settings" && !nested -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
                         chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
                         openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it })
@@ -171,11 +208,13 @@ fun InvestmentApp(model: PortfolioModel) {
                     equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null; importReview = null }, importReview)
                     simulator -> SimulatorScreen(model, engine) { simulator = false }
                     education -> EducationScreen(model) { education = false }
-                    detail != null -> PurchaseDetails(model, detail!!, { detail = null }, { editor = detail; detail = null })
-                    investmentHistory -> InvestmentHistoryScreen(model) { detail = it }
-                    tab == "Portfolio" -> PortfolioScreen(model, seeAll = { investmentHistory = true },
-                        openCalendar = { date -> calendarFocus = date.toString(); tab = "Calendar" }) { importReview = null; detail = it }
-                    tab == "Calendar" -> CalendarScreen(model, initialDate = calendarFocus?.let(::calendarDate))
+                    detail != null -> PurchaseDetails(model, detail!!, engine, { confirmationTarget = detail; imported(it) }, { detail = null }, { editor = detail; detail = null })
+                    investmentHistory -> InvestmentHistoryScreen(model, uploadPending = ::uploadPendingPurchase) { detail = it }
+                    tab == "Portfolio" -> PortfolioScreen(model, uploadPending = ::uploadPendingPurchase, openMissing = ::uploadMissing, allMissing = { missingDocuments = true }, seeAll = { investmentHistory = true },
+                        openCalendar = { date -> calendarFocus = date.toString(); tab = "Calendar" }, detail = { importReview = null; detail = it })
+                    tab == "Calendar" -> CalendarScreen(model, initialDate = calendarFocus?.let(::calendarDate), addPending = { issue, date ->
+                        pendingIssueId = issue.text("id"); calendarFocus = date.toString(); confirmationTarget = null; pendingEntry = true
+                    })
                     tab == "Documents" -> DocumentsScreen(model)
                     tab == "Stocks" -> StocksScreen(model)
                 }
@@ -186,10 +225,10 @@ fun InvestmentApp(model: PortfolioModel) {
 }
 
 @Composable
-private fun Notice(text: String, error: Boolean, dismiss: () -> Unit) {
+internal fun Notice(text: String, error: Boolean, dismiss: () -> Unit) {
     Surface(color = if (error) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(text, Modifier.weight(1f).padding(vertical = 10.dp), style = MaterialTheme.typography.bodySmall)
+            FinancialText(text, Modifier.weight(1f).padding(vertical = 10.dp), style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = dismiss) { Text("Dismiss") }
         }
     }
@@ -215,7 +254,7 @@ fun Panel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> 
 fun Fact(label: String, value: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(label, Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-        Text(value.ifBlank { "—" }, Modifier.weight(1f), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodySmall)
+        FinancialText(value.ifBlank { "—" }, Modifier.weight(1f), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -291,6 +330,7 @@ private fun UnlockScreen(model: PortfolioModel) {
 @Composable
 fun Field(label: String, value: String, change: (String) -> Unit, keyboard: KeyboardType = KeyboardType.Text, helper: String? = null, autofill: ContentType? = null, enabled: Boolean = true) {
     OutlinedTextField(value, change, Modifier.fillMaxWidth().then(if (autofill != null) Modifier.semantics { contentType = autofill } else Modifier), label = { Text(label) }, singleLine = true, enabled = enabled,
+        visualTransformation = if (LocalNumbersHidden.current && keyboard in listOf(KeyboardType.Number, KeyboardType.Decimal)) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
         keyboardOptions = KeyboardOptions(keyboardType = keyboard, platformImeOptions = if (autofill == ContentType.Username) credentialImeOptions(CredentialInput.USERNAME) else null), supportingText = helper?.let { { Text(it) } })
 }
 
@@ -302,16 +342,17 @@ fun ChoiceRow(choices: List<String>, selected: String, choose: (String) -> Unit)
 }
 
 @Composable
-private fun PurchaseDetails(model: PortfolioModel, purchase: JsonRecord, back: () -> Unit, edit: () -> Unit) {
+private fun PurchaseDetails(model: PortfolioModel, purchase: JsonRecord, engine: InvestmentEngine, imported: (JsonRecord) -> Unit, back: () -> Unit, edit: () -> Unit) {
     var confirmDelete by remember { mutableStateOf(false) }
     if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("Delete purchase?") }, text = { Text("This removes ${purchase.text("bondName")} from your synchronized portfolio.") },
         confirmButton = { TextButton(enabled = !model.busy, onClick = { model.deletePurchase(purchase.text("id"), back); confirmDelete = false }) { Text("Delete") } }, dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep purchase") } })
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
         item { TextButton(onClick = back) { Text("← Back") }; PageTitle("Purchase details", purchase.text("bondName"), purchase.text("isin")) }
         item { Panel {
-            BondPurchaseFacts(purchase)
+            if (purchase.text("status") == "submitted") PendingPurchaseFacts(purchase) else BondPurchaseFacts(purchase)
         } }
-        purchase.terms()?.let { terms ->
+        if (purchase.text("status") == "submitted") item { PdfImportButton(model, engine, imported, bondOnly = true) }
+        if (purchase.text("status") != "submitted") purchase.terms()?.let { terms ->
             val tracking = trackBond(terms, Today)
             item { Panel {
                 Text("Coupon tracking", fontWeight = FontWeight.Bold)
@@ -324,7 +365,7 @@ private fun PurchaseDetails(model: PortfolioModel, purchase: JsonRecord, back: (
             items(tracking.schedule) { date -> Panel { Fact(date.toString(), "${if (date <= Today) "Scheduled past" else "Upcoming"} · ${money(tracking.netPerPayment, purchase.text("currency"))}") } }
         }
         item { Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = edit, enabled = !model.busy) { Text("Edit purchase") }
+            if (purchase.text("status") != "submitted") Button(onClick = edit, enabled = !model.busy) { Text("Edit purchase") }
             OutlinedButton(onClick = { confirmDelete = true }, enabled = !model.busy) { Text("Delete") }
         } }
     }
