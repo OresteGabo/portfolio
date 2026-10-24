@@ -65,9 +65,15 @@ htmlcov/
 *.swo
 *~
 
+# Local UI verification captures, separate from the app's icons and image assets.
+# Existing tracked screenshots remain versioned; new captures stay local.
+/docs/screenshots/
+
 # macOS metadata
 .DS_Store
 ._*
 
+# Keep scripts, tests and their synthetic fixtures regardless of extension.
+# Do not ignore *.js, *.mjs, *.png or *.txt globally.
 # Keep bundled PDF/OCR runtime assets (bcmap, fonts, wasm, traineddata and licenses).
 # They are app dependencies, not local build outputs; fresh checkouts need them.
