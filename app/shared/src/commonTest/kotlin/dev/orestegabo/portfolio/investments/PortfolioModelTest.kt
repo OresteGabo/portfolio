@@ -11,6 +11,13 @@ import kotlin.test.*
 
 class PortfolioModelTest {
     private class Settings : ServerSettings {
+        var hiddenNumbers = false
+        override fun readNumbersHidden() = hiddenNumbers
+        override fun writeNumbersHidden(hidden: Boolean) { hiddenNumbers = hidden }
+        val targets = mutableMapOf<String, Long>()
+        override fun forgetMonthlyTarget(account: String) { targets.remove(account) }
+        override fun readMonthlyTarget(account: String) = targets[account]
+        override fun writeMonthlyTarget(account: String, amount: Long) { targets[account] = amount }
         var value: String? = "https://first.example.test"
         override fun readOrigin() = value
         override fun writeOrigin(origin: String) { value = origin }
@@ -86,6 +93,7 @@ class PortfolioModelTest {
             advanceUntilIdle()
             assertNotNull(model.user)
             assertTrue(model.purchases.isNotEmpty())
+            model.updateMonthlyInvestmentTarget(300000)
             model.deleteAccount("synthetic password")
             advanceUntilIdle()
             assertEquals(1, scenario.deletionRequests)
@@ -98,6 +106,7 @@ class PortfolioModelTest {
             assertFalse(model.secureSignInEnabled)
             assertFalse(model.locked)
             assertEquals("Your account and its data have been deleted.", model.message)
+            assertTrue(scenario.settings.targets.isEmpty())
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
     @Test fun failedOrUnconfirmedDeletionKeepsTheAccountAndItsData() = runTest {
@@ -282,4 +291,90 @@ class PortfolioModelTest {
             assertEquals(2, scenario.purchaseReads)
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
+    @Test fun fastPullRefreshHoldsLoadingThenCheckmarkAndIgnoresRepeatedPulls() = runTest {
+        val scenario = Scenario()
+        val model = model(scenario)
+        try {
+            advanceUntilIdle()
+            model.refreshPortfolio(); runCurrent()
+            assertEquals(PortfolioRefreshPhase.LOADING, model.refreshPhase)
+            assertTrue(model.busy)
+            val reads = scenario.purchaseReads
+            model.refreshPortfolio(); runCurrent()
+            assertEquals(reads, scenario.purchaseReads)
+            advanceTimeBy(500); runCurrent()
+            assertEquals(PortfolioRefreshPhase.LOADING, model.refreshPhase)
+            advanceTimeBy(500); runCurrent()
+            assertEquals(PortfolioRefreshPhase.SUCCESS, model.refreshPhase)
+            assertTrue(model.busy)
+            advanceTimeBy(300); runCurrent()
+            assertEquals(PortfolioRefreshPhase.SUCCESS, model.refreshPhase)
+            advanceUntilIdle()
+            assertEquals(PortfolioRefreshPhase.IDLE, model.refreshPhase)
+            assertFalse(model.busy)
+            assertNull(model.message) // The checkmark supplies completion feedback, without a second banner.
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+    @Test fun failedPullRefreshShowsFailureInsteadOfSuccessAndPreservesTheSnapshot() = runTest {
+        val scenario = Scenario()
+        val model = model(scenario)
+        try {
+            advanceUntilIdle()
+            val original = model.portfolio
+            scenario.failDocuments = true
+            model.refreshPortfolio(); runCurrent()
+            assertEquals(PortfolioRefreshPhase.LOADING, model.refreshPhase)
+            advanceTimeBy(1000); runCurrent()
+            assertEquals(PortfolioRefreshPhase.ERROR, model.refreshPhase)
+            assertSame(original, model.portfolio)
+            advanceUntilIdle()
+            assertEquals(PortfolioRefreshPhase.IDLE, model.refreshPhase)
+            assertFalse(model.busy)
+            assertNotNull(model.error)
+            assertNull(model.message)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun monthlyTargetDefaultsTo100kAndPersistsForOnlyTheSignedInAccountAndServer() = runTest {
+        val scenario = Scenario()
+        val first = model(scenario)
+        try {
+            advanceUntilIdle()
+            assertEquals(100_000L, first.monthlyInvestmentTarget)
+            first.updateMonthlyInvestmentTarget(300_000L)
+            assertEquals(300_000L, first.monthlyInvestmentTarget)
+            assertEquals(listOf(300_000L), scenario.settings.targets.values.toList())
+            assertFailsWith<IllegalArgumentException> { first.updateMonthlyInvestmentTarget(0) }
+            scenario.store.clear()
+            val reopened = model(scenario)
+            advanceUntilIdle()
+            assertEquals(300_000L, reopened.monthlyInvestmentTarget)
+            reopened.connect("https://second.example.test"); advanceUntilIdle()
+            assertNull(reopened.user)
+            assertEquals(100_000L, reopened.monthlyInvestmentTarget)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun numberPrivacyPersistsWithoutChangingOrRefetchingFinancialData() = runTest {
+        val scenario = Scenario()
+        val first = model(scenario)
+        try {
+            advanceUntilIdle()
+            assertFalse(first.numbersHidden)
+            val snapshot = first.portfolio
+            val reads = scenario.purchaseReads
+            first.toggleNumberVisibility()
+            assertTrue(first.numbersHidden); assertTrue(scenario.settings.hiddenNumbers)
+            assertSame(snapshot, first.portfolio)
+            assertEquals(reads, scenario.purchaseReads)
+            scenario.store.clear()
+            val reopened = model(scenario)
+            advanceUntilIdle()
+            assertTrue(reopened.numbersHidden)
+            reopened.toggleNumberVisibility()
+            assertFalse(reopened.numbersHidden); assertFalse(scenario.settings.hiddenNumbers)
+            assertEquals("private-purchase", reopened.purchases.single().text("id"))
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
 }
