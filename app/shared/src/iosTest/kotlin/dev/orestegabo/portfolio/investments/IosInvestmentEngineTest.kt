@@ -60,6 +60,30 @@ class IosInvestmentEngineTest {
         } finally { engine.destroy(); Dispatchers.resetMain() }
     }
 
+    @Test fun nativePdfKitRecognizesStatementWithoutTurningDepositsIntoPurchases() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val engine = IosInvestmentEngine()
+        try {
+            val text = """
+                BK CAPITAL
+                CLIENT STATEMENT
+                From Date : 01-Jul-2026
+                To Date : 30-Sep-2026
+                Account Summary Balance (RWF)
+                Opening Balance As On 01-07-2026 0.00 0.00
+                14-Jul-2026 Receipt DEMO 0.00 1,511,000.00
+                17-Jul-2026 Journal 1 July Bond Cost 1,500,000.00 0.00
+                17-Jul-2026 Journal 1 Bond Fee 5,000.00 0.00
+                Closing Balance As On 30-Sep-2026 : 100.00 Cr
+            """.trimIndent()
+            val result = withContext(Dispatchers.Default) { engine.run("pdf", pdf = bondPdf(false, text)) }
+            assertEquals("statement", result.text("kind"))
+            assertEquals(1, result.rows("rows").size)
+            assertEquals("bond", result.rows("rows").single().text("kind"))
+            assertFalse(result.rows("rows").single().has("faceValue"))
+        } finally { engine.destroy(); Dispatchers.resetMain() }
+    }
+
     @Test fun unrecognizedPdfShowsAnActionableErrorWithoutItsContents() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val engine = IosInvestmentEngine()
