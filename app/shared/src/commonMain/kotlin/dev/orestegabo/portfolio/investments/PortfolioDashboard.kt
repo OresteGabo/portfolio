@@ -16,7 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
@@ -27,6 +29,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import kotlinx.datetime.LocalDate
 import kotlinx.coroutines.launch
@@ -38,7 +41,7 @@ private val DashboardGold = Color(0xFFECC75F)
 private val AllocationGreen = Color(0xFF739A87)
 
 @Composable
-fun PortfolioScreen(model: PortfolioModel, seeAll: () -> Unit, openCalendar: (LocalDate) -> Unit, detail: (JsonRecord) -> Unit) {
+fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, openMissing: (JsonRecord) -> Unit, allMissing: () -> Unit, seeAll: () -> Unit, openCalendar: (LocalDate) -> Unit, detail: (JsonRecord) -> Unit) {
     var kind by rememberSaveable { mutableStateOf("all") }
     var status by rememberSaveable { mutableStateOf("all") }
     val recentBonds = model.portfolio.recentBonds(Today)
@@ -47,12 +50,20 @@ fun PortfolioScreen(model: PortfolioModel, seeAll: () -> Unit, openCalendar: (Lo
     val valuation = model.portfolio.valuation(Today, model.quotes)
     val insights = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val topInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding()
     val payments = remember(model.portfolio) { investmentCalendarEvents(emptyList(), model.portfolio) }
+    PortfolioPullRefresh(model) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 108.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        item { PortfolioHero(valuation, model.busy, model.quoteRefreshFailed || model.quotes?.optJSONObject("source")?.optBoolean("stale") == true,
-            model.quotes?.optJSONObject("source")?.text("publishedAt").orEmpty().take(10), model::refresh) }
-        if (summary.isNotEmpty()) item {
+        item { PortfolioHero(valuation, topInset, model.numbersHidden, model::toggleNumberVisibility, model.quoteRefreshFailed || model.quotes?.optJSONObject("source")?.optBoolean("stale") == true,
+            model.quotes?.optJSONObject("source")?.text("publishedAt").orEmpty().take(10)) {
+            if (model.busy && model.refreshPhase == PortfolioRefreshPhase.IDLE || model.error != null || model.message != null) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (model.busy && model.refreshPhase == PortfolioRefreshPhase.IDLE) LinearProgressIndicator(Modifier.fillMaxWidth())
+                model.error?.let { Notice(it, true) { model.error = null } }
+                model.message?.let { Notice(it, false) { model.message = null } }
+            }
+        } }
+        item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("Asset allocation", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
@@ -60,7 +71,7 @@ fun PortfolioScreen(model: PortfolioModel, seeAll: () -> Unit, openCalendar: (Lo
                         scope.launch { insights.animateScrollToItem((insights.firstVisibleItemIndex - 1).coerceAtLeast(0)) }
                     }) { Icon(Icons.Outlined.ChevronLeft, "Previous insight") }
                     IconButton(enabled = insights.canScrollForward, onClick = {
-                        scope.launch { insights.animateScrollToItem((insights.firstVisibleItemIndex + 1).coerceAtMost(summary.size * 2 - 1)) }
+                        scope.launch { insights.animateScrollToItem((insights.firstVisibleItemIndex + 1).coerceAtMost(summary.size * 2)) }
                     }) { Icon(Icons.Outlined.ChevronRight, "Next insight") }
                 }
                 BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -73,9 +84,17 @@ fun PortfolioScreen(model: PortfolioModel, seeAll: () -> Unit, openCalendar: (Lo
                                 CouponIncomeCard(total, model.portfolio, coupons, Modifier.width(cardWidth), openCalendar)
                             }
                         }
+                        item(key = "monthly-target") { MonthlyTargetCard(model, Modifier.width(cardWidth)) }
                     }
                 }
             }
+        }
+        if (model.statementItems.isNotEmpty()) {
+            item { Inset { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Missing documents", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                if (model.statementItems.size > 3) TextButton(onClick = allMissing) { Text("See all") }
+            } } }
+            items(model.statementItems.take(3), key = { "missing:${it.text("id")}" }) { row -> Inset { MissingStatementTile(row) { openMissing(row) } } }
         }
         item { Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -87,7 +106,7 @@ fun PortfolioScreen(model: PortfolioModel, seeAll: () -> Unit, openCalendar: (Lo
             }
             ChoiceRow(listOf("all", "shares", "bonds"), kind) { kind = it }
         } }
-        if (model.busy && recentBonds.isEmpty() && recentShares.isEmpty()) item { LoadingState() }
+        if (model.busy && model.refreshPhase == PortfolioRefreshPhase.IDLE && recentBonds.isEmpty() && recentShares.isEmpty()) item { LoadingState() }
         else {
             if (kind != "shares") {
                 if (kind == "all") item { SectionLabel("Bonds") }
@@ -97,7 +116,7 @@ fun PortfolioScreen(model: PortfolioModel, seeAll: () -> Unit, openCalendar: (Lo
                 if (bonds.isEmpty() && recentBonds.isNotEmpty()) item { Inset {
                     EmptyState("No $status bonds", EmptyArtwork.SEARCH, compact = true, actionLabel = "Show all", onAction = { status = "all" })
                 } }
-                items(bonds, key = { "bond:${it.text("id")}" }) { purchase -> Inset { BondPurchaseTile(purchase) { detail(purchase) } } }
+                items(bonds, key = { "bond:${it.text("id")}" }) { purchase -> Inset { BondPurchaseTile(purchase, uploadConfirmation = { uploadPending(purchase) }) { detail(purchase) } } }
             }
             if (kind != "bonds") {
                 if (kind == "all") item { SectionLabel("Shares") }
@@ -105,6 +124,7 @@ fun PortfolioScreen(model: PortfolioModel, seeAll: () -> Unit, openCalendar: (Lo
                 items(recentShares, key = { "share:${it.text("id")}" }) { holding -> Inset { SharePurchaseTile(holding) } }
             }
         }
+    }
     }
 }
 
@@ -114,28 +134,29 @@ fun PortfolioScreen(model: PortfolioModel, seeAll: () -> Unit, openCalendar: (Lo
 }
 
 @Composable
-private fun PortfolioHero(totals: List<CurrencyValuation>, busy: Boolean, stale: Boolean, priceDate: String, refresh: () -> Unit) {
+private fun PortfolioHero(totals: List<CurrencyValuation>, topInset: Dp, hidden: Boolean, togglePrivacy: () -> Unit, stale: Boolean, priceDate: String, notice: @Composable () -> Unit) {
     val background = MaterialTheme.colorScheme.background
     Box(Modifier.fillMaxWidth()) {
-        Box(Modifier.fillMaxWidth().height(300.dp)) {
+        Box(Modifier.fillMaxWidth().height(300.dp + topInset)) {
             Image(painterResource(Res.drawable.kigali_hero), null, Modifier.matchParentSize(), contentScale = ContentScale.Crop,
                 alignment = Alignment.Center)
             Box(Modifier.matchParentSize().background(Brush.horizontalGradient(listOf(Color(0xE6101814), Color(0x65202B21)))))
             Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, background), startY = 100f)))
             ImigongoMotif(Modifier.align(Alignment.CenterEnd).size(230.dp).offset(x = 52.dp, y = 24.dp), DashboardGold.copy(alpha = .26f))
         }
-        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp), verticalArrangement = Arrangement.spacedBy(38.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Surface(shape = RoundedCornerShape(15.dp), color = Color(0xFFFAF7E8)) {
-                    Image(painterResource(Res.drawable.gabo_mark), "Gabo logo", Modifier.padding(7.dp).size(40.dp))
+        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp + topInset), verticalArrangement = Arrangement.spacedBy(38.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Surface(shape = RoundedCornerShape(15.dp), color = Color(0xFFFAF7E8)) {
+                        Image(painterResource(Res.drawable.gabo_mark), "Gabo logo", Modifier.padding(7.dp).size(40.dp))
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text("Portfolio", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("Rwanda investments", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = .75f))
+                    }
+                    CompositionLocalProvider(LocalContentColor provides Color.White) { NumberVisibilityButton(hidden, togglePrivacy) }
                 }
-                Column(Modifier.weight(1f)) {
-                    Text("Portfolio", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color.White)
-                    Text("Rwanda investments", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = .75f))
-                }
-                Surface(shape = RoundedCornerShape(16.dp), color = Color.Black.copy(alpha = .22f)) {
-                    IconButton(onClick = refresh, enabled = !busy) { Icon(Icons.Outlined.Sync, "Sync portfolio", tint = Color.White) }
-                }
+                notice()
             }
             if (totals.isEmpty()) {
                 Spacer(Modifier.height(46.dp))
@@ -189,7 +210,7 @@ private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, pri
                         Text("Estimated net worth", Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = Color(0xFFE8E4D3))
                         IconButton(onClick = { showBasis = true }, modifier = Modifier.size(48.dp)) { Icon(Icons.Outlined.Info, "Valuation basis", tint = Color(0xFFE8E4D3), modifier = Modifier.size(20.dp)) }
                     }
-                    Text(money(valuation.estimatedNetWorth, total.currency), modifier = Modifier.semantics { contentDescription = money(valuation.estimatedNetWorth, total.currency) }, style = MaterialTheme.typography.headlineSmall,
+                    FinancialText(money(valuation.estimatedNetWorth, total.currency), modifier = Modifier, style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold, maxLines = 2)
                 }
                 HorizontalDivider(color = DashboardGold.copy(alpha = .2f))
@@ -208,7 +229,7 @@ private fun MoneyMetric(label: String, value: Double, currency: String, icon: an
     Column(modifier, verticalArrangement = Arrangement.spacedBy(7.dp)) {
         Icon(icon, null, Modifier.size(20.dp), tint = DashboardGold)
         Text(label, style = MaterialTheme.typography.labelSmall, minLines = 2, color = Color(0xFFDAD7C6))
-        Text(money(value, currency), modifier = Modifier.semantics { contentDescription = money(value, currency) },
+        FinancialText(money(value, currency), modifier = Modifier,
             style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
     }
 }
@@ -272,9 +293,10 @@ private fun InsightCard(title: String, style: InsightStyle, modifier: Modifier, 
 private fun AllocationCard(total: CurrencyInvestment, modifier: Modifier) {
     val fraction = if (total.investedCash > 0) (total.shareCashCost / total.investedCash).toFloat().coerceIn(0f, 1f) else 0f
     val foreground = LocalContentColor.current
+    val hidden = LocalNumbersHidden.current
     InsightCard("Cash allocation", InsightStyle.ALLOCATION, modifier) {
         Row(Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-            Box(Modifier.size(112.dp).semantics { contentDescription = "Shares ${percent(fraction.toDouble())}, bonds ${percent(if (total.investedCash > 0) 1.0 - fraction else 0.0)} of cash cost" }, contentAlignment = Alignment.Center) {
+            if (hidden) HiddenFinancialChart(Modifier.size(112.dp)) else Box(Modifier.size(112.dp).semantics { contentDescription = "Shares ${percent(fraction.toDouble())}, bonds ${percent(if (total.investedCash > 0) 1.0 - fraction else 0.0)} of cash cost" }, contentAlignment = Alignment.Center) {
                 Canvas(Modifier.fillMaxSize().padding(7.dp)) {
                     val stroke = Stroke(13.dp.toPx(), cap = StrokeCap.Butt)
                     drawArc(foreground.copy(alpha = .08f), -90f, 360f, false, style = stroke)
@@ -296,7 +318,7 @@ private fun AllocationCard(total: CurrencyInvestment, modifier: Modifier) {
         HorizontalDivider(color = insightAccent(InsightStyle.ALLOCATION).copy(alpha = .2f))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Total cash cost", style = MaterialTheme.typography.labelMedium)
-            Text(money(total.investedCash, total.currency), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+            FinancialText(money(total.investedCash, total.currency), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -307,7 +329,7 @@ private fun AllocationCard(total: CurrencyInvestment, modifier: Modifier) {
             Canvas(Modifier.size(7.dp)) { drawCircle(color) }
             Text(label, style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current.copy(alpha = .65f))
         }
-        Text(money(cost, currency), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        FinancialText(money(cost, currency), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -335,7 +357,7 @@ private fun CouponIncomeCard(
             listOf("Annual net" to total.netAnnualCoupon, "Accrued" to tracks.sumOf { it.accruedCoupon }).forEach { (label, amount) ->
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(label, style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current.copy(alpha = .68f))
-                    Text(money(amount, total.currency), Modifier.semantics { contentDescription = money(amount, total.currency) },
+                    FinancialText(money(amount, total.currency), Modifier,
                         style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
             }
@@ -362,11 +384,57 @@ private fun CouponIncomeCard(
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Next coupon · ${next.date.year}", style = MaterialTheme.typography.labelSmall,
                         color = LocalContentColor.current.copy(alpha = .68f))
-                    Text(money(amount, total.currency), Modifier.semantics { contentDescription = money(amount, total.currency) },
+                    FinancialText(money(amount, total.currency), Modifier,
                         style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
                 Icon(Icons.Outlined.ChevronRight, null, Modifier.size(20.dp), tint = accent)
             }
+        }
+    }
+}
+
+/** The photo scrolls; this light/dark veil keeps system icons legible above every list item. */
+@Composable
+fun Modifier.portfolioStatusBarFade(enabled: Boolean): Modifier {
+    if (!enabled) return this
+    val inset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding()
+    val background = MaterialTheme.colorScheme.background
+    return drawWithContent {
+        drawContent()
+        if (inset > 0.dp) {
+            val height = (inset + 12.dp).toPx()
+            drawRect(Brush.verticalGradient(
+                0f to background.copy(alpha = .8f),
+                .75f to background.copy(alpha = .6f),
+                1f to Color.Transparent, endY = height), size = Size(size.width, height))
+        }
+    }
+}
+
+@Composable
+private fun MonthlyTargetCard(model: PortfolioModel, modifier: Modifier) {
+    val progress = monthlyInvestmentProgress(model.portfolio, Today, model.monthlyInvestmentTarget, Today)
+    InsightCard("Monthly target", InsightStyle.PAYMENT, modifier) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            FinancialText(money(model.monthlyInvestmentTarget.toDouble(), "RWF"), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Icon(if (progress?.achieved == true) Icons.Outlined.CheckCircle else Icons.Outlined.Flag, null)
+        }
+        if (progress == null) TextButton(enabled = !model.busy, onClick = { model.loadInvestmentHistory() }) { Text("Check progress") }
+        else Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (!LocalNumbersHidden.current) LinearProgressIndicator(progress = { progress.fraction }, modifier = Modifier.fillMaxWidth())
+            else Spacer(Modifier.height(4.dp))
+            Row(Modifier.fillMaxWidth()) {
+                Column(Modifier.weight(1f)) {
+                    Text("Invested", style = MaterialTheme.typography.labelSmall)
+                    FinancialText(money(progress.confirmed, "RWF"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                }
+                Column(Modifier.weight(1f)) {
+                    Text("Remaining", style = MaterialTheme.typography.labelSmall)
+                    FinancialText(money(progress.remaining, "RWF"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                }
+            }
+            Text(if (progress.achieved) "${Today.monthLabel()} · Target reached" else Today.monthLabel(), style = MaterialTheme.typography.labelLarge)
+            if (progress.pending > 0) FinancialText("${money(progress.pending, "RWF")} pending", style = MaterialTheme.typography.labelSmall)
         }
     }
 }
