@@ -83,3 +83,11 @@ test("ignores document instructions and leaves unrelated fields absent", () => {
   assert.deepEqual(result.fields, {});
   assert.ok(result.missingFields.length > 0);
 });
+
+
+test("recognizes OCR capital I in July dates without altering bond codes", () => {
+  const text = document.replace("1-Aug-2027", "1-JuI-2027");
+  const result = parseBondPdfText(text, true);
+  assert.ok(result.fields.couponDates.includes("2027-07-01"));
+  assert.equal(result.fields.isin, "RWTEST000001/MN");
+});
