@@ -21,6 +21,8 @@ actual fun rememberServerSettings(): ServerSettings {
     val context = LocalContext.current.applicationContext
     return remember(context) { object : ServerSettings {
         private val prefs = context.getSharedPreferences("connection", Context.MODE_PRIVATE)
+        override fun readChartStyle(): String? = prefs.getString("chartStyle", null)
+        override fun writeChartStyle(style: String) { prefs.edit().putString("chartStyle", style).apply() }
         override fun readTheme(): String? = prefs.getString("theme", null)
         override fun writeTheme(theme: String) { prefs.edit().putString("theme", theme).apply() }
         override fun readOrigin(): String? = prefs.getString("origin", null)
