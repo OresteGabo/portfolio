@@ -6,6 +6,10 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
+import kotlin.io.encoding.Base64
+import kotlin.random.Random
+import kotlin.time.TimeSource
+import kotlinx.coroutines.delay
 
 class PortfolioModel(
     private val settings: ServerSettings,
@@ -17,31 +21,72 @@ class PortfolioModel(
         private set
     var api = apiFactory(origin)
         private set
+    var numbersHidden by mutableStateOf(settings.readNumbersHidden())
+        private set
+    fun toggleNumberVisibility() {
+        settings.writeNumbersHidden(!numbersHidden)
+        numbersHidden = !numbersHidden
+    }
     val secureSignInAvailable get() = vault?.available == true
     val unlockLabel get() = vault?.unlockLabel ?: "Device unlock"
     var secureSignInEnabled by mutableStateOf(vault?.hasSaved(origin) == true)
         private set
     var locked by mutableStateOf(secureSignInEnabled)
         private set
+    private var importedPdf: ByteArray? = null
+    private var importedReview: JsonRecord? = null
+    private var pdfUploadId = ""
+    private var uploadedDocument: String? = null
     private var activeJob: Job? = null
     private var generation = 0
     private var foreground = true
+    private var automaticUnlockAttempted = false
+    private var automaticUnlockPending = false
     var user by mutableStateOf<JsonRecord?>(null)
         private set
     // Invited accounts use random UUIDv4 IDs. Environment-managed friends use UUIDv8.
     val canDeleteAccount get() = user?.optBoolean("isOwner") == false &&
         user?.text("id")?.matches(Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}")) == true
+    var refreshPhase by mutableStateOf(PortfolioRefreshPhase.IDLE)
+        private set
     var busy by mutableStateOf(false)
         private set
-    var error by mutableStateOf<String?>(null)
-    var message by mutableStateOf<String?>(null)
+    var pdfImportProgress by mutableStateOf<PdfImportProgress?>(null)
+        private set
+    var errorRevision by mutableStateOf(0)
+        private set
+    var messageRevision by mutableStateOf(0)
+        private set
+    private var errorText by mutableStateOf<String?>(null)
+    var error: String?
+        get() = errorText
+        set(value) { errorText = value; errorRevision++ }
+    private var messageText by mutableStateOf<String?>(null)
+    var message: String?
+        get() = messageText
+        set(value) { messageText = value; messageRevision++ }
     var portfolio by mutableStateOf(PortfolioSnapshot())
+        private set
+    var statementItems by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
     var historyComplete by mutableStateOf(false)
         private set
     private var compactOverviewSupported: Boolean? = null
     val purchases get() = portfolio.purchases
     val holdings get() = portfolio.holdings
+    var monthlyInvestmentTarget by mutableStateOf(DEFAULT_MONTHLY_INVESTMENT_TARGET)
+        private set
+    private fun targetAccount() = user?.text("id")?.takeIf { it.isNotBlank() }?.let { "$origin|$it" }
+    private fun loadInvestmentTarget() {
+        monthlyInvestmentTarget = targetAccount()?.let(settings::readMonthlyTarget)?.takeIf { validInvestmentTarget(it) }
+            ?: DEFAULT_MONTHLY_INVESTMENT_TARGET
+    }
+    fun updateMonthlyInvestmentTarget(amount: Long) {
+        require(validInvestmentTarget(amount)) { "Enter a positive whole RWF amount." }
+        val account = requireNotNull(targetAccount())
+        settings.writeMonthlyTarget(account, amount)
+        monthlyInvestmentTarget = amount
+    }
     val documents get() = portfolio.documents
     var market by mutableStateOf<JsonRecord?>(null)
         private set
@@ -83,13 +128,25 @@ class PortfolioModel(
                     if (locked) { vault?.lock(); api.close(); api = apiFactory(origin); clearPrivateData() }
                     error = failure.message?.takeIf { it.isNotBlank() } ?: "Could not connect. Please try again."
                 }
-            } finally { if (token == generation) { busy = false; activeJob = null } }
+            } finally { if (token == generation) { busy = false; activeJob = null; tryAutomaticUnlock() } }
         }
     }
-    fun foreground() { foreground = true }
+    fun foreground() {
+        foreground = true
+        if (locked && !automaticUnlockAttempted) automaticUnlockPending = true
+        tryAutomaticUnlock()
+    }
+    private fun tryAutomaticUnlock() {
+        if (!automaticUnlockPending || !foreground || busy || !locked || !secureSignInEnabled || vault?.authenticating == true) return
+        unlock()
+    }
     fun background(systemInteraction: Boolean = false) {
         foreground = false
-        if (!systemInteraction && vault?.authenticating != true) lock()
+        if (!systemInteraction && vault?.authenticating != true) {
+            automaticUnlockPending = false
+            automaticUnlockAttempted = false
+            lock()
+        }
     }
     fun lock() {
         if (!secureSignInEnabled) return
@@ -132,41 +189,48 @@ class PortfolioModel(
         require(response.getJSONObject("user").text("id") == account.text("id")) { "Sign-in account did not match." }
         if (saveSignIn(email, password)) message = "Secure sign-in enabled on this device."
     }
-    fun unlock() = runAction(allowLocked = true) {
-        val storage = requireNotNull(vault)
-        val raw = storage.read(origin) ?: return@runAction
-        require(raw.length <= 48_000) { "Saved sign-in is invalid." }
-        val saved = runCatching { JsonRecord(raw) }.getOrElse { error("Saved sign-in is invalid. Use your password to sign in again.") }
-        require(saved.text("origin") == origin) { "Saved sign-in belongs to another server." }
-        val email = saved.text("email")
-        val password = saved.text("password")
-        require(email.isNotBlank() && password.length in 1..128) { "Saved sign-in is invalid." }
-        if (!foreground) { lock(); return@runAction }
-        try { api.restoreSession(saved.text("session")) }
-        catch (failure: CancellationException) { throw failure }
-        catch (_: Exception) { api.clearSession() }
-        val session = try { api.request("/api/bonds/auth/session") }
-        catch (failure: ApiException) { if (failure.status == 401) JsonRecord().put("authenticated", false) else throw failure }
-        var account = session.optJSONObject("user").takeIf { session.optBoolean("authenticated") && it?.text("email").equals(email, ignoreCase = true) }
-        if (account == null) {
-            api.clearSession()
-            try {
-                account = api.request("/api/bonds/auth/login", "POST", JsonRecord().put("email", email).put("password", password)).getJSONObject("user")
-            } catch (failure: ApiException) {
-                if (failure.status == 401 || failure.status == 403) {
-                    storage.delete(origin); secureSignInEnabled = false; locked = false
-                    throw ApiException(failure.status, "Your saved sign-in no longer works. Sign in with your password.")
+    fun unlock() {
+        if (!locked || busy) return
+        // One automatic prompt per app visit. Cancellation leaves a manual retry available.
+        automaticUnlockPending = false
+        automaticUnlockAttempted = true
+        runAction(allowLocked = true) {
+            val storage = requireNotNull(vault)
+            val raw = storage.read(origin) ?: return@runAction
+            require(raw.length <= 48_000) { "Saved sign-in is invalid." }
+            val saved = runCatching { JsonRecord(raw) }.getOrElse { error("Saved sign-in is invalid. Use your password to sign in again.") }
+            require(saved.text("origin") == origin) { "Saved sign-in belongs to another server." }
+            val email = saved.text("email")
+            val password = saved.text("password")
+            require(email.isNotBlank() && password.length in 1..128) { "Saved sign-in is invalid." }
+            if (!foreground) { lock(); return@runAction }
+            try { api.restoreSession(saved.text("session")) }
+            catch (failure: CancellationException) { throw failure }
+            catch (_: Exception) { api.clearSession() }
+            val session = try { api.request("/api/bonds/auth/session") }
+            catch (failure: ApiException) { if (failure.status == 401) JsonRecord().put("authenticated", false) else throw failure }
+            var account = session.optJSONObject("user").takeIf { session.optBoolean("authenticated") && it?.text("email").equals(email, ignoreCase = true) }
+            if (account == null) {
+                api.clearSession()
+                try {
+                    account = api.request("/api/bonds/auth/login", "POST", JsonRecord().put("email", email).put("password", password)).getJSONObject("user")
+                } catch (failure: ApiException) {
+                    if (failure.status == 401 || failure.status == 403) {
+                        storage.delete(origin); secureSignInEnabled = false; locked = false
+                        throw ApiException(failure.status, "Your saved sign-in no longer works. Sign in with your password.")
+                    }
+                    throw failure
                 }
-                throw failure
             }
+            require(account.text("email").equals(email, ignoreCase = true)) { "Sign-in account did not match." }
+            if (calendar.isEmpty() && education.isEmpty()) loadPublicData()
+            loadPrivateData()
+            storage.save(origin, JsonRecord().put("origin", origin).put("email", email).put("password", password).put("session", api.sessionSnapshot()).toString())
+            if (!foreground) { lock(); return@runAction }
+            user = account
+            loadInvestmentTarget()
+            locked = false
         }
-        require(account.text("email").equals(email, ignoreCase = true)) { "Sign-in account did not match." }
-        if (calendar.isEmpty() && education.isEmpty()) loadPublicData()
-        loadPrivateData()
-        storage.save(origin, JsonRecord().put("origin", origin).put("email", email).put("password", password).put("session", api.sessionSnapshot()).toString())
-        if (!foreground) { lock(); return@runAction }
-        user = account
-        locked = false
     }
 
     fun connect(value: String) = action {
@@ -187,6 +251,7 @@ class PortfolioModel(
     private suspend fun checkSession() {
         val session = api.request("/api/bonds/auth/session")
         user = if (session.optBoolean("authenticated")) session.optJSONObject("user") else null
+        loadInvestmentTarget()
         if (user != null) loadPrivateData()
     }
 
@@ -202,6 +267,7 @@ class PortfolioModel(
         catch (failure: CancellationException) { throw failure }
         catch (_: Exception) { message = "Signed in. Your password could not be saved to the password manager." }
         user = account
+        loadInvestmentTarget()
         loadPrivateData()
         if (savePassword) saveSignIn(email, password)
     }
@@ -220,7 +286,13 @@ class PortfolioModel(
         val holdings = overview?.rows("holdings") ?: api.request("/api/bonds/equities").rows("holdings")
         val documents = api.request("/api/bonds/documents").rows("documents")
         fun ids(key: String): Set<String>? = overview?.optJSONArray(key)?.let { rows -> (0 until rows.length()).map { rows.getString(it) }.toSet() }
-        portfolio = PortfolioSnapshot(purchases, holdings, documents, ids("recentPurchaseIds"), ids("recentHoldingIds"))
+        portfolio = PortfolioSnapshot(purchases, holdings, documents, ids("recentPurchaseIds"), ids("recentHoldingIds"),
+            overview?.optJSONArray("monthlyInvestmentTotals")?.objects())
+        statementItems = try { api.request("/api/bonds/statement-items").rows("items") }
+        catch (failure: ApiException) {
+            if (failure.status == 401) throw failure
+            if (failure.status == 404 || failure.status == 405) emptyList() else statementItems
+        }
         historyComplete = overview == null
         if (portfolio.activeShares(Today).isNotEmpty()) refreshEquityQuotes()
     }
@@ -249,12 +321,87 @@ class PortfolioModel(
         catch (_: Exception) { quoteRefreshFailed = true }
     }
 
-    fun refresh() = action { loadPrivateData(); message = "Portfolio updated from your server." }
+    fun refresh() = refreshWithFeedback(showMessage = true)
+    fun refreshPortfolio() = refreshWithFeedback(showMessage = false)
+    private fun refreshWithFeedback(showMessage: Boolean) = action {
+        val token = generation
+        val started = TimeSource.Monotonic.markNow()
+        refreshPhase = PortfolioRefreshPhase.LOADING
+        try {
+            val failure = try { loadPrivateData(); null }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) { error }
+            // Count network time toward the minimum; never delay a slow request further.
+            delay((MIN_REFRESH_LOADING_MILLIS - started.elapsedNow().inWholeMilliseconds).coerceAtLeast(0))
+            refreshPhase = if (failure == null) PortfolioRefreshPhase.SUCCESS else PortfolioRefreshPhase.ERROR
+            delay(if (failure == null) REFRESH_SUCCESS_MILLIS else REFRESH_ERROR_MILLIS)
+            if (failure != null) throw failure
+            if (showMessage) message = "Portfolio updated from your server."
+        } finally { if (token == generation) refreshPhase = PortfolioRefreshPhase.IDLE }
+    }
     fun loadMarket(refresh: Boolean = false) = action {
         market = api.request("/api/bonds/rse/market" + if (refresh) "?refresh=1" else "")
         val latest = api.request("/api/bonds/rse/quotes?kind=equities" + if (refresh) "&refresh=1" else "")
         if (latest.rows("quotes").isNotEmpty()) { quotes = latest; quoteRefreshFailed = false }
         else quoteRefreshFailed = true
+    }
+
+    fun importPurchasePdf(actions: NativeActions, engine: InvestmentEngine, bondOnly: Boolean = false,
+        expectedStatement: JsonRecord? = null, completed: (JsonRecord) -> Unit) = action {
+        importedPdf = null; importedReview = null; uploadedDocument = null
+        pdfUploadId = Random.nextBytes(16).joinToString("") { (it.toInt() and 255).toString(16).padStart(2, '0') }
+        try { readPurchasePdf(actions, engine, bondOnly, expectedStatement,
+            selectedPdf = { importedPdf = it }, progress = { pdfImportProgress = it })?.let {
+            importedReview = it
+            completed(it)
+        } }
+        finally { pdfImportProgress = null }
+    }
+
+    fun discardImportedPdf(review: JsonRecord) {
+        if (importedReview === review) { importedPdf = null; importedReview = null; uploadedDocument = null }
+    }
+
+    fun cancelPdfImport() { if (pdfImportProgress != null) activeJob?.cancel() }
+
+    fun checkStatement(review: JsonRecord, completed: (List<JsonRecord>) -> Unit) = action {
+        val rows = review.rows("rows").map { JsonRecord(it.toString()).put("currency", "RWF").put("broker", "BK Capital") }
+        require(rows.isNotEmpty() && rows.size <= 500) { "No purchases were found in this statement." }
+        val response = api.request("/api/bonds/statement-items", "POST", JsonRecord().put("items", JsonList(rows)))
+        statementItems = api.request("/api/bonds/statement-items").rows("items")
+        completed(response.rows("rows"))
+    }
+
+    fun saveImportedPurchase(review: JsonRecord, purchase: JsonRecord, id: String?, completed: () -> Unit) = action {
+        require(importedReview === review && importedPdf != null) { "Choose the PDF again before confirming." }
+        val bond = review.text("kind") == "bond"
+        try {
+            if (uploadedDocument == null) {
+                val pdf = importedPdf!!
+                val chunkSize = 512 * 1024
+                val count = (pdf.size + chunkSize - 1) / chunkSize
+                for (index in 0 until count) {
+                    pdfImportProgress = PdfImportProgress(PdfImportStage.UPLOADING, "${index + 1} / $count")
+                    val metadata = JsonRecord().put("label", if (bond) "Bond confirmation" else "Share purchase contract")
+                        .put("instrumentName", purchase.text(if (bond) "bondName" else "securityName"))
+                        .put("issuer", purchase.text(if (bond) "issuer" else "broker"))
+                        .put("documentDate", purchase.text(if (bond) "purchaseDate" else "tradeDate"))
+                        .put("category", if (bond) "Bond confirmation" else "Share contract")
+                    val result = api.request("/api/bonds/documents", "POST", JsonRecord()
+                        .put("uploadId", pdfUploadId).put("index", index).put("count", count)
+                        .put("content", Base64.encode(pdf.copyOfRange(index * chunkSize, minOf(pdf.size, (index + 1) * chunkSize))))
+                        .put("metadata", metadata))
+                    if (index == count - 1) uploadedDocument = result.text("documentId").takeIf { it.isNotBlank() }
+                }
+                require(uploadedDocument != null) { "The PDF could not be saved. Try again." }
+            }
+            pdfImportProgress = PdfImportProgress(PdfImportStage.SAVING)
+            api.request(if (bond) "/api/bonds/purchases" + (id?.let { "/$it" } ?: "") else "/api/bonds/equities",
+                if (bond && id != null) "PUT" else "POST", purchase)
+            importedPdf = null; importedReview = null; uploadedDocument = null
+            completed()
+            refreshAfterWrite("Purchase and PDF saved.")
+        } finally { pdfImportProgress = null }
     }
 
     fun savePurchase(purchase: JsonRecord, id: String?, completed: () -> Unit) = action {
@@ -281,7 +428,7 @@ class PortfolioModel(
         catch (failure: CancellationException) { throw failure }
         catch (failure: Exception) {
             if (failure is ApiException && failure.status == 401) throw failure
-            error("$success Could not refresh the portfolio. Tap Sync to update; do not submit it again.")
+            error("$success Could not refresh the portfolio. Pull down on Portfolio to update; do not submit it again.")
         }
     }
 
@@ -290,7 +437,7 @@ class PortfolioModel(
         val response = api.request("/api/bonds/auth/account", "DELETE", JsonRecord().put("password", password))
         check(response.optBoolean("deleted")) { "Account deletion was not confirmed. Please try again." }
         var credentialRemoved = true
-        try { vault?.delete(origin) }
+        try { targetAccount()?.let(settings::forgetMonthlyTarget); vault?.delete(origin) }
         catch (_: Exception) { credentialRemoved = false }
         finally {
             secureSignInEnabled = false; locked = false
@@ -308,11 +455,16 @@ class PortfolioModel(
         }
     }
 
-    override fun onCleared() { vault?.lock(); api.close() }
+    override fun onCleared() { importedPdf = null; importedReview = null; vault?.lock(); api.close() }
 
     private fun clearPrivateData() {
+        importedPdf = null; importedReview = null; uploadedDocument = null
+        refreshPhase = PortfolioRefreshPhase.IDLE
+        monthlyInvestmentTarget = DEFAULT_MONTHLY_INVESTMENT_TARGET
         user = null
         portfolio = PortfolioSnapshot()
+        statementItems = emptyList()
+        pdfImportProgress = null
         historyComplete = false
         market = null
         quotes = null
