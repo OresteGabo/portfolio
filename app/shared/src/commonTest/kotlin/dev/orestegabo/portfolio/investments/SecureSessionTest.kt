@@ -17,8 +17,10 @@ class SecureSessionTest {
         var value: String? = null
         var cancel = false
         var locks = 0
+        var reads = 0
+        override var authenticating = false
         override fun hasSaved(origin: String) = value != null
-        override suspend fun read(origin: String) = if (cancel) null else value
+        override suspend fun read(origin: String): String? { reads++; return if (cancel) null else value }
         override suspend fun save(origin: String, value: String): Boolean { this.value = value; return true }
         override fun delete(origin: String) { value = null }
         override fun lock() { locks++ }
@@ -116,7 +118,7 @@ class SecureSessionTest {
             runCurrent(); model.background(); advanceUntilIdle()
             assertFalse(wrote); assertTrue(model.locked); assertNull(model.user); assertTrue(model.purchases.isEmpty())
             assertNotNull(scenario.vault.value)
-            model.foreground(); model.unlock(); advanceUntilIdle()
+            model.foreground(); advanceUntilIdle()
             assertFalse(model.locked); assertNotNull(model.user)
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
@@ -220,6 +222,55 @@ class SecureSessionTest {
             assertNull(model.error)
             assertTrue(model.message.orEmpty().contains("could not be saved"))
             assertFalse(model.message.orEmpty().contains("synthetic-password-only"))
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun coldLaunchAutomaticallyUnlocksAfterStartupFinishesWithoutATap() = runTest {
+        val scenario = Scenario().also(::seed)
+        val model = model(scenario)
+        try {
+            model.foreground() // Resume can arrive while initial asset loading is busy.
+            model.foreground()
+            advanceUntilIdle()
+            assertEquals(1, scenario.vault.reads)
+            assertFalse(model.locked); assertNotNull(model.user)
+            model.foreground(); advanceUntilIdle()
+            assertEquals(1, scenario.vault.reads)
+            model.background()
+            assertTrue(model.locked); assertNull(model.user)
+            model.foreground(); advanceUntilIdle()
+            assertEquals(2, scenario.vault.reads)
+            assertFalse(model.locked); assertNotNull(model.user)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+    @Test fun cancellingAutomaticUnlockDoesNotLoopButNextVisitAndManualRetryWork() = runTest {
+        val scenario = Scenario().also(::seed).apply { vault.cancel = true }
+        val model = model(scenario)
+        try {
+            model.foreground(); advanceUntilIdle()
+            assertEquals(1, scenario.vault.reads); assertTrue(model.locked)
+            // The OS authentication sheet can send lifecycle events of its own.
+            scenario.vault.authenticating = true
+            model.background()
+            model.foreground()
+            scenario.vault.authenticating = false
+            model.foreground(); advanceUntilIdle()
+            assertEquals(1, scenario.vault.reads); assertEquals(0, scenario.requests)
+            model.background(); model.foreground(); advanceUntilIdle()
+            assertEquals(2, scenario.vault.reads); assertTrue(model.locked)
+            scenario.vault.cancel = false
+            model.unlock(); advanceUntilIdle()
+            assertEquals(3, scenario.vault.reads); assertFalse(model.locked)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+    @Test fun noSavedSignInNeverLaunchesDeviceAuthentication() = runTest {
+        val scenario = Scenario()
+        val model = model(scenario)
+        try {
+            model.foreground(); advanceUntilIdle()
+            model.background(); model.foreground(); advanceUntilIdle()
+            assertEquals(0, scenario.vault.reads)
+            assertFalse(model.locked)
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
 
