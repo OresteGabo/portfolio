@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.outlined.ShowChart
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -75,8 +76,14 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
         item { SettingsSection("Appearance") {
             AppearanceOptions(theme, changeTheme)
             SettingsDivider()
-            SettingsRow(Icons.Outlined.ShowChart, "Chart style", chartStyle.replaceFirstChar { it.uppercase() },
+            SettingsRow(Icons.AutoMirrored.Outlined.ShowChart, "Chart style", chartStyle.replaceFirstChar { it.uppercase() },
                 onClick = { dialog = "chartStyle" })
+        } }
+        item { SettingsSection("Investing") {
+            SettingsRow(Icons.Outlined.Flag, "Monthly investment target", privateFinancialValue(money(model.monthlyInvestmentTarget.toDouble(), "RWF")),
+                enabled = !model.busy, onClick = { dialog = "investmentTarget" })
+            SettingsDivider()
+            InvestmentGoalBreakdown(model)
         } }
         item { SettingsSection("Security") {
             SettingsRow(when (model.unlockLabel) { "Face ID" -> Icons.Outlined.Face; "Touch ID" -> Icons.Outlined.Fingerprint; else -> Icons.Outlined.Lock },
@@ -97,6 +104,10 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
             SettingsRow(Icons.Outlined.Password, "Passwords & AutoFill", "Use your phone’s password manager", onClick = { dialog = "passwords" })
         } }
         item { SettingsSection("Privacy") {
+            SettingsRow(Icons.Outlined.VisibilityOff, "Hide numbers", "Conceal financial figures throughout the app",
+                toggleState = model.numbersHidden, onClick = model::toggleNumberVisibility,
+                trailing = { Switch(checked = model.numbersHidden, onCheckedChange = null, modifier = Modifier.clearAndSetSemantics {}) })
+            SettingsDivider()
             SettingsRow(Icons.Outlined.PrivacyTip, "PDF imports & your data", "How your documents are handled", onClick = { dialog = "privacy" })
             if (model.canDeleteAccount) {
                 SettingsDivider()
@@ -134,6 +145,8 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
         } }
     }
 
+    if (dialog == "investmentTarget") InvestmentTargetDialog(model) { dialog = null }
+
     if (setupSecure) AlertDialog(
         onDismissRequest = { setupSecure = false; password = "" }, title = { Text("Enable secure sign-in") },
         text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -148,7 +161,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
 
     if (dialog == "chartStyle") AlertDialog(onDismissRequest = { dialog = null }, title = { Text("Chart style") }, text = {
         Column {
-            listOf("area" to Icons.Outlined.AreaChart, "line" to Icons.Outlined.ShowChart, "bars" to Icons.Outlined.BarChart).forEach { (value, icon) ->
+            listOf("area" to Icons.Outlined.AreaChart, "line" to Icons.AutoMirrored.Outlined.ShowChart, "bars" to Icons.Outlined.BarChart).forEach { (value, icon) ->
                 Row(Modifier.fillMaxWidth().selectable(selected = chartStyle == value, role = Role.RadioButton,
                     onClick = { changeChartStyle(value); dialog = null }).padding(vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -161,7 +174,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
     }, confirmButton = { TextButton(onClick = { dialog = null }) { Text("Cancel") } })
     if (dialog == "privacy" || dialog == "passwords") AlertDialog(onDismissRequest = { dialog = null },
         title = { Text(if (dialog == "privacy") "PDF imports & your data" else "Passwords & AutoFill") }, text = {
-            Text(if (dialog == "privacy") "PDF imports are read on your device. Review the filled details before saving a purchase to your account. Your portfolio is private to your signed-in account."
+            Text(if (dialog == "privacy") "PDFs are read on your device. Saving a purchase uploads its PDF to your private Documents. Review the figures before confirming."
                 else "Your phone’s password manager can fill your login. Enable Password AutoFill in your phone’s settings to use saved passwords.\n\nSecure sign-in is separate: it lets you reopen this app with device authentication without typing your password.")
         }, confirmButton = { TextButton(onClick = { dialog = null }) { Text("Done") } })
     if (dialog == "deleteAccount") AlertDialog(
