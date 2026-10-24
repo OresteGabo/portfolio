@@ -8,7 +8,7 @@ export type BondPdfImport = {
 };
 
 const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
-const DATE_PATTERN = /([\dIlioO]{1,2})\s*[-/.]?\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*[-/.]?\s*([\dIlioO]{2,4})(?!\d)/gi;
+const DATE_PATTERN = /([\dIlioO]{1,2})\s*[-/.]?\s*(Jan|Feb|Mar|Apr|May|Jun|Ju[lI]|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*[-/.]?\s*([\dIlioO]{2,4})(?!\d)/gi;
 const digits = (value: string) => value.replace(/[Ili]/g, "1").replace(/[oO]/g, "0");
 
 export function isRecognizedBondResult(result: BondPdfImport, text: string) {
@@ -33,7 +33,7 @@ function readDate(value: string) {
   const match = [...value.matchAll(DATE_PATTERN)][0];
   if (!match) return null;
   const year = +digits(match[3]);
-  return isoDate(year < 100 ? 2000 + year : year, MONTHS.indexOf(match[2].toLowerCase().slice(0, 3)) + 1, +digits(match[1]));
+  return isoDate(year < 100 ? 2000 + year : year, MONTHS.indexOf(match[2].toLowerCase().slice(0, 3).replace(/^jui$/, "jul")) + 1, +digits(match[1]));
 }
 
 function number(value: string | undefined) {
