@@ -14,41 +14,27 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun PdfImportButton(model: PortfolioModel, engine: InvestmentEngine, imported: (JsonRecord) -> Unit) {
+fun PdfImportButton(model: PortfolioModel, engine: InvestmentEngine, imported: (JsonRecord) -> Unit, bondOnly: Boolean = false, expectedStatement: JsonRecord? = null) {
     val actions = LocalNativeActions.current
-    var progress by remember { mutableStateOf("") }
-    fun choosePdf() = model.action {
-        val bytes = actions.pickPdf() ?: return@action
-        require(bytes.size in 1..MAX_PDF_BYTES) { "Choose a PDF of up to 10 MB." }
-        engine.onProgress = { progress = it }
-        progress = "Opening PDF…"
-        try { imported(engine.run("pdf", pdf = bytes)) }
-        finally { engine.onProgress = {}; progress = "" }
-    }
+    fun choosePdf() = model.importPurchasePdf(actions, engine, bondOnly, expectedStatement, imported)
     Panel {
-        Text("Import from PDF", fontWeight = FontWeight.Bold)
-        Text("Use a BNR bond result or RSE equity purchase contract note. We’ll detect the purchase type for you.", style = MaterialTheme.typography.bodySmall)
-        if (progress.isNotBlank()) Text(progress, color = MaterialTheme.colorScheme.primary)
-        Button(enabled = !model.busy, onClick = ::choosePdf, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
-            Icon(Icons.Outlined.UploadFile, null); Spacer(Modifier.width(8.dp)); Text(if (progress.isNotBlank()) "Reading PDF…" else "Choose purchase PDF")
+        Text(if (bondOnly) "Confirm purchase" else "Import confirmed purchase", fontWeight = FontWeight.Bold)
+        if (bondOnly) Text("BNR confirmation PDFs only", style = MaterialTheme.typography.bodySmall)
+        else {
+            Text("Accepted PDFs", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("BNR bond results • Share purchase contracts • BK Capital statements", style = MaterialTheme.typography.bodySmall)
         }
-        Text("The PDF and recognized text stay on this device. Review the extracted details before saving.", style = MaterialTheme.typography.bodySmall)
+        Button(enabled = !model.busy, onClick = ::choosePdf, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+            Icon(Icons.Outlined.UploadFile, null); Spacer(Modifier.width(8.dp)); Text(if (model.pdfImportProgress != null) "Reading PDF…" else if (bondOnly) "Upload confirmation" else "Choose purchase PDF")
+        }
+        Text("Read on your device · Up to 10 MB", style = MaterialTheme.typography.labelSmall)
     }
 }
 
 @Composable
-fun PurchaseEntryScreen(model: PortfolioModel, engine: InvestmentEngine, imported: (JsonRecord) -> Unit, manualBond: () -> Unit, manualShares: () -> Unit) {
+fun PurchaseEntryScreen(model: PortfolioModel, engine: InvestmentEngine, imported: (JsonRecord) -> Unit) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        item { PageTitle("New purchase", "Start with your PDF", "Select your broker’s document and we’ll fill in the purchase details for you.") }
         item { PdfImportButton(model, engine, imported) }
-        item { Panel {
-            Text("Or enter manually", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text("Don’t have a PDF? You can still record a purchase yourself.", style = MaterialTheme.typography.bodySmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = manualBond, enabled = !model.busy, modifier = Modifier.weight(1f)) { Text("Bond") }
-                OutlinedButton(onClick = manualShares, enabled = !model.busy, modifier = Modifier.weight(1f)) { Text("Shares") }
-            }
-        } }
     }
 }
 
@@ -140,7 +126,7 @@ fun SimulatorScreen(model: PortfolioModel, engine: InvestmentEngine, back: () ->
             else {
                 item { Panel {
                     Text("Projected account value", fontWeight = FontWeight.Bold)
-                    Text(money(summary.optDouble("finalAccountValue", 0.0)), style = MaterialTheme.typography.headlineMedium)
+                    FinancialText(money(summary.optDouble("finalAccountValue", 0.0)), style = MaterialTheme.typography.headlineMedium)
                     listOf("finalPortfolio" to "Bond portfolio", "finalCashBalance" to "Cash balance", "totalContributions" to "Total contributions & charges", "totalCoupons" to "Total net coupons", "totalReinvested" to "Reinvested coupons", "annualPassiveIncome" to "Annual passive income", "monthlyPassiveIncome" to "Monthly passive income").forEach { (key, title) -> Fact(title, money(summary.optDouble(key, 0.0))) }
                     listOf("milestone50m" to "50M milestone month", "milestone100m" to "100M milestone month", "milestone200m" to "200M milestone month", "passiveIncomeCrossoverYear" to "Income crossover year").forEach { (key, title) -> Fact(title, summary.text(key).ifBlank { "Not reached" }) }
                 } }
