@@ -4,7 +4,7 @@ const val MAX_PDF_BYTES = 10 * 1024 * 1024
 const val MAX_PDF_PAGES = 10
 const val MAX_OCR_PAGES = 5
 const val MAX_PDF_TEXT = 200_000
-const val PDF_READ_ERROR = "Could not read this purchase PDF. Use a BNR result or RSE purchase contract note, up to 10 MB and 10 pages. You can enter the purchase manually."
+const val PDF_READ_ERROR = "Could not read this purchase PDF. Use a BNR result, share purchase contract or BK Capital statement, up to 10 MB and 10 pages."
 fun validatePdfEnvelope(bytes: ByteArray) {
     require(bytes.size in 1..MAX_PDF_BYTES) { PDF_READ_ERROR }
     var end = bytes.size
