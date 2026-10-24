@@ -1,5 +1,9 @@
 package dev.orestegabo.portfolio.investments
 
+import android.app.Activity
+import android.content.ContextWrapper
+import androidx.core.view.WindowCompat
+import androidx.compose.ui.platform.LocalView
 import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.BackHandler
@@ -12,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import android.net.Uri
@@ -21,6 +26,11 @@ actual fun rememberServerSettings(): ServerSettings {
     val context = LocalContext.current.applicationContext
     return remember(context) { object : ServerSettings {
         private val prefs = context.getSharedPreferences("connection", Context.MODE_PRIVATE)
+        override fun readNumbersHidden() = prefs.getBoolean("numbersHidden", false)
+        override fun writeNumbersHidden(hidden: Boolean) { prefs.edit().putBoolean("numbersHidden", hidden).apply() }
+        override fun forgetMonthlyTarget(account: String) { prefs.edit().remove("monthlyTarget:$account").apply() }
+        override fun readMonthlyTarget(account: String): Long? = if (prefs.contains("monthlyTarget:$account")) prefs.getLong("monthlyTarget:$account", 100_000L) else null
+        override fun writeMonthlyTarget(account: String, amount: Long) { prefs.edit().putLong("monthlyTarget:$account", amount).apply() }
         override fun readChartStyle(): String? = prefs.getString("chartStyle", null)
         override fun writeChartStyle(style: String) { prefs.edit().putString("chartStyle", style).apply() }
         override fun readTheme(): String? = prefs.getString("theme", null)
@@ -35,18 +45,20 @@ private class AndroidActions(private val context: Context) : NativeActions {
     var saveLauncher: (String) -> Unit = {}
     var picked: CompletableDeferred<Uri?>? = null
     var saved: CompletableDeferred<Uri?>? = null
-    override suspend fun pickPdf(): ByteArray? {
+    override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? {
         val request = CompletableDeferred<Uri?>()
         check(picked == null) { "A file picker is already open." }
         picked = request
         try {
             pickLauncher()
             val uri = request.await() ?: return null
+            onSelected()
             return withContext(Dispatchers.IO) {
                 context.contentResolver.openInputStream(uri)?.use { input ->
                     val output = java.io.ByteArrayOutputStream()
                     val buffer = ByteArray(8192)
                     while (true) {
+                        ensureActive()
                         val count = input.read(buffer)
                         if (count < 0) break
                         require(output.size() + count <= MAX_PDF_BYTES) { "Choose a PDF of up to 10 MB." }
@@ -102,3 +114,17 @@ actual fun InvestmentEngineHost(engine: InvestmentEngine) {
 }
 @Composable
 actual fun PlatformBackHandler(enabled: Boolean, back: () -> Unit) { BackHandler(enabled, back) }
+
+@Composable
+actual fun PlatformSystemBarAppearance(darkTheme: Boolean) {
+    val view = LocalView.current
+    var context = view.context
+    while (context is ContextWrapper && context !is Activity) context = context.baseContext
+    val activity = context as? Activity ?: return
+    SideEffect {
+        WindowCompat.getInsetsController(activity.window, view).apply {
+            isAppearanceLightStatusBars = !darkTheme
+            isAppearanceLightNavigationBars = !darkTheme
+        }
+    }
+}
