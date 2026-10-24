@@ -361,7 +361,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.isRecognizedBondResult = isRecognizedBondResult;
 exports.parseBondPdfText = parseBondPdfText;
 const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
-const DATE_PATTERN = /([\dIlioO]{1,2})\s*[-/.]?\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*[-/.]?\s*([\dIlioO]{2,4})(?!\d)/gi;
+const DATE_PATTERN = /([\dIlioO]{1,2})\s*[-/.]?\s*(Jan|Feb|Mar|Apr|May|Jun|Ju[lI]|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*[-/.]?\s*([\dIlioO]{2,4})(?!\d)/gi;
 const digits = (value) => value.replace(/[Ili]/g, "1").replace(/[oO]/g, "0");
 function isRecognizedBondResult(result, text) {
     const fields = result.fields;
@@ -386,7 +386,7 @@ function readDate(value) {
     if (!match)
         return null;
     const year = +digits(match[3]);
-    return isoDate(year < 100 ? 2000 + year : year, MONTHS.indexOf(match[2].toLowerCase().slice(0, 3)) + 1, +digits(match[1]));
+    return isoDate(year < 100 ? 2000 + year : year, MONTHS.indexOf(match[2].toLowerCase().slice(0, 3).replace(/^jui$/, "jul")) + 1, +digits(match[1]));
 }
 function number(value) {
     if (!value)
@@ -686,11 +686,79 @@ function hasPdfEntries(value) {
     return value instanceof Map ? value.size > 0 : Boolean(value && typeof value === "object" && Object.keys(value).length);
 }
 
+},
+"./bk-statement-parser": function(require,module,exports) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseBkStatement = parseBkStatement;
+const equity_validation_1 = require("./equity-validation");
+const pdf_import_errors_1 = require("./pdf-import-errors");
+const value = (text) => Number(text.replace(/,/g, ""));
+function date(raw) {
+    const match = raw.match(/^(\d{1,2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{4})$/i);
+    if (!match)
+        return "";
+    const month = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].indexOf(match[2].toLowerCase()) + 1;
+    const result = `${match[3]}-${String(month).padStart(2, "0")}-${match[1].padStart(2, "0")}`;
+    return (0, equity_validation_1.validEquityDate)(result) ? result : "";
+}
+/** A statement is a ledger for reconciliation, not evidence of missing execution terms. */
+function parseBkStatement(raw, usedOcr = false) {
+    if (!/\bBK\s+CAPITAL\b/i.test(raw) || !/\bCLIENT\s+STATEMENT\b/i.test(raw))
+        return null;
+    const fail = () => { throw new pdf_import_errors_1.BondPdfImportError("not_bond_result"); };
+    if (!/Balance\s*\(RWF\)/i.test(raw) || /\b(?:USD|EUR|GBP)\b/.test(raw))
+        return fail();
+    const period = (label) => date(raw.match(new RegExp(`${label}\\s+Date\\s*:\\s*(\\d{1,2}-[a-z]{3}-\\d{4})`, "i"))?.[1] ?? "");
+    const fromDate = period("From"), toDate = period("To");
+    if (!fromDate || !toDate || toDate < fromDate)
+        return fail();
+    const ledger = raw.split(/Opening\s+Balance\s+As\s+On/i)[1]?.split(/Closing\s+Balance\s+As\s+On/i)[0];
+    if (!ledger)
+        return fail();
+    const starts = [...ledger.matchAll(/^\s*(\d{1,2}-[a-z]{3}-\d{4})\s+(Receipt|Journal|Purchase|Sale|Payment)\b/gim)];
+    const rows = [];
+    for (let i = 0; i < starts.length; i++) {
+        const match = starts[i];
+        const block = ledger.slice(match.index, starts[i + 1]?.index);
+        const text = block.replace(/\s+/g, " ").trim();
+        const day = date(match[1]);
+        if (!day || day < fromDate || day > toDate)
+            return fail();
+        // Receipts, fees, sales and transfers never become investment purchases.
+        if (match[2].toLowerCase() !== "purchase" && !(match[2].toLowerCase() === "journal" && /\bBond\s+Cost\b/i.test(text)))
+            continue;
+        const amounts = [...text.matchAll(/-?\b\d[\d,]*\.\d{2}\b/g)].map(item => value(item[0]));
+        if (amounts.length < 2)
+            return fail();
+        const amount = amounts[amounts.length - 2], credit = amounts[amounts.length - 1];
+        if (!Number.isFinite(amount) || amount <= 0 || amount > 1e13 || credit !== 0)
+            return fail();
+        if (match[2].toLowerCase() === "purchase") {
+            const trade = text.match(/Purchase\s+of\s+([A-Z][A-Z0-9]{1,9})\s+([\d,]+)\s*@\s*([\d,]+\.\d{2})\s+on\s+(\d{2})-(\d{2})-(\d{4})/i);
+            const contract = block.match(/\bPurchase\s+(\d+#)(?:[ \t]*(\d+)\b|[^\n]*\n\s*(\d+)\b)/i);
+            if (!trade || !contract)
+                return fail();
+            const shares = value(trade[2]), pricePerShare = value(trade[3]);
+            if (!Number.isSafeInteger(shares) || shares <= 0 || pricePerShare <= 0 || `${trade[6]}-${trade[5]}-${trade[4]}` !== day || amount < shares * pricePerShare)
+                return fail();
+            rows.push({ kind: "equity", date: day, amount, title: trade[1].toUpperCase(), ticker: trade[1].toUpperCase(), shares, pricePerShare, contractNote: contract[1] + (contract[2] ?? contract[3]) });
+        }
+        else {
+            const title = text.match(/\b([A-Za-z]+\s+Bond\s+Cost)\b/i)?.[1] ?? "Bond purchase";
+            rows.push({ kind: "bond", date: day, amount, title });
+        }
+    }
+    if (!rows.length || rows.length > 500)
+        return fail();
+    return { kind: "statement", broker: "BK Capital", currency: "RWF", fromDate, toDate, rows, usedOcr };
+}
+
 }}, cache={};
 function require(name){if(cache[name])return cache[name].exports;var module={exports:{}};cache[name]=module;modules[name](require,module,module.exports);return module.exports;}
 var calc=require('./calculations'), pdf=require('./equity-pdf-parser');
 global.PortfolioLogic={
 project:function(input){var assumptions=Object.assign({},calc.DEFAULT_ASSUMPTIONS,input.assumptions);var lots=input.includeHoldings?input.purchases.map(function(p){return calc.purchaseToStartingLot(p,assumptions)}).filter(Boolean):undefined;var rows=calc.calculateProjection(assumptions,input.injections||[],lots);return {rows:rows,summary:calc.summarizeProjection(rows,assumptions)};},
-parse:function(text,usedOcr){return pdf.parsePurchasePdfText(text,usedOcr);}
+parse:function(text,usedOcr){return require('./bk-statement-parser').parseBkStatement(text,usedOcr)||pdf.parsePurchasePdfText(text,usedOcr);}
 };
 })(globalThis);
