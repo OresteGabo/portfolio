@@ -28,6 +28,7 @@ val LocalChartStyle = staticCompositionLocalOf { "area" }
 /** The same observed values in three views; bars use a zero baseline. */
 @Composable
 fun InvestmentChart(values: List<Double>, labels: List<String> = emptyList()) {
+    if (LocalNumbersHidden.current) { HiddenFinancialChart(Modifier.fillMaxWidth().height(276.dp)); return }
     val points = values.indices.filter { values[it].isFinite() && values[it] >= 0 }.map { values[it] to labels.getOrElse(it) { "Observation ${it + 1}" } }
     if (points.isEmpty()) return
     val style = LocalChartStyle.current
@@ -46,20 +47,20 @@ fun InvestmentChart(values: List<Double>, labels: List<String> = emptyList()) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(money(current.first), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                FinancialText(money(current.first), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 Text(if (selected == null) "Latest · ${current.second}" else current.second,
                     style = MaterialTheme.typography.labelSmall, color = muted)
             }
             if (change != null) Surface(shape = MaterialTheme.shapes.large,
                 color = (if (change >= 0) accent else MaterialTheme.colorScheme.error).copy(alpha = .1f)) {
-                Text((if (change >= 0) "+" else "") + percent(change), Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                FinancialText((if (change >= 0) "+" else "") + percent(change), Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
                     style = MaterialTheme.typography.labelLarge, color = if (change >= 0) accent else MaterialTheme.colorScheme.error)
             }
         }
         Row(Modifier.fillMaxWidth().height(184.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.width(54.dp).fillMaxHeight(), verticalArrangement = Arrangement.SpaceBetween) {
                 listOf(maximum, (maximum + minimum) / 2, minimum).forEach {
-                    Text(money(it).removePrefix("RWF "), style = MaterialTheme.typography.labelSmall, color = muted, maxLines = 1)
+                    FinancialText(money(it).removePrefix("RWF "), style = MaterialTheme.typography.labelSmall, color = muted, maxLines = 1)
                 }
             }
             Canvas(Modifier.weight(1f).fillMaxHeight()
