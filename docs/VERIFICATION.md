@@ -220,3 +220,87 @@ The companion DELETE `/api/bonds/auth/account` endpoint checks Origin and a boun
 All 46 Android host and 51 iOS simulator tests pass, including deletion success, saved-sign-in removal and failure preservation. Android assembly/lint, physical-iPhone Kotlin compilation and the signed Xcode simulator build pass. Seven web deletion tests plus six overview regressions and TypeScript checking pass. Web tests use mocked storage, including an isolated local purge that preserves another user's files and sessions; a real production database purge was not executed.
 
 Inspected the confirmation and Cancel action on iPhone 16 Pro with a synthetic invited account. No real account was deleted. Restored the normal server afterward. Preview: [Delete confirmation](screenshots/ios-delete-account-confirmation.png). The three web files are prepared on local branch `codex/invited-account-deletion` in the web repository for user publication; this new endpoint must be deployed before the app feature works in production. Apple guidance: https://developer.apple.com/support/offering-account-deletion-in-your-app/. This scoped phase does not assert deletion coverage for deployment-managed accounts.
+
+## Settings appearance and chart preference — 24 October 2026
+
+Renamed the bottom destination to Settings with a gear icon. Replaced the appearance dialog with selectable System/Light/Dark preview cards. Moved Area/Line/Bars into Settings → Appearance → Chart style. The shared chart reads one composition preference, persisted with SharedPreferences on Android and NSUserDefaults on iOS, and no longer shows style controls on Stocks or simulator charts.
+
+Android assembly/lint, physical-iPhone Kotlin compilation and signed Xcode simulator build pass. On iPhone 16 Pro, selected Dark and Bars, verified the Stocks graph had no style buttons, restarted and checked both values persisted. Checked Light and restored System plus Area afterward. Preview: [Appearance settings](screenshots/ios-settings-appearance-cards.png).
+
+## Pending bonds and confirmation import — 24 October 2026
+
+The clarified workflow requires no application file. Add purchase → Add pending bond asks only for a published bond and the amount applied. Dates come from the calendar; records use submitted status. Shared tiles use a muted grey surface, faded issuer mark and explicit Pending label. Pending disclosures show applied amount and expected dates, hiding unconfirmed price, coupon and schedule. Pending records do not enter active net worth, cash allocation, coupon estimates or payment events. Required legacy storage price/coupon defaults are provisional, documented in record notes and not shown as executed terms.
+
+Pending purchase details offer BNR PDF confirmation. Confirmation review is read-only: missing or inconsistent figures block saving instead of asking for manual completion. The Add purchase manual-entry options are removed. Bond import copy says BNR PDFs only; existing RSE share-note import remains available. Explicit-target confirmation checks currency, settlement, maturity, optional ISIN and allocation not exceeding the application. General imports load full purchase history on demand and require a choice when pending matches exist. A confirmation updates the selected record ID through the existing PUT endpoint, using the actual allocation and price, including partial allocations.
+
+Five new shared regressions cover pending input, invalid amounts/dates, exclusion from totals/events, partial-allocation matching, rejecting unreadable/inconsistent PDFs and replacement of the same record through the model. All 51 Android host and 56 iOS simulator tests pass. Final Android assembly/lint, physical-iPhone Kotlin compilation and signed Xcode simulator build pass. On iPhone 16 Pro, created a disposable in-memory RWF 1,000,000 pending record without a file, inspected its grey history tile and BNR confirmation action, and checked the exact resulting payload against the real web validator. This UI check did not submit a confirmation PDF; the record replacement and partial allocation were tested through the mocked API. No real portfolio was modified.
+
+Previews: [No-file entry](screenshots/ios-pending-bond-entry.png), [Pending tile](screenshots/ios-pending-bond-tile.png). Existing purchases endpoints support this flow; no additional backend deployment is required for pending purchases.
+
+## Hero behind the status bar — 24 October 2026
+
+Portfolio draws its photograph from the top window edge, including behind the iPhone Dynamic Island/status bar. The shared hero offsets its logo and controls by the top safe inset. A pinned, theme-aware gradient keeps the clock and system icons readable above the photo and scrolling content. Home progress/notices render below the header within the hero, while other screens retain standard Scaffold insets. Android system-bar icon contrast follows the app theme; iOS continues using SwiftUI's existing appearance preference.
+
+Android assembly/lint, physical-iPhone Kotlin compilation and signed Xcode simulator build pass. Inspected the complete iPhone 16 Pro hero in light and dark themes using synthetic records, including a refresh notice beneath the safe header. Checked Settings navigation, restored System appearance, returned to the normal API and stopped the preview server. No new data tests were added for this visual-only change. Physical scroll gestures were not exercised in this check; the status veil is attached to the fixed root content.
+
+Previews: [Light](screenshots/ios-hero-status-bar-light.png), [Dark](screenshots/ios-hero-status-bar-dark.png).
+
+## Calendar pending purchases — 24 October 2026
+
+- Android assembly/lint, physical-iPhone Kotlin compilation, and signed Xcode simulator build passed.
+- All 52 shared Android host and 57 iOS simulator tests passed. Coverage includes pending exclusion from active totals, partial allocation matching, rejecting a different issue, preserving the RWF 11,000 commission, and a PUT to the same pending ID producing one active record with actual allocated value and cash cost.
+- With a disposable localhost API, iPhone simulator Calendar navigation to November selected the November 5-year issuance automatically. Entering RWF 1,000,000 showed commission RWF 11,000 and total RWF 1,011,000; saving returned to November. The emitted submitted record passed the existing website `parsePurchase` validator and retained the November settlement and RWF 11,000 fee. No production purchases were changed.
+- Preview: [Calendar pending purchase](screenshots/ios-calendar-pending-entry.png). PDF matching/update was verified through shared tests; the native picker was not re-exercised in this follow-up.
+
+## Accepted documents and missing statement records — 24 October 2026
+
+- Add purchase now shows the three accepted PDF categories. BK Capital statements reconcile saved transactions and create persistent missing-document reminders for unmatched purchases; these are outside all investment totals.
+- All 55 shared Android host tests and 61 iOS simulator tests passed, including native PDFKit statement recognition, confirmation matching, wrong-contract rejection, server reminder persistence, exclusion from totals and logout cleanup. Android assembly/lint, physical-iPhone Kotlin compilation and the signed Xcode simulator build passed.
+- All 20 app JavaScript parsing/calculation tests passed, including wrapped statement contract references, keeping deposits/fees out of purchases, rejecting malformed dates/amounts, portable engine parity and the BNR OCR July label fix.
+- Local inspection of all three supplied examples stayed on-device. Native PDFKit text extraction recognized the share contract with no missing fields and the statement with four purchase entries. The scanned BNR example was rendered and read with native Vision; its 14 coupon dates and required fields were retained after handling OCR capital-I confusion in July. Private source files and intermediate text/images were not added to either repository.
+- Isolated website tests verify durable reminders, repeated statement imports, owner/member isolation, matching on actual execution cost, submitted records staying unresolved, later confirmation clearing a reminder, and account deletion cleanup. Production purchases were not created or changed. Website schema/API deployment remains necessary.
+- Simulator UI verification used a disposable localhost API with synthetic records. The accepted-document notice renders correctly; tapping a muted missing-document tile opens the native picker directly, and cancelling preserves the reminder. Previews: [Accepted PDFs](screenshots/ios-accepted-purchase-documents.png), [Missing confirmation](screenshots/ios-missing-confirmation.png). The real supplied statement was not submitted to a production API.
+
+Final website validation for this follow-up passed all 52 targeted PDF/account/import/storage tests, TypeScript checking, ESLint on the changed API/auth/parser files, and whitespace checks. The website deployment checklist is saved locally at `/Users/muhirwagabooreste/WebstormProjects/gabo/STATEMENT_IMPORT.md`.
+
+## Direct confirmation uploads — 24 October 2026
+
+Pending Upload confirmation now invokes the native picker directly from Portfolio or investment history. A separate Details action preserves management/deletion access. Statement reminders share the same direct flow, replacing the intermediary missing-confirmation page shown in the earlier screenshot. The existing purchase Details page retains its own directly functioning upload button.
+
+Android assembly/lint, physical-iPhone Kotlin compilation, shared Android/iOS tests, and signed Xcode simulator build passed. New shared tests verify one picker/parse operation produces a review, cancellation never parses or opens review, and incorrect document kinds release progress without proceeding. On iPhone simulator with a disposable local pending purchase, tapping Upload confirmation opened the native picker while remaining in All investments; cancelling returned to the same expanded purchase with its filters intact. No production purchase was uploaded or changed.
+
+## Visible PDF processing — 24 October 2026
+
+- Added a shared Reading PDF dialog with Opening file, Extracting data and Checking details stages, native page/OCR feedback, and cancellation. Native selection callbacks occur before reading bytes on both Android and iOS.
+- Android assembly/lint, physical-iPhone Kotlin compilation, shared Android/iOS tests and signed Xcode simulator build passed. New lifecycle tests cover progress during a suspended provider read, actual OCR messages, blocking repeated uploads, clearing the dialog before showing an extraction error, and cancelling without proceeding to review or mutating purchases.
+- On iPhone simulator, choosing the previously provided BNR scan from a temporary Files folder immediately showed the progress dialog with Opening file completed and Extracting data active, including Recognizing page 1 on this device. Processing then closed the dialog and showed the expected mismatch review for the synthetic October pending purchase. Confirm remained disabled; no purchase was saved. The test used a disposable localhost API and the temporary simulator copy was removed afterward. No original source PDF or production purchase was modified.
+
+## Readable loading and notice expiry — 24 October 2026
+
+The PDF indicator is now a compact spinner with the current status and a one-second minimum visible duration for fast success/error paths. Cancellation remains immediate. Shared tests cover a fast successful parse staying in loading before review, an error staying in loading before its notice, repeated taps being ignored and cancellation clearing state. Success notices now expire after three seconds and errors after five seconds; repeated identical notices receive a fresh timeout.
+
+Final Android assembly/lint, shared Android host and iOS simulator tests, and physical-iPhone Kotlin compilation passed. An initial iOS test run reported no booted simulator; rerunning on the booted existing iPhone 16 Pro passed. The extra Xcode/UI check originally blocked by approval-service usage limits was not rerun for this follow-up; no new visual verification is claimed. No production records were changed.
+
+## Store confirmation PDFs in Documents — 24 October 2026
+
+Android assembly/lint, physical-iPhone Kotlin compilation, 62 Android shared tests and 68 iOS shared tests passed. The new shared test verifies exact PDF bytes sent before the pending purchase PUT, no confirmation after upload failure, retry after a purchase-write failure reusing the uploaded document, Documents refresh, and private import cleanup after completion.
+
+All 21 targeted website upload, account deletion, owner-storage and statement tests passed in isolated PGlite databases. Upload tests verify unchanged download bytes, hidden partial uploads, multi-part retries, hash deduplication, account isolation, origin/session enforcement, bounded malformed-input rejection and account deletion cleanup. Website TypeScript checking and ESLint on changed document modules/routes passed. No production records or PDFs were uploaded; the website deployment remains manual, with its checklist at /Users/muhirwagabooreste/WebstormProjects/gabo/DOCUMENT_UPLOADS.md. Simulator was restored to its original shut-down state. No new UI screenshot is claimed.
+
+## Automatic device authentication — 24 October 2026
+
+Android assembly/lint, physical-iPhone Kotlin compilation, 65 Android shared tests and 71 iOS shared tests passed. New tests cover automatic cold-start authentication queued during initialization, returning from background without a tap, ignoring duplicate resume events, cancellation without prompt loops, authentication-sheet lifecycle events, manual retry and skipping authentication when no sign-in is saved. Existing background privacy and session renewal tests still pass. The simulator was returned to its original shut-down state. Native biometric UI was not manually exercised in this follow-up.
+
+## Pull-to-refresh, monthly agenda and investment targets — 24 October 2026
+
+Final Android assembly/lint, physical-iPhone Kotlin compilation, 72 Android shared tests and 78 iOS shared tests passed. New cases cover a fast refresh holding loading before success, failure instead of a checkmark, duplicate-pull suppression, snapshot preservation, all-month agenda dates, excluding repetitive interior subscription days, target validation, per-account/server persistence and deletion cleanup, complete contribution aggregates, purchased versus pending cash costs, sold/matured records, foreign currencies and future purchases. Website TypeScript checking, ESLint on mobile-overview.ts and all 29 targeted overview/upload/account/owner-storage/statement tests passed. Signed Xcode simulator builds passed for the updated shared UI.
+
+UI inspection used a disposable localhost API and synthetic data. Calendar showed October's four events and its dated agenda even with an empty October 24 selected; the floating button opened a pending bond preselected to October's issuance without an intermediary page. Settings defaulted to RWF 100,000, accepted the 300k preset, and updated its recent-month cost/progress view after Check progress. Previews: [Month agenda](screenshots/ios-month-agenda.png), [Target settings](screenshots/ios-monthly-target-settings.png). No production purchases were changed.
+
+Native simulator automation could activate accessibility controls but did not deliver working drags or scrolls on either Calendar or Portfolio, so no visual claim is made about the pull animation; its timing, completion/error state and duplicate prevention are covered by shared tests. The temporary API was stopped, its origin was passed only as launch arguments, and the simulator was restored to its initial shut-down state. The website monthly-aggregate addition remains a manual deployment; device-local targets and explicit full-history calculation work before that update.
+
+## Financial number privacy — 24 October 2026
+
+Android assembly/lint, physical-iPhone Kotlin compilation, 76 Android shared tests, 82 iOS shared tests and the signed Xcode simulator build passed. New tests cover fixed masks for currency, negative/large values, rates and share quantities; readable navigation dates; account-reference masking; unchanged formatting/calculation data; preference persistence; and toggling without extra portfolio requests.
+
+Native iPhone simulator verification used only synthetic amounts on a disposable localhost API. The eye toggle masked the hero and target card, removed target percentage semantics, and hid share quantities/costs in history and expanded share details. Accessibility inspection returned Financial numbers hidden rather than original values. After terminating/reopening, the app still had hidden numbers and the allocation chart exposed only Financial chart hidden; toggling again restored amounts and proportions. Preview: [Numbers hidden](screenshots/ios-numbers-hidden.png). Original visible-number preference was restored, the test app/API were stopped, and the simulator returned to its initial shut-down state. No production account data was changed; this feature needs an app rebuild, with no server deployment.
