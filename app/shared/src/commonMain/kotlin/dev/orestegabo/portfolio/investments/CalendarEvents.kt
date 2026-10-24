@@ -90,3 +90,8 @@ fun subscriptionRangesInMonth(ranges: List<CalendarSubscriptionRange>, month: Lo
 
 fun preferredSubscriptionRange(ranges: List<CalendarSubscriptionRange>, anchor: LocalDate): CalendarSubscriptionRange? =
     ranges.firstOrNull { anchor in it } ?: ranges.firstOrNull { it.start >= anchor } ?: ranges.lastOrNull()
+
+/** Agenda keeps the displayed month's meaningful dates, without repeating every open-book day. */
+fun calendarMonthEvents(events: List<InvestmentCalendarEvent>, month: LocalDate) = events.filter {
+    it.date.year == month.year && it.date.month == month.month && it.label != "Book open"
+}.sortedWith(compareBy({ it.date }, { it.category.ordinal }, { it.title }, { it.id }))
