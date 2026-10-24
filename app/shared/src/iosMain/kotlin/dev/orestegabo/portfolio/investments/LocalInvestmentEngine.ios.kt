@@ -44,12 +44,12 @@ class IosInvestmentEngine : InvestmentEngine {
         js.exception = null
         // Keep only our typed error code, never JavaScript errors containing recognized document text.
         val value = js.evaluateScript("""(function(){try{return JSON.stringify({result:($expression)})}catch(e){return JSON.stringify({errorCode:typeof e.code==='string'?e.code:'operation_failed'})}})()""")
-        val generic = if (pdfImport) "Could not read this purchase PDF. Try a clearer copy or enter the purchase manually."
+        val generic = if (pdfImport) "Could not read this purchase PDF. Try a clearer copy."
             else "The investment operation could not be completed. Check the input and try again."
         check(js.exception == null && value != null && !value.isUndefined()) { generic }
         val envelope = JsonRecord(value.toString())
         envelope.optJSONObject("result") ?: error(if (pdfImport && envelope.text("errorCode") == "not_bond_result")
-            "Could not recognize a bond result or share purchase. Try a clearer PDF or enter the purchase manually." else generic)
+            "Could not recognize this PDF. Use a BNR bond result, share purchase contract or BK Capital statement." else generic)
     }
     private suspend fun extract(bytes: ByteArray): Pair<String, Boolean> = withContext(Dispatchers.Default) {
         validatePdfEnvelope(bytes)
