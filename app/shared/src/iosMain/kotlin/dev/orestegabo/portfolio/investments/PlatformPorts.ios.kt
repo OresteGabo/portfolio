@@ -28,6 +28,8 @@ internal fun presentingController(): UIViewController {
 }
 @Composable
 actual fun rememberServerSettings(): ServerSettings = remember { object : ServerSettings {
+    override fun readChartStyle() = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.chartStyle")
+    override fun writeChartStyle(style: String) { NSUserDefaults.standardUserDefaults.setObject(style, forKey = "portfolio.chartStyle") }
     override fun readTheme() = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.theme")
     override fun writeTheme(theme: String) { NSUserDefaults.standardUserDefaults.setObject(theme, forKey = "portfolio.theme") }
     override fun readOrigin() = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.serverOrigin")
