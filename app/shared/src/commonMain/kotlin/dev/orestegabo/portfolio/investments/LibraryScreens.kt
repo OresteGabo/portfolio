@@ -52,12 +52,12 @@ fun DocumentsScreen(model: PortfolioModel) {
             val isExpanded = expanded == document.text("id")
             Column {
                 ListItem(
-                    headlineContent = { Text(document.text("label"), maxLines = 2, fontWeight = FontWeight.SemiBold) },
+                    headlineContent = { FinancialText(document.text("label"), maxLines = 2, fontWeight = FontWeight.SemiBold) },
                     supportingContent = { Text(listOf(document.text("category"), document.text("documentDate")).filter { it.isNotBlank() }.joinToString(" · ")) },
                     leadingContent = { Icon(Icons.Outlined.Description, null, tint = MaterialTheme.colorScheme.primary) },
                     trailingContent = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { save(document) }, enabled = !model.busy) { Icon(Icons.Outlined.Download, "Download ${document.text("label")}") }
+                            IconButton(onClick = { save(document) }, enabled = !model.busy) { Icon(Icons.Outlined.Download, "Download ${privateFinancialValue(document.text("label"))}") }
                             Icon(if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, if (isExpanded) "Collapse details" else "Expand details")
                         }
                     },
@@ -67,10 +67,10 @@ fun DocumentsScreen(model: PortfolioModel) {
                 AnimatedVisibility(isExpanded) {
                     Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         if (document.text("instrumentName").isNotBlank()) Text(document.text("instrumentName"), fontWeight = FontWeight.SemiBold)
-                        if (document.text("description").isNotBlank()) Text(document.text("description"), style = MaterialTheme.typography.bodySmall)
+                        if (document.text("description").isNotBlank()) FinancialText(document.text("description"), style = MaterialTheme.typography.bodySmall)
                         if (document.text("issuer").isNotBlank()) Fact("Issuer", document.text("issuer"))
                         document.optJSONObject("details")?.let { details ->
-                            if (details.text("summary").isNotBlank()) Text(details.text("summary"), style = MaterialTheme.typography.bodySmall)
+                            if (details.text("summary").isNotBlank()) FinancialText(details.text("summary"), style = MaterialTheme.typography.bodySmall)
                             listOf("facts", "charges", "flow").forEach { key -> details.rows(key).forEach { Fact(it.text("label"), it.text("value")) } }
                             details.rows("sections").forEach { section -> Text(section.text("title"), fontWeight = FontWeight.Bold); section.rows("items").forEach { Fact(it.text("label"), it.text("value")) } }
                         }
@@ -117,7 +117,7 @@ fun StocksScreen(model: PortfolioModel) {
                         Text(ticker, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         Text(watchlist.first { it.first == ticker }.second, style = MaterialTheme.typography.bodySmall)
                     }
-                    if (observations.size <= 1) Text(quote?.let { money(it.optDouble("closing")) } ?: "—", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    if (observations.size <= 1) FinancialText(quote?.let { money(it.optDouble("closing")) } ?: "—", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 }
                 ChoiceRow(listOf("month", "year", "all"), period) { period = it }
                 if (observations.size > 1) {
@@ -139,7 +139,7 @@ fun StocksScreen(model: PortfolioModel) {
                 val shares = position.shares
                 val cost = position.cashCost
                 Panel(Modifier.clickable { ticker = position.ticker.takeIf { value -> watchlist.any { it.first == value } } ?: ticker }) {
-                    Text("${position.ticker} · ${shares.toLong()} shares", fontWeight = FontWeight.Bold)
+                    FinancialText("${position.ticker} · ${shares.toLong()} shares", fontWeight = FontWeight.Bold)
                     Fact("Cost", money(cost, position.currency))
                     Fact("Estimated value", money(valuation.estimatedValue, position.currency))
                     valuation.gainLoss?.let { Fact("Gain / loss", money(it, position.currency)) }
@@ -154,10 +154,10 @@ fun StocksScreen(model: PortfolioModel) {
                     leadingContent = { InvestmentLogo(ticker = symbol) },
                     supportingContent = { Text(name) },
                     trailingContent = { Column(horizontalAlignment = Alignment.End) {
-                        Text(quote?.let { money(it.optDouble("closing")) } ?: "—", fontWeight = FontWeight.SemiBold)
+                        FinancialText(quote?.let { money(it.optDouble("closing")) } ?: "—", fontWeight = FontWeight.SemiBold)
                         if (quote != null && quote.optDouble("previous", 0.0) > 0) {
                             val change = (quote.optDouble("closing") - quote.optDouble("previous")) / quote.optDouble("previous")
-                            Text((if (change > 0) "+" else "") + percent(change), style = MaterialTheme.typography.labelSmall, color = if (change < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
+                            FinancialText((if (change > 0) "+" else "") + percent(change), style = MaterialTheme.typography.labelSmall, color = if (change < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
                         }
                     } },
                     modifier = Modifier.clickable { ticker = symbol },
@@ -188,6 +188,6 @@ fun HistoryGraph(values: List<Double>, title: String = "Saved closing prices") {
     Panel {
         Text(title, fontWeight = FontWeight.Bold)
         InvestmentChart(values)
-        Text("${money(values.minOrNull() ?: 0.0)} – ${money(values.maxOrNull() ?: 0.0)}", style = MaterialTheme.typography.bodySmall)
+        FinancialText("${money(values.minOrNull() ?: 0.0)} – ${money(values.maxOrNull() ?: 0.0)}", style = MaterialTheme.typography.bodySmall)
     }
 }
