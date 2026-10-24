@@ -136,6 +136,6 @@ private fun PdfReviewNotice(review: JsonRecord) = Panel {
     Text("Filled from your PDF", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
     Text("Review the extracted dates, amounts, and fees below. Nothing is saved until you confirm.", style = MaterialTheme.typography.bodySmall)
     if (review.optBoolean("usedOcr")) Text("Text recognition was used. Check every field carefully.", style = MaterialTheme.typography.bodySmall)
-    review.optJSONArray("warnings")?.let { warnings -> (0 until warnings.length()).forEach { Text(warnings.getString(it), style = MaterialTheme.typography.bodySmall) } }
+    review.optJSONArray("warnings")?.let { warnings -> (0 until warnings.length()).forEach { FinancialText(warnings.getString(it), style = MaterialTheme.typography.bodySmall) } }
     review.optJSONArray("missingFields")?.let { missing -> if (missing.length() > 0) Text("Please complete: " + (0 until missing.length()).joinToString { missing.getString(it) }, style = MaterialTheme.typography.bodySmall) }
 }
