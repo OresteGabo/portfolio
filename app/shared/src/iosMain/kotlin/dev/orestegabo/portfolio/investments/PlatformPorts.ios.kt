@@ -3,6 +3,7 @@ package dev.orestegabo.portfolio.investments
 
 import androidx.compose.runtime.*
 import kotlinx.cinterop.*
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -28,6 +29,11 @@ internal fun presentingController(): UIViewController {
 }
 @Composable
 actual fun rememberServerSettings(): ServerSettings = remember { object : ServerSettings {
+    override fun readNumbersHidden() = NSUserDefaults.standardUserDefaults.boolForKey("portfolio.numbersHidden")
+    override fun writeNumbersHidden(hidden: Boolean) { NSUserDefaults.standardUserDefaults.setBool(hidden, forKey = "portfolio.numbersHidden") }
+    override fun forgetMonthlyTarget(account: String) { NSUserDefaults.standardUserDefaults.removeObjectForKey("portfolio.monthlyTarget:$account") }
+    override fun readMonthlyTarget(account: String) = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.monthlyTarget:$account")?.toLongOrNull()
+    override fun writeMonthlyTarget(account: String, amount: Long) { NSUserDefaults.standardUserDefaults.setObject(amount.toString(), forKey = "portfolio.monthlyTarget:$account") }
     override fun readChartStyle() = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.chartStyle")
     override fun writeChartStyle(style: String) { NSUserDefaults.standardUserDefaults.setObject(style, forKey = "portfolio.chartStyle") }
     override fun readTheme() = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.theme")
@@ -68,8 +74,9 @@ private class IosActions : NativeActions {
         result.invokeOnCancellation { controller.dismissViewControllerAnimated(true, null); picker = null; delegate = null }
         presentingController().presentViewController(controller, animated = true, completion = null)
     }
-    override suspend fun pickPdf(): ByteArray? = withContext(Dispatchers.Main) {
+    override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? = withContext(Dispatchers.Main) {
         val url = select(UIDocumentPickerViewController(forOpeningContentTypes = listOf(UTTypePDF), asCopy = true)) ?: return@withContext null
+        onSelected()
         val access = url.startAccessingSecurityScopedResource()
         try {
             withContext(Dispatchers.Default) {
@@ -80,6 +87,7 @@ private class IosActions : NativeActions {
                     var total = 0
                     val buffer = ByteArray(8192)
                     while (true) {
+                        ensureActive()
                         val count = buffer.usePinned { stream.read(it.addressOf(0).reinterpret(), maxLength = buffer.size.toULong()) }.toInt()
                         require(count >= 0) { "Could not read the selected PDF." }
                         if (count == 0) break
@@ -125,3 +133,6 @@ private class IosActions : NativeActions {
 @Composable actual fun InvestmentEngineHost(engine: InvestmentEngine) = Unit
 // iOS uses the visible shared Back / Cancel controls; there is no Android-style hardware back event.
 @Composable actual fun PlatformBackHandler(enabled: Boolean, back: () -> Unit) = Unit
+
+// SwiftUI's preferredColorScheme observes the same saved appearance preference.
+@Composable actual fun PlatformSystemBarAppearance(darkTheme: Boolean) {}
