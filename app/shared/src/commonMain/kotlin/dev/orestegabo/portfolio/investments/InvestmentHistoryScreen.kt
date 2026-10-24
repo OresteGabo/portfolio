@@ -14,7 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun InvestmentHistoryScreen(model: PortfolioModel, detail: (JsonRecord) -> Unit) {
+fun InvestmentHistoryScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, detail: (JsonRecord) -> Unit) {
     var kind by rememberSaveable { mutableStateOf("all") }
     var search by rememberSaveable { mutableStateOf("") }
     var year by rememberSaveable { mutableStateOf("all") }
@@ -48,7 +48,7 @@ fun InvestmentHistoryScreen(model: PortfolioModel, detail: (JsonRecord) -> Unit)
                     onAction = if (search.isNotBlank() || year != "all") ({ search = ""; year = "all"; kind = "all" }) else null)
             }
             if (bonds.isNotEmpty()) item { Text("Bonds", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold) }
-            items(bonds, key = { "bond:${it.text("id")}" }) { BondPurchaseTile(it) { detail(it) } }
+            items(bonds, key = { "bond:${it.text("id")}" }) { BondPurchaseTile(it, uploadConfirmation = { uploadPending(it) }) { detail(it) } }
             if (shares.isNotEmpty()) item { Text("Shares", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold) }
             items(shares, key = { "share:${it.text("id")}" }) { SharePurchaseTile(it) }
         }
