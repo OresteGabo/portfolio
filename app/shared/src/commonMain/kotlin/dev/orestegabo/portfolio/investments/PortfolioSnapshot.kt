@@ -9,6 +9,7 @@ data class PortfolioSnapshot(
     val documents: List<JsonRecord> = emptyList(),
     val recentPurchaseIds: Set<String>? = null,
     val recentHoldingIds: Set<String>? = null,
+    val monthlyInvestmentTotals: List<JsonRecord>? = null,
 ) {
     fun recentBonds(today: LocalDate) = recentRows(purchases, "purchaseDate", today, recentPurchaseIds)
     fun recentShares(today: LocalDate) = recentRows(holdings, "tradeDate", today, recentHoldingIds)
