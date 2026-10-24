@@ -94,3 +94,67 @@ Private-data refresh also fetches optional equity quotes when active shares exis
 Portfolio previews the past 12 calendar months, capped at 12 bonds and 12 share purchases. See all opens `InvestmentHistoryScreen` with type, year and search filters. The model requests full history on demand and replaces the same canonical snapshot; subsequent visits reuse it until a sync or mutation reloads the overview. Account bond search also requests full records before displaying results.
 
 The versioned `/api/bonds/mobile-overview` response transfers recent full records, older active bond calculation fields and grouped older share positions. Explicit recent-record IDs prevent calculation records from appearing as purchase tiles. All-time active totals, quotes and calendar schedules continue to use the complete calculation basis. A 404/405 or unrecognized overview response falls back to the original full-history API, with capability detection cached per server. The backend still reads account-scoped rows to compute this response; the saving is mobile transfer and rendering, rather than database pagination.
+
+### Pending records and confirmation review
+
+`PendingPurchases.kt` builds a submitted Treasury record from a published calendar bond and amount. Existing storage requires provisional price/coupon fields; the submitted status keeps these out of active financial calculations, and the pending UI deliberately hides them. `PurchaseImportScreens.kt` provides file-free pending entry and read-only PDF review. Confirmation matching uses currency, settlement, maturity, optional ISIN and actual allocation no greater than requested. An explicit target must match; ambiguous general imports require a user selection. The model updates the same purchase ID and reloads its canonical snapshot. Full history is fetched only when needed for confirmation matching.
+
+`SettingsScreen.kt` owns System/Light/Dark appearance cards and the saved chart-style choice. Both native preferences implementations store the same logical choices. `LocalChartStyle` supplies one shared value to Stocks and projection charts without repeating controls in their screens.
+
+### Calendar pending purchases and commission
+
+Calendar's monthly subscription window and expanded issuance events open the shared pending purchase form with the exact issuance ID preselected. The selected calendar date is retained when returning. The amount is the applied bond principal in RWF 100,000 increments; `PendingBondCommission` adds RWF 11,000 separately as `feesPaid`. Pending detail tiles show commission and total paid but submitted records remain excluded from confirmed asset values and coupon schedules.
+
+BNR import review waits for complete purchase history before enabling a bond save. A single pending match is selected automatically; multiple matches require explicit selection and cannot be bypassed with a separate-purchase action. Matching uses currency, settlement, maturity, optional ISIN and an allocation no greater than the applied amount. Confirmation updates the existing purchase ID with actual PDF terms and retains the recorded commission once, including when a parser returns a default fee of zero.
+
+### Accepted documents and statement reconciliation
+
+Add purchase accepts BNR bond results, RSE share purchase contracts, and BK Capital client statements. The first two feed the existing confirmation review; statements feed a separate reconciliation screen. `bk-statement-parser.ts` is app-specific shared parsing code bundled once for Android's WebView and iOS JavaScriptCore. It reconstructs wrapped statement references and extracts purchase journal debits and share trades. Deposits, transfers, sales and fee rows do not become investments. No statement client identifiers, contact details or raw PDF bytes are sent to the API.
+
+`POST /api/bonds/statement-items` checks observed statement purchases against the account's canonical saved bonds/shares. Unrecorded entries persist in `bond_statement_items`, keyed by account and observed transaction identity. Repeating a statement cannot duplicate reminders. `GET` returns unresolved items only; a later confirmed purchase resolves a matching reminder without introducing a second transaction. Submitted applications do not count as completed records. Bond journal matching uses actual executed cost excluding fees and permits a posting lag of up to seven days after settlement; share matching checks broker, contract, ticker, date, quantity, price and total. Multiple possible matches remain unresolved.
+
+Reminders are separate metadata, carry a statement debit rather than an invented principal, and never enter balances, coupons or stock positions. Portfolio shows up to three with a See all screen. Tapping one directly opens the native PDF picker, and client review verifies that the confirmation matches its observed purchase. An existing pending application is updated through the original pending matching flow. Reminder state clears on logout; invited account deletion removes reminder rows atomically with purchases/sessions. The optional GET tolerates an undeployed API so existing portfolios continue to load; statement reconciliation requires the new website deployment.
+
+### Direct confirmation upload actions
+
+Upload confirmation on pending tiles (Portfolio and investment history) opens the native picker directly; Details is a separate action for management/deletion. Missing-document reminders in Portfolio, the missing list and statement review also open the picker in place. No upload intermediary page or composition-triggered picker is used. `readPurchasePdf` centralizes picker cancellation, parsing, document-kind/statement checks and progress cleanup for every upload entry point. Navigation to confirmation review occurs only after successful parsing; cancellation preserves the current expanded tile, screen and filters.
+
+### PDF import progress
+
+All upload entry points now call `PortfolioModel.importPurchasePdf`; its shared `PdfImportProgress` state drives one modal progress dialog. The native picker reports selection before reading file bytes, allowing Opening file feedback during provider I/O. The parser reports Extracting data with actual page/OCR messages, followed by Checking details. No artificial percentage or delay is used. The busy action guard prevents duplicate requests and the modal blocks reselecting during processing. Cancel cancels the action and parser; stream loops check cancellation. Success, provider/parser failure, cancellation and session clearing reset progress, and errors then use the normal notice UI. The original screen stays behind the dialog throughout.
+
+### Readable loading feedback and transient notices
+
+The PDF dialog now uses one spinner with the current opening/extraction/checking status. After selection, fast results and errors retain the indicator for a minimum of one second. A brief initial render interval lets feedback paint before parsing; elapsed file-read/extraction time counts toward the minimum, so longer imports incur no additional hold. Cancellation skips the hold. This supersedes the earlier no-delay policy.
+
+Success notices expire after three seconds and errors after five. The root app owns the timers, covering both the Portfolio hero and other screens. Notification revisions distinguish repeated identical messages, restart their timeouts, and prevent an older timer from clearing a newer notice. Manual Dismiss remains available. Platform toasts are unnecessary.
+
+### Private PDFs for confirmed purchases
+
+The import model retains the selected PDF only in memory, bound to its exact review. Leaving purchase review, completing the import, changing session or clearing the model releases it. Confirming an imported bond or share uploads the PDF first, then writes the purchase; pending bonds retain their original ID. The modal shows Saving PDF with chunk counts, then Confirming purchase. Upload failure never sends the purchase write. If the purchase write fails after upload, retry reuses the saved document. A failed purchase write can leave its PDF in Documents; these operations are sequential, not atomic.
+
+The website stores private, account-scoped PDFs in the existing Postgres database. Authenticated same-origin requests send bounded 512 KiB chunks, supporting the existing 10 MiB PDF limit. Unfinished uploads stay hidden and expire after one day on the next upload for that account. SHA-256 deduplicates completed PDFs per account. Documents listing merges uploaded PDFs with the owner's bundled documents, and downloads enforce ownership. Invited-account deletion purges completed and unfinished uploads. Deploy the website schema and routes before using the updated confirmation flow; see the website DOCUMENT_UPLOADS.md checklist.
+
+### Automatic device unlock
+
+The shared app notifies the model on lifecycle RESUME, once the native app is active. With saved secure sign-in, the model automatically starts native device authentication while locked. An early resume queues the attempt until initial asset loading finishes. Each app visit gets one automatic prompt; cancellation or errors leave the locked screen and manual retry available. Real backgrounding clears that attempt guard for the next visit; authentication sheets and system file pickers do not reset it. Existing native authentication selects Face ID, Touch ID, supported Android biometrics or device credentials.
+
+### Portfolio pull-to-refresh
+
+Portfolio removes the hero's Sync action and uses Material's shared pull-to-refresh nested-scroll state. The full scrollable content follows the pull distance, revealing a safe-area-aware header. On release the header holds a spinner for at least one second, displays a checkmark for 650 ms on success (or an error for 900 ms), then Material settles the content back. Actual network time counts toward the minimum. Refreshes retain existing content, block duplicate actions, and use one activity indicator rather than also displaying the hero's linear loader or a success banner. Screen-reader users get a Refresh portfolio custom action. Failure retains the canonical snapshot and uses the existing error notice after the header closes. Lock/session clearing resets refresh state.
+
+### Month agenda and contextual recording
+
+Calendar's agenda includes all meaningful events in the displayed month, grouped chronologically under date headers, regardless of the selected day. Repeated interior Book open days remain visible in the highlighted calendar range but are omitted from the agenda. A single floating Record purchase action replaces inline pending-add buttons. It preselects the applicable, unmatured issuance in the displayed month, or offers a chooser if there are several. The existing no-file pending-entry and later confirmation flow remain unchanged.
+
+### Monthly investment targets
+
+Settings adds an account-and-server-scoped local monthly RWF target, default 100,000, with 100k/300k/500k shortcuts and whole-number validation. Android SharedPreferences and iOS NSUserDefaults are behind shared settings ports; target behavior, analysis and UI are shared. Changing accounts/servers clears the visible target; deleting an invited account also removes its local target preference. These preferences are device-local, not server-synced, and the current target is used for comparisons with recent months.
+
+A goal insight in the Portfolio carousel and the three-month Settings breakdown use confirmed purchase cash cost, including fees and accrued interest, by purchase/trade date. Sold/matured records still count toward the month in which cash was invested. Pending applications are separate, and market movements/coupon income are excluded. The compact API adds twelve complete calendar months of monthlyInvestmentTotals computed before preview truncation or position aggregation. This preserves accurate progress without transferring individual lots. On an older compact server, Check progress explicitly loads full history; partial previews never masquerade as exact progress. Deploy the website mobile-overview.ts update manually using its INVESTMENT_TARGETS.md checklist.
+
+### Hide financial numbers
+
+The Portfolio hero and every signed-in toolbar expose an eye toggle; Settings → Privacy also includes Hide numbers. A device-local preference is loaded synchronously by the shared model and persisted through Android SharedPreferences or iOS NSUserDefaults. All screens consume the same composition-local display state. This is visual privacy, not a change to authentication or server account identity.
+
+FinancialText replaces amounts, rates, quantities and numeric references with fixed four-dot masks before drawing or publishing semantics. Standalone amounts receive a subtle blur on the already masked string. Accessibility receives Financial numbers hidden, never the original amount. Shared formatters, records and calculations remain untouched. Purchase subtitles, facts, calendar payments, document details, share prices, projections and target analysis use the same masking path. Calendar/navigation dates remain readable. Data charts/allocation donuts are replaced with non-data placeholders, and target progress bars are omitted while hidden. Numeric form fields use secure visual transformation; target editing explicitly offers Show numbers to edit instead of exposing a selected preset. Downloaded PDFs remain original documents.
