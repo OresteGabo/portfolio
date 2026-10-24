@@ -81,4 +81,16 @@ class CalendarEventsTest {
         assertEquals("late", preferredSubscriptionRange(ranges, LocalDate(2026, 10, 23))?.id)
         assertNull(preferredSubscriptionRange(emptyList(), LocalDate(2026, 10, 23)))
     }
+    @Test fun monthlyAgendaIncludesAllDatesWithoutRepeatingEveryOpenBookDay() {
+        val issuance = JsonRecord().put("id", "october").put("title", "20-year bond")
+            .put("announcementDate", "2026-10-01").put("openBookDate", "2026-10-19")
+            .put("closingBookDate", "2026-10-21").put("settlementDate", "2026-10-23")
+        val events = investmentCalendarEvents(listOf(issuance), PortfolioSnapshot())
+        val agenda = calendarMonthEvents(events, LocalDate(2026, 10, 24))
+        assertEquals(listOf("Announcement", "Book opens", "Book closes", "Settlement"), agenda.map { it.label })
+        assertEquals(agenda, calendarMonthEvents(events, LocalDate(2026, 10, 1)))
+        assertTrue(calendarMonthEvents(events, LocalDate(2026, 11, 1)).isEmpty())
+        assertEquals(listOf(1, 19, 21, 23), agenda.map { it.date.day })
+    }
+
 }
