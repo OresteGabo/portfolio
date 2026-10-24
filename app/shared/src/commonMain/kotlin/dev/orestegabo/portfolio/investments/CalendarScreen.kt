@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.datetime.LocalDate
 
 @Composable
-fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null) {
+fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPending: (JsonRecord, LocalDate) -> Unit) {
     val today = Today
     var selectedValue by rememberSaveable(initialDate) { mutableStateOf((initialDate ?: today).toString()) }
     var expanded by rememberSaveable { mutableStateOf<String?>(null) }
@@ -38,13 +38,17 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null) {
     val events = remember(model.calendar, model.portfolio) { investmentCalendarEvents(model.calendar, model.portfolio) }
     val byDate = remember(events) { events.groupBy { it.date } }
     val ranges = remember(model.calendar) { calendarSubscriptionRanges(model.calendar) }
-    val selectedEvents = byDate[selected].orEmpty()
-    val next = events.firstOrNull { it.date > selected }
+    val monthEvents = calendarMonthEvents(events, selected)
+    val next = events.firstOrNull { it.date > selected && (it.date.year != selected.year || it.date.month != selected.month) }
+    val availableIssues = subscriptionRangesInMonth(ranges, selected).filter { (calendarDate(it.record.text("maturityDate")) ?: today) > today }
+    val preferred = preferredSubscriptionRange(availableIssues, selected)
+    var chooseIssue by remember { mutableStateOf(false) }
     fun select(date: LocalDate) { selectedValue = date.toString(); expanded = null }
     val changeMonth by rememberUpdatedState<(Int) -> Unit> { offset -> select(shiftCalendarMonth(selected, offset)) }
 
+    Box(Modifier.fillMaxSize()) {
     LazyColumn(
-        Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 28.dp),
+        Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 108.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
@@ -90,6 +94,7 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             focusedRange?.let { range ->
                                 SubscriptionRangeHeader(range) { select(range.start) }
+
                             }
                             Row(Modifier.fillMaxWidth()) {
                                 listOf("M", "T", "W", "T", "F", "S", "S").forEach { day ->
@@ -123,16 +128,13 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null) {
         item {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(if (selected == today) "Today" else selected.dayLabel(), style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary)
-                    Text("${selected.day} ${selected.monthLabel()}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text("${selected.monthLabel()} events", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 }
-                Text("${selectedEvents.size} ${if (selectedEvents.size == 1) "event" else "events"}",
-                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("${monthEvents.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 IconButton(onClick = { showInfo = true }) { Icon(Icons.Outlined.Info, "About this calendar") }
             }
         }
-        if (selectedEvents.isEmpty()) item {
+        if (monthEvents.isEmpty()) item {
             EmptyState(
                 title = "No events",
                 artwork = EmptyArtwork.CALENDAR,
@@ -141,10 +143,30 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null) {
                 onAction = next?.let { upcoming -> { select(upcoming.date) } }
             )
         }
-        items(selectedEvents, key = { it.id }) { event ->
-            CalendarEventTile(event, expanded == event.id, model.purchases) { expanded = if (expanded == event.id) null else event.id }
+        monthEvents.groupBy { it.date }.forEach { (date, entries) ->
+            item(key = "date:$date") {
+                Text("${date.dayLabel()} · ${date.day} ${date.monthLabel()}",
+                    style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold,
+                    color = if (date == selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            items(entries, key = { it.id }) { event ->
+                CalendarEventTile(event, expanded == event.id, model.purchases) { expanded = if (expanded == event.id) null else event.id }
+            }
         }
     }
+    if (preferred != null) ExtendedFloatingActionButton(
+        onClick = { if (!model.busy) { if (availableIssues.size == 1) addPending(preferred.record, selected) else chooseIssue = true } },
+        modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).semantics { contentDescription = "Record pending bond purchase" },
+        icon = { Icon(Icons.Outlined.Add, null) }, text = { Text("Record purchase") })
+    }
+    if (chooseIssue) AlertDialog(onDismissRequest = { chooseIssue = false }, title = { Text("Choose a bond") }, text = {
+        Column { availableIssues.forEach { range ->
+            ListItem(headlineContent = { Text(range.record.text("title")) },
+                supportingContent = { Text("${range.start.day}–${range.end.day} ${range.end.monthLabel()}") },
+                modifier = Modifier.clickable { chooseIssue = false; addPending(range.record, selected) })
+        } }
+    }, confirmButton = { TextButton(onClick = { chooseIssue = false }) { Text("Cancel") } })
+
     if (showInfo) AlertDialog(onDismissRequest = { showInfo = false }, title = { Text("About this calendar") }, text = {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Issuances · BNR FY 2026/2027", fontWeight = FontWeight.SemiBold)
@@ -242,7 +264,7 @@ private fun CalendarEventTile(event: InvestmentCalendarEvent, expanded: Boolean,
                 supportingContent = {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(event.label, color = event.category.color())
-                        event.amount?.let { Text(money(it, event.record.text("currency")), fontWeight = FontWeight.SemiBold) }
+                        event.amount?.let { FinancialText(money(it, event.record.text("currency")), fontWeight = FontWeight.SemiBold) }
                     }
                 },
                 leadingContent = { Icon(when (event.category) {
@@ -261,6 +283,7 @@ private fun CalendarEventTile(event: InvestmentCalendarEvent, expanded: Boolean,
                         listOf("Announcement" to "announcementDate", "Book opens" to "openBookDate", "Book closes" to "closingBookDate",
                             "Settlement" to "settlementDate", "Maturity" to "maturityDate").forEach { (label, field) -> Fact(label, record.text(field)) }
                         val recorded = purchases.filter { it.text("settlementDate") == record.text("settlementDate") && it.text("maturityDate") == record.text("maturityDate") }
+
                         Fact("Recorded applications", recorded.size.toString())
                         recorded.forEach { Fact(it.text("bondName"), "${it.text("status")} · ${money(it.optDouble("faceValue", 0.0), it.text("currency"))}") }
                         Text(when (event.label) {
