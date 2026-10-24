@@ -50,7 +50,7 @@ private val destinations = listOf(
     Destination("Calendar", Icons.Outlined.CalendarMonth, Icons.Filled.CalendarMonth),
     Destination("Documents", Icons.Outlined.Description, Icons.Filled.Description),
     Destination("Stocks", Icons.AutoMirrored.Outlined.TrendingUp, Icons.AutoMirrored.Filled.TrendingUp),
-    Destination("Account", Icons.Outlined.AccountCircle, Icons.Filled.AccountCircle)
+    Destination("Settings", Icons.Outlined.Settings, Icons.Filled.Settings)
 )
 
 fun JsonRecord.terms(): BondTerms? = runCatching {
@@ -78,6 +78,7 @@ fun InvestmentApp(model: PortfolioModel) {
     val preferences = rememberServerSettings()
     val systemDark = isSystemInDarkTheme()
     var theme by rememberSaveable { mutableStateOf(preferences.readTheme()?.takeIf { it in listOf("system", "light", "dark") } ?: "system") }
+    var chartStyle by rememberSaveable { mutableStateOf(preferences.readChartStyle()?.takeIf { it in listOf("area", "line", "bars") } ?: "area") }
     val dark = when (theme) { "light" -> false; "dark" -> true; else -> systemDark }
     LaunchedEffect(model.user) {
         if (model.user == null) { calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; newPurchase = false; simulator = false; education = false }
@@ -90,6 +91,7 @@ fun InvestmentApp(model: PortfolioModel) {
     }
     val colors = if (dark) darkColorScheme(primary = BrandCream, onPrimary = Ink, primaryContainer = Color(0xFF514716), onPrimaryContainer = BrandCream, secondary = BrandCream, secondaryContainer = Color(0xFF514716), onSecondaryContainer = BrandCream, background = Color(0xFF11150F), surface = Color(0xFF1D2219), onSurface = Color(0xFFF3F1E8), onSurfaceVariant = Color(0xFFC5C7BA), outlineVariant = Color(0xFF414735))
         else lightColorScheme(primary = BrandOlive, onPrimary = Color.White, primaryContainer = BrandCream, onPrimaryContainer = Ink, secondary = BrandOlive, secondaryContainer = BrandCream, onSecondaryContainer = Ink, background = Color(0xFFFAF8F2), surface = Color.White, onSurface = Ink)
+    CompositionLocalProvider(LocalChartStyle provides chartStyle) {
     MaterialTheme(colorScheme = colors, typography = Typography()) {
         val nested = investmentHistory || detail != null || editor != null || equityEditor != null || newPurchase || simulator || education
         val back = {
@@ -105,7 +107,7 @@ fun InvestmentApp(model: PortfolioModel) {
             detail != null -> "Bond details"
             investmentHistory -> "All investments"
             model.user == null -> "Gabo"
-            tab == "Account" -> "Settings"
+            tab == "Settings" -> "Settings"
             else -> tab
         }
         val portfolioHome = model.user != null && !model.locked && !nested && tab == "Portfolio"
@@ -162,7 +164,8 @@ fun InvestmentApp(model: PortfolioModel) {
                     newPurchase -> PurchaseEntryScreen(model, engine, ::imported,
                         manualBond = { importReview = null; newPurchase = false; editor = JsonRecord() },
                         manualShares = { importReview = null; newPurchase = false; equityEditor = JsonRecord() })
-                    tab == "Account" && !nested -> AccountScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
+                    tab == "Settings" && !nested -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
+                        chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
                         openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it })
                     editor != null -> PurchaseEditor(model, editor!!, { editor = null; importReview = null }, importReview)
                     equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null; importReview = null }, importReview)
@@ -178,6 +181,7 @@ fun InvestmentApp(model: PortfolioModel) {
                 }
             }
         }
+    }
     }
 }
 
