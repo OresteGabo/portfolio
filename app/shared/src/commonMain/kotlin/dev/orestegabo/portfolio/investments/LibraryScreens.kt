@@ -2,7 +2,6 @@ package dev.orestegabo.portfolio.investments
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,8 +16,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -105,13 +102,12 @@ fun StocksScreen(model: PortfolioModel) {
         }
     }
     val observations = history?.rows("observations").orEmpty().filter { it.text("ticker") == ticker }.sortedBy { it.text("date") }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("RSE", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Box(Modifier.weight(1f)) { ChoiceRow(listOf("shares", "bonds"), section) { section = it } }
             model.quotes?.optJSONObject("source")?.let { source -> Text(if (source.optBoolean("stale")) "Stale prices" else source.text("publishedAt").take(10), style = MaterialTheme.typography.labelSmall, color = if (source.optBoolean("stale")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant) }
             IconButton(enabled = !model.busy, onClick = { requested = ""; model.loadMarket(true) }) { Icon(Icons.Outlined.Refresh, "Refresh prices") }
         } }
-        item { ChoiceRow(listOf("shares", "bonds"), section) { section = it } }
         if (section == "shares") {
             item { ChoiceRow(watchlist.map { it.first }, ticker) { ticker = it } }
             item { Panel {
@@ -121,15 +117,11 @@ fun StocksScreen(model: PortfolioModel) {
                         Text(ticker, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         Text(watchlist.first { it.first == ticker }.second, style = MaterialTheme.typography.bodySmall)
                     }
-                    Text(quote?.let { money(it.optDouble("closing")) } ?: "—", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    if (observations.size <= 1) Text(quote?.let { money(it.optDouble("closing")) } ?: "—", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 }
                 ChoiceRow(listOf("month", "year", "all"), period) { period = it }
                 if (observations.size > 1) {
-                    PriceLineChart(observations.map { it.optDouble("closing", 0.0) })
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(observations.first().text("date").take(10), style = MaterialTheme.typography.labelSmall)
-                        Text(observations.last().text("date").take(10), style = MaterialTheme.typography.labelSmall)
-                    }
+                    InvestmentChart(observations.map { it.optDouble("closing", Double.NaN) }, observations.map { it.text("date").take(10) })
                 } else {
                     Box(Modifier.fillMaxWidth().height(140.dp), contentAlignment = Alignment.Center) {
                         if (model.busy && history == null) LoadingState()
@@ -192,28 +184,10 @@ fun StocksScreen(model: PortfolioModel) {
 }
 
 @Composable
-private fun PriceLineChart(values: List<Double>) {
-    val color = MaterialTheme.colorScheme.primary
-    Canvas(Modifier.fillMaxWidth().height(160.dp)) {
-        val low = values.minOrNull() ?: 0.0
-        val high = values.maxOrNull() ?: 1.0
-        val span = (high - low).takeIf { it > 0 } ?: 1.0
-        val inset = 8.dp.toPx()
-        val path = Path()
-        values.forEachIndexed { index, value ->
-            val x = inset + index.toFloat() / (values.size - 1).coerceAtLeast(1) * (size.width - inset * 2)
-            val y = size.height - inset - ((value - low) / span * (size.height - inset * 2)).toFloat()
-            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
-        }
-        drawPath(path, color, style = androidx.compose.ui.graphics.drawscope.Stroke(3.dp.toPx()))
-    }
-}
-
-@Composable
 fun HistoryGraph(values: List<Double>, title: String = "Saved closing prices") {
     Panel {
         Text(title, fontWeight = FontWeight.Bold)
-        PriceLineChart(values)
+        InvestmentChart(values)
         Text("${money(values.minOrNull() ?: 0.0)} – ${money(values.maxOrNull() ?: 0.0)}", style = MaterialTheme.typography.bodySmall)
     }
 }
