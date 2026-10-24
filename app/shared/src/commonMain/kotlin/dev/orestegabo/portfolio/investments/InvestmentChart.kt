@@ -5,7 +5,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -24,13 +23,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
+val LocalChartStyle = staticCompositionLocalOf { "area" }
+
 /** The same observed values in three views; bars use a zero baseline. */
 @Composable
 fun InvestmentChart(values: List<Double>, labels: List<String> = emptyList()) {
     val points = values.indices.filter { values[it].isFinite() && values[it] >= 0 }.map { values[it] to labels.getOrElse(it) { "Observation ${it + 1}" } }
     if (points.isEmpty()) return
-    var style by rememberSaveable { mutableStateOf("area") }
-    var selected by remember(values, labels) { mutableStateOf<Int?>(null) }
+    val style = LocalChartStyle.current
+    var selected by remember(values, labels, style) { mutableStateOf<Int?>(null) }
     val current = points[selected?.coerceIn(points.indices) ?: points.lastIndex]
     val first = points.first().first
     val change = if (first > 0) (points.last().first - first) / first else null
@@ -55,7 +56,6 @@ fun InvestmentChart(values: List<Double>, labels: List<String> = emptyList()) {
                     style = MaterialTheme.typography.labelLarge, color = if (change >= 0) accent else MaterialTheme.colorScheme.error)
             }
         }
-        ChoiceRow(listOf("area", "line", "bars"), style) { style = it; selected = null }
         Row(Modifier.fillMaxWidth().height(184.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.width(54.dp).fillMaxHeight(), verticalArrangement = Arrangement.SpaceBetween) {
                 listOf(maximum, (maximum + minimum) / 2, minimum).forEach {
