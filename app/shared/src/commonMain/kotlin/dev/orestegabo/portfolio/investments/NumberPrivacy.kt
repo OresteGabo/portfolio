@@ -1,0 +1,69 @@
+package dev.orestegabo.portfolio.investments
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
+
+val LocalNumbersHidden = staticCompositionLocalOf { false }
+private val privacyNumbers = Regex("""\b\d{4}-\d{2}-\d{2}\b|[+−-]?\d+(?:[,.]\d+)*(?:\s\d{3})*(?:%|[kKmMbB])?""")
+private val financialValueOnly = Regex("""^(?:[A-Z]{3} )?[+−-]?[\d\s,.%]+$""")
+private val privacyDate = Regex("""\d{4}-\d{2}-\d{2}""")
+
+/** Fixed masks conceal amount length. Navigation dates remain usable. Never changes stored data. */
+fun maskFinancialNumbers(text: String): String = privacyNumbers.replace(text) {
+    if (privacyDate.matches(it.value)) it.value else "••••"
+}
+
+@Composable
+fun privateFinancialValue(value: String) = if (LocalNumbersHidden.current) maskFinancialNumbers(value) else value
+
+@Composable
+fun NumberVisibilityButton(hidden: Boolean, toggle: () -> Unit) {
+    IconButton(onClick = toggle) {
+        Icon(if (hidden) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+            if (hidden) "Show financial numbers" else "Hide financial numbers")
+    }
+}
+
+@Composable
+fun FinancialText(
+    text: String, modifier: Modifier = Modifier, color: Color = Color.Unspecified,
+    fontSize: TextUnit = TextUnit.Unspecified, fontWeight: FontWeight? = null,
+    textAlign: TextAlign? = null, overflow: TextOverflow = TextOverflow.Clip,
+    softWrap: Boolean = true, maxLines: Int = Int.MAX_VALUE, minLines: Int = 1,
+    style: TextStyle = LocalTextStyle.current,
+) {
+    val hidden = LocalNumbersHidden.current
+    val displayed = if (hidden) maskFinancialNumbers(text) else text
+    val privacyModifier = if (hidden && displayed != text) Modifier.clearAndSetSemantics { contentDescription = "Financial numbers hidden" } else Modifier
+    val softMask = if (hidden && displayed != text && financialValueOnly.matches(text)) Modifier.blur(1.5.dp) else Modifier
+    Text(displayed, privacyModifier.then(modifier).then(softMask), color = color, fontSize = fontSize, fontWeight = fontWeight,
+        textAlign = textAlign, overflow = overflow, softWrap = softWrap, maxLines = maxLines, minLines = minLines, style = style)
+}
+
+@Composable
+fun HiddenFinancialChart(modifier: Modifier = Modifier) {
+    Surface(modifier, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .035f)) {
+        Column(Modifier.fillMaxSize().clearAndSetSemantics { contentDescription = "Financial chart hidden" },
+            verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Outlined.VisibilityOff, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(8.dp))
+            Text("••••", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
