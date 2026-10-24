@@ -26,8 +26,7 @@ fun App() {
     NativePrivacyCover()
     val model = viewModel { PortfolioModel(settings, vault = vault) }
     var privacyCover by remember { mutableStateOf(false) }
-    LifecycleEventEffect(Lifecycle.Event.ON_START) { model.foreground() }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { privacyCover = false }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { privacyCover = false; model.foreground() }
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { privacyCover = true }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { model.background(systemInteraction = actions.interactingWithSystem) }
     CompositionLocalProvider(LocalNativeActions provides actions) {
