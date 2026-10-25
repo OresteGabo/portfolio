@@ -54,7 +54,7 @@ private class IosSecureSignIn : SecureSignIn {
         val query = query(origin)
         try {
             query.auth(auth)
-            query.string(kSecUseOperationPrompt, "Unlock your saved Gabo sign-in")
+            query.string(kSecUseOperationPrompt, localized("Unlock your saved Gabo sign-in"))
             query.put(kSecReturnData, kCFBooleanTrue)
             query.put(kSecMatchLimit, kSecMatchLimitOne)
             val result = alloc<CFTypeRefVar>()
@@ -70,7 +70,7 @@ private class IosSecureSignIn : SecureSignIn {
     }
     private suspend fun authorize(auth: LAContext): Boolean = suspendCancellableCoroutine { continuation ->
         continuation.invokeOnCancellation { auth.invalidate() }
-        auth.evaluatePolicy(LAPolicyDeviceOwnerAuthentication, localizedReason = "Unlock your saved Gabo sign-in") { success, _ ->
+        auth.evaluatePolicy(LAPolicyDeviceOwnerAuthentication, localizedReason = localized("Unlock your saved Gabo sign-in")) { success, _ ->
             if (continuation.isActive) continuation.resume(success)
         }
     }
@@ -137,7 +137,7 @@ private class IosSecureSignIn : SecureSignIn {
     override fun lock() { context?.invalidate(); context = null; contextAuthorized = false }
 }
 
-@Composable actual fun NativePrivacyCover() {
+@Composable actual fun NativePrivacyCover(protectCaptures: Boolean) {
     DisposableEffect(Unit) {
         val center = NSNotificationCenter.defaultCenter
         var cover: UIView? = null
