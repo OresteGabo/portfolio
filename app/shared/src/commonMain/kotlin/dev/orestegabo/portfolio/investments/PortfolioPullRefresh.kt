@@ -51,12 +51,12 @@ fun PortfolioPullRefresh(model: PortfolioModel, content: @Composable () -> Unit)
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     when (model.refreshPhase) {
                         PortfolioRefreshPhase.LOADING -> CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
-                        PortfolioRefreshPhase.SUCCESS -> Icon(Icons.Outlined.Check, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
-                        PortfolioRefreshPhase.ERROR -> Icon(Icons.Outlined.ErrorOutline, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(26.dp))
-                        PortfolioRefreshPhase.IDLE -> Icon(Icons.Outlined.ArrowDownward, null,
+                        PortfolioRefreshPhase.SUCCESS -> AppIcon(Icons.Outlined.Check, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
+                        PortfolioRefreshPhase.ERROR -> AppIcon(Icons.Outlined.ErrorOutline, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(26.dp))
+                        PortfolioRefreshPhase.IDLE -> AppIcon(Icons.Outlined.ArrowDownward, null,
                             Modifier.size(24.dp).rotate(if (state.distanceFraction >= 1f) 180f else 0f))
                     }
-                    Text(label, style = MaterialTheme.typography.labelLarge,
+                    AppText(label, style = MaterialTheme.typography.labelLarge,
                         color = if (model.refreshPhase == PortfolioRefreshPhase.ERROR) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
