@@ -1,6 +1,5 @@
 package dev.orestegabo.portfolio.investments
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
@@ -40,7 +39,7 @@ private fun PurchaseTile(
                     headlineColor = if (pending) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface),
                 modifier = Modifier.semantics { stateDescription = localized(if (expanded) "Expanded" else "Collapsed") }.clickable(onClickLabel = localized(if (expanded) "Collapse purchase" else "Expand purchase"), onClick = toggle)
             )
-            AnimatedVisibility(expanded) {
+            AppAnimatedVisibility(expanded) {
                 Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     HorizontalDivider()
