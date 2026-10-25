@@ -283,7 +283,7 @@ private fun SettingsSection(title: String, footnote: String? = null, content: @C
 private fun SettingsRow(icon: ImageVector, title: String, subtitle: String? = null, enabled: Boolean = true,
     tint: Color = MaterialTheme.colorScheme.primary, toggleState: Boolean? = null, onClick: () -> Unit, trailing: (@Composable () -> Unit)? = null) {
     ListItem(headlineContent = { AppText(title, color = if (enabled) tint.takeIf { it == MaterialTheme.colorScheme.error } ?: MaterialTheme.colorScheme.onSurface
-        else MaterialTheme.colorScheme.onSurfaceVariant) }, supportingContent = subtitle?.let { { AppText(it, style = MaterialTheme.typography.bodySmall) } },
+        else MaterialTheme.colorScheme.onSurfaceVariant) }, supportingContent = subtitle?.let { { FinancialText(it, style = MaterialTheme.typography.bodySmall) } },
         leadingContent = { AppIcon(icon, null, tint = if (enabled) tint else MaterialTheme.colorScheme.onSurfaceVariant) },
         trailingContent = trailing ?: { AppIcon(Icons.Outlined.ChevronRight, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
