@@ -85,6 +85,10 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 enabled = !model.numbersRevealBlocked, toggleState = model.numbersConcealed, onClick = model::toggleNumberVisibility,
                 trailing = { Switch(checked = model.numbersConcealed, enabled = !model.numbersRevealBlocked, onCheckedChange = null, modifier = Modifier.clearAndSetSemantics {}) })
             SettingsDivider()
+            SettingsRow(Icons.Outlined.Vibration, "Shake to hide numbers", "Shake again to show them",
+                toggleState = model.shakeToHideEnabled, onClick = { model.updateShakeToHide(!model.shakeToHideEnabled) },
+                trailing = { Switch(checked = model.shakeToHideEnabled, onCheckedChange = null, modifier = Modifier.clearAndSetSemantics {}) })
+            SettingsDivider()
             SettingsRow(Icons.Outlined.PrivacyTip, "PDF imports & your data", "How your documents are handled", onClick = { dialog = "privacy" })
             if (model.canDeleteAccount) {
                 SettingsDivider()
