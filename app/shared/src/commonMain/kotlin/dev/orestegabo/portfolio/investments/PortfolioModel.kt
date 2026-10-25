@@ -80,7 +80,7 @@ class PortfolioModel(
     private var errorText by mutableStateOf<String?>(null)
     var error: String?
         get() = errorText
-        set(value) { errorText = value; errorRevision++ }
+        set(value) { errorText = value?.let(::safeErrorMessage); errorRevision++ }
     private var messageText by mutableStateOf<String?>(null)
     var message: String?
         get() = messageText
@@ -119,7 +119,7 @@ class PortfolioModel(
     var education by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
 
-    init { runAction(allowLocked = true) {
+    init { runAction(allowLocked = true, failureMessage = CONNECTION_ERROR_MESSAGE) {
         loadPublicData()
         if (!locked) checkSession()
     } }
@@ -128,8 +128,8 @@ class PortfolioModel(
         calendar = JsonList(assets("issuance-calendar.json").decodeToString()).objects()
         education = JsonList(assets("education.json").decodeToString()).objects()
     }
-    fun action(block: suspend () -> Unit) = runAction(false, block)
-    private fun runAction(allowLocked: Boolean, block: suspend () -> Unit) {
+    fun action(block: suspend () -> Unit) = runAction(false, block = block)
+    private fun runAction(allowLocked: Boolean, failureMessage: String = GENERAL_ERROR_MESSAGE, block: suspend () -> Unit) {
         if (busy || (locked && !allowLocked)) return
         busy = true
         error = null
@@ -146,7 +146,7 @@ class PortfolioModel(
                         if (locked) vault?.lock()
                     }
                     if (locked) { vault?.lock(); api.close(); api = apiFactory(origin); clearPrivateData() }
-                    error = failure.message?.takeIf { it.isNotBlank() } ?: "Could not connect. Please try again."
+                    error = userErrorMessage(failure, failureMessage)
                 }
             } finally { if (token == generation) { busy = false; activeJob = null; tryAutomaticUnlock() } }
         }
