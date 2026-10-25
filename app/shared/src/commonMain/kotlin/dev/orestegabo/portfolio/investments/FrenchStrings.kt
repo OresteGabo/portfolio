@@ -2,6 +2,7 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Progress unavailable" to "Progression indisponible",
     "Something went wrong. Please try again." to "Une erreur s’est produite. Veuillez réessayer.",
     "Could not connect. Check your connection and try again." to "Connexion impossible. Vérifiez votre connexion et réessayez.",
     "Email or password is incorrect." to "L’adresse e-mail ou le mot de passe est incorrect.",
