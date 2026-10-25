@@ -2,6 +2,8 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Shake to hide numbers" to "Secouer pour masquer les montants",
+    "Shake again to show them" to "Secouez à nouveau pour les afficher",
     "Progress unavailable" to "Progression indisponible",
     "Something went wrong. Please try again." to "Une erreur s’est produite. Veuillez réessayer.",
     "Could not connect. Check your connection and try again." to "Connexion impossible. Vérifiez votre connexion et réessayez.",
