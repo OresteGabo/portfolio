@@ -1,6 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -49,6 +50,7 @@ fun FinancialText(
     textAlign: TextAlign? = null, overflow: TextOverflow = TextOverflow.Clip,
     softWrap: Boolean = true, maxLines: Int = Int.MAX_VALUE, minLines: Int = 1,
     style: TextStyle = LocalTextStyle.current,
+    autoSize: TextAutoSize? = null,
 ) {
     val hidden = LocalNumbersHidden.current
     val translated = localized(text)
@@ -70,13 +72,13 @@ fun FinancialText(
                 overflow = if (valueOnly) TextOverflow.Visible else overflow,
                 softWrap = if (valueOnly) false else softWrap,
                 maxLines = if (valueOnly) maxOf(1, minLines) else maxLines,
-                minLines = minLines, style = style)
+                minLines = minLines, style = style, autoSize = autoSize)
         }) {
             AppText(displayed, color = color, fontSize = fontSize, fontWeight = fontWeight,
-                textAlign = textAlign, overflow = overflow, softWrap = softWrap, maxLines = maxLines, minLines = minLines, style = style)
+                textAlign = textAlign, overflow = overflow, softWrap = softWrap, maxLines = maxLines, minLines = minLines, style = style, autoSize = autoSize)
         }
     } else AppText(displayed, privacyModifier.then(modifier).then(softMask), color = color, fontSize = fontSize, fontWeight = fontWeight,
-        textAlign = textAlign, overflow = overflow, softWrap = softWrap, maxLines = maxLines, minLines = minLines, style = style)
+        textAlign = textAlign, overflow = overflow, softWrap = softWrap, maxLines = maxLines, minLines = minLines, style = style, autoSize = autoSize)
 }
 
 @Composable
