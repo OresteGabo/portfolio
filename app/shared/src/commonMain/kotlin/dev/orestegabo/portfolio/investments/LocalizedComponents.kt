@@ -6,6 +6,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -56,16 +59,24 @@ internal fun LanguageOptions() {
 @Composable
 private fun LanguageFlagSwitch() {
     val french = AppLanguage.code == "fr"
+    val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
+    val track = if (dark) Color(0xFF181A1D) else Color(0xFFF0F1F3)
+    val selection = if (dark) Color(0xFF35383D) else Color.White
+    val outline = if (dark) Color(0xFF484C52) else Color(0xFFD8DBE0)
+    val selectedText = if (dark) Color(0xFFF5F6F7) else Color(0xFF20242A)
+    val inactiveText = if (dark) Color(0xFFADB2BA) else Color(0xFF666D77)
     val position by animateDpAsState(if (french) 0.dp else 76.dp, label = "Language selection")
-    Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceVariant,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+    Surface(shape = RoundedCornerShape(12.dp), color = track,
+        border = BorderStroke(1.dp, outline.copy(alpha = .65f))) {
         Box(Modifier.width(160.dp).height(52.dp).selectableGroup()) {
             Surface(Modifier.padding(4.dp).offset(x = position).width(76.dp).fillMaxHeight(),
-                shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.primaryContainer) {}
+                shape = RoundedCornerShape(8.dp), color = selection,
+                border = BorderStroke(1.dp, outline),
+                shadowElevation = 2.dp) {}
             Row(Modifier.fillMaxSize().padding(horizontal = 4.dp)) {
                 listOf("fr" to "Français", "en" to "English").forEach { (code, name) ->
                     val selected = (code == "fr") == french
-                    Row(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(24.dp))
+                    Row(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(8.dp))
                         .selectable(selected = selected, role = Role.RadioButton, onClick = { AppLanguage.select(code) })
                         .semantics(mergeDescendants = true) { contentDescription = name },
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
@@ -73,7 +84,7 @@ private fun LanguageFlagSwitch() {
                         Text(code.uppercase(), Modifier.clearAndSetSemantics {},
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant)
+                            color = if (selected) selectedText else inactiveText)
                     }
                 }
             }
@@ -81,7 +92,7 @@ private fun LanguageFlagSwitch() {
     }
 }
 
-/** Drawn flags render consistently on Android and iOS, including England's St George cross. */
+/** Drawn France and UK flags render consistently on Android and iOS. */
 @Composable
 private fun LanguageFlag(code: String) {
     Surface(shape = RoundedCornerShape(3.dp), border = BorderStroke(0.5.dp, Color.Black.copy(alpha = .12f))) {
@@ -91,9 +102,27 @@ private fun LanguageFlag(code: String) {
                 drawRect(Color(0xFF002395), size = Size(size.width / 3f, size.height))
                 drawRect(Color(0xFFED2939), topLeft = Offset(size.width * 2f / 3f, 0f), size = Size(size.width / 3f, size.height))
             } else {
-                val red = Color(0xFFCE1124)
-                drawRect(red, Offset(size.width * .4f, 0f), Size(size.width * .2f, size.height))
-                drawRect(red, Offset(0f, size.height * .38f), Size(size.width, size.height * .24f))
+                val red = Color(0xFFC8102E)
+                val width = size.width
+                val height = size.height
+                drawRect(Color(0xFF012169))
+                drawLine(Color.White, Offset.Zero, Offset(width, height), height / 5f)
+                drawLine(Color.White, Offset(width, 0f), Offset(0f, height), height / 5f)
+                // Counterchanged red diagonals preserve the Union Jack's asymmetric saltires.
+                val diagonalHalves = Path().apply {
+                    moveTo(width / 2f, height / 2f); lineTo(width, height / 2f); lineTo(width, height); close()
+                    moveTo(width / 2f, height / 2f); lineTo(width / 2f, height); lineTo(0f, height); close()
+                    moveTo(width / 2f, height / 2f); lineTo(0f, height / 2f); lineTo(0f, 0f); close()
+                    moveTo(width / 2f, height / 2f); lineTo(width / 2f, 0f); lineTo(width, 0f); close()
+                }
+                clipPath(diagonalHalves) {
+                    drawLine(red, Offset.Zero, Offset(width, height), height * 2f / 15f)
+                    drawLine(red, Offset(width, 0f), Offset(0f, height), height * 2f / 15f)
+                }
+                drawRect(Color.White, Offset(width * 5f / 12f, 0f), Size(width / 6f, height))
+                drawRect(Color.White, Offset(0f, height / 3f), Size(width, height / 3f))
+                drawRect(red, Offset(width * .45f, 0f), Size(width / 10f, height))
+                drawRect(red, Offset(0f, height * .4f), Size(width, height / 5f))
             }
         }
     }
