@@ -16,14 +16,28 @@ class PortfolioModel(
     private val assets: suspend (String) -> ByteArray = ::readSharedAsset,
     private val vault: SecureSignIn? = null,
     private val apiFactory: (String) -> PortfolioApi = { PortfolioApi(it) },
+    private val captureMaskRequired: Boolean? = null,
 ) : ViewModel() {
     var origin by mutableStateOf(settings.readOrigin() ?: DEFAULT_ORIGIN)
         private set
     var api = apiFactory(origin)
         private set
+    var screenCaptureAllowed by mutableStateOf(settings.readScreenCaptureAllowed())
+        private set
+    val captureProtectionEnabled get() = !screenCaptureAllowed
+    val numbersRevealBlocked get() = captureProtectionEnabled && (captureMaskRequired ?: captureProtectionRequiresMaskedNumbers)
+    val numbersConcealed get() = numbersHidden || numbersRevealBlocked
+    fun updateScreenCapturePermission(allowed: Boolean) {
+        settings.writeScreenCaptureAllowed(allowed)
+        screenCaptureAllowed = allowed
+    }
     var numbersHidden by mutableStateOf(settings.readNumbersHidden())
         private set
     fun toggleNumberVisibility() {
+        if (numbersRevealBlocked) {
+            message = "Numbers are protected right now. Check Settings → Privacy."
+            return
+        }
         settings.writeNumbersHidden(!numbersHidden)
         numbersHidden = !numbersHidden
     }
