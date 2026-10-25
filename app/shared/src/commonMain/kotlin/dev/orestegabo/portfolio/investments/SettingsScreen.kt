@@ -1,6 +1,8 @@
 package dev.orestegabo.portfolio.investments
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
@@ -130,6 +132,9 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
             SettingsRow(Icons.Outlined.Password, "Passwords & AutoFill", "Use your phone’s password manager", onClick = { dialog = "passwords" })
         } }
         item { SettingsSection("Tools") {
+            SettingsRow(Icons.Outlined.PictureAsPdf, "Portfolio report", "All years · PDF export", enabled = !model.busy,
+                onClick = { dialog = "report" })
+            SettingsDivider()
             SettingsRow(Icons.Outlined.Calculate, "Investment simulator", onClick = openSimulator)
             SettingsDivider()
             SettingsRow(Icons.Outlined.MenuBook, "Bond education", onClick = openEducation)
@@ -190,11 +195,30 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
             AppText(if (dialog == "privacy") "PDFs are read on your device. Saving a purchase uploads its PDF to your private Documents. Review the figures before confirming."
                 else "Your phone’s password manager can fill your login. Enable Password AutoFill in your phone’s settings to use saved passwords.\n\nSecure sign-in is separate: it lets you reopen this app with device authentication without typing your password.")
         }, confirmButton = { TextButton(onClick = { dialog = null }) { AppText("Done") } })
-    if (dialog == "deleteAccount") AlertDialog(
+    if (dialog == "report") AlertDialog(onDismissRequest = { dialog = null },
+        title = { AppText("Portfolio report") },
+        text = { AppText("Export all bonds, shares, estimated gains and losses, and target progress. The PDF includes your financial figures even when Hide numbers is on. Original PDFs must be downloaded separately.") },
+        confirmButton = { TextButton(enabled = !model.busy, onClick = {
+            dialog = null; model.exportPortfolioReport(actions)
+        }) { AppText("Generate PDF") } },
+        dismissButton = { TextButton(onClick = { dialog = null }) { AppText("Cancel") } })
+    model.reportProgress?.let { progress ->
+        AlertDialog(onDismissRequest = {}, title = { AppText("Portfolio report") }, text = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                CircularProgressIndicator(Modifier.size(28.dp))
+                AppText(progress, Modifier.weight(1f))
+            }
+        }, confirmButton = {})
+    }
+    if (dialog == "deleteAccount" && model.reportProgress == null) AlertDialog(
         onDismissRequest = { dialog = null; deletionPassword = "" },
         title = { AppText("Delete account?") },
-        text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             AppText("Permanently delete $email, its investments, documents and active sessions. This cannot be undone. Files you downloaded and entries in your phone’s password manager remain on your device.")
+            AppText("Save a report before deleting. It includes financial figures; download original PDFs separately from Documents.")
+            OutlinedButton(enabled = !model.busy, onClick = {
+                deletionPassword = ""; model.exportPortfolioReport(actions)
+            }) { AppIcon(Icons.Outlined.PictureAsPdf, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); AppText("Save portfolio report") }
             OutlinedTextField(deletionPassword, { deletionPassword = it.take(128) }, Modifier.fillMaxWidth(),
                 singleLine = true, label = { AppText("Confirm your password") }, visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password,
