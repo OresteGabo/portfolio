@@ -16,4 +16,4 @@ interface SecureSignIn {
 
 @Composable expect fun rememberSecureSignIn(): SecureSignIn
 
-@Composable expect fun NativePrivacyCover()
+@Composable expect fun NativePrivacyCover(protectCaptures: Boolean)
