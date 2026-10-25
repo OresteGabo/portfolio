@@ -33,6 +33,13 @@ val LocalChartStyle = staticCompositionLocalOf { "area" }
 /** The same observed values in three views; bars use a zero baseline. */
 @Composable
 fun InvestmentChart(values: List<Double>, labels: List<String> = emptyList(), notes: List<String> = emptyList(), sparse: Boolean = false, dateRange: ClosedRange<LocalDate>? = null) {
+    CaptureRedactionRegion(Modifier.fillMaxWidth(), masked = { HiddenFinancialChart(Modifier.fillMaxSize()) }) {
+        InvestmentChartContent(values, labels, notes, sparse, dateRange)
+    }
+}
+
+@Composable
+private fun InvestmentChartContent(values: List<Double>, labels: List<String>, notes: List<String>, sparse: Boolean, dateRange: ClosedRange<LocalDate>?) {
     if (LocalNumbersHidden.current) { HiddenFinancialChart(Modifier.fillMaxWidth().height(276.dp)); return }
     val validIndices = values.indices.filter { values[it].isFinite() && values[it] >= 0 }
     val pointNotes = validIndices.map { notes.getOrNull(it) }
