@@ -57,7 +57,7 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
     PortfolioPullRefresh(model) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 108.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        item { PortfolioHero(valuation, topInset, model.numbersConcealed, model::toggleNumberVisibility, model.numbersRevealBlocked, model.quoteRefreshFailed || model.quotes?.optJSONObject("source")?.optBoolean("stale") == true,
+        item { PortfolioHero(valuation, topInset, model.quoteRefreshFailed || model.quotes?.optJSONObject("source")?.optBoolean("stale") == true,
             model.quotes?.optJSONObject("source")?.text("publishedAt").orEmpty().take(10)) {
             if (model.busy && model.refreshPhase == PortfolioRefreshPhase.IDLE || model.error != null || model.message != null) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (model.busy && model.refreshPhase == PortfolioRefreshPhase.IDLE) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -136,7 +136,7 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
 }
 
 @Composable
-private fun PortfolioHero(totals: List<CurrencyValuation>, topInset: Dp, hidden: Boolean, togglePrivacy: () -> Unit, revealBlocked: Boolean, stale: Boolean, priceDate: String, notice: @Composable () -> Unit) {
+private fun PortfolioHero(totals: List<CurrencyValuation>, topInset: Dp, stale: Boolean, priceDate: String, notice: @Composable () -> Unit) {
     val background = MaterialTheme.colorScheme.background
     Box(Modifier.fillMaxWidth()) {
         Box(Modifier.fillMaxWidth().height(300.dp + topInset)) {
@@ -156,7 +156,6 @@ private fun PortfolioHero(totals: List<CurrencyValuation>, topInset: Dp, hidden:
                         AppText("Portfolio", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color.White)
                         AppText("Rwanda investments", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = .75f))
                     }
-                    CompositionLocalProvider(LocalContentColor provides Color.White) { NumberVisibilityButton(hidden, togglePrivacy, revealBlocked) }
                 }
                 notice()
             }
