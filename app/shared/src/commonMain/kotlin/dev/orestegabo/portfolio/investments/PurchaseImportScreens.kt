@@ -71,7 +71,7 @@ fun PurchaseImportReview(model: PortfolioModel, review: JsonRecord, target: Json
         (selected != null && pendingMatchesConfirmation(selected, body) || target == null && matches.isEmpty()) && confirmedBody != null
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { AppText("Review purchase", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
-        if (body == null) item { EmptyState(parsed.exceptionOrNull()?.message ?: "Could not read this PDF", EmptyArtwork.DOCUMENTS, compact = true) }
+        if (body == null) item { EmptyState(userErrorMessage(parsed.exceptionOrNull(), "Could not read this PDF."), EmptyArtwork.DOCUMENTS, compact = true) }
         else {
             if (wrongTarget) item { NoticeForImport("This PDF does not match the pending bond or applied amount.") }
             if (bond && !model.historyComplete) item {
