@@ -24,7 +24,8 @@ fun PdfImportProgressDialog(progress: PdfImportProgress, cancel: () -> Unit) {
             CircularProgressIndicator(Modifier.size(32.dp), strokeWidth = 3.dp)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 AppText("${progress.stage.label}…")
-                if (progress.detail.isNotBlank()) AppText(progress.detail, style = MaterialTheme.typography.bodySmall,
+                val detail = safePdfProgressDetail(progress.detail)
+                if (detail.isNotBlank()) AppText(detail, style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } },
