@@ -188,17 +188,20 @@ private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolea
                 .semantics { stateDescription = localized(if (expanded) "Expanded" else "Collapsed") }
                 .padding(start = 16.dp, top = 18.dp, end = 10.dp, bottom = 18.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(width = 46.dp, height = 60.dp), contentAlignment = Alignment.Center) {
-                    if (logo != null) {
-                        InvestmentLogo(ticker = logo.ticker, bond = logo.bond,
-                            modifier = Modifier.size(44.dp).semantics { contentDescription = localized("Logo: ${logo.name}") })
-                    } else if (shares) {
-                        Surface(Modifier.size(44.dp), shape = androidx.compose.foundation.shape.CircleShape, color = accent.copy(alpha = .07f)) {
-                            Box(contentAlignment = Alignment.Center) {
-                                AppIcon(Icons.AutoMirrored.Outlined.TrendingUp, "Shares", Modifier.size(24.dp), tint = accent)
+                Box(Modifier.size(width = 58.dp, height = 72.dp)) {
+                    PdfCover(accent)
+                    if (logo != null || shares) {
+                        Surface(Modifier.align(Alignment.BottomEnd).size(36.dp)
+                            .then(if (logo != null) Modifier.semantics { contentDescription = localized("Logo: ${logo.name}") } else Modifier),
+                            shape = androidx.compose.foundation.shape.CircleShape, color = colours.surface,
+                            border = BorderStroke(2.dp, colours.surface), shadowElevation = 1.dp) {
+                            Box(Modifier.padding(2.dp), contentAlignment = Alignment.Center) {
+                                if (logo != null) InvestmentLogo(ticker = logo.ticker, bond = logo.bond,
+                                    modifier = Modifier.fillMaxSize(), compact = true)
+                                else AppIcon(Icons.AutoMirrored.Outlined.TrendingUp, "Shares", Modifier.size(20.dp), tint = accent)
                             }
                         }
-                    } else PdfCover(accent)
+                    }
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (category.isNotBlank()) AppText(category, style = MaterialTheme.typography.labelSmall, color = accent)
