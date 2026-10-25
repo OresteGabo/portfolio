@@ -7,6 +7,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -27,6 +29,7 @@ fun App() {
     val actions = rememberNativeActions()
     val vault = rememberSecureSignIn()
     val model = viewModel { PortfolioModel(settings, vault = vault) }
+    val haptics = LocalHapticFeedback.current
     NativePrivacyCover(protectCaptures = model.captureProtectionEnabled)
     var privacyCover by remember { mutableStateOf(false) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { privacyCover = false; model.foreground() }
@@ -35,7 +38,15 @@ fun App() {
     ShakeNumberVisibility(
         enabled = model.shakeToHideEnabled && model.user != null && !model.locked &&
             !privacyCover && !actions.interactingWithSystem && !model.numbersRevealBlocked,
-        onShake = model::toggleNumberVisibility,
+        onShake = {
+            val previouslyHidden = model.numbersHidden
+            model.toggleNumberVisibility()
+            if (model.numbersHidden != previouslyHidden) {
+                haptics.performHapticFeedback(
+                    if (model.numbersHidden) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff,
+                )
+            }
+        },
     )
     CompositionLocalProvider(LocalNativeActions provides actions) {
         CaptureBackdropHost(enabled = model.captureProtectionEnabled) {
