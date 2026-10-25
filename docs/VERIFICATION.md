@@ -400,3 +400,10 @@ Removed the manual Check progress actions from the Portfolio insight card and Se
 Regression coverage checks initial readiness, authoritative compact totals without history downloads, pull-refresh and post-save updates, compatibility fallback with fee-inclusive cash cost, compact preview preservation, cache reuse, optional summary failure/recovery and authentication expiry.
 
 Validation passed: 104 Android shared tests and 112 iOS shared tests (216 total), Android debug build/lint, and signed iPhone build. Updated apps were installed and reopened normally on both connected phones. The iOS test simulator was shut down afterward.
+
+### Shake number visibility (2026-10-25)
+
+- Shared shake detection handles three distinct peaks in 700 ms, a 1.8-second cooldown, stationary/walking traces, sustained acceleration, rapid sensor noise, sparse bumps and invalid samples. Four new detector tests pass; Android host suite: 108 tests, zero failures.
+- Android debug assembly and lint pass; signed iPhone device build passes. Updated builds installed on both connected phones, preserving data.
+- Native accelerometer listeners are scoped to the resumed, unlocked, signed-in app. Settings includes a persisted opt-out with English/French copy. Capture masking remains independent.
+- Physical shake sensitivity still needs hands-on testing on the phones; synthetic sensor traces verify detection rules, not device motion in a person's hand.
