@@ -33,10 +33,12 @@ fun App() {
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { privacyCover = true }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { model.background(systemInteraction = actions.interactingWithSystem) }
     CompositionLocalProvider(LocalNativeActions provides actions) {
-        Box(Modifier.fillMaxSize()) {
-            Box(if (privacyCover) Modifier.semantics { hideFromAccessibility() } else Modifier) { InvestmentApp(model) }
-            if (privacyCover) Surface(Modifier.fillMaxSize(), color = Color(0xFFFAF8F2)) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Image(painterResource(Res.drawable.gabo_mark), "Gabo", Modifier.size(64.dp)) }
+        CaptureBackdropHost(enabled = model.captureProtectionEnabled) {
+            Box(Modifier.fillMaxSize()) {
+                Box(if (privacyCover) Modifier.semantics { hideFromAccessibility() } else Modifier) { InvestmentApp(model) }
+                if (privacyCover) Surface(Modifier.fillMaxSize(), color = Color(0xFFFAF8F2)) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Image(painterResource(Res.drawable.gabo_mark), "Gabo", Modifier.size(64.dp)) }
+                }
             }
         }
     }
