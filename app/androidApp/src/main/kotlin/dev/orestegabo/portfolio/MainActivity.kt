@@ -14,5 +14,6 @@ class MainActivity : FragmentActivity() {
         PlatformBuild.debug = BuildConfig.DEBUG
         enableEdgeToEdge()
         setContent { App() }
+        installExperimentalCaptureLayer(this)
     }
 }
