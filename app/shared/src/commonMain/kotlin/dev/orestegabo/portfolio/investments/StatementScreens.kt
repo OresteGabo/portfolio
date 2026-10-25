@@ -32,10 +32,10 @@ fun statementConfirmationMatches(item: JsonRecord, review: JsonRecord): Boolean 
 @Composable
 fun MissingStatementTile(item: JsonRecord, open: () -> Unit) {
     Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .45f)) {
-        ListItem(headlineContent = { Text(item.text("title"), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        ListItem(headlineContent = { AppText(item.text("title"), maxLines = 1, overflow = TextOverflow.Ellipsis) },
             supportingContent = { FinancialText("Missing PDF · ${item.text("date")} · ${money(item.optDouble("amount"), "RWF")}") },
-            leadingContent = { Icon(Icons.Outlined.Description, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-            trailingContent = { Icon(Icons.Outlined.UploadFile, "Upload missing confirmation") },
+            leadingContent = { AppIcon(Icons.Outlined.Description, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+            trailingContent = { AppIcon(Icons.Outlined.UploadFile, "Upload missing confirmation") },
             colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
             modifier = Modifier.clickable(onClick = open))
     }
@@ -52,19 +52,19 @@ fun StatementReviewScreen(model: PortfolioModel, review: JsonRecord, open: (Json
         }
     }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { Text("BK Capital statement", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text("${review.text("fromDate")} – ${review.text("toDate")}", style = MaterialTheme.typography.bodySmall) }
+        item { AppText("BK Capital statement", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            AppText("${review.text("fromDate")} – ${review.text("toDate")}", style = MaterialTheme.typography.bodySmall) }
         if (rows == null) item {
-            if (model.busy) LoadingState() else Button(onClick = { attempted = false }) { Text("Check again") }
+            if (model.busy) LoadingState() else Button(onClick = { attempted = false }) { AppText("Check again") }
         } else {
             item { FinancialText("${rows!!.count { it.text("state") == "recorded" }} recorded · ${rows!!.count { it.text("state") == "missing" }} missing PDFs", style = MaterialTheme.typography.labelLarge) }
             items(rows!!.withIndex().toList(), key = { it.index }) { (_, row) ->
                 if (row.text("state") == "missing") MissingStatementTile(row) { open(row) }
-                else ListItem(headlineContent = { Text(row.text("title")) }, supportingContent = { Text("Recorded · ${row.text("date")}") },
-                    leadingContent = { Icon(Icons.Outlined.CheckCircle, null, tint = MaterialTheme.colorScheme.primary) })
+                else ListItem(headlineContent = { AppText(row.text("title")) }, supportingContent = { AppText("Recorded · ${row.text("date")}") },
+                    leadingContent = { AppIcon(Icons.Outlined.CheckCircle, null, tint = MaterialTheme.colorScheme.primary) })
             }
             if (rows!!.any { it.text("state") == "missing" }) item {
-                Text("Missing PDFs stay in your portfolio as reminders. Amounts are added to totals after confirmation.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                AppText("Missing PDFs stay in your portfolio as reminders. Amounts are added to totals after confirmation.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
