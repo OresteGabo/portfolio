@@ -6,6 +6,10 @@ import androidx.compose.runtime.staticCompositionLocalOf
 @Composable expect fun PlatformSystemBarAppearance(darkTheme: Boolean)
 
 interface ServerSettings {
+    fun readLanguage(): String? = null
+    fun writeLanguage(language: String) {}
+    fun readScreenCaptureAllowed(): Boolean = false
+    fun writeScreenCaptureAllowed(allowed: Boolean) {}
     fun readNumbersHidden(): Boolean = false
     fun writeNumbersHidden(hidden: Boolean) {}
     fun forgetMonthlyTarget(account: String) {}
