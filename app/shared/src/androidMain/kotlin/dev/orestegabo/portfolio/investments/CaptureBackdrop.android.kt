@@ -12,6 +12,8 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlin.coroutines.*
@@ -57,7 +59,7 @@ fun AndroidCaptureBackdropHost(enabled: Boolean, content: @Composable () -> Unit
     val refreshAnimatedScene: () -> Unit = remember(registry) {
         {
             registry.invalidate()
-            // Material navigation animates in child layers after the route composition commits.
+            // Controls animate in child layers after their composition commits.
             // Republish that short transition, then stop producing snapshots when the UI is idle.
             animateUntil = SystemClock.uptimeMillis() + 900L
         }
@@ -75,7 +77,16 @@ fun AndroidCaptureBackdropHost(enabled: Boolean, content: @Composable () -> Unit
         LocalCaptureBackdropRegistry provides if (experimental) registry else null,
         LocalCaptureAnimationRefresh provides if (experimental) refreshAnimatedScene else null,
     ) {
-        Box(Modifier.fillMaxSize().drawWithContent {
+        Box(Modifier.fillMaxSize().pointerInput(experimental) {
+            if (experimental) awaitPointerEventScope {
+                while (true) {
+                    // Observe without consuming: controls and scrolling keep receiving their input.
+                    // Republish through release/settling, including draw-only child animations.
+                    awaitPointerEvent(PointerEventPass.Initial)
+                    refreshAnimatedScene()
+                }
+            }
+        }.drawWithContent {
             if (!experimental) { drawContent(); return@drawWithContent }
             frameRevision
             scene.record { this@drawWithContent.drawContent() }
