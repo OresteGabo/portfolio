@@ -57,7 +57,7 @@ fun EmptyState(
                     drawCircle(colors.primary.copy(alpha = .18f), 3.dp.toPx(), Offset(size.width * .17f, size.height * .22f))
                     drawCircle(colors.primary.copy(alpha = .12f), 5.dp.toPx(), Offset(size.width * .77f, size.height * .85f))
                 }
-                Icon(artwork.icon, contentDescription = null,
+                AppIcon(artwork.icon, contentDescription = null,
                     modifier = Modifier.align(Alignment.Center).size(if (compact) 112.dp else 164.dp).rotate(-12f),
                     tint = colors.primary.copy(alpha = .09f))
             }
@@ -66,14 +66,14 @@ fun EmptyState(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 if (!compact) Surface(shape = RoundedCornerShape(16.dp), color = colors.surface.copy(alpha = .85f)) {
-                    Icon(artwork.icon, null, Modifier.padding(14.dp).size(28.dp), tint = colors.primary)
+                    AppIcon(artwork.icon, null, Modifier.padding(14.dp).size(28.dp), tint = colors.primary)
                 }
-                Text(title, modifier = Modifier.fillMaxWidth(if (compact) .74f else .86f),
+                AppText(title, modifier = Modifier.fillMaxWidth(if (compact) .74f else .86f),
                     style = if (compact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold)
                 if (actionLabel != null && onAction != null) {
-                    if (compact) TextButton(onClick = onAction, contentPadding = PaddingValues(horizontal = 0.dp)) { Text(actionLabel) }
-                    else FilledTonalButton(onClick = onAction, modifier = Modifier.heightIn(min = 48.dp)) { Text(actionLabel) }
+                    if (compact) TextButton(onClick = onAction, contentPadding = PaddingValues(horizontal = 0.dp)) { AppText(actionLabel) }
+                    else FilledTonalButton(onClick = onAction, modifier = Modifier.heightIn(min = 48.dp)) { AppText(actionLabel) }
                 }
             }
         }
