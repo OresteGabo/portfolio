@@ -1,6 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.Canvas
@@ -40,6 +41,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
     openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit) {
     val actions = LocalNativeActions.current
     var setupSecure by remember { mutableStateOf(false) }
+    var targetExpanded by remember { mutableStateOf(false) }
     var password by remember { mutableStateOf("") }
     var deletionPassword by remember { mutableStateOf("") }
     var dialog by rememberSaveable { mutableStateOf<String?>(null) }
@@ -108,10 +110,24 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 onClick = { dialog = "chartStyle" })
         } }
         item { SettingsSection("Investing") {
-            SettingsRow(Icons.Outlined.Flag, "Monthly investment target", privateFinancialValue(money(model.monthlyInvestmentTarget.toDouble(), "RWF")),
-                enabled = !model.busy, onClick = { dialog = "investmentTarget" })
-            SettingsDivider()
-            InvestmentGoalBreakdown(model)
+            Column(Modifier.animateContentSize()) {
+                SettingsRow(Icons.Outlined.Flag, "Monthly investment target", privateFinancialValue(money(model.monthlyInvestmentTarget.toDouble(), "RWF")),
+                    onClick = { targetExpanded = !targetExpanded },
+                    modifier = Modifier.semantics { stateDescription = localized(if (targetExpanded) "Expanded" else "Collapsed") },
+                    trailing = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(enabled = !model.busy, onClick = { dialog = "investmentTarget" }) {
+                                AppIcon(Icons.Outlined.Edit, "Edit monthly target", Modifier.size(20.dp))
+                            }
+                            AppIcon(if (targetExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                                null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    })
+                if (targetExpanded) {
+                    SettingsDivider()
+                    InvestmentGoalBreakdown(model)
+                }
+            }
         } }
         item { SettingsSection("Security") {
             SettingsRow(when (model.unlockLabel) { "Face ID" -> Icons.Outlined.Face; "Touch ID" -> Icons.Outlined.Fingerprint; else -> Icons.Outlined.Lock },
@@ -309,13 +325,14 @@ private fun SettingsSection(title: String, footnote: String? = null, content: @C
 
 @Composable
 private fun SettingsRow(icon: ImageVector, title: String, subtitle: String? = null, enabled: Boolean = true,
-    tint: Color = MaterialTheme.colorScheme.primary, toggleState: Boolean? = null, onClick: () -> Unit, trailing: (@Composable () -> Unit)? = null) {
+    tint: Color = MaterialTheme.colorScheme.primary, toggleState: Boolean? = null, onClick: () -> Unit, trailing: (@Composable () -> Unit)? = null,
+    modifier: Modifier = Modifier) {
     ListItem(headlineContent = { AppText(title, color = if (enabled) tint.takeIf { it == MaterialTheme.colorScheme.error } ?: MaterialTheme.colorScheme.onSurface
         else MaterialTheme.colorScheme.onSurfaceVariant) }, supportingContent = subtitle?.let { { FinancialText(it, style = MaterialTheme.typography.bodySmall) } },
         leadingContent = { AppIcon(icon, null, tint = if (enabled) tint else MaterialTheme.colorScheme.onSurfaceVariant) },
         trailingContent = trailing ?: { AppIcon(Icons.Outlined.ChevronRight, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = Modifier.fillMaxWidth().then(if (toggleState != null) Modifier.toggleable(toggleState, enabled = enabled, role = Role.Switch, onValueChange = { onClick() })
+        modifier = modifier.fillMaxWidth().then(if (toggleState != null) Modifier.toggleable(toggleState, enabled = enabled, role = Role.Switch, onValueChange = { onClick() })
             else Modifier.clickable(enabled = enabled, role = Role.Button, onClick = onClick)))
 }
 
