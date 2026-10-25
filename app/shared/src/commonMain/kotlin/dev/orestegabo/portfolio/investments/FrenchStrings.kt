@@ -2,6 +2,17 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Portfolio report" to "Rapport de portefeuille",
+    "All years · PDF export" to "Toutes les années · Export PDF",
+    "Export all bonds, shares, estimated gains and losses, and target progress. The PDF includes your financial figures even when Hide numbers is on. Original PDFs must be downloaded separately." to "Exportez toutes les obligations, les actions, les gains et pertes estimés et la progression des objectifs. Le PDF inclut vos montants même si Masquer les montants est activé. Les PDF originaux doivent être téléchargés séparément.",
+    "Generate PDF" to "Générer le PDF",
+    "Loading all investment years…" to "Chargement de toutes les années d’investissement…",
+    "Building your report…" to "Création de votre rapport…",
+    "Choose where to save the PDF" to "Choisissez où enregistrer le PDF",
+    "Portfolio report saved." to "Rapport de portefeuille enregistré.",
+    "Save a report before deleting. It includes financial figures; download original PDFs separately from Documents." to "Enregistrez un rapport avant la suppression. Il inclut vos montants ; téléchargez les PDF originaux séparément depuis Documents.",
+    "Save portfolio report" to "Enregistrer le rapport",
+
     "Shake to hide numbers" to "Secouer pour masquer les montants",
     "Shake again to show them" to "Secouez à nouveau pour les afficher",
     "Progress unavailable" to "Progression indisponible",
