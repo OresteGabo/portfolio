@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -27,6 +28,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
@@ -210,14 +212,33 @@ private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, pri
                         AppText("Estimated net worth", Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = Color(0xFFE8E4D3))
                         IconButton(onClick = { showBasis = true }, modifier = Modifier.size(48.dp)) { AppIcon(Icons.Outlined.Info, "Valuation basis", tint = Color(0xFFE8E4D3), modifier = Modifier.size(20.dp)) }
                     }
-                    FinancialText(money(valuation.estimatedNetWorth, total.currency), modifier = Modifier, style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold, maxLines = 2)
+                    FinancialText(money(valuation.estimatedNetWorth, total.currency), modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false,
+                        autoSize = TextAutoSize.StepBased(minFontSize = 16.sp, maxFontSize = 24.sp, stepSize = .5.sp))
                 }
                 HorizontalDivider(color = DashboardGold.copy(alpha = .2f))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    MoneyMetric("Bond principal", total.bondFaceValue, total.currency, Icons.Outlined.AccountBalance, Modifier.weight(1f))
-                    MoneyMetric("RSE equity value", valuation.shareValue, total.currency, Icons.Outlined.BarChart, Modifier.weight(1f))
-                    MoneyMetric("Annual net coupon", total.netAnnualCoupon, total.currency, Icons.Outlined.Percent, Modifier.weight(1f))
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    val measurer = rememberTextMeasurer()
+                    val columnWidth = with(LocalDensity.current) { ((maxWidth - 24.dp) / 3).toPx() }
+                    val hidden = LocalNumbersHidden.current
+                    val tooWide = listOf(total.bondFaceValue, valuation.shareValue, total.netAnnualCoupon).any { value ->
+                        val amount = money(value, total.currency).removePrefix("${total.currency} ")
+                        measurer.measure(if (hidden) maskFinancialNumbers(amount) else amount,
+                            style = MaterialTheme.typography.labelLarge.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
+                            softWrap = false, maxLines = 1).size.width > columnWidth
+                    }
+                    // Reflow before fitting would make amounts unreadably small or truncate digits.
+                    if (maxWidth < 240.dp || LocalDensity.current.fontScale > 1.3f || tooWide) {
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            MoneyMetric("Bond principal", total.bondFaceValue, total.currency, Icons.Outlined.AccountBalance, Modifier.fillMaxWidth())
+                            MoneyMetric("RSE equity value", valuation.shareValue, total.currency, Icons.Outlined.BarChart, Modifier.fillMaxWidth())
+                            MoneyMetric("Annual net coupon", total.netAnnualCoupon, total.currency, Icons.Outlined.Percent, Modifier.fillMaxWidth())
+                        }
+                    } else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        MoneyMetric("Bond principal", total.bondFaceValue, total.currency, Icons.Outlined.AccountBalance, Modifier.weight(1f))
+                        MoneyMetric("RSE equity value", valuation.shareValue, total.currency, Icons.Outlined.BarChart, Modifier.weight(1f))
+                        MoneyMetric("Annual net coupon", total.netAnnualCoupon, total.currency, Icons.Outlined.Percent, Modifier.weight(1f))
+                    }
                 }
             }
         }
@@ -229,8 +250,14 @@ private fun MoneyMetric(label: String, value: Double, currency: String, icon: an
     Column(modifier, verticalArrangement = Arrangement.spacedBy(7.dp)) {
         AppIcon(icon, null, Modifier.size(20.dp), tint = DashboardGold)
         AppText(label, style = MaterialTheme.typography.labelSmall, minLines = 2, color = Color(0xFFDAD7C6))
-        FinancialText(money(value, currency), modifier = Modifier,
-            style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            AppText(currency, style = MaterialTheme.typography.labelSmall, color = Color(0xFFDAD7C6),
+                maxLines = 1, softWrap = false)
+            FinancialText(money(value, currency).removePrefix("$currency "), modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
+                maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
+                autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = 14.sp, stepSize = .5.sp))
+        }
     }
 }
 
