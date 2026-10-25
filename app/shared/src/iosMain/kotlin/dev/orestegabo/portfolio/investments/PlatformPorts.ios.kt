@@ -29,6 +29,8 @@ internal fun presentingController(): UIViewController {
 }
 @Composable
 actual fun rememberServerSettings(): ServerSettings = remember { object : ServerSettings {
+    override fun readScreenCaptureAllowed() = NSUserDefaults.standardUserDefaults.boolForKey("portfolio.screenCaptureAllowed")
+    override fun writeScreenCaptureAllowed(allowed: Boolean) { NSUserDefaults.standardUserDefaults.setBool(allowed, forKey = "portfolio.screenCaptureAllowed") }
     override fun readNumbersHidden() = NSUserDefaults.standardUserDefaults.boolForKey("portfolio.numbersHidden")
     override fun writeNumbersHidden(hidden: Boolean) { NSUserDefaults.standardUserDefaults.setBool(hidden, forKey = "portfolio.numbersHidden") }
     override fun forgetMonthlyTarget(account: String) { NSUserDefaults.standardUserDefaults.removeObjectForKey("portfolio.monthlyTarget:$account") }
@@ -36,6 +38,8 @@ actual fun rememberServerSettings(): ServerSettings = remember { object : Server
     override fun writeMonthlyTarget(account: String, amount: Long) { NSUserDefaults.standardUserDefaults.setObject(amount.toString(), forKey = "portfolio.monthlyTarget:$account") }
     override fun readChartStyle() = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.chartStyle")
     override fun writeChartStyle(style: String) { NSUserDefaults.standardUserDefaults.setObject(style, forKey = "portfolio.chartStyle") }
+    override fun readLanguage() = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.language")
+    override fun writeLanguage(language: String) { NSUserDefaults.standardUserDefaults.setObject(language, forKey = "portfolio.language") }
     override fun readTheme() = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.theme")
     override fun writeTheme(theme: String) { NSUserDefaults.standardUserDefaults.setObject(theme, forKey = "portfolio.theme") }
     override fun readOrigin() = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.serverOrigin")
