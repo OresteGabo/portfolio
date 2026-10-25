@@ -33,7 +33,7 @@ fun InvestmentLogo(ticker: String = "", bond: Boolean = false, modifier: Modifie
         Box(contentAlignment = Alignment.Center) {
             if (resource != null) Image(painterResource(resource), null,
                 Modifier.fillMaxSize().padding(if (bond || symbol in listOf("KCB", "MTNR", "MTN")) 3.dp else 7.dp), contentScale = ContentScale.Fit)
-            else Text(ticker.take(3), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
+            else AppText(ticker.take(3), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer)
         }
     }
