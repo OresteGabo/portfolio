@@ -112,7 +112,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                     onClick = { dialog = "chartStyle" })
             } }
             item { SettingsSection("Investing") {
-                Column(Modifier.animateContentSize()) {
+                Column(if (LocalReducedMotion.current) Modifier else Modifier.animateContentSize()) {
                     SettingsRow(Icons.Outlined.Flag, "Monthly investment target", privateFinancialValue(money(model.monthlyInvestmentTarget.toDouble(), "RWF")),
                         onClick = { targetExpanded = !targetExpanded },
                         modifier = Modifier.semantics { stateDescription = localized(if (targetExpanded) "Expanded" else "Collapsed") },
