@@ -14,7 +14,7 @@ import androidx.compose.ui.window.DialogProperties
 @Composable
 fun PdfImportProgressDialog(progress: PdfImportProgress, cancel: () -> Unit) {
     AlertDialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
-        title = { Text(when (progress.stage) {
+        title = { AppText(when (progress.stage) {
             PdfImportStage.UPLOADING -> "Saving PDF"
             PdfImportStage.SAVING -> "Saving purchase"
             else -> "Reading PDF"
@@ -23,10 +23,10 @@ fun PdfImportProgressDialog(progress: PdfImportProgress, cancel: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             CircularProgressIndicator(Modifier.size(32.dp), strokeWidth = 3.dp)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("${progress.stage.label}…")
-                if (progress.detail.isNotBlank()) Text(progress.detail, style = MaterialTheme.typography.bodySmall,
+                AppText("${progress.stage.label}…")
+                if (progress.detail.isNotBlank()) AppText(progress.detail, style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } },
-        confirmButton = { TextButton(onClick = cancel) { Text("Cancel") } })
+        confirmButton = { TextButton(onClick = cancel) { AppText("Cancel") } })
 }
