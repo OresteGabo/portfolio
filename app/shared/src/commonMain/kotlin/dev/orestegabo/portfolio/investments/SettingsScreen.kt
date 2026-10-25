@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -> Unit,
     chartStyle: String, changeChartStyle: (String) -> Unit,
-    openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit) {
+    openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit, openLegal: () -> Unit = {}) {
     val actions = LocalNativeActions.current
     var setupSecure by remember { mutableStateOf(false) }
     var targetExpanded by remember { mutableStateOf(false) }
@@ -158,6 +158,9 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 SettingsRow(Icons.Outlined.MenuBook, "Bond education", onClick = openEducation)
                 SettingsDivider()
                 SettingsRow(Icons.Outlined.Search, "Find bond purchases", onClick = { ownerSection = "bonds" })
+            } }
+            item { SettingsSection("Legal & privacy") {
+                SettingsRow(Icons.Outlined.Policy, "Legal documents", "Terms, privacy, data rights & credits", onClick = openLegal)
             } }
             item { SettingsSection("Links", "These links open in your browser.") {
                 val links = listOf(
