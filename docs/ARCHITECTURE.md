@@ -184,3 +184,9 @@ English and French share one presentation catalog (`FrenchStrings.kt`) and the `
 ### Short-lived data reuse
 
 Portfolio snapshots (including documents and reconciliation rows) and market/quote loads have a one-minute in-memory freshness window in the shared model. Repeated ordinary loads reuse recent results. Explicit pull-to-refresh, market refresh and portfolio writes bypass the cache; successful login also forces private data loading. Locking, logout, account deletion, password fallback and server changes clear freshness markers with the private records. No new private cache is persisted on disk. A short lifecycle interruption retains the existing snapshot without a session check or network reload. Shared clock injection verifies cache expiration and iOS suspension deterministically.
+
+### User-facing failure boundary
+
+`UserFacingErrors.kt` is the shared presentation boundary for failures. The model no longer forwards `Exception.message` directly to its red notice. Known, exact app-authored validation/remediation phrases are approved explicitly; unknown platform, transport, JSON, engine and server messages become fixed friendly copy. HTTP status mapping retains authentication, permission, duplicate, rate-limit and unavailable-service guidance without echoing response bodies or URLs. Startup uses a connection-specific fallback. New validation wording must be registered as approved presentation text, rather than loosening the filter to arbitrary prefixes or exception classes.
+
+The public model error setter applies the same boundary, including direct UI assignments. Bond/share form parsing and PDF review failures use context-specific safe fallbacks. PDF progress details accept only app-authored stage/page/count formats, discarding other bridge/native text. Existing error notice dismissal timing and original internal API exceptions remain unchanged. Generic fallback messages have English/French copy.
