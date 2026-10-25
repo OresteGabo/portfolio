@@ -18,7 +18,7 @@ Prepared in `/Users/muhirwagabooreste/WebstormProjects/gabo`:
 - `app/.well-known/apple-app-site-association/route.ts` serves a JSON `webcredentials.apps` list containing the exact app identity above.
 - `proxy.ts` excludes that endpoint from the bonds subdomain rewrite. Apple must receive JSON directly, without a redirect or sign-in page.
 
-The user approved publication, and these two files are committed locally as `204a611` in the web repository. Publishing is blocked: local Git has no GitHub login and both GitHub write endpoints returned 403 (read-only integration). Once Git is authenticated, run `git push origin main` from the web repository to trigger the normal Vercel deployment. The public endpoint still returns **404**, so local app changes alone cannot enable trusted credential sharing.
+Verified on 25 October 2026: the public association endpoint returns **HTTP 200** with `X5HS2K2N42.dev.orestegabo.portfolio.Portfolio` in `webcredentials.apps`. No further website publication is needed for that app identity. The current device provisioning profile does **not** permit Associated Domains, and `GABO_PASSWORD_SHARING_ENABLED` remains `NO`. A capable signing profile is still required for automatic matching with website passwords. The app retains native username/password input traits so users can use the password-provider options available on their device.
 
 After publication, verify:
 
