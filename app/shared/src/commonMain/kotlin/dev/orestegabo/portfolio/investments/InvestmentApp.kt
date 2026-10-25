@@ -64,6 +64,7 @@ fun JsonRecord.terms(): BondTerms? = runCatching {
 @Composable
 fun InvestmentApp(model: PortfolioModel) {
     var tab by rememberSaveable { mutableStateOf("Portfolio") }
+    RefreshCapturedNavigation(tab)
     var calendarFocus by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingIssueId by rememberSaveable { mutableStateOf<String?>(null) }
     var missingDocuments by rememberSaveable { mutableStateOf(false) }
