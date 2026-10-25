@@ -3,7 +3,6 @@ package dev.orestegabo.portfolio.investments
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,14 +33,6 @@ fun maskFinancialNumbers(text: String): String = privacyNumbers.replace(text) {
 
 @Composable
 fun privateFinancialValue(value: String) = if (LocalNumbersHidden.current) maskFinancialNumbers(value) else value
-
-@Composable
-fun NumberVisibilityButton(hidden: Boolean, toggle: () -> Unit, revealBlocked: Boolean = false) {
-    IconButton(onClick = toggle) {
-        AppIcon(if (hidden) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-            if (revealBlocked) "Numbers protected by capture protection. Change in Settings" else if (hidden) "Show financial numbers" else "Hide financial numbers")
-    }
-}
 
 @Composable
 fun FinancialText(
