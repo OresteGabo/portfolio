@@ -45,23 +45,23 @@ fun PurchaseEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit
     var status by rememberSaveable { mutableStateOf(existing.text("status").ifBlank { "active" }) }
     var confidence by rememberSaveable { mutableStateOf(existing.text("scheduleConfidence").ifBlank { "estimated" }) }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { TextButton(onClick = back) { Text("← Cancel") }; PageTitle("Record keeping", if (id == null) "Add bond purchase" else "Edit purchase", "Save the broker-confirmed terms. This updates the same portfolio as your web app.") }
+        item { TextButton(onClick = back) { AppText("← Cancel") }; PageTitle("Record keeping", if (id == null) "Add bond purchase" else "Edit purchase", "Save the broker-confirmed terms. This updates the same portfolio as your web app.") }
         imported?.let { item { PdfReviewNotice(it) } }
-        item { Text("Instrument", fontWeight = FontWeight.Bold); ChoiceRow(listOf("treasury", "government", "corporate", "municipal", "other"), instrument) { instrument = it } }
-        item { Text("Market", fontWeight = FontWeight.Bold); ChoiceRow(listOf("primary", "secondary", "other"), market) { market = it } }
+        item { AppText("Instrument", fontWeight = FontWeight.Bold); ChoiceRow(listOf("treasury", "government", "corporate", "municipal", "other"), instrument) { instrument = it } }
+        item { AppText("Market", fontWeight = FontWeight.Bold); ChoiceRow(listOf("primary", "secondary", "other"), market) { market = it } }
         bondFields.forEach { field -> item {
             Field(field.label, values[field.key].orEmpty(), { values[field.key] = it }, if (field.numeric) KeyboardType.Decimal else KeyboardType.Text,
                 when (field.key) { "faceValue" -> if (instrument == "treasury") "Treasury minimum: 100,000, in multiples of 100,000." else null
                     "withholdingTaxRate" -> if (instrument == "treasury") "The server applies 5% for Treasury bonds." else null
                     "couponDates" -> "Required for confirmed schedules. Leave empty for an estimated schedule."; else -> null })
         } }
-        item { Text("Schedule", fontWeight = FontWeight.Bold); ChoiceRow(listOf("estimated", "confirmed"), confidence) { confidence = it } }
-        item { Text("Status", fontWeight = FontWeight.Bold); ChoiceRow(listOf("submitted", "active", "sold", "matured"), status) { status = it } }
+        item { AppText("Schedule", fontWeight = FontWeight.Bold); ChoiceRow(listOf("estimated", "confirmed"), confidence) { confidence = it } }
+        item { AppText("Status", fontWeight = FontWeight.Bold); ChoiceRow(listOf("submitted", "active", "sold", "matured"), status) { status = it } }
         item {
-            val face = values["faceValue"]?.toDoubleOrNull() ?: 0.0
-            val price = values["pricePercent"]?.toDoubleOrNull() ?: 0.0
-            val accrued = values["accruedInterestPaid"]?.toDoubleOrNull() ?: 0.0
-            val fees = values["feesPaid"]?.toDoubleOrNull() ?: 0.0
+            val face = values["faceValue"]?.toInputNumberOrNull() ?: 0.0
+            val price = values["pricePercent"]?.toInputNumberOrNull() ?: 0.0
+            val accrued = values["accruedInterestPaid"]?.toInputNumberOrNull() ?: 0.0
+            val fees = values["feesPaid"]?.toInputNumberOrNull() ?: 0.0
             Panel { Fact("Total cash cost", money(face * price / 100 + accrued + fees, values["currency"].orEmpty())) }
         }
         item { Button(enabled = !model.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), onClick = {
@@ -76,7 +76,7 @@ fun PurchaseEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit
                             body.put(field.key, JsonList(dates))
                         }
                         field.numeric -> {
-                            val number = raw.toDoubleOrNull()?.takeIf { it.isFinite() } ?: error("Enter a valid ${field.label.lowercase()}.")
+                            val number = raw.toInputNumberOrNull()?.takeIf { it.isFinite() } ?: error("Enter a valid ${localized(field.label)}.")
                             body.put(field.key, if (field.key.endsWith("Rate")) number / 100 else number)
                         }
                         else -> body.put(field.key, raw)
@@ -90,7 +90,7 @@ fun PurchaseEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit
                 body.put("currency", body.text("currency").uppercase()).put("isin", body.text("isin").uppercase())
                 model.savePurchase(body, id, back)
             }.onFailure { model.error = it.message ?: "Check the purchase details." }
-        }) { Text(if (model.busy) "Saving…" else "Save purchase") } }
+        }) { AppText(if (model.busy) "Saving…" else "Save purchase") } }
     }
 }
 
@@ -107,10 +107,10 @@ private val equityFields = listOf(
 @Composable
 fun EquityEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit, imported: JsonRecord? = null) {
     val values = remember(existing) { mutableStateMapOf<String, String>().apply { equityFields.forEach { this[it.key] = if (existing.has(it.key)) existing.text(it.key) else it.initial } } }
-    val gross = (values["shares"]?.toDoubleOrNull() ?: 0.0) * (values["pricePerShare"]?.toDoubleOrNull() ?: 0.0)
-    val fees = listOf("brokerageCommission", "rseTransactionFee", "csdTransactionLevy", "cmaTransactionFee").sumOf { values[it]?.toDoubleOrNull() ?: 0.0 }
+    val gross = (values["shares"]?.toInputNumberOrNull() ?: 0.0) * (values["pricePerShare"]?.toInputNumberOrNull() ?: 0.0)
+    val fees = listOf("brokerageCommission", "rseTransactionFee", "csdTransactionLevy", "cmaTransactionFee").sumOf { values[it]?.toInputNumberOrNull() ?: 0.0 }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { TextButton(onClick = back) { Text("← Cancel") }; PageTitle("Record keeping", "Add share purchase", "Record the details from your RSE purchase contract note.") }
+        item { TextButton(onClick = back) { AppText("← Cancel") }; PageTitle("Record keeping", "Add share purchase", "Record the details from your RSE purchase contract note.") }
         imported?.let { item { PdfReviewNotice(it) } }
         equityFields.forEach { field -> item { Field(field.label, values[field.key].orEmpty(), { values[field.key] = it }, if (field.numeric) KeyboardType.Decimal else KeyboardType.Text) } }
         item { Panel { Fact("Gross consideration", money(gross)); Fact("Total charges", money(fees)); Fact("Net amount payable", money(gross + fees)) } }
@@ -119,7 +119,7 @@ fun EquityEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit, 
                 val body = JsonRecord().put("instrumentType", "equity").put("exchange", "RSE").put("currency", "RWF").put("status", "active").put("notes", "")
                 equityFields.forEach { field ->
                     val value = values[field.key].orEmpty().trim()
-                    if (field.numeric) body.put(field.key, value.toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0 } ?: error("Enter a valid ${field.label.lowercase()}."))
+                    if (field.numeric) body.put(field.key, value.toInputNumberOrNull()?.takeIf { it.isFinite() && it >= 0 } ?: error("Enter a valid ${localized(field.label)}."))
                     else body.put(field.key, if (field.key == "isin" || field.key == "ticker") value.uppercase() else value)
                 }
                 listOf("tradeDate", "settlementDate").forEach { LocalDate.parse(body.text(it)) }
@@ -127,15 +127,15 @@ fun EquityEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit, 
                 body.put("grossConsideration", kotlin.math.round(gross * 100) / 100.0).put("totalCharges", kotlin.math.round(fees * 100) / 100.0).put("netAmountPayable", kotlin.math.round((gross + fees) * 100) / 100.0)
                 model.saveEquity(body, back)
             }.onFailure { model.error = it.message ?: "Check the share details." }
-        }) { Text("Save share purchase") } }
+        }) { AppText("Save share purchase") } }
     }
 }
 
 @Composable
 private fun PdfReviewNotice(review: JsonRecord) = Panel {
-    Text("Filled from your PDF", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-    Text("Review the extracted dates, amounts, and fees below. Nothing is saved until you confirm.", style = MaterialTheme.typography.bodySmall)
-    if (review.optBoolean("usedOcr")) Text("Text recognition was used. Check every field carefully.", style = MaterialTheme.typography.bodySmall)
+    AppText("Filled from your PDF", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+    AppText("Review the extracted dates, amounts, and fees below. Nothing is saved until you confirm.", style = MaterialTheme.typography.bodySmall)
+    if (review.optBoolean("usedOcr")) AppText("Text recognition was used. Check every field carefully.", style = MaterialTheme.typography.bodySmall)
     review.optJSONArray("warnings")?.let { warnings -> (0 until warnings.length()).forEach { FinancialText(warnings.getString(it), style = MaterialTheme.typography.bodySmall) } }
-    review.optJSONArray("missingFields")?.let { missing -> if (missing.length() > 0) Text("Please complete: " + (0 until missing.length()).joinToString { missing.getString(it) }, style = MaterialTheme.typography.bodySmall) }
+    review.optJSONArray("missingFields")?.let { missing -> if (missing.length() > 0) AppText(localized("Please complete: ") + (0 until missing.length()).joinToString { missing.getString(it) }, style = MaterialTheme.typography.bodySmall) }
 }
