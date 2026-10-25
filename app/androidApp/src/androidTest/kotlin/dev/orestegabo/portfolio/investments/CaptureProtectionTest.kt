@@ -14,7 +14,7 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CaptureProtectionTest {
-    @Test fun defaultCaptureIsBlankAndSettingsOverrideAndBackgroundPrivacyAffectRealWindow() {
+    @Test fun foregroundScreenshotsSaveWithEitherPreferenceAndBackgroundRemainsSecure() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val prefs = instrumentation.targetContext.getSharedPreferences("connection", 0)
         val oldOrigin = prefs.getString("origin", null)
@@ -57,15 +57,15 @@ class CaptureProtectionTest {
         try {
             assertTrue(prefs.edit().putString("origin", "http://127.0.0.1:${server.localPort}").remove("screenCaptureAllowed").commit())
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-                awaitFlag(scenario, true)
+                awaitFlag(scenario, false)
                 val protect = mutableStateOf(true)
                 scenario.onActivity { activity ->
                     activity.window.decorView.setBackgroundColor(Color.MAGENTA)
                     activity.findViewById<android.view.View>(android.R.id.content).setBackgroundColor(Color.MAGENTA)
                     activity.setContent { NativePrivacyCover(protectCaptures = protect.value) }
                 }
-                awaitFlag(scenario, true)
-                awaitScreenshotColor(Color.BLACK)
+                awaitFlag(scenario, false)
+                awaitScreenshotColor(Color.MAGENTA)
                 scenario.onActivity { protect.value = false }
                 awaitFlag(scenario, false)
                 awaitScreenshotColor(Color.MAGENTA)
@@ -74,8 +74,8 @@ class CaptureProtectionTest {
                 scenario.moveToState(Lifecycle.State.RESUMED)
                 awaitFlag(scenario, false)
                 scenario.onActivity { protect.value = true }
-                awaitFlag(scenario, true)
-                awaitScreenshotColor(Color.BLACK)
+                awaitFlag(scenario, false)
+                awaitScreenshotColor(Color.MAGENTA)
             }
             // A saved Settings override applies on a new Activity, rather than requiring another toggle.
             assertTrue(prefs.edit().putBoolean("screenCaptureAllowed", true).commit())
