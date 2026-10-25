@@ -11,6 +11,7 @@ import kotlin.random.Random
 import kotlin.time.TimeSource
 import kotlin.time.TimeMark
 import kotlinx.coroutines.delay
+import kotlinx.datetime.LocalDate
 
 class PortfolioModel(
     private val settings: ServerSettings,
@@ -59,6 +60,7 @@ class PortfolioModel(
     private var backgroundedAt: TimeMark? = null
     private var backgroundLockJob: Job? = null
     private var privateDataLoadedAt: TimeMark? = null
+    private var privateDataAvailable by mutableStateOf(false)
     private var marketLoadedAt: TimeMark? = null
     private var automaticUnlockAttempted = false
     private var automaticUnlockPending = false
@@ -107,6 +109,8 @@ class PortfolioModel(
         settings.writeMonthlyTarget(account, amount)
         monthlyInvestmentTarget = amount
     }
+    fun monthlyTargetProgress(month: LocalDate = Today): MonthlyInvestmentProgress? =
+        if (privateDataAvailable) monthlyInvestmentProgress(portfolio, month, monthlyInvestmentTarget, Today) else null
     val documents get() = portfolio.documents
     var market by mutableStateOf<JsonRecord?>(null)
         private set
@@ -326,9 +330,21 @@ class PortfolioModel(
         val purchases = overview?.rows("purchases") ?: api.request("/api/bonds/purchases").rows("purchases")
         val holdings = overview?.rows("holdings") ?: api.request("/api/bonds/equities").rows("holdings")
         val documents = api.request("/api/bonds/documents").rows("documents")
+        val monthlyTotals = overview?.optJSONArray("monthlyInvestmentTotals")?.objects()
+            ?: if (overview != null) try {
+                // Old compact responses omit contribution totals. Fetch their source records once
+                // during this sync, derive the rolling summary, then discard those extra records.
+                monthlyGoalTotalsFromHistory(api.request("/api/bonds/purchases").rows("purchases"),
+                    api.request("/api/bonds/equities").rows("holdings"), Today)
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) {
+                if (failure is ApiException && failure.status == 401) throw failure
+                null // An unavailable secondary summary must not hide the rest of the portfolio.
+            } else null
         fun ids(key: String): Set<String>? = overview?.optJSONArray(key)?.let { rows -> (0 until rows.length()).map { rows.getString(it) }.toSet() }
         portfolio = PortfolioSnapshot(purchases, holdings, documents, ids("recentPurchaseIds"), ids("recentHoldingIds"),
-            overview?.optJSONArray("monthlyInvestmentTotals")?.objects())
+            monthlyTotals)
+        privateDataAvailable = true
         statementItems = try { api.request("/api/bonds/statement-items").rows("items") }
         catch (failure: ApiException) {
             if (failure.status == 401) throw failure
@@ -345,6 +361,7 @@ class PortfolioModel(
             val purchases = api.request("/api/bonds/purchases").rows("purchases")
             val holdings = api.request("/api/bonds/equities").rows("holdings")
             portfolio = PortfolioSnapshot(purchases, holdings, portfolio.documents)
+            privateDataAvailable = true
             historyComplete = true
         }
     }
@@ -505,6 +522,7 @@ class PortfolioModel(
     private fun clearPrivateData() {
         backgroundLockJob?.cancel(); backgroundLockJob = null; backgroundedAt = null
         privateDataLoadedAt = null; marketLoadedAt = null
+        privateDataAvailable = false
         importedPdf = null; importedReview = null; uploadedDocument = null
         refreshPhase = PortfolioRefreshPhase.IDLE
         monthlyInvestmentTarget = DEFAULT_MONTHLY_INVESTMENT_TARGET
