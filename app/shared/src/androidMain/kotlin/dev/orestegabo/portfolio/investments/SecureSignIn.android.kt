@@ -108,7 +108,7 @@ private class AndroidSecureSignIn(private val application: Context) : SecureSign
             if (Build.VERSION.SDK_INT < 30 && !legacyBiometric) {
                 // These Android versions cannot combine a CryptoObject with device credentials.
                 // Confirm with the system first, then use the short-lived Keystore authorization.
-                val intent = keyguard.createConfirmDeviceCredentialIntent("Unlock Gabo", "Access your saved portfolio sign-in")
+                val intent = keyguard.createConfirmDeviceCredentialIntent(localized("Unlock Gabo"), localized("Access your saved portfolio sign-in"))
                     ?: return@withContext null
                 val result = CompletableDeferred<Boolean>()
                 credentialResult = result
@@ -129,8 +129,8 @@ private class AndroidSecureSignIn(private val application: Context) : SecureSign
                     }
                 })
                 currentPrompt = prompt
-                val builder = BiometricPrompt.PromptInfo.Builder().setTitle("Unlock Gabo").setSubtitle("Access your saved portfolio sign-in").setAllowedAuthenticators(flags)
-                if (Build.VERSION.SDK_INT < 30) builder.setNegativeButtonText("Cancel")
+                val builder = BiometricPrompt.PromptInfo.Builder().setTitle(localized("Unlock Gabo")).setSubtitle(localized("Access your saved portfolio sign-in")).setAllowedAuthenticators(flags)
+                if (Build.VERSION.SDK_INT < 30) builder.setNegativeButtonText(localized("Cancel"))
                 continuation.invokeOnCancellation { prompt.cancelAuthentication() }
                 prompt.authenticate(builder.build(), BiometricPrompt.CryptoObject(cipher))
             }
@@ -193,14 +193,22 @@ private class AndroidSecureSignIn(private val application: Context) : SecureSign
 }
 
 
-@Composable actual fun NativePrivacyCover() {
+@Composable actual fun NativePrivacyCover(protectCaptures: Boolean) {
     val window = LocalContext.current.host().window
-    val wasSecure = remember(window) { window.attributes.flags and android.view.WindowManager.LayoutParams.FLAG_SECURE != 0 }
+    var inactive by remember(window) { mutableStateOf(false) }
+    val currentProtection by rememberUpdatedState(protectCaptures)
+    fun updateProtection() {
+        if (protectCaptureWindow(currentProtection, inactive)) window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        else window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+    }
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_PAUSE) {
-        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        inactive = true
+        updateProtection()
     }
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-        if (!wasSecure) window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        inactive = false
+        updateProtection()
     }
-    DisposableEffect(window) { onDispose { if (!wasSecure) window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE) } }
+    SideEffect { updateProtection() }
+    // Do not drop protection during disposal: the final frame may become a recents thumbnail.
 }
