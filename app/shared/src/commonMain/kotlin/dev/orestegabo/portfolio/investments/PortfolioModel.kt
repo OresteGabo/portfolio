@@ -34,6 +34,12 @@ class PortfolioModel(
         settings.writeScreenCaptureAllowed(allowed)
         screenCaptureAllowed = allowed
     }
+    var shakeToHideEnabled by mutableStateOf(settings.readShakeToHideEnabled())
+        private set
+    fun updateShakeToHide(enabled: Boolean) {
+        settings.writeShakeToHideEnabled(enabled)
+        shakeToHideEnabled = enabled
+    }
     var numbersHidden by mutableStateOf(settings.readNumbersHidden())
         private set
     fun toggleNumberVisibility() {
