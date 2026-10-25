@@ -1,6 +1,5 @@
 package dev.orestegabo.portfolio.investments
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -70,7 +69,7 @@ fun DocumentsScreen(model: PortfolioModel) {
                     modifier = Modifier.clickable { expanded = if (isExpanded) null else document.text("id") },
                     colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background)
                 )
-                AnimatedVisibility(isExpanded) {
+                AppAnimatedVisibility(isExpanded) {
                     Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         if (document.text("instrumentName").isNotBlank()) AppText(document.text("instrumentName"), fontWeight = FontWeight.SemiBold)
                         if (document.text("description").isNotBlank()) FinancialText(document.text("description"), style = MaterialTheme.typography.bodySmall)
@@ -129,6 +128,7 @@ private fun CompanyPriceChart(
 
 @Composable
 fun StocksScreen(model: PortfolioModel) {
+    val reducedMotion = LocalReducedMotion.current
     var section by rememberSaveable { mutableStateOf("shares") }
     var search by rememberSaveable { mutableStateOf("") }
     var period by rememberSaveable { mutableStateOf("month") }
@@ -142,7 +142,9 @@ fun StocksScreen(model: PortfolioModel) {
     val ticker = watchlist[pager.currentPage].first
     fun selectCompany(symbol: String) {
         val page = watchlist.indexOfFirst { it.first == symbol }
-        if (page >= 0) scope.launch { pager.animateScrollToPage(page) }
+        if (page >= 0) scope.launch {
+            if (reducedMotion) pager.scrollToPage(page) else pager.animateScrollToPage(page)
+        }
     }
     LaunchedEffect(Unit) { if (model.quotes == null) model.loadMarket() }
     // Fetch only the settled company. Captured keys keep rapid swipes from
