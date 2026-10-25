@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.foundation.layout.*
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.selection.selectableGroup
@@ -43,6 +44,7 @@ fun AppText(
     textAlign: TextAlign? = null, overflow: TextOverflow = TextOverflow.Clip,
     softWrap: Boolean = true, maxLines: Int = Int.MAX_VALUE, minLines: Int = 1,
     style: TextStyle = LocalTextStyle.current,
+    autoSize: TextAutoSize? = null,
  ) {
     val registry = LocalCaptureBackdropRegistry.current
     val position = remember(registry) { arrayOfNulls<Rect>(1) }
@@ -52,7 +54,7 @@ fun AppText(
         if (position[0] != bounds) { position[0] = bounds; registry.invalidate() }
     }
     Text(localized(text), tracked, color = color, fontSize = fontSize, fontWeight = fontWeight,
-        textAlign = textAlign, overflow = overflow, softWrap = softWrap, maxLines = maxLines, minLines = minLines, style = style)
+        textAlign = textAlign, overflow = overflow, softWrap = softWrap, maxLines = maxLines, minLines = minLines, style = style, autoSize = autoSize)
 }
 
 @Composable
