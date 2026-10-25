@@ -2,6 +2,7 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Logo: {0}" to "Logo : {0}",
     "File name" to "Nom du fichier",
     "Downloading document" to "Téléchargement du document",
     "Other files" to "Autres fichiers",
