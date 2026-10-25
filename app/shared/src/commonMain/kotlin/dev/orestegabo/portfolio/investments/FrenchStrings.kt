@@ -2,6 +2,7 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Edit monthly target" to "Modifier l’objectif mensuel",
     "Portfolio report" to "Rapport de portefeuille",
     "All years · PDF export" to "Toutes les années · Export PDF",
     "Export all bonds, shares, estimated gains and losses, and target progress. The PDF includes your financial figures even when Hide numbers is on. Original PDFs must be downloaded separately." to "Exportez toutes les obligations, les actions, les gains et pertes estimés et la progression des objectifs. Le PDF inclut vos montants même si Masquer les montants est activé. Les PDF originaux doivent être téléchargés séparément.",
