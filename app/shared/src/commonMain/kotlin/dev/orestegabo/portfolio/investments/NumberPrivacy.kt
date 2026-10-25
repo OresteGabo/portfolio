@@ -20,8 +20,8 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 
 val LocalNumbersHidden = staticCompositionLocalOf { false }
-private val privacyNumbers = Regex("""\b\d{4}-\d{2}-\d{2}\b|[+−-]?\d+(?:[,.]\d+)*(?:\s\d{3})*(?:%|[kKmMbB])?""")
-private val financialValueOnly = Regex("""^(?:[A-Z]{3} )?[+−-]?[\d\s,.%]+$""")
+private val privacyNumbers = Regex("""\b\d{4}-\d{2}-\d{2}\b|[+−-]?\d+(?:[,.]\d+)*(?:[\s\u00a0\u202f]\d{3})*(?:%|[kKmMbB])?""")
+private val financialValueOnly = Regex("""^(?:[A-Z]{3} )?[+−-]?[\d\s\u00a0\u202f,.%]+$""")
 private val privacyDate = Regex("""\d{4}-\d{2}-\d{2}""")
 
 /** Fixed masks conceal amount length. Navigation dates remain usable. Never changes stored data. */
@@ -33,10 +33,10 @@ fun maskFinancialNumbers(text: String): String = privacyNumbers.replace(text) {
 fun privateFinancialValue(value: String) = if (LocalNumbersHidden.current) maskFinancialNumbers(value) else value
 
 @Composable
-fun NumberVisibilityButton(hidden: Boolean, toggle: () -> Unit) {
+fun NumberVisibilityButton(hidden: Boolean, toggle: () -> Unit, revealBlocked: Boolean = false) {
     IconButton(onClick = toggle) {
-        Icon(if (hidden) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-            if (hidden) "Show financial numbers" else "Hide financial numbers")
+        AppIcon(if (hidden) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+            if (revealBlocked) "Numbers protected by capture protection. Change in Settings" else if (hidden) "Show financial numbers" else "Hide financial numbers")
     }
 }
 
@@ -49,21 +49,22 @@ fun FinancialText(
     style: TextStyle = LocalTextStyle.current,
 ) {
     val hidden = LocalNumbersHidden.current
-    val displayed = if (hidden) maskFinancialNumbers(text) else text
-    val privacyModifier = if (hidden && displayed != text) Modifier.clearAndSetSemantics { contentDescription = "Financial numbers hidden" } else Modifier
-    val softMask = if (hidden && displayed != text && financialValueOnly.matches(text)) Modifier.blur(1.5.dp) else Modifier
-    Text(displayed, privacyModifier.then(modifier).then(softMask), color = color, fontSize = fontSize, fontWeight = fontWeight,
+    val translated = localized(text)
+    val displayed = if (hidden) maskFinancialNumbers(translated) else translated
+    val privacyModifier = if (hidden && displayed != translated) Modifier.clearAndSetSemantics { contentDescription = localized("Financial numbers hidden") } else Modifier
+    val softMask = if (hidden && displayed != translated && financialValueOnly.matches(translated)) Modifier.blur(1.5.dp) else Modifier
+    AppText(displayed, privacyModifier.then(modifier).then(softMask), color = color, fontSize = fontSize, fontWeight = fontWeight,
         textAlign = textAlign, overflow = overflow, softWrap = softWrap, maxLines = maxLines, minLines = minLines, style = style)
 }
 
 @Composable
 fun HiddenFinancialChart(modifier: Modifier = Modifier) {
     Surface(modifier, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .035f)) {
-        Column(Modifier.fillMaxSize().clearAndSetSemantics { contentDescription = "Financial chart hidden" },
+        Column(Modifier.fillMaxSize().clearAndSetSemantics { contentDescription = localized("Financial chart hidden") },
             verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Outlined.VisibilityOff, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            AppIcon(Icons.Outlined.VisibilityOff, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
-            Text("••••", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            AppText("••••", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
