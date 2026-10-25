@@ -48,6 +48,7 @@ class ComposeCaptureLayerTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val prefs = instrumentation.targetContext.getSharedPreferences("connection", 0)
         val oldOrigin = prefs.getString("origin", null)
+        val previousLanguage = AppLanguage.preference
         val server = ServerSocket(0)
         val worker = Executors.newSingleThreadExecutor()
         worker.submit {
@@ -87,14 +88,21 @@ class ComposeCaptureLayerTest {
                 val selectedTab = androidx.compose.runtime.mutableIntStateOf(0)
                 var taps = 0
                 var navigationBounds: androidx.compose.ui.geometry.Rect? = null
+                var languageBounds: androidx.compose.ui.geometry.Rect? = null
                 scenario.onActivity { activity ->
                     activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    AppLanguage.initialize(object : ServerSettings {
+                        override fun readOrigin(): String? = null
+                        override fun writeOrigin(origin: String) = Unit
+                        override fun readLanguage() = "en"
+                        override fun writeLanguage(language: String) = Unit
+                    })
                     activity.setContent {
                         AndroidCaptureBackdropHost(protect.value) {
                             CompositionLocalProvider(LocalNumbersHidden provides (manualMask.value ||
                                 (protect.value && captureProtectionRequiresMaskedNumbers))) {
                                 MaterialTheme {
-                                    RefreshCapturedNavigation(selectedTab.intValue.toString())
+                                    RefreshCapturedUi(selectedTab.intValue, AppLanguage.code)
                                     Box(Modifier.fillMaxSize().background(Color.Blue).clickable { taps++ }, contentAlignment = Alignment.Center) {
                                         FinancialText(amount.value, Modifier.width(280.dp), color = Color.White,
                                             fontSize = 32.sp, textAlign = TextAlign.Center)
@@ -107,6 +115,10 @@ class ComposeCaptureLayerTest {
                                                 }
                                             }
                                         }) { padding -> Box(Modifier.padding(padding)) }
+                                        Box(Modifier.align(Alignment.TopCenter).padding(top = 100.dp)
+                                            .onGloballyPositioned { languageBounds = it.boundsInRoot() }) {
+                                            LanguageOptions()
+                                        }
                                     }
                                 }
                             }
@@ -195,6 +207,80 @@ class ComposeCaptureLayerTest {
                 protectedTab.recycle(); ordinaryTab.recycle()
                 scenario.onActivity { protect.value = true }
                 Thread.sleep(500)
+                // Tap the real language selector and compare its settled pixels with the
+                // ordinary renderer. No second touch, theme change or redraw is allowed.
+                val selector = checkNotNull(languageBounds)
+                val density = instrumentation.targetContext.resources.displayMetrics.density
+                // The row's trailing switch is 160 dp wide, with the ListItem's 16 dp inset.
+                // Tap the centre of its left (French) segment using the measured row bounds.
+                val frenchX = selector.right - (16f + 120f) * density
+                val touchTime = android.os.SystemClock.uptimeMillis()
+                listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP).forEach { action ->
+                    MotionEvent.obtain(touchTime, android.os.SystemClock.uptimeMillis(), action,
+                        frenchX, selector.center.y, 0).also {
+                        instrumentation.sendPointerSync(it); it.recycle()
+                    }
+                }
+                Thread.sleep(1200)
+                assertEquals("Language changes on the first tap", "fr", AppLanguage.code)
+                fun liveFrame(): Bitmap {
+                    val copied = CountDownLatch(1)
+                    var frame: Bitmap? = null
+                    var resultCode = -1
+                    scenario.onActivity { activity ->
+                        val root = activity.findViewById<FrameLayout>(android.R.id.content)
+                        val surface = (0 until root.childCount).map(root::getChildAt).filterIsInstance<SurfaceView>().single()
+                        frame = Bitmap.createBitmap(surface.width, surface.height, Bitmap.Config.ARGB_8888)
+                        PixelCopy.request(surface, frame!!, { result -> resultCode = result; copied.countDown() }, Handler(Looper.getMainLooper()))
+                    }
+                    assertTrue(copied.await(5, TimeUnit.SECONDS))
+                    assertEquals(PixelCopy.SUCCESS, resultCode)
+                    return checkNotNull(frame)
+                }
+                fun colourDifference(a: Int, b: Int): Int = maxOf(
+                    kotlin.math.abs(android.graphics.Color.red(a) - android.graphics.Color.red(b)),
+                    kotlin.math.abs(android.graphics.Color.green(a) - android.graphics.Color.green(b)),
+                    kotlin.math.abs(android.graphics.Color.blue(a) - android.graphics.Color.blue(b)))
+                fun languageDifference(a: Bitmap, b: Bitmap): Int {
+                    val bounds = checkNotNull(languageBounds)
+                    var count = 0
+                    for (y in bounds.top.toInt() until bounds.bottom.toInt())
+                        for (x in bounds.left.toInt() until bounds.right.toInt())
+                            if (colourDifference(a.getPixel(x, y), b.getPixel(x, y)) > 32) count++
+                    // Offscreen and window shadow rasterization differ slightly. Check the
+                    // flat selection backgrounds tightly so a stale indicator cannot pass.
+                    for (fromRight in listOf(16f + 118f, 16f + 42f)) {
+                        val x = (bounds.right - fromRight * density).toInt()
+                        val y = (bounds.center.y - 14f * density).toInt()
+                        assertTrue("The selected language background must match the settled UI",
+                            colourDifference(a.getPixel(x, y), b.getPixel(x, y)) <= 3)
+                    }
+                    return count
+                }
+                val protectedFrench = liveFrame()
+                scenario.onActivity { protect.value = false }
+                Thread.sleep(500)
+                val ordinaryFrench = capture()
+                listOf("protected" to protectedFrench, "ordinary" to ordinaryFrench).forEach { (name, bitmap) ->
+                    File(instrumentation.targetContext.cacheDir, "language-$name.png").outputStream().use {
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+                    }
+                }
+                val frenchDifference = languageDifference(protectedFrench, ordinaryFrench)
+                assertTrue("Protected language selector must display its final selected flag without another interaction; difference=$frenchDifference, bounds=$languageBounds",
+                    frenchDifference < 100)
+                protectedFrench.recycle(); ordinaryFrench.recycle()
+                scenario.onActivity { protect.value = true; AppLanguage.select("en") }
+                Thread.sleep(1200)
+                val protectedEnglish = liveFrame()
+                scenario.onActivity { protect.value = false }
+                Thread.sleep(500)
+                val ordinaryEnglish = capture()
+                assertTrue("A programmatic language change must also finish repainting",
+                    languageDifference(protectedEnglish, ordinaryEnglish) < 100)
+                protectedEnglish.recycle(); ordinaryEnglish.recycle()
+                scenario.onActivity { protect.value = true }
+                Thread.sleep(500)
                 // Synthetic evidence only: verify a real recording through the OS capture path too.
                 instrumentation.uiAutomation.executeShellCommand(
                     "screenrecord --time-limit 2 /data/local/tmp/portfolio-capture-experiment.mp4"
@@ -224,6 +310,7 @@ class ComposeCaptureLayerTest {
                 allowedCapture.recycle(); protectedAgain.recycle(); live!!.recycle()
             }
         } finally {
+            AppLanguage.select(previousLanguage)
             prefs.edit().apply { if (oldOrigin == null) remove("origin") else putString("origin", oldOrigin) }.commit()
             server.close(); worker.shutdownNow()
         }
