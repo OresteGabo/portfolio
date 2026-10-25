@@ -32,19 +32,19 @@ private fun PurchaseTile(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .3f))) {
         Column {
             ListItem(
-                headlineContent = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold) },
+                headlineContent = { AppText(title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold) },
                 supportingContent = { FinancialText(subtitle, style = MaterialTheme.typography.bodySmall) },
                 leadingContent = { Box(Modifier.alpha(if (pending) .5f else 1f)) { logo() } },
-                trailingContent = { Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null) },
+                trailingContent = { AppIcon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null) },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent,
                     headlineColor = if (pending) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface),
-                modifier = Modifier.semantics { stateDescription = if (expanded) "Expanded" else "Collapsed" }.clickable(onClickLabel = if (expanded) "Collapse purchase" else "Expand purchase", onClick = toggle)
+                modifier = Modifier.semantics { stateDescription = localized(if (expanded) "Expanded" else "Collapsed") }.clickable(onClickLabel = localized(if (expanded) "Collapse purchase" else "Expand purchase"), onClick = toggle)
             )
             AnimatedVisibility(expanded) {
                 Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     HorizontalDivider()
-                    Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    AppText(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     content()
                 }
             }
@@ -58,7 +58,7 @@ fun BondPurchaseTile(purchase: JsonRecord, uploadConfirmation: () -> Unit, manag
     val currency = purchase.text("currency")
     val pending = purchase.text("status") == "submitted"
     PurchaseTile(purchase.text("bondName"),
-        "${money(purchase.optDouble("faceValue", 0.0), currency)} · ${if (pending) "Pending" else purchase.text("status")}",
+        "${money(purchase.optDouble("faceValue", 0.0), currency)} · ${if (pending) "Pending" else localized(purchase.text("status"))}",
         expanded, { expanded = !expanded }, pending = pending, logo = { InvestmentLogo(bond = true) }) {
         if (pending) PendingPurchaseFacts(purchase) else BondPurchaseFacts(purchase)
         if (!pending) purchase.terms()?.let { terms ->
@@ -69,12 +69,12 @@ fun BondPurchaseTile(purchase: JsonRecord, uploadConfirmation: () -> Unit, manag
             Fact("Scheduled to date", money(tracking.couponsPaid, currency))
             Fact("Accrued coupon", money(tracking.accruedCoupon, currency))
             Fact("Remaining coupons", money(tracking.remainingCoupons, currency))
-            Text("Coupon schedule · ${purchase.text("scheduleConfidence").ifBlank { "Estimated" }}",
+            AppText("Coupon schedule · ${localized(purchase.text("scheduleConfidence").ifBlank { "Estimated" })}",
                 style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             tracking.schedule.forEach { date -> Fact(date.toString(), money(tracking.netPerPayment, currency)) }
         }
-        OutlinedButton(onClick = if (pending) uploadConfirmation else manage, modifier = Modifier.fillMaxWidth()) { Text(if (pending) "Upload confirmation" else "Manage purchase") }
-        if (pending) TextButton(onClick = manage, modifier = Modifier.fillMaxWidth()) { Text("Details") }
+        OutlinedButton(onClick = if (pending) uploadConfirmation else manage, modifier = Modifier.fillMaxWidth()) { AppText(if (pending) "Upload confirmation" else "Manage purchase") }
+        if (pending) TextButton(onClick = manage, modifier = Modifier.fillMaxWidth()) { AppText("Details") }
     }
 }
 
@@ -124,7 +124,7 @@ fun SharePurchaseTile(holding: JsonRecord) {
 private fun PurchaseSourceAndNotes(record: JsonRecord) {
     val actions = LocalNativeActions.current
     if (record.text("notes").isNotBlank()) Fact("Notes", record.text("notes"))
-    if (record.text("sourceUrl").isNotBlank()) TextButton(onClick = { actions.openUrl(record.text("sourceUrl")) }) { Text("Source document") }
+    if (record.text("sourceUrl").isNotBlank()) TextButton(onClick = { actions.openUrl(record.text("sourceUrl")) }) { AppText("Source document") }
 }
 
 @Composable
