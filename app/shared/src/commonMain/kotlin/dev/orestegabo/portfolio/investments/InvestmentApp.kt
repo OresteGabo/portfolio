@@ -3,13 +3,19 @@ package dev.orestegabo.portfolio.investments
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -24,7 +30,6 @@ import portfolio.app.shared.generated.resources.Res
 import portfolio.app.shared.generated.resources.gabo_mark
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.platform.LocalAutofillManager
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.Alignment
@@ -63,6 +68,7 @@ fun JsonRecord.terms(): BondTerms? = runCatching {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InvestmentApp(model: PortfolioModel) {
+    val selectionFeedback = LocalSelectionFeedback.current
     var tab by rememberSaveable { mutableStateOf("Portfolio") }
     var calendarFocus by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingIssueId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -161,11 +167,10 @@ fun InvestmentApp(model: PortfolioModel) {
         Scaffold(
             contentWindowInsets = if (portfolioHome) WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal) else ScaffoldDefaults.contentWindowInsets,
             topBar = {
-                if (!portfolioHome) TopAppBar(
+                if (!portfolioHome && (model.user != null || model.locked || nested)) TopAppBar(
                     title = {
                         Column {
                             AppText(screenTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                            if (model.user == null && !nested) AppText("Investment journal", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     },
                     navigationIcon = {
@@ -188,9 +193,9 @@ fun InvestmentApp(model: PortfolioModel) {
                         val selected = tab == destination.title
                         NavigationBarItem(
                             selected = selected,
-                            onClick = { tab = destination.title },
+                            onClick = { if (!selected) { tab = destination.title; selectionFeedback() } },
                             icon = { AppIcon(if (selected) destination.selectedIcon else destination.icon, contentDescription = null, modifier = Modifier.size(24.dp)) },
-                            label = { AppText(destination.title, maxLines = 1) },
+                            label = { AppText(destination.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.secondaryContainer)
                         )
                     }
@@ -238,7 +243,7 @@ fun InvestmentApp(model: PortfolioModel) {
 
 @Composable
 internal fun Notice(text: String, error: Boolean, dismiss: () -> Unit) {
-    Surface(color = if (error) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer) {
+    Surface(modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }, color = if (error) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             FinancialText(text, Modifier.weight(1f).padding(vertical = 10.dp), style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = dismiss) { AppText("Dismiss") }
@@ -250,7 +255,7 @@ internal fun Notice(text: String, error: Boolean, dismiss: () -> Unit) {
 fun PageTitle(eyebrow: String, title: String, subtitle: String) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         AppText(eyebrow, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
-        AppText(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        AppText(title, Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         AppText(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
     }
 }
@@ -270,58 +275,6 @@ fun Fact(label: String, value: String) {
     }
 }
 
-
-@Composable
-private fun SignInScreen(model: PortfolioModel, openLegal: () -> Unit) {
-    val actions = LocalNativeActions.current
-    val autofill = LocalAutofillManager.current
-    var email by rememberSaveable { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var invitation by remember { mutableStateOf("") }
-    var confirmation by remember { mutableStateOf("") }
-    var register by rememberSaveable { mutableStateOf(false) }
-    var savePassword by rememberSaveable { mutableStateOf(false) }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
-        item { PageTitle("Your investment journal", if (register) "Get started" else "Welcome back", "Track your investments, coupon income, and what comes next.") }
-        item { Panel {
-            AppText(if (register) "Create your account" else "Sign in to your portfolio", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            AppText(if (register) "Your invitation works once. Your portfolio stays private to your account." else "Use your email and password to access your own investments.", style = MaterialTheme.typography.bodySmall)
-            Field("Email", email, { email = it }, keyboard = KeyboardType.Email, autofill = ContentType.Username, enabled = !model.busy)
-            OutlinedTextField(password, { password = it.take(128) }, Modifier.fillMaxWidth().semantics { contentType = if (register) ContentType.NewPassword else ContentType.Password }, label = { AppText("Password") }, singleLine = true, enabled = !model.busy,
-                visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password,
-                    platformImeOptions = credentialImeOptions(if (register) CredentialInput.NEW_PASSWORD else CredentialInput.PASSWORD)))
-            if (register) {
-                OutlinedTextField(confirmation, { confirmation = it.take(128) }, Modifier.fillMaxWidth().semantics { contentType = ContentType.NewPassword },
-                    label = { AppText("Confirm password") }, singleLine = true, enabled = !model.busy, visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, platformImeOptions = credentialImeOptions(CredentialInput.NEW_PASSWORD)))
-                Field("Invitation token", invitation, { invitation = it }, enabled = !model.busy)
-                AppText("Use at least 15 characters. A long, unique passphrase works well.", style = MaterialTheme.typography.bodySmall)
-            }
-            Row(Modifier.fillMaxWidth().toggleable(value = savePassword, enabled = model.secureSignInAvailable && !model.busy, role = Role.Checkbox, onValueChange = { savePassword = it }), verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(savePassword, null, enabled = model.secureSignInAvailable && !model.busy)
-                Column {
-                    AppText("Save sign-in with ${localized(model.unlockLabel)}", style = MaterialTheme.typography.bodyMedium)
-                    AppText(if (model.secureSignInAvailable) "Securely saved on this device" else "Set up device authentication first", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            Button(onClick = {
-                if (register && (password.length < 15 || password != confirmation || invitation.isBlank())) model.error = "Enter an invitation and matching passwords of at least 15 characters."
-                else {
-                    val submittedEmail = email.trim()
-                    val submittedPassword = password
-                    val submittedOrigin = model.origin
-                    model.login(submittedEmail, submittedPassword, if (register) invitation else "", savePassword = savePassword) {
-                        autofill?.commit()
-                        actions.offerPasswordSave(submittedOrigin, submittedEmail, submittedPassword)
-                    }
-                }
-            }, enabled = !model.busy && email.isNotBlank() && password.isNotEmpty(), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { AppText(if (register) "Create account" else "Open private portfolio") }
-            TextButton(onClick = { register = !register }, enabled = !model.busy) { AppText(if (register) "Already have an account? Sign in" else "Use an invitation") }
-        } }
-        item { TextButton(onClick = openLegal, modifier = Modifier.fillMaxWidth()) { AppText("Legal & privacy") } }
-        item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) { AppIcon(Icons.Outlined.Lock, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant); Spacer(Modifier.width(6.dp)); AppText("Your portfolio stays private", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) } }
-    }
-}
 
 @Composable
 private fun UnlockScreen(model: PortfolioModel, openLegal: () -> Unit) {
@@ -356,9 +309,11 @@ fun Field(label: String, value: String, change: (String) -> Unit, keyboard: Keyb
 
 @Composable
 private fun FieldContent(label: String, value: String, change: (String) -> Unit, keyboard: KeyboardType, helper: String?, autofill: ContentType?, enabled: Boolean) {
+    val focus = LocalFocusManager.current
     OutlinedTextField(value, change, Modifier.fillMaxWidth().then(if (autofill != null) Modifier.semantics { contentType = autofill } else Modifier), label = { AppText(label) }, singleLine = true, enabled = enabled,
         visualTransformation = if (LocalNumbersHidden.current && keyboard in listOf(KeyboardType.Number, KeyboardType.Decimal)) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboard, platformImeOptions = if (autofill == ContentType.Username) credentialImeOptions(CredentialInput.USERNAME) else null), supportingText = helper?.let { { AppText(it) } })
+        keyboardActions = KeyboardActions(onDone = { focus.clearFocus() }, onNext = { focus.moveFocus(FocusDirection.Next) }),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboard, imeAction = if (autofill == ContentType.Username) ImeAction.Next else ImeAction.Done, platformImeOptions = if (autofill == ContentType.Username) credentialImeOptions(CredentialInput.USERNAME) else null), supportingText = helper?.let { { AppText(it) } })
 }
 
 @Composable
