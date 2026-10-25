@@ -39,6 +39,10 @@ class PortfolioModelTest {
         var failQuotes = false
         var quotePrice = 400
         var compact = false
+        var monthlyTotalsSupported = true
+        var monthlyConfirmed = 300000
+        var contributionAmount: Int? = null
+        var failContributionReads = false
         var overviewReads = 0
         var purchaseReads = 0
         var equityReads = 0
@@ -55,7 +59,10 @@ class PortfolioModelTest {
                     when (request.url.encodedPath) {
                         "/api/bonds/mobile-overview" -> {
                             scenario.overviewReads++
-                            respond(if (scenario.compact) """{"version":1,"purchases":[{"id":"old-active","status":"active","currency":"RWF","purchaseDate":"2020-01-01","faceValue":100000}],"holdings":[{"id":"aggregate:BOK","ticker":"BOK","currency":"RWF","status":"active","tradeDate":"2020-01-01","shares":100,"netAmountPayable":36500,"lotCount":2}],"recentPurchaseIds":[],"recentHoldingIds":[]}""" else "{}")
+                            val result = JsonRecord(if (scenario.compact) """{"version":1,"purchases":[{"id":"old-active","status":"active","currency":"RWF","purchaseDate":"2020-01-01","faceValue":100000}],"holdings":[{"id":"aggregate:BOK","ticker":"BOK","currency":"RWF","status":"active","tradeDate":"2020-01-01","shares":100,"netAmountPayable":36500,"lotCount":2}],"recentPurchaseIds":[],"recentHoldingIds":[]}""" else "{}")
+                            if (scenario.compact && scenario.monthlyTotalsSupported) result.put("monthlyInvestmentTotals", JsonList(listOf(
+                                JsonRecord().put("month", Today.toString().take(7)).put("confirmed", scenario.monthlyConfirmed).put("pending", 0))))
+                            respond(result.toString())
                         }
                         "/api/bonds/auth/account" -> {
                             assertEquals(HttpMethod.Delete, request.method)
@@ -64,7 +71,15 @@ class PortfolioModelTest {
                                 else """{"error":"Account deletion failed."}""", scenario.deletionStatus)
                         }
                         "/api/bonds/auth/session" -> respond(if (origin.contains("first")) """{"authenticated":true,"user":{"id":"11111111-1111-4111-8111-111111111111","email":"one@example.test","isOwner":false}}""" else """{"authenticated":false}""")
-                        "/api/bonds/purchases" -> { if (request.method == HttpMethod.Get) scenario.purchaseReads++; if (scenario.expired) respond("""{"error":"Authentication required."}""", HttpStatusCode.Unauthorized) else respond(if (scenario.updatedBonds) """{"purchases":[{"id":"new-purchase","currency":"RWF"}]}""" else """{"purchases":[{"id":"private-purchase","currency":"RWF"}]}""") }
+                        "/api/bonds/purchases" -> {
+                            if (request.method == HttpMethod.Get) scenario.purchaseReads++
+                            if (scenario.expired) respond("""{"error":"Authentication required."}""", HttpStatusCode.Unauthorized)
+                            else if (scenario.failContributionReads) respond("{}", HttpStatusCode.ServiceUnavailable)
+                            else if (scenario.contributionAmount != null) respond(JsonRecord().put("purchases", JsonList(listOf(
+                                JsonRecord().put("id", "monthly-purchase").put("currency", "RWF").put("status", "active")
+                                    .put("purchaseDate", Today.toString()).put("faceValue", scenario.contributionAmount).put("feesPaid", 11000)))).toString())
+                            else respond(if (scenario.updatedBonds) """{"purchases":[{"id":"new-purchase","currency":"RWF"}]}""" else """{"purchases":[{"id":"private-purchase","currency":"RWF"}]}""")
+                        }
                         "/api/bonds/equities" -> {
                             if (request.method == HttpMethod.Get) scenario.equityReads++
                             if (request.method == HttpMethod.Post) { scenario.equityWrites++; scenario.equitySaved = true }
@@ -293,6 +308,56 @@ class PortfolioModelTest {
             advanceUntilIdle()
             assertEquals(1, scenario.overviewReads)
             assertEquals(2, scenario.purchaseReads)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun targetProgressLoadsWithCompactOverviewAndPullRefreshUpdatesItWithoutHistory() = runTest {
+        val scenario = Scenario().apply { compact = true }
+        val model = model(scenario)
+        try {
+            assertNull(model.monthlyTargetProgress()) // Not a misleading zero before data arrives.
+            advanceUntilIdle()
+            assertEquals(300000.0, model.monthlyTargetProgress()?.confirmed)
+            assertEquals(0, scenario.purchaseReads); assertEquals(0, scenario.equityReads)
+            scenario.monthlyConfirmed = 500000
+            model.refreshPortfolio(); advanceUntilIdle()
+            assertEquals(500000.0, model.monthlyTargetProgress()?.confirmed)
+            assertEquals(0, scenario.purchaseReads); assertEquals(0, scenario.equityReads)
+            assertFalse(model.historyComplete)
+            scenario.monthlyConfirmed = 700000
+            model.savePurchase(JsonRecord(), null) { }; advanceUntilIdle()
+            assertEquals(700000.0, model.monthlyTargetProgress()?.confirmed)
+            assertEquals(0, scenario.purchaseReads); assertEquals(0, scenario.equityReads)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun olderCompactApiAutomaticallyBuildsGoalSummaryWithoutReplacingTheCompactPreview() = runTest {
+        val scenario = Scenario().apply { compact = true; monthlyTotalsSupported = false; contributionAmount = 100000 }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle()
+            assertEquals(111000.0, model.monthlyTargetProgress()?.confirmed)
+            assertEquals(1, scenario.purchaseReads); assertEquals(1, scenario.equityReads)
+            assertFalse(model.historyComplete)
+            assertEquals("old-active", model.purchases.single().text("id"))
+            model.action { model.loadPrivateData() }; advanceUntilIdle()
+            assertEquals(1, scenario.purchaseReads) // Ordinary revisits reuse the loaded summary.
+            scenario.contributionAmount = 200000
+            model.refreshPortfolio(); advanceUntilIdle()
+            assertEquals(211000.0, model.monthlyTargetProgress()?.confirmed)
+            assertEquals(2, scenario.purchaseReads)
+            scenario.failContributionReads = true
+            model.refreshPortfolio(); advanceUntilIdle()
+            assertNotNull(model.user)
+            assertEquals("old-active", model.purchases.single().text("id"))
+            assertNull(model.monthlyTargetProgress())
+            scenario.failContributionReads = false
+            model.refreshPortfolio(); advanceUntilIdle()
+            assertEquals(211000.0, model.monthlyTargetProgress()?.confirmed)
+            scenario.expired = true
+            model.refreshPortfolio(); advanceUntilIdle()
+            assertNull(model.user)
+            assertNull(model.monthlyTargetProgress())
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
     @Test fun fastPullRefreshHoldsLoadingThenCheckmarkAndIgnoresRepeatedPulls() = runTest {
