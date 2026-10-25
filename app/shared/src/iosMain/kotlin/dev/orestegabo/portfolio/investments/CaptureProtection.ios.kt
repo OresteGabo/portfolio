@@ -14,9 +14,9 @@ fun updateIosCaptureShield(available: Boolean, captured: Boolean) {
     sceneCaptured = captured
 }
 
-actual val captureProtectionRequiresMaskedNumbers get() = !shieldAvailable || sceneCaptured
+actual val captureProtectionRequiresMaskedNumbers get() = !shieldAvailable
 actual val captureProtectionDescription get() = when {
-    sceneCaptured -> "Numbers hidden while screen sharing is active"
+    sceneCaptured && shieldAvailable -> "Only masked numbers appear in screen captures"
     !shieldAvailable -> "Screen shield unavailable; numbers stay hidden"
-    else -> "Best-effort capture shielding; numbers stay visible"
+    else -> "Captures show masked numbers; your screen stays readable"
 }
