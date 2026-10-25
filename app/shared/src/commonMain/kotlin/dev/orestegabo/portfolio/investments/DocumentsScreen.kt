@@ -11,6 +11,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -173,7 +174,8 @@ private fun DocumentStack(modifier: Modifier, ink: Color, paper: Color) {
 private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolean, canDownload: Boolean, toggle: () -> Unit, download: () -> Unit) {
     val colours = MaterialTheme.colorScheme
     val category = document.text("category")
-    val shares = category.contains("share", true) || category.contains("equity", true)
+    val logo = remember(document) { documentInvestmentLogo(document) }
+    val shares = category.contains("share", true) || category.contains("equity", true) || (logo != null && !logo.bond)
     val dark = colours.surface.luminance() < .5f
     val accent = if (shares) (if (dark) Color(0xFF9CCBBA) else Color(0xFF397562)) else colours.primary
     val title = document.text("label").ifBlank { document.text("originalFileName").ifBlank { "PDF" } }
@@ -186,7 +188,18 @@ private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolea
                 .semantics { stateDescription = localized(if (expanded) "Expanded" else "Collapsed") }
                 .padding(start = 16.dp, top = 18.dp, end = 10.dp, bottom = 18.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                PdfCover(accent)
+                Box(Modifier.size(width = 46.dp, height = 60.dp), contentAlignment = Alignment.Center) {
+                    if (logo != null) {
+                        InvestmentLogo(ticker = logo.ticker, bond = logo.bond,
+                            modifier = Modifier.size(44.dp).semantics { contentDescription = localized("Logo: ${logo.name}") })
+                    } else if (shares) {
+                        Surface(Modifier.size(44.dp), shape = androidx.compose.foundation.shape.CircleShape, color = accent.copy(alpha = .07f)) {
+                            Box(contentAlignment = Alignment.Center) {
+                                AppIcon(Icons.AutoMirrored.Outlined.TrendingUp, "Shares", Modifier.size(24.dp), tint = accent)
+                            }
+                        }
+                    } else PdfCover(accent)
+                }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (category.isNotBlank()) AppText(category, style = MaterialTheme.typography.labelSmall, color = accent)
                     FinancialText(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
