@@ -63,9 +63,12 @@ fun InvestmentTargetDialog(model: PortfolioModel, dismiss: () -> Unit) {
 @Composable
 fun InvestmentGoalBreakdown(model: PortfolioModel) {
     val month = LocalDate(Today.year, Today.month, 1)
-    val rows = (0..2).map { offset -> monthlyInvestmentProgress(model.portfolio, shiftCalendarMonth(month, -offset), model.monthlyInvestmentTarget, Today) }
+    val rows = (0..2).map { offset -> model.monthlyTargetProgress(shiftCalendarMonth(month, -offset)) }
     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        if (rows.first() == null) TextButton(enabled = !model.busy, onClick = { model.loadInvestmentHistory() }) { AppText("Check progress") }
+        if (rows.first() == null) {
+            if (model.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+            else AppText("Progress unavailable", style = MaterialTheme.typography.bodySmall)
+        }
         else {
             AppText("Recent months", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
             rows.filterNotNull().forEach { progress ->
