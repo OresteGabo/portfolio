@@ -2,6 +2,13 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Sign in" to "Se connecter",
+    "Signing in…" to "Connexion…",
+    "Show password" to "Afficher le mot de passe",
+    "Hide password" to "Masquer le mot de passe",
+    "Invitation code" to "Code d’invitation",
+    "At least 15 characters" to "Au moins 15 caractères",
+    "Back to sign in" to "Retour à la connexion",
     "Open-source notices" to "Licences des logiciels libres",
     "Software acknowledgements and licences" to "Remerciements et licences des logiciels",
     "Original licence text" to "Texte original des licences",
