@@ -11,6 +11,9 @@ import kotlin.test.*
 
 class PortfolioModelTest {
     private class Settings : ServerSettings {
+        var captureAllowed = false
+        override fun readScreenCaptureAllowed() = captureAllowed
+        override fun writeScreenCaptureAllowed(allowed: Boolean) { captureAllowed = allowed }
         var hiddenNumbers = false
         override fun readNumbersHidden() = hiddenNumbers
         override fun writeNumbersHidden(hidden: Boolean) { hiddenNumbers = hidden }
@@ -23,6 +26,7 @@ class PortfolioModelTest {
         override fun writeOrigin(origin: String) { value = origin }
     }
     private class Scenario {
+        var captureMaskRequired = captureProtectionRequiresMaskedNumbers
         var vault: SecureSignIn? = null
         var expired = false
         var deletionStatus = HttpStatusCode.OK
@@ -44,7 +48,7 @@ class PortfolioModelTest {
     private fun TestScope.model(scenario: Scenario): PortfolioModel {
         val dispatcher = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(dispatcher)
-        return PortfolioModel(scenario.settings, vault = scenario.vault, assets = { "[]".encodeToByteArray() }, apiFactory = { origin ->
+        return PortfolioModel(scenario.settings, vault = scenario.vault, captureMaskRequired = scenario.captureMaskRequired, assets = { "[]".encodeToByteArray() }, apiFactory = { origin ->
             val engine = MockEngine(MockEngineConfig().apply {
                 this.dispatcher = dispatcher
                 addHandler { request ->
@@ -360,6 +364,7 @@ class PortfolioModelTest {
         val first = model(scenario)
         try {
             advanceUntilIdle()
+            first.updateScreenCapturePermission(true)
             assertFalse(first.numbersHidden)
             val snapshot = first.portfolio
             val reads = scenario.purchaseReads
@@ -374,6 +379,67 @@ class PortfolioModelTest {
             reopened.toggleNumberVisibility()
             assertFalse(reopened.numbersHidden); assertFalse(scenario.settings.hiddenNumbers)
             assertEquals("private-purchase", reopened.purchases.single().text("id"))
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun unavailableCaptureShieldMasksBeforeLoadingAndCannotBeBypassedByTheEyeToggle() = runTest {
+        val scenario = Scenario().apply { captureMaskRequired = true }
+        val model = model(scenario)
+        try {
+            assertTrue(model.captureProtectionEnabled)
+            assertTrue(model.numbersConcealed)
+            assertTrue(model.numbersRevealBlocked)
+            assertFalse(model.numbersHidden) // Manual preference is separate from enforced protection.
+            advanceUntilIdle()
+            val snapshot = model.portfolio
+            model.toggleNumberVisibility()
+            assertTrue(model.numbersConcealed)
+            assertFalse(scenario.settings.hiddenNumbers)
+            assertTrue(model.message.orEmpty().contains("Settings"))
+            assertSame(snapshot, model.portfolio)
+            model.updateScreenCapturePermission(true)
+            assertFalse(model.captureProtectionEnabled)
+            assertFalse(model.numbersRevealBlocked)
+            assertFalse(model.numbersConcealed)
+            model.updateScreenCapturePermission(false)
+            assertTrue(model.numbersConcealed)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+    @Test fun explicitCaptureOverridePersistsAndNeverUndoesManualNumberPrivacy() = runTest {
+        val scenario = Scenario().apply { captureMaskRequired = true }
+        val first = model(scenario)
+        try {
+            advanceUntilIdle()
+            first.updateScreenCapturePermission(true)
+            first.toggleNumberVisibility()
+            assertTrue(first.numbersHidden)
+            first.updateScreenCapturePermission(false)
+            scenario.store.clear()
+            val reopened = model(scenario)
+            assertTrue(reopened.captureProtectionEnabled)
+            assertTrue(reopened.numbersConcealed)
+            advanceUntilIdle()
+            reopened.updateScreenCapturePermission(true)
+            assertTrue(reopened.numbersConcealed) // Explicit manual masking still wins.
+            scenario.store.clear()
+            val allowed = model(scenario)
+            assertFalse(allowed.captureProtectionEnabled)
+            assertTrue(allowed.numbersHidden)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+    @Test fun androidBlocksCapturesWithoutForcingNumbersToBeHiddenOnTheDevice() = runTest {
+        val scenario = Scenario().apply { captureMaskRequired = false }
+        val model = model(scenario)
+        try {
+            assertTrue(model.captureProtectionEnabled)
+            assertTrue(protectCaptureWindow(model.captureProtectionEnabled, inBackground = false))
+            assertFalse(model.numbersConcealed)
+            advanceUntilIdle()
+            model.updateScreenCapturePermission(true)
+            assertFalse(protectCaptureWindow(model.captureProtectionEnabled, inBackground = false))
+            assertTrue(protectCaptureWindow(model.captureProtectionEnabled, inBackground = true))
+            model.toggleNumberVisibility()
+            assertTrue(model.numbersConcealed)
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
 
