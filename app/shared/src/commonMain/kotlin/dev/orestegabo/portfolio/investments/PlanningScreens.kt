@@ -18,16 +18,16 @@ fun PdfImportButton(model: PortfolioModel, engine: InvestmentEngine, imported: (
     val actions = LocalNativeActions.current
     fun choosePdf() = model.importPurchasePdf(actions, engine, bondOnly, expectedStatement, imported)
     Panel {
-        Text(if (bondOnly) "Confirm purchase" else "Import confirmed purchase", fontWeight = FontWeight.Bold)
-        if (bondOnly) Text("BNR confirmation PDFs only", style = MaterialTheme.typography.bodySmall)
+        AppText(if (bondOnly) "Confirm purchase" else "Import confirmed purchase", fontWeight = FontWeight.Bold)
+        if (bondOnly) AppText("BNR confirmation PDFs only", style = MaterialTheme.typography.bodySmall)
         else {
-            Text("Accepted PDFs", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("BNR bond results • Share purchase contracts • BK Capital statements", style = MaterialTheme.typography.bodySmall)
+            AppText("Accepted PDFs", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            AppText("BNR bond results • Share purchase contracts • BK Capital statements", style = MaterialTheme.typography.bodySmall)
         }
         Button(enabled = !model.busy, onClick = ::choosePdf, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
-            Icon(Icons.Outlined.UploadFile, null); Spacer(Modifier.width(8.dp)); Text(if (model.pdfImportProgress != null) "Reading PDF…" else if (bondOnly) "Upload confirmation" else "Choose purchase PDF")
+            AppIcon(Icons.Outlined.UploadFile, null); Spacer(Modifier.width(8.dp)); AppText(if (model.pdfImportProgress != null) "Reading PDF…" else if (bondOnly) "Upload confirmation" else "Choose purchase PDF")
         }
-        Text("Read on your device · Up to 10 MB", style = MaterialTheme.typography.labelSmall)
+        AppText("Read on your device · Up to 10 MB", style = MaterialTheme.typography.labelSmall)
     }
 }
 
@@ -53,44 +53,44 @@ fun SimulatorScreen(model: PortfolioModel, engine: InvestmentEngine, back: () ->
     var resultsOnly by rememberSaveable { mutableStateOf(false) }
     val names = mapOf("monthlyContribution" to "Monthly contribution (RWF)", "horizonYears" to "Horizon in years", "startMonth" to "Start month (1–12)", "startYear" to "Start year", "couponPaymentsPerYear" to "Coupon payments per year", "reinvestmentRate" to "Coupon reinvestment (%)", "auctionFillRate" to "Auction fill rate (%)", "purchaseMinimum" to "Purchase minimum (RWF)", "purchaseCharge" to "Purchase charge (RWF)")
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { TextButton(onClick = back) { Text("← Portfolio") }; PageTitle("Plan the long term", "Investment simulator", "Explore monthly contributions, cash injections, coupon reinvestment, auction allocation, and maturity proceeds using the same model as your web app.") }
+        item { TextButton(onClick = back) { AppText("← Portfolio") }; PageTitle("Plan the long term", "Investment simulator", "Explore monthly contributions, cash injections, coupon reinvestment, auction allocation, and maturity proceeds using the same model as your web app.") }
         item { ChoiceRow(listOf("assumptions", "results"), if (resultsOnly) "results" else "assumptions") { resultsOnly = it == "results" } }
         if (!resultsOnly) {
-            item { Panel { Text("Planning assumptions", fontWeight = FontWeight.Bold); Text("Illustrative estimates. The model repeats the issuance tenor cycle and uses your configured rates; future auctions and returns are uncertain.", style = MaterialTheme.typography.bodySmall) } }
+            item { Panel { AppText("Planning assumptions", fontWeight = FontWeight.Bold); AppText("Illustrative estimates. The model repeats the issuance tenor cycle and uses your configured rates; future auctions and returns are uncertain.", style = MaterialTheme.typography.bodySmall) } }
             names.forEach { (key, title) -> item { Field(title, fields[key].orEmpty(), { fields[key] = it }, KeyboardType.Decimal) } }
-            item { Row { Checkbox(include, { include = it }); Text("Include my active RWF bond purchases", Modifier.padding(top = 12.dp)) } }
-            item { Text("Allowed tenors & annual coupons", fontWeight = FontWeight.Bold) }
+            item { Row { Checkbox(include, { include = it }); AppText("Include my active RWF bond purchases", Modifier.padding(top = 12.dp)) } }
+            item { AppText("Allowed tenors & annual coupons", fontWeight = FontWeight.Bold) }
             listOf(5, 7, 10, 15, 20, 25).forEach { tenor -> item {
-                Row { Checkbox(tenor in tenors, { selected -> if (selected) tenors.add(tenor) else tenors.remove(tenor) }); Text("$tenor years", Modifier.padding(top = 12.dp)) }
+                Row { Checkbox(tenor in tenors, { selected -> if (selected) tenors.add(tenor) else tenors.remove(tenor) }); AppText("$tenor years", Modifier.padding(top = 12.dp)) }
                 Field("$tenor-year annual coupon (%)", rates[tenor.toString()].orEmpty(), { rates[tenor.toString()] = it }, KeyboardType.Decimal)
             } }
-            item { Text("Contribution periods", fontWeight = FontWeight.Bold); Text("When periods are added, they replace the default monthly contribution. Overlapping periods add together.", style = MaterialTheme.typography.bodySmall) }
+            item { AppText("Contribution periods", fontWeight = FontWeight.Bold); AppText("When periods are added, they replace the default monthly contribution. Overlapping periods add together.", style = MaterialTheme.typography.bodySmall) }
             items(periods.size) { index ->
                 val period = periods[index]
                 Panel {
                     Field("Amount (RWF)", period["amount"].orEmpty(), { periods[index] = period.toMutableMap().apply { put("amount", it) } }, KeyboardType.Decimal)
                     Field("Start month index", period["startMonth"].orEmpty(), { periods[index] = period.toMutableMap().apply { put("startMonth", it) } }, KeyboardType.Number)
                     Field("End month index", period["endMonth"].orEmpty(), { periods[index] = period.toMutableMap().apply { put("endMonth", it) } }, KeyboardType.Number)
-                    TextButton(onClick = { periods.removeAt(index) }) { Text("Remove period") }
+                    TextButton(onClick = { periods.removeAt(index) }) { AppText("Remove period") }
                 }
             }
-            item { OutlinedButton(onClick = { periods.add(mutableMapOf("amount" to "300000", "startMonth" to "1", "endMonth" to "240")) }) { Text("+ Contribution period") } }
-            item { Text("One-time cash injections", fontWeight = FontWeight.Bold) }
+            item { OutlinedButton(onClick = { periods.add(mutableMapOf("amount" to "300000", "startMonth" to "1", "endMonth" to "240")) }) { AppText("+ Contribution period") } }
+            item { AppText("One-time cash injections", fontWeight = FontWeight.Bold) }
             items(injections.size) { index ->
                 val injection = injections[index]
                 Panel {
                     Field("Label", injection["label"].orEmpty(), { injections[index] = injection.toMutableMap().apply { put("label", it) } })
                     Field("Amount (RWF)", injection["amount"].orEmpty(), { injections[index] = injection.toMutableMap().apply { put("amount", it) } }, KeyboardType.Decimal)
                     Field("Month index", injection["month"].orEmpty(), { injections[index] = injection.toMutableMap().apply { put("month", it) } }, KeyboardType.Number)
-                    TextButton(onClick = { injections.removeAt(index) }) { Text("Remove injection") }
+                    TextButton(onClick = { injections.removeAt(index) }) { AppText("Remove injection") }
                 }
             }
-            item { OutlinedButton(onClick = { injections.add(mutableMapOf("label" to "Cash injection", "amount" to "1000000", "month" to "1")) }) { Text("+ Cash injection") } }
+            item { OutlinedButton(onClick = { injections.add(mutableMapOf("label" to "Cash injection", "amount" to "1000000", "month" to "1")) }) { AppText("+ Cash injection") } }
             item { Button(enabled = !model.busy, modifier = Modifier.fillMaxWidth(), onClick = {
                 model.action {
                     val assumptions = JsonRecord()
                     fields.forEach { (key, text) ->
-                        val value = text.toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0 } ?: error("Enter valid planning assumptions.")
+                        val value = text.toInputNumberOrNull()?.takeIf { it.isFinite() && it >= 0 } ?: error("Enter valid planning assumptions.")
                         assumptions.put(key, if (key == "reinvestmentRate" || key == "auctionFillRate") value / 100 else value)
                     }
                     val years = assumptions.getDouble("horizonYears")
@@ -102,16 +102,16 @@ fun SimulatorScreen(model: PortfolioModel, engine: InvestmentEngine, back: () ->
                     require(assumptions.getDouble("reinvestmentRate") <= 1 && assumptions.getDouble("auctionFillRate") <= 1) { "Reinvestment and fill rates must be 0–100%." }
                     require(tenors.isNotEmpty()) { "Select at least one tenor." }
                     val rateJson = JsonRecord()
-                    rates.forEach { (key, text) -> rateJson.put(key, (text.toDoubleOrNull()?.takeIf { it in 10.65..13.5 } ?: error("Coupon assumptions must be between 10.65% and 13.5%, as in the web model.")) / 100) }
+                    rates.forEach { (key, text) -> rateJson.put(key, (text.toInputNumberOrNull()?.takeIf { it in 10.65..13.5 } ?: error("Coupon assumptions must be between 10.65% and 13.5%, as in the web model.")) / 100) }
                     assumptions.put("tenorCouponRates", rateJson).put("allowedTenors", JsonList(tenors)).put("contributionPeriods", JsonList(periods.mapIndexed { index, period ->
-                        val amount = period["amount"]?.toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0 } ?: error("Invalid contribution amount.")
+                        val amount = period["amount"]?.toInputNumberOrNull()?.takeIf { it.isFinite() && it >= 0 } ?: error("Invalid contribution amount.")
                         val start = period["startMonth"]?.toIntOrNull() ?: error("Invalid start month.")
                         val end = period["endMonth"]?.toIntOrNull() ?: error("Invalid end month.")
                         require(start >= 1 && end >= start && end <= years.toInt() * 12) { "Contribution periods must fit the horizon." }
                         JsonRecord().put("id", "period-$index").put("amount", amount).put("startMonth", start).put("endMonth", end)
                     }))
                     val injectionJson = JsonList(injections.mapIndexed { index, injection ->
-                        val amount = injection["amount"]?.toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0 } ?: error("Invalid injection amount.")
+                        val amount = injection["amount"]?.toInputNumberOrNull()?.takeIf { it.isFinite() && it >= 0 } ?: error("Invalid injection amount.")
                         val month = injection["month"]?.toIntOrNull() ?: error("Invalid injection month.")
                         require(month in 1..years.toInt() * 12) { "Cash injections must fit the horizon." }
                         JsonRecord().put("id", "injection-$index").put("label", injection["label"]).put("amount", amount).put("month", month)
@@ -119,22 +119,22 @@ fun SimulatorScreen(model: PortfolioModel, engine: InvestmentEngine, back: () ->
                     result = engine.run("projection", JsonRecord().put("assumptions", assumptions).put("injections", injectionJson).put("includeHoldings", include).put("purchases", JsonList(model.purchases.filter { it.text("currency") == "RWF" })))
                     resultsOnly = true
                 }
-            }) { Text("Calculate projection") } }
+            }) { AppText("Calculate projection") } }
         } else {
             val summary = result?.optJSONObject("summary")
             if (summary == null) item { EmptyState("No projection yet", EmptyArtwork.PROJECTION, actionLabel = "Edit assumptions", onAction = { resultsOnly = false }) }
             else {
                 item { Panel {
-                    Text("Projected account value", fontWeight = FontWeight.Bold)
+                    AppText("Projected account value", fontWeight = FontWeight.Bold)
                     FinancialText(money(summary.optDouble("finalAccountValue", 0.0)), style = MaterialTheme.typography.headlineMedium)
                     listOf("finalPortfolio" to "Bond portfolio", "finalCashBalance" to "Cash balance", "totalContributions" to "Total contributions & charges", "totalCoupons" to "Total net coupons", "totalReinvested" to "Reinvested coupons", "annualPassiveIncome" to "Annual passive income", "monthlyPassiveIncome" to "Monthly passive income").forEach { (key, title) -> Fact(title, money(summary.optDouble(key, 0.0))) }
                     listOf("milestone50m" to "50M milestone month", "milestone100m" to "100M milestone month", "milestone200m" to "200M milestone month", "passiveIncomeCrossoverYear" to "Income crossover year").forEach { (key, title) -> Fact(title, summary.text(key).ifBlank { "Not reached" }) }
                 } }
                 val rows = result!!.rows("rows")
                 if (rows.size > 1) item { HistoryGraph(rows.map { it.optDouble("totalAccountValue", 0.0) }, "Projected monthly account value") }
-                item { Text("Monthly projection", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
+                item { AppText("Monthly projection", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
                 items(rows) { row -> Panel {
-                    Text("${row.text("calendarYear")}-${row.text("calendarMonth").padStart(2, '0')}", fontWeight = FontWeight.Bold)
+                    AppText("${row.text("calendarYear")}-${row.text("calendarMonth").padStart(2, '0')}", fontWeight = FontWeight.Bold)
                     Fact("Closing account", money(row.optDouble("totalAccountValue", 0.0)))
                     Fact("Contribution", money(row.optDouble("personalContribution", 0.0)))
                     Fact("New bond purchase", money(row.optDouble("newBondPurchase", 0.0)))
@@ -153,9 +153,9 @@ fun EducationScreen(model: PortfolioModel, back: () -> Unit) {
     val blocks = model.education
     var search by rememberSaveable { mutableStateOf("") }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { TextButton(onClick = back) { Text("← Portfolio") }; PageTitle("Learning library", "Bond education", "The educational content from your web app, adapted for reading on a phone.") }
+        item { TextButton(onClick = back) { AppText("← Portfolio") }; PageTitle("Learning library", "Bond education", "The educational content from your web app, adapted for reading on a phone.") }
         if (blocks.isNotEmpty()) item { Field("Search lessons", search, { search = it }) }
-        val filtered = blocks.filter { it.text("text").contains(search, true) }
+        val filtered = blocks.filter { localized(it.text("text")).contains(search, true) }
         if (filtered.isEmpty()) item {
             if (model.busy) LoadingState()
             else if (blocks.isEmpty()) EmptyState("No lessons available", EmptyArtwork.DOCUMENTS, compact = true)
@@ -164,14 +164,14 @@ fun EducationScreen(model: PortfolioModel, back: () -> Unit) {
         }
         items(filtered) { block ->
             val kind = block.text("kind")
-            Text(block.text("text"), style = when (kind) {
+            AppText(block.text("text"), style = when (kind) {
                 "h1", "h2" -> MaterialTheme.typography.headlineSmall
                 "h3", "h4", "summary" -> MaterialTheme.typography.titleMedium
                 else -> MaterialTheme.typography.bodyMedium
             }, fontWeight = if (kind.startsWith("h") || kind == "summary") FontWeight.Bold else FontWeight.Normal)
             if (block.text("url").isNotBlank()) TextButton(onClick = {
                 actions.openUrl(block.text("url"))
-            }) { Text("Open source ↗") }
+            }) { AppText("Open source ↗") }
         }
     }
 }
