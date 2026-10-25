@@ -160,7 +160,6 @@ fun InvestmentApp(model: PortfolioModel) {
                         if (nested) IconButton(onClick = back) { AppIcon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                         else Image(painterResource(Res.drawable.gabo_mark), localized("Gabo logo"), Modifier.padding(start = 16.dp, end = 4.dp).size(40.dp))
                     },
-                    actions = { if (model.user != null && !model.locked) NumberVisibilityButton(model.numbersConcealed, model::toggleNumberVisibility, model.numbersRevealBlocked) },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
                 )
             },
