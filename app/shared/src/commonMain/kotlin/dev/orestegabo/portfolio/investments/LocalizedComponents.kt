@@ -5,6 +5,9 @@ import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
@@ -40,8 +43,17 @@ fun AppText(
     textAlign: TextAlign? = null, overflow: TextOverflow = TextOverflow.Clip,
     softWrap: Boolean = true, maxLines: Int = Int.MAX_VALUE, minLines: Int = 1,
     style: TextStyle = LocalTextStyle.current,
-) = Text(localized(text), modifier, color = color, fontSize = fontSize, fontWeight = fontWeight,
-    textAlign = textAlign, overflow = overflow, softWrap = softWrap, maxLines = maxLines, minLines = minLines, style = style)
+ ) {
+    val registry = LocalCaptureBackdropRegistry.current
+    val position = remember(registry) { arrayOfNulls<Rect>(1) }
+    SideEffect { registry?.invalidate() }
+    val tracked = if (registry == null) modifier else modifier.onGloballyPositioned { coordinates ->
+        val bounds = coordinates.boundsInRoot()
+        if (position[0] != bounds) { position[0] = bounds; registry.invalidate() }
+    }
+    Text(localized(text), tracked, color = color, fontSize = fontSize, fontWeight = fontWeight,
+        textAlign = textAlign, overflow = overflow, softWrap = softWrap, maxLines = maxLines, minLines = minLines, style = style)
+}
 
 @Composable
 fun AppIcon(imageVector: ImageVector, contentDescription: String?, modifier: Modifier = Modifier,
