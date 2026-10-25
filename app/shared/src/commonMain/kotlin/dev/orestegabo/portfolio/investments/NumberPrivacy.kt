@@ -12,6 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -53,7 +55,27 @@ fun FinancialText(
     val displayed = if (hidden) maskFinancialNumbers(translated) else translated
     val privacyModifier = if (hidden && displayed != translated) Modifier.clearAndSetSemantics { contentDescription = localized("Financial numbers hidden") } else Modifier
     val softMask = if (hidden && displayed != translated && financialValueOnly.matches(translated)) Modifier.blur(1.5.dp) else Modifier
-    AppText(displayed, privacyModifier.then(modifier).then(softMask), color = color, fontSize = fontSize, fontWeight = fontWeight,
+    val captured = maskFinancialNumbers(translated)
+    if (!hidden && captured != translated && LocalCaptureBackdropRegistry.current != null) {
+        val valueOnly = financialValueOnly.matches(translated)
+        val measurer = rememberTextMeasurer()
+        val maskStyle = style.merge(TextStyle(fontSize = fontSize, fontWeight = fontWeight,
+            textAlign = textAlign ?: TextAlign.Unspecified))
+        val minimumWidth = with(LocalDensity.current) {
+            measurer.measure(captured, maskStyle, softWrap = false, maxLines = 1).size.width.toDp() + 2.dp
+        }
+        CaptureRedactionRegion(modifier = modifier.then(if (valueOnly) Modifier.widthIn(min = minimumWidth) else Modifier), masked = {
+            AppText(captured, Modifier.fillMaxWidth().blur(if (valueOnly) 1.5.dp else 0.dp),
+                color = color, fontSize = fontSize, fontWeight = fontWeight, textAlign = textAlign,
+                overflow = if (valueOnly) TextOverflow.Visible else overflow,
+                softWrap = if (valueOnly) false else softWrap,
+                maxLines = if (valueOnly) maxOf(1, minLines) else maxLines,
+                minLines = minLines, style = style)
+        }) {
+            AppText(displayed, color = color, fontSize = fontSize, fontWeight = fontWeight,
+                textAlign = textAlign, overflow = overflow, softWrap = softWrap, maxLines = maxLines, minLines = minLines, style = style)
+        }
+    } else AppText(displayed, privacyModifier.then(modifier).then(softMask), color = color, fontSize = fontSize, fontWeight = fontWeight,
         textAlign = textAlign, overflow = overflow, softWrap = softWrap, maxLines = maxLines, minLines = minLines, style = style)
 }
 
