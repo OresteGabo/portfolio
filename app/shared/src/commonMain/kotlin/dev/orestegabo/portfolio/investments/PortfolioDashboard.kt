@@ -441,13 +441,16 @@ fun Modifier.portfolioStatusBarFade(enabled: Boolean): Modifier {
 
 @Composable
 private fun MonthlyTargetCard(model: PortfolioModel, modifier: Modifier) {
-    val progress = monthlyInvestmentProgress(model.portfolio, Today, model.monthlyInvestmentTarget, Today)
+    val progress = model.monthlyTargetProgress()
     InsightCard("Monthly target", InsightStyle.PAYMENT, modifier) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             FinancialText(money(model.monthlyInvestmentTarget.toDouble(), "RWF"), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             AppIcon(if (progress?.achieved == true) Icons.Outlined.CheckCircle else Icons.Outlined.Flag, null)
         }
-        if (progress == null) TextButton(enabled = !model.busy, onClick = { model.loadInvestmentHistory() }) { AppText("Check progress") }
+        if (progress == null) {
+            if (model.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+            else AppText("Progress unavailable", style = MaterialTheme.typography.bodySmall)
+        }
         else Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (!LocalNumbersHidden.current) CaptureRedactionRegion(Modifier.fillMaxWidth(), masked = { Spacer(Modifier.fillMaxSize()) }) {
                 LinearProgressIndicator(progress = { progress.fraction }, modifier = Modifier.fillMaxWidth())
