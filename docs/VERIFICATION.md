@@ -434,3 +434,9 @@ Validation passed: 104 Android shared tests and 112 iOS shared tests (216 total)
 - Shared shake callback requests native toggle haptics only after manual number visibility actually changes. Existing enabled/lifecycle/capture gates and the 1.8-second shake cooldown remain in force.
 - All 115 Android host tests pass; Android debug assembly/lint and the signed iPhone build pass. Updates installed successfully on both connected phones, preserving app data. Android app reopened successfully.
 - Native Compose source mappings were checked for toggle feedback; physical vibration strength still requires a hands-on shake on the phones.
+
+### Monthly-target editor overlay (2026-10-25)
+
+- Fixed Settings' root layout so the in-scene target editor overlays the list instead of being placed after the full-height list in the app's parent Column. Target progress remains folded while editing.
+- Android assembly, all 115 shared host tests and the signed iPhone build pass. Updated application installed on both phones without clearing data.
+- A real-device SettingsTargetEditorTest passes in 6.817 seconds using synthetic account data. It starts from the folded row, opens the editor within the viewport, saves the 300k preset, saves a typed 450000 amount, reopens, changes to 500k then cancels, and verifies the persisted target remains 450000. The original connection preference is restored afterward; real account targets are untouched.
