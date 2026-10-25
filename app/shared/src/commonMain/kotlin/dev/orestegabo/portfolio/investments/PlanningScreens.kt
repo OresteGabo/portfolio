@@ -32,9 +32,13 @@ fun PdfImportButton(model: PortfolioModel, engine: InvestmentEngine, imported: (
 }
 
 @Composable
-fun PurchaseEntryScreen(model: PortfolioModel, engine: InvestmentEngine, imported: (JsonRecord) -> Unit) {
+fun PurchaseEntryScreen(model: PortfolioModel, engine: InvestmentEngine, imported: (JsonRecord) -> Unit, openPrivacy: () -> Unit = {}) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         item { PdfImportButton(model, engine, imported) }
+        item {
+            AppText("Confirmed share trade dates and unit prices may contribute to charts for other invited users. Names, PDFs and quantities are excluded.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            TextButton(onClick = openPrivacy) { AppText("Privacy Policy") }
+        }
     }
 }
 
