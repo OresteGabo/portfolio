@@ -28,6 +28,8 @@ actual fun rememberServerSettings(): ServerSettings {
         private val prefs = context.getSharedPreferences("connection", Context.MODE_PRIVATE)
         override fun readScreenCaptureAllowed() = prefs.getBoolean(SCREEN_CAPTURE_ALLOWED_KEY, false)
         override fun writeScreenCaptureAllowed(allowed: Boolean) { prefs.edit().putBoolean(SCREEN_CAPTURE_ALLOWED_KEY, allowed).apply() }
+        override fun readShakeToHideEnabled() = prefs.getBoolean("shakeToHideEnabled", true)
+        override fun writeShakeToHideEnabled(enabled: Boolean) { prefs.edit().putBoolean("shakeToHideEnabled", enabled).apply() }
         override fun readNumbersHidden() = prefs.getBoolean("numbersHidden", false)
         override fun writeNumbersHidden(hidden: Boolean) { prefs.edit().putBoolean("numbersHidden", hidden).apply() }
         override fun forgetMonthlyTarget(account: String) { prefs.edit().remove("monthlyTarget:$account").apply() }
