@@ -9,8 +9,12 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
@@ -26,6 +30,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -62,7 +68,7 @@ fun AppIcon(imageVector: ImageVector, contentDescription: String?, modifier: Mod
     tint: Color = LocalContentColor.current) = Icon(imageVector, contentDescription?.let { localized(it) }, modifier, tint)
 
 @Composable
-internal fun LanguageOptions() {
+fun LanguageOptions() {
     ListItem(headlineContent = { AppText("Language") },
         supportingContent = { AppText(if (AppLanguage.code == "fr") "Français" else "English") },
         leadingContent = { AppIcon(Icons.Outlined.Language, null) },
@@ -94,7 +100,7 @@ private fun LanguageFlagSwitch() {
                         .selectable(selected = selected, role = Role.RadioButton, onClick = { AppLanguage.select(code) })
                         .semantics(mergeDescendants = true) { contentDescription = name },
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
-                        LanguageFlag(code)
+                        LanguageFlag(code, selected)
                         Text(code.uppercase(), Modifier.clearAndSetSemantics {},
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
@@ -108,8 +114,19 @@ private fun LanguageFlagSwitch() {
 
 /** Drawn France and UK flags render consistently on Android and iOS. */
 @Composable
-private fun LanguageFlag(code: String) {
-    Surface(shape = RoundedCornerShape(3.dp), border = BorderStroke(0.5.dp, Color.Black.copy(alpha = .12f))) {
+private fun LanguageFlag(code: String, selected: Boolean) {
+    Surface(modifier = Modifier.alpha(if (selected) 1f else .6f).drawWithCache {
+        val paint = Paint().apply {
+            colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
+        }
+        onDrawWithContent {
+            if (selected) drawContent() else drawIntoCanvas { canvas ->
+                canvas.saveLayer(Rect(Offset.Zero, size), paint)
+                drawContent()
+                canvas.restore()
+            }
+        }
+    }, shape = RoundedCornerShape(3.dp), border = BorderStroke(0.5.dp, Color.Black.copy(alpha = .12f))) {
         Canvas(Modifier.size(width = 24.dp, height = 18.dp).clearAndSetSemantics {}) {
             drawRect(Color.White)
             if (code == "fr") {
