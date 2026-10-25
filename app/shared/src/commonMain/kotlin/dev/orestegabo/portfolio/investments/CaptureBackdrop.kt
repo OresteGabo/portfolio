@@ -42,9 +42,9 @@ internal val LocalCaptureBackdropRegistry = staticCompositionLocalOf<CaptureBack
 internal val LocalCaptureAnimationRefresh = staticCompositionLocalOf<(() -> Unit)?> { null }
 
 @Composable
-fun RefreshCapturedNavigation(selectedTab: String) {
+fun RefreshCapturedUi(vararg state: Any?) {
     val refresh = LocalCaptureAnimationRefresh.current
-    LaunchedEffect(selectedTab, refresh) { refresh?.invoke() }
+    LaunchedEffect(state.toList(), refresh) { refresh?.invoke() }
 }
 
 /** Passive mask draws only during capture rendering, never receives input or accessibility focus. */
