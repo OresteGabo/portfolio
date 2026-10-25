@@ -31,6 +31,8 @@ internal fun presentingController(): UIViewController {
 actual fun rememberServerSettings(): ServerSettings = remember { object : ServerSettings {
     override fun readScreenCaptureAllowed() = NSUserDefaults.standardUserDefaults.boolForKey("portfolio.screenCaptureAllowed")
     override fun writeScreenCaptureAllowed(allowed: Boolean) { NSUserDefaults.standardUserDefaults.setBool(allowed, forKey = "portfolio.screenCaptureAllowed") }
+    override fun readShakeToHideEnabled() = NSUserDefaults.standardUserDefaults.objectForKey("portfolio.shakeToHideEnabled") == null || NSUserDefaults.standardUserDefaults.boolForKey("portfolio.shakeToHideEnabled")
+    override fun writeShakeToHideEnabled(enabled: Boolean) { NSUserDefaults.standardUserDefaults.setBool(enabled, forKey = "portfolio.shakeToHideEnabled") }
     override fun readNumbersHidden() = NSUserDefaults.standardUserDefaults.boolForKey("portfolio.numbersHidden")
     override fun writeNumbersHidden(hidden: Boolean) { NSUserDefaults.standardUserDefaults.setBool(hidden, forKey = "portfolio.numbersHidden") }
     override fun forgetMonthlyTarget(account: String) { NSUserDefaults.standardUserDefaults.removeObjectForKey("portfolio.monthlyTarget:$account") }
