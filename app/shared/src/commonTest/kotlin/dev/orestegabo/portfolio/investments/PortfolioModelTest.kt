@@ -510,4 +510,67 @@ class PortfolioModelTest {
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
 
+    private class ReportActions(private val saveResult: Boolean = true) : NativeActions {
+        val saved = kotlinx.coroutines.CompletableDeferred<ByteArray>()
+        override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? = error("Not used")
+        override suspend fun savePdf(fileName: String, bytes: ByteArray): Boolean {
+            assertTrue(fileName.endsWith(".pdf"))
+            saved.complete(bytes)
+            return saveResult
+        }
+        override fun openUrl(url: String) = error("Not used")
+        override fun shareText(text: String) = error("Not used")
+    }
+    @Test fun exportFetchesCompleteHistoryWithoutReplacingCompactCacheOrDeletingAccount() = runTest {
+        val scenario = Scenario().apply { compact = true }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle()
+            val compact = model.portfolio
+            val actions = ReportActions()
+            model.exportPortfolioReport(actions)
+            val pdf = actions.saved.await().decodeToString()
+            advanceUntilIdle()
+            assertTrue(pdf.contains("private-purchase")) // Fresh full-history endpoint, not overview rows.
+            assertFalse(pdf.contains("old-active"))
+            assertSame(compact, model.portfolio)
+            assertFalse(model.historyComplete)
+            assertEquals(0, scenario.deletionRequests)
+            assertNotNull(model.user)
+            assertNull(model.reportProgress)
+            assertEquals("Portfolio report saved.", model.message)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+    @Test fun failedExportNeverOffersAPartialPdfAndDoesNotDeleteAccount() = runTest {
+        val scenario = Scenario()
+        val model = model(scenario)
+        try {
+            advanceUntilIdle()
+            scenario.failDocuments = true
+            val actions = ReportActions()
+            model.exportPortfolioReport(actions)
+            advanceUntilIdle()
+            assertFalse(actions.saved.isCompleted)
+            assertNotNull(model.error)
+            assertNull(model.reportProgress)
+            assertEquals(0, scenario.deletionRequests)
+            assertNotNull(model.user)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+    @Test fun cancellingReportSavePreservesAccountWithoutSuccessMessage() = runTest {
+        val scenario = Scenario()
+        val model = model(scenario)
+        try {
+            advanceUntilIdle()
+            val actions = ReportActions(saveResult = false)
+            model.exportPortfolioReport(actions)
+            actions.saved.await()
+            advanceUntilIdle()
+            assertNull(model.message)
+            assertNull(model.reportProgress)
+            assertNotNull(model.user)
+            assertEquals(0, scenario.deletionRequests)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
 }
