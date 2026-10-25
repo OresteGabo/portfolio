@@ -428,3 +428,9 @@ Validation passed: 104 Android shared tests and 112 iOS shared tests (216 total)
 - Android assembly/lint and all 115 shared host tests pass. Shared iPhone compilation passes. Updated Android app installed without clearing data.
 - The native capture test now uses the app's Scaffold/bottom-bar arrangement, dispatches a real tab tap, checks selected state, and compares the excluded live surface against ordinary navigation rendering. It also retains the financial masking, recording, input and opt-out checks. Earlier simpler fixtures passed but did not reproduce the customer's exact one-tab lag.
 - After the user unlocked the Android phone, the final native check passed in 12.115 seconds (one instrumentation test). A real tab tap selected the intended destination; the protected live navbar matched ordinary rendering after its transition. Financial screenshot masking, recording, touch handling and capture opt-out checks also passed. The earlier Dozing-device attempt remains an invalid readiness run. The fixture keeps only its own test window awake, and restores the original server preference afterward.
+
+### Shake privacy haptics (2026-10-25)
+
+- Shared shake callback requests native toggle haptics only after manual number visibility actually changes. Existing enabled/lifecycle/capture gates and the 1.8-second shake cooldown remain in force.
+- All 115 Android host tests pass; Android debug assembly/lint and the signed iPhone build pass. Updates installed successfully on both connected phones, preserving app data. Android app reopened successfully.
+- Native Compose source mappings were checked for toggle feedback; physical vibration strength still requires a hands-on shake on the phones.
