@@ -427,17 +427,19 @@ class PortfolioModelTest {
             assertTrue(allowed.numbersHidden)
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
-    @Test fun androidBlocksCapturesWithoutForcingNumbersToBeHiddenOnTheDevice() = runTest {
-        val scenario = Scenario().apply { captureMaskRequired = false }
+    @Test fun androidAllowsForegroundCapturesWithEnforcedNumberMasking() = runTest {
+        val scenario = Scenario().apply { captureMaskRequired = true }
         val model = model(scenario)
         try {
             assertTrue(model.captureProtectionEnabled)
-            assertTrue(protectCaptureWindow(model.captureProtectionEnabled, inBackground = false))
-            assertFalse(model.numbersConcealed)
+            assertFalse(protectCaptureWindow(inBackground = false))
+            assertTrue(model.numbersConcealed)
+            assertFalse(model.numbersHidden)
             advanceUntilIdle()
             model.updateScreenCapturePermission(true)
-            assertFalse(protectCaptureWindow(model.captureProtectionEnabled, inBackground = false))
-            assertTrue(protectCaptureWindow(model.captureProtectionEnabled, inBackground = true))
+            assertFalse(protectCaptureWindow(inBackground = false))
+            assertTrue(protectCaptureWindow(inBackground = true))
+            assertFalse(model.numbersConcealed)
             model.toggleNumberVisibility()
             assertTrue(model.numbersConcealed)
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
