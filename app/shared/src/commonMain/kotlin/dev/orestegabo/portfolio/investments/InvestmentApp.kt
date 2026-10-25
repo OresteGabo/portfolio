@@ -64,7 +64,6 @@ fun JsonRecord.terms(): BondTerms? = runCatching {
 @Composable
 fun InvestmentApp(model: PortfolioModel) {
     var tab by rememberSaveable { mutableStateOf("Portfolio") }
-    RefreshCapturedNavigation(tab)
     var calendarFocus by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingIssueId by rememberSaveable { mutableStateOf<String?>(null) }
     var missingDocuments by rememberSaveable { mutableStateOf(false) }
@@ -75,6 +74,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var editor by remember { mutableStateOf<JsonRecord?>(null) }
     var equityEditor by remember { mutableStateOf<JsonRecord?>(null) }
     var simulator by rememberSaveable { mutableStateOf(false) }
+    var legalRoute by rememberSaveable { mutableStateOf<String?>(null) }
     var education by rememberSaveable { mutableStateOf(false) }
     var importReview by remember { mutableStateOf<JsonRecord?>(null) }
     val actions = LocalNativeActions.current
@@ -85,6 +85,7 @@ fun InvestmentApp(model: PortfolioModel) {
     val systemDark = isSystemInDarkTheme()
     var theme by rememberSaveable { mutableStateOf(preferences.readTheme()?.takeIf { it in listOf("system", "light", "dark") } ?: "system") }
     var chartStyle by rememberSaveable { mutableStateOf(preferences.readChartStyle()?.takeIf { it in listOf("area", "line", "bars") } ?: "area") }
+    RefreshCapturedUi(tab, AppLanguage.code, theme, chartStyle, legalRoute)
     val dark = when (theme) { "light" -> false; "dark" -> true; else -> systemDark }
     LaunchedEffect(model.user) {
         if (model.user == null) { missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; newPurchase = false; simulator = false; education = false }
@@ -120,12 +121,22 @@ fun InvestmentApp(model: PortfolioModel) {
         else lightColorScheme(primary = BrandOlive, onPrimary = Color.White, primaryContainer = BrandCream, onPrimaryContainer = Ink, secondary = BrandOlive, secondaryContainer = BrandCream, onSecondaryContainer = Ink, background = Color(0xFFFAF8F2), surface = Color.White, onSurface = Ink)
     CompositionLocalProvider(LocalChartStyle provides chartStyle, LocalNumbersHidden provides model.numbersConcealed) {
     MaterialTheme(colorScheme = colors, typography = Typography()) {
-        val nested = missingDocuments || pendingEntry || importReview != null || investmentHistory || detail != null || editor != null || equityEditor != null || newPurchase || simulator || education
+        val nested = legalRoute != null || missingDocuments || pendingEntry || importReview != null || investmentHistory || detail != null || editor != null || equityEditor != null || newPurchase || simulator || education
         val back = {
-            if (detail == null && editor == null && equityEditor == null && importReview == null && !pendingEntry && !newPurchase && !simulator && !education) investmentHistory = false
-            missingDocuments = false; detail = null; editor = null; equityEditor = null; newPurchase = false; pendingEntry = false; confirmationTarget = null; importReview = null; simulator = false; education = false
+            if (legalRoute != null) {
+                legalRoute = when {
+                    legalRoute!!.startsWith("notices:") -> "notices"
+                    legalRoute == "notices" -> "credits"
+                    legalRoute == "hub" -> null
+                    else -> "hub"
+                }
+            } else {
+                if (detail == null && editor == null && equityEditor == null && importReview == null && !pendingEntry && !newPurchase && !simulator && !education) investmentHistory = false
+                missingDocuments = false; detail = null; editor = null; equityEditor = null; newPurchase = false; pendingEntry = false; confirmationTarget = null; importReview = null; simulator = false; education = false
+            }
         }
         val screenTitle = when {
+            legalRoute != null -> legalTitle(legalRoute!!)
             missingDocuments -> "Missing documents"
             importReview?.text("kind") == "statement" -> "Statement review"
             pendingEntry -> "Pending purchase"
@@ -194,16 +205,17 @@ fun InvestmentApp(model: PortfolioModel) {
                     model.message?.let { Notice(it, false) { model.message = null } }
                 }
                 when {
-                    model.locked -> UnlockScreen(model)
-                    model.user == null -> SignInScreen(model)
+                    legalRoute != null -> LegalScreen(legalRoute!!) { legalRoute = it }
+                    model.locked -> UnlockScreen(model) { legalRoute = "hub" }
+                    model.user == null -> SignInScreen(model) { legalRoute = "hub" }
                     missingDocuments && importReview == null -> MissingDocumentsScreen(model, ::uploadMissing)
                     pendingEntry -> PendingBondScreen(model, pendingIssueId) { pendingEntry = false; pendingIssueId = null }
                     importReview?.text("kind") == "statement" -> StatementReviewScreen(model, importReview!!, ::uploadMissing)
                     importReview != null -> PurchaseImportReview(model, importReview!!, confirmationTarget) { importReview = null; confirmationTarget = null; detail = null }
-                    newPurchase -> PurchaseEntryScreen(model, engine, ::imported)
+                    newPurchase -> PurchaseEntryScreen(model, engine, ::imported) { legalRoute = "privacy" }
                     tab == "Settings" && !nested -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
                         chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
-                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it })
+                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" })
                     editor != null -> PurchaseEditor(model, editor!!, { editor = null; importReview = null }, importReview)
                     equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null; importReview = null }, importReview)
                     simulator -> SimulatorScreen(model, engine) { simulator = false }
@@ -260,7 +272,7 @@ fun Fact(label: String, value: String) {
 
 
 @Composable
-private fun SignInScreen(model: PortfolioModel) {
+private fun SignInScreen(model: PortfolioModel, openLegal: () -> Unit) {
     val actions = LocalNativeActions.current
     val autofill = LocalAutofillManager.current
     var email by rememberSaveable { mutableStateOf("") }
@@ -306,12 +318,13 @@ private fun SignInScreen(model: PortfolioModel) {
             }, enabled = !model.busy && email.isNotBlank() && password.isNotEmpty(), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { AppText(if (register) "Create account" else "Open private portfolio") }
             TextButton(onClick = { register = !register }, enabled = !model.busy) { AppText(if (register) "Already have an account? Sign in" else "Use an invitation") }
         } }
+        item { TextButton(onClick = openLegal, modifier = Modifier.fillMaxWidth()) { AppText("Legal & privacy") } }
         item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) { AppIcon(Icons.Outlined.Lock, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant); Spacer(Modifier.width(6.dp)); AppText("Your portfolio stays private", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) } }
     }
 }
 
 @Composable
-private fun UnlockScreen(model: PortfolioModel) {
+private fun UnlockScreen(model: PortfolioModel, openLegal: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(32.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         Image(painterResource(Res.drawable.gabo_mark), "Gabo", Modifier.size(80.dp))
         Spacer(Modifier.height(24.dp))
@@ -324,6 +337,7 @@ private fun UnlockScreen(model: PortfolioModel) {
             AppText(if (model.busy) "Unlocking…" else "Unlock with ${localized(model.unlockLabel)}")
         }
         TextButton(onClick = model::usePassword, enabled = !model.busy) { AppText("Use password instead") }
+        TextButton(onClick = openLegal) { AppText("Legal & privacy") }
     }
 }
 
