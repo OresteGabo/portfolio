@@ -10,6 +10,8 @@ interface ServerSettings {
     fun writeLanguage(language: String) {}
     fun readScreenCaptureAllowed(): Boolean = false
     fun writeScreenCaptureAllowed(allowed: Boolean) {}
+    fun readShakeToHideEnabled(): Boolean = true
+    fun writeShakeToHideEnabled(enabled: Boolean) {}
     fun readNumbersHidden(): Boolean = false
     fun writeNumbersHidden(hidden: Boolean) {}
     fun forgetMonthlyTarget(account: String) {}
