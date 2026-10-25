@@ -2,6 +2,7 @@ package dev.orestegabo.portfolio.investments
 
 import android.graphics.Bitmap
 import android.os.Build
+import android.os.SystemClock
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
@@ -52,16 +53,28 @@ fun AndroidCaptureBackdropHost(enabled: Boolean, content: @Composable () -> Unit
     val registry = remember { CaptureBackdropRegistry() }
     val scene = rememberGraphicsLayer()
     var frameRevision by remember { mutableIntStateOf(0) }
+    var animateUntil by remember { mutableLongStateOf(0L) }
+    val refreshAnimatedScene: () -> Unit = remember(registry) {
+        {
+            registry.invalidate()
+            // Material navigation animates in child layers after the route composition commits.
+            // Republish that short transition, then stop producing snapshots when the UI is idle.
+            animateUntil = SystemClock.uptimeMillis() + 900L
+        }
+    }
     val experimental = enabled && ExperimentalCaptureBackdrop.available && Build.VERSION.SDK_INT >= 28
     SideEffect { if (!enabled) ExperimentalCaptureBackdrop.clear() }
     DisposableEffect(Unit) { onDispose { ExperimentalCaptureBackdrop.clear() } }
     LaunchedEffect(experimental) {
         if (experimental) while (isActive) {
             delay(50)
-            if (registry.revision != registry.capturedRevision) frameRevision++
+            if (registry.revision != registry.capturedRevision || SystemClock.uptimeMillis() < animateUntil) frameRevision++
         }
     }
-    CompositionLocalProvider(LocalCaptureBackdropRegistry provides if (experimental) registry else null) {
+    CompositionLocalProvider(
+        LocalCaptureBackdropRegistry provides if (experimental) registry else null,
+        LocalCaptureAnimationRefresh provides if (experimental) refreshAnimatedScene else null,
+    ) {
         Box(Modifier.fillMaxSize().drawWithContent {
             if (!experimental) { drawContent(); return@drawWithContent }
             frameRevision
