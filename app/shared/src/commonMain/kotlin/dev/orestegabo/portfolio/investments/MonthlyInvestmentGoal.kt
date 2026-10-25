@@ -31,3 +31,14 @@ fun monthlyInvestmentProgress(snapshot: PortfolioSnapshot, month: LocalDate, tar
     val pending = bonds.filter { it.text("status") == "submitted" }.sumOf { it.bondCashCost().amount() }
     return MonthlyInvestmentProgress(first, target, confirmed, pending)
 }
+
+/** Compatibility for older compact APIs: retain monthly sums, not a second full-history store. */
+internal fun monthlyGoalTotalsFromHistory(purchases: List<JsonRecord>, holdings: List<JsonRecord>, today: LocalDate): List<JsonRecord> {
+    val full = PortfolioSnapshot(purchases, holdings)
+    val first = LocalDate(today.year, today.month, 1)
+    return (0..11).map { offset ->
+        val month = shiftCalendarMonth(first, -offset)
+        val progress = requireNotNull(monthlyInvestmentProgress(full, month, DEFAULT_MONTHLY_INVESTMENT_TARGET, today))
+        JsonRecord().put("month", month.toString().take(7)).put("confirmed", progress.confirmed).put("pending", progress.pending)
+    }
+}
