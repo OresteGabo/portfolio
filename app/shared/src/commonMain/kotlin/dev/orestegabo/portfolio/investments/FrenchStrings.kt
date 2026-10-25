@@ -557,6 +557,8 @@ internal val frenchStrings: Map<String, String> = mapOf(
     "Scheduled past" to "Échéances passées",
     "Upcoming" to "À venir",
     "Blocks screenshots and screen recordings" to "Bloque les captures et enregistrements d’écran",
+    "Masks numbers on screen and in screenshots and recordings" to "Masque les chiffres à l’écran, dans les captures et les enregistrements",
+    "Masks financial numbers only in captures (experimental)" to "Masque les chiffres financiers uniquement dans les captures (expérimental)",
     "screen lock" to "verrouillage de l’écran",
     "device authentication" to "authentification de l’appareil",
     "Device authentication is already open." to "L’authentification de l’appareil est déjà ouverte.",
