@@ -18,10 +18,12 @@ class PortfolioValuationTest {
         assertEquals(100000.0, rising.estimatedNetWorth)
         assertEquals(76500.0, rising.cost.investedCash)
         assertEquals(23500.0, rising.shares.single().gainLoss)
+        assertEquals(23500.0 / 76500.0, rising.shares.single().gainLossRate)
         assertEquals(1, rising.pricedShares)
         val falling = snapshot.valuation(today, quotes(300.0)).single()
         assertEquals(60000.0, falling.estimatedNetWorth)
         assertEquals(-16500.0, falling.shares.single().gainLoss)
+        assertEquals(-16500.0 / 76500.0, falling.shares.single().gainLossRate)
     }
 
     @Test fun estimateUsesBondPrincipalAndNeverAddsAnnualIncomeOrPurchaseFeesToMarketValue() {
@@ -39,6 +41,7 @@ class PortfolioValuationTest {
         assertEquals(76500.0, total.estimatedNetWorth)
         assertEquals(1, total.unpricedShares)
         assertNull(total.shares.single { it.position.ticker == "UNKNOWN" }.gainLoss)
+        assertNull(total.shares.single { it.position.ticker == "UNKNOWN" }.gainLossRate)
         assertEquals(36500.0, PortfolioSnapshot(holdings = listOf(lot())).valuation(today, null).single().estimatedNetWorth)
     }
 
@@ -59,4 +62,14 @@ class PortfolioValuationTest {
         assertEquals(1, snapshot.valuation(today, quotes(400.0, "2026-10-24")).single().unpricedShares)
         assertEquals(40000.0, snapshot.valuation(today, quotes(400.0, "2026-10-22", " bok ")).single().estimatedNetWorth)
     }
+    @Test fun breakEvenReturnIsZeroAndMissingCostDoesNotInventAPercentage() {
+        val equal = ValuedSharePosition(SharePosition("IMR", "RWF", 100.0, 9000.0), 90.0)
+        assertEquals(0.0, equal.gainLossRate)
+        val noCost = ValuedSharePosition(SharePosition("IMR", "RWF", 100.0, 0.0), 115.0)
+        assertNull(noCost.gainLossRate)
+        val feesIncluded = ValuedSharePosition(SharePosition("IMR", "RWF", 100.0, 9150.0), 90.0)
+        assertEquals(-150.0, feesIncluded.gainLoss)
+        assertEquals(-150.0 / 9150.0, feesIncluded.gainLossRate)
+    }
+
 }
