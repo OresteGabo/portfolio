@@ -10,7 +10,7 @@ import kotlinx.coroutines.test.*
 import kotlin.test.*
 
 class IosCaptureProtectionTest {
-    @Test fun nativeShieldReadinessAndRecordingChangeAnExistingModelsMaskingWithoutChangingManualPreference() = runTest {
+    @Test fun nativeShieldAndBackdropReadinessPreserveManualVisibilityDuringRecording() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val store = ViewModelStore()
         var captureAllowed = false
@@ -45,9 +45,12 @@ class IosCaptureProtectionTest {
             model.toggleNumberVisibility()
             assertFalse(model.numbersConcealed)
             updateIosCaptureShield(available = true, captured = true)
-            assertTrue(model.numbersRevealBlocked)
+            assertFalse(model.numbersRevealBlocked)
+            assertFalse(model.numbersConcealed) // Capture uses the redacted backdrop, not the live view.
             model.toggleNumberVisibility()
             assertTrue(model.numbersConcealed)
+            assertTrue(manualHidden)
+            model.toggleNumberVisibility()
             assertFalse(manualHidden)
             model.updateScreenCapturePermission(true)
             assertFalse(model.numbersConcealed) // Explicit capture opt-out is honored.
