@@ -392,3 +392,11 @@ Audit found direct exception-message rendering in the shared action dispatcher (
 Regression tests inject a synthetic native/transport diagnostic with a private URL/token marker, malformed successful JSON/HTML and an HTTP server failure into startup before login. They also check direct error assignments, PDF/validation failures, progress text, rate limiting, incorrect credentials, translated fallback copy and preservation of saved-but-refresh-failed warnings. Technical diagnostic markers never reach display state.
 
 Final validation: 102 Android shared tests and 110 iOS shared tests passed (212 total), alongside Android debug build/lint and the signed iPhone build. Both device updates were installed and reopened using their normal saved settings. The iOS test simulator was shut down afterward. A final source audit found no remaining direct exception-message rendering in the shared screens; only the reviewed message boundary inspects failure messages.
+
+## Automatic monthly target card — 25 October 2026
+
+Removed the manual Check progress actions from the Portfolio insight card and Settings breakdown. Model loading now fills in missing monthly totals automatically on older compact APIs, while modern summaries use no full-history request. Both views use the same model readiness and progress function. Pull-to-refresh and post-save synchronization update the totals; ordinary cached reads do not repeat the work.
+
+Regression coverage checks initial readiness, authoritative compact totals without history downloads, pull-refresh and post-save updates, compatibility fallback with fee-inclusive cash cost, compact preview preservation, cache reuse, optional summary failure/recovery and authentication expiry.
+
+Validation passed: 104 Android shared tests and 112 iOS shared tests (216 total), Android debug build/lint, and signed iPhone build. Updated apps were installed and reopened normally on both connected phones. The iOS test simulator was shut down afterward.
