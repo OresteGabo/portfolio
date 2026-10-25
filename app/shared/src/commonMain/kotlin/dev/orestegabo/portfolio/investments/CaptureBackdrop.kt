@@ -38,6 +38,15 @@ internal class CaptureBackdropRegistry {
 }
 internal val LocalCaptureBackdropRegistry = staticCompositionLocalOf<CaptureBackdropRegistry?> { null }
 
+// Only Android's optional snapshot renderer supplies this callback. UIKit renders its live UI directly.
+internal val LocalCaptureAnimationRefresh = staticCompositionLocalOf<(() -> Unit)?> { null }
+
+@Composable
+fun RefreshCapturedNavigation(selectedTab: String) {
+    val refresh = LocalCaptureAnimationRefresh.current
+    LaunchedEffect(selectedTab, refresh) { refresh?.invoke() }
+}
+
 /** Passive mask draws only during capture rendering, never receives input or accessibility focus. */
 @Composable
 internal fun CaptureRedactionRegion(
