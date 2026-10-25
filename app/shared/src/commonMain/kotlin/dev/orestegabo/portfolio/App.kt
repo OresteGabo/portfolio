@@ -21,10 +21,13 @@ import portfolio.app.shared.generated.resources.gabo_mark
 @Composable
 fun App() {
     val settings = rememberServerSettings()
+    remember(settings) { AppLanguage.initialize(settings) }
+    val systemLanguage = platformSystemLanguage()
+    SideEffect { AppLanguage.systemLanguage = systemLanguage }
     val actions = rememberNativeActions()
     val vault = rememberSecureSignIn()
-    NativePrivacyCover()
     val model = viewModel { PortfolioModel(settings, vault = vault) }
+    NativePrivacyCover(protectCaptures = model.captureProtectionEnabled)
     var privacyCover by remember { mutableStateOf(false) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { privacyCover = false; model.foreground() }
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { privacyCover = true }
