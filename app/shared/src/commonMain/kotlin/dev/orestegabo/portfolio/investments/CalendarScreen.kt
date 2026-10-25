@@ -30,6 +30,8 @@ import kotlinx.datetime.LocalDate
 
 @Composable
 fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPending: (JsonRecord, LocalDate) -> Unit) {
+    val reducedMotion = LocalReducedMotion.current
+    val selectionFeedback = LocalSelectionFeedback.current
     val today = Today
     var selectedValue by rememberSaveable(initialDate) { mutableStateOf((initialDate ?: today).toString()) }
     var expanded by rememberSaveable { mutableStateOf<String?>(null) }
@@ -43,7 +45,10 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
     val availableIssues = subscriptionRangesInMonth(ranges, selected).filter { (calendarDate(it.record.text("maturityDate")) ?: today) > today }
     val preferred = preferredSubscriptionRange(availableIssues, selected)
     var chooseIssue by remember { mutableStateOf(false) }
-    fun select(date: LocalDate) { selectedValue = date.toString(); expanded = null }
+    fun select(date: LocalDate) {
+        if (date != selected) selectionFeedback()
+        selectedValue = date.toString(); expanded = null
+    }
     val changeMonth by rememberUpdatedState<(Int) -> Unit> { offset -> select(shiftCalendarMonth(selected, offset)) }
 
     Box(Modifier.fillMaxSize()) {
@@ -85,7 +90,8 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
                         targetState = LocalDate(selected.year, selected.month, 1),
                         transitionSpec = {
                             val forward = targetState > initialState
-                            (slideInHorizontally { width -> if (forward) width else -width } + fadeIn()) togetherWith
+                            if (reducedMotion) EnterTransition.None togetherWith ExitTransition.None
+                            else (slideInHorizontally { width -> if (forward) width else -width } + fadeIn()) togetherWith
                                 (slideOutHorizontally { width -> if (forward) -width else width } + fadeOut())
                         }, label = "Calendar month"
                     ) { displayMonth ->
@@ -282,7 +288,7 @@ private fun CalendarEventTile(event: InvestmentCalendarEvent, expanded: Boolean,
                 trailingContent = { AppIcon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, if (expanded) "Collapse details" else "Expand details") },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent), modifier = Modifier.clickable(onClick = toggle),
             )
-            AnimatedVisibility(expanded) {
+            AppAnimatedVisibility(expanded) {
                 Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     HorizontalDivider()
                     if (event.category == CalendarCategory.ISSUANCE) {
