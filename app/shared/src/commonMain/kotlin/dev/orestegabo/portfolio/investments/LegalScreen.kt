@@ -11,6 +11,8 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -106,7 +108,7 @@ internal fun LegalScreen(route: String, open: (String) -> Unit) {
                 }
                 items(doc.sections) { section ->
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        AppText(section.title.display(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        AppText(section.title.display(), Modifier.semantics { heading() }, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         LegalParagraphs(section.body.display())
                     }
                 }
