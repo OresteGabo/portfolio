@@ -4,6 +4,8 @@ import Shared
 /// Best-effort UIKit workaround, isolated here because the secure canvas is undocumented.
 /// Keep the owning text field alive; never move the app's UIWindow or its layers.
 final class CaptureShieldViewController: UIViewController {
+    private let captureBackdrop = UIImageView()
+    private var backdropObserver: NSObjectProtocol?
     private var protectionEnabled: Bool
     private var secureField: UITextField?
     private var container: UIView?
@@ -21,6 +23,25 @@ final class CaptureShieldViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
+        captureBackdrop.isUserInteractionEnabled = false
+        captureBackdrop.isAccessibilityElement = false
+        captureBackdrop.contentMode = .scaleToFill
+        captureBackdrop.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(captureBackdrop)
+        NSLayoutConstraint.activate([
+            captureBackdrop.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            captureBackdrop.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            captureBackdrop.topAnchor.constraint(equalTo: view.topAnchor),
+            captureBackdrop.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+        backdropObserver = NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("portfolio.captureBackdrop"), object: nil, queue: .main
+        ) { [weak self] notification in
+            guard let self, self.protectionEnabled, let image = notification.userInfo?["image"] as? UIImage else { return }
+            // Only a redacted image can enter this unprotected layer. Never store a live screenshot.
+            self.captureBackdrop.image = image
+            self.reportProtectionState()
+        }
         addChild(content)
         installContainer()
         content.didMove(toParent: self)
@@ -38,12 +59,17 @@ final class CaptureShieldViewController: UIViewController {
     func setProtectionEnabled(_ enabled: Bool) {
         guard enabled != protectionEnabled else { return }
         protectionEnabled = enabled
+        captureBackdrop.image = nil
         if isViewLoaded { installContainer() }
+    }
+
+    deinit {
+        if let backdropObserver { NotificationCenter.default.removeObserver(backdropObserver) }
     }
 
     private func reportProtectionState() {
         CaptureProtection_iosKt.updateIosCaptureShield(
-            available: shieldAvailable,
+            available: shieldAvailable && captureBackdrop.image != nil,
             captured: traitCollection.sceneCaptureState == .active
         )
     }
@@ -75,6 +101,10 @@ final class CaptureShieldViewController: UIViewController {
         next.isAccessibilityElement = false
         next.translatesAutoresizingMaskIntoConstraints = false
         next.backgroundColor = .clear
+        #if DEBUG
+        // Test-only launch flag exposes exactly the safe image used beneath the secure live view.
+        if protectionEnabled && ProcessInfo.processInfo.arguments.contains("-captureBackdropPreview") { next.layer.mask = CALayer() }
+        #endif
         view.addSubview(next)
         NSLayoutConstraint.activate([
             next.leadingAnchor.constraint(equalTo: view.leadingAnchor),
