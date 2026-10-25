@@ -19,13 +19,13 @@ internal suspend fun offerIosPasswordSave(origin: String, email: String, passwor
 }
 
 private suspend fun passwordSaveConsent(domain: String): Boolean = suspendCancellableCoroutine { result ->
-    val dialog = UIAlertController.alertControllerWithTitle("Save in Passwords?",
-        "Save your sign-in for $domain in Apple Passwords so you can use AutoFill next time.", UIAlertControllerStyleAlert)
+    val dialog = UIAlertController.alertControllerWithTitle(localized("Save in Passwords?"),
+        localized("Save your sign-in for $domain in Apple Passwords so you can use AutoFill next time."), UIAlertControllerStyleAlert)
     fun finish(save: Boolean) {
         dialog.dismissViewControllerAnimated(true) { if (result.isActive) result.resume(save) }
     }
-    dialog.addAction(UIAlertAction.actionWithTitle("Not now", UIAlertActionStyleCancel) { finish(false) })
-    dialog.addAction(UIAlertAction.actionWithTitle("Save password", UIAlertActionStyleDefault) { finish(true) })
+    dialog.addAction(UIAlertAction.actionWithTitle(localized("Not now"), UIAlertActionStyleCancel) { finish(false) })
+    dialog.addAction(UIAlertAction.actionWithTitle(localized("Save password"), UIAlertActionStyleDefault) { finish(true) })
     result.invokeOnCancellation { dialog.dismissViewControllerAnimated(false, null) }
     presentingController().presentViewController(dialog, true, null)
 }
@@ -43,9 +43,9 @@ private suspend fun saveSharedPassword(domain: String, email: String, password: 
 }
 
 private suspend fun passwordSaveFailed(): Unit = suspendCancellableCoroutine { result ->
-    val dialog = UIAlertController.alertControllerWithTitle("Password wasn’t saved",
-        "You can continue signing in. Try saving again later, or add the login in Apple Passwords.", UIAlertControllerStyleAlert)
-    dialog.addAction(UIAlertAction.actionWithTitle("Continue", UIAlertActionStyleDefault) {
+    val dialog = UIAlertController.alertControllerWithTitle(localized("Password wasn’t saved"),
+        localized("You can continue signing in. Try saving again later, or add the login in Apple Passwords."), UIAlertControllerStyleAlert)
+    dialog.addAction(UIAlertAction.actionWithTitle(localized("Continue"), UIAlertActionStyleDefault) {
         dialog.dismissViewControllerAnimated(true) { if (result.isActive) result.resume(Unit) }
     })
     result.invokeOnCancellation { dialog.dismissViewControllerAnimated(false, null) }
