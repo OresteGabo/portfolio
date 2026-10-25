@@ -2,6 +2,18 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Open-source notices" to "Licences des logiciels libres",
+    "Software acknowledgements and licences" to "Remerciements et licences des logiciels",
+    "Original licence text" to "Texte original des licences",
+    "These acknowledgements cover the software used to read your documents. Original licence wording is kept in its original language." to "Ces mentions concernent les logiciels utilisés pour lire vos documents. Les textes des licences sont conservés dans leur langue d’origine.",
+    "Legal & privacy" to "Mentions légales et confidentialité",
+    "Legal documents" to "Documents juridiques",
+    "Terms, privacy, data rights & credits" to "Conditions, confidentialité, droits et crédits",
+    "Privacy Policy" to "Politique de confidentialité",
+    "Updated" to "Mise à jour",
+    "Data Protection & Privacy Office" to "Bureau de protection des données et de la vie privée",
+    "This notice could not be opened. Please try again." to "Impossible d’ouvrir cette mention. Réessayez.",
+    "Confirmed share trade dates and unit prices may contribute to charts for other invited users. Names, PDFs and quantities are excluded." to "Les dates et prix unitaires des achats confirmés d’actions peuvent enrichir les graphiques des autres utilisateurs invités. Noms, PDF et quantités sont exclus.",
     "Edit monthly target" to "Modifier l’objectif mensuel",
     "Portfolio report" to "Rapport de portefeuille",
     "All years · PDF export" to "Toutes les années · Export PDF",
