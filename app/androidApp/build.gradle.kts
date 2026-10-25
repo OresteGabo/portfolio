@@ -19,10 +19,14 @@ dependencies {
     implementation(libs.compose.runtime)
     androidTestImplementation(libs.androidx.testExt.junit)
     androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation(libs.compose.foundation)
+    androidTestImplementation(libs.compose.material3)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)
+    // Experimental capture-layer exclusion is available only in local debug builds.
+    debugImplementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
 }
 
 android {
