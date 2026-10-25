@@ -9,6 +9,7 @@ import kotlinx.coroutines.Job
 import kotlin.io.encoding.Base64
 import kotlin.random.Random
 import kotlin.time.TimeSource
+import kotlin.time.TimeMark
 import kotlinx.coroutines.delay
 
 class PortfolioModel(
@@ -17,6 +18,7 @@ class PortfolioModel(
     private val vault: SecureSignIn? = null,
     private val apiFactory: (String) -> PortfolioApi = { PortfolioApi(it) },
     private val captureMaskRequired: Boolean? = null,
+    private val clock: TimeSource = TimeSource.Monotonic,
 ) : ViewModel() {
     var origin by mutableStateOf(settings.readOrigin() ?: DEFAULT_ORIGIN)
         private set
@@ -54,6 +56,10 @@ class PortfolioModel(
     private var activeJob: Job? = null
     private var generation = 0
     private var foreground = true
+    private var backgroundedAt: TimeMark? = null
+    private var backgroundLockJob: Job? = null
+    private var privateDataLoadedAt: TimeMark? = null
+    private var marketLoadedAt: TimeMark? = null
     private var automaticUnlockAttempted = false
     private var automaticUnlockPending = false
     var user by mutableStateOf<JsonRecord?>(null)
@@ -146,7 +152,11 @@ class PortfolioModel(
         }
     }
     fun foreground() {
+        val expired = backgroundGraceExpired()
+        backgroundLockJob?.cancel(); backgroundLockJob = null
+        backgroundedAt = null
         foreground = true
+        if (expired) lock()
         if (locked && !automaticUnlockAttempted) automaticUnlockPending = true
         tryAutomaticUnlock()
     }
@@ -159,11 +169,25 @@ class PortfolioModel(
         if (!systemInteraction && vault?.authenticating != true) {
             automaticUnlockPending = false
             automaticUnlockAttempted = false
-            lock()
+            if (backgroundedAt == null) backgroundedAt = clock.markNow()
+            scheduleBackgroundLock()
         }
     }
+    private fun scheduleBackgroundLock() {
+        if (!secureSignInEnabled || locked || backgroundLockJob != null) return
+        val elapsed = backgroundedAt?.elapsedNow()?.inWholeMilliseconds ?: return
+        val remaining = SESSION_BACKGROUND_GRACE_MILLIS - elapsed
+        if (remaining <= 0) { lock(); return }
+        backgroundLockJob = viewModelScope.launch {
+            delay(remaining)
+            if (!foreground) lock()
+        }
+    }
+    private fun backgroundGraceExpired() = backgroundedAt?.elapsedNow()?.inWholeMilliseconds
+        ?.let { it >= SESSION_BACKGROUND_GRACE_MILLIS } == true
     fun lock() {
         if (!secureSignInEnabled) return
+        backgroundLockJob?.cancel(); backgroundLockJob = null; backgroundedAt = null
         ++generation
         activeJob?.cancel(); activeJob = null; busy = false
         vault?.lock()
@@ -188,7 +212,7 @@ class PortfolioModel(
         val value = JsonRecord().put("origin", origin).put("email", email.trim()).put("password", password).put("session", api.sessionSnapshot()).toString()
         val saved = storage.save(origin, value)
         secureSignInEnabled = storage.hasSaved(origin)
-        if (!foreground && secureSignInEnabled) lock()
+        if (!foreground && secureSignInEnabled) scheduleBackgroundLock()
         return saved
     }
     fun enableSecureSignIn(password: String) = action {
@@ -217,7 +241,7 @@ class PortfolioModel(
             val email = saved.text("email")
             val password = saved.text("password")
             require(email.isNotBlank() && password.length in 1..128) { "Saved sign-in is invalid." }
-            if (!foreground) { lock(); return@runAction }
+            if (!foreground && backgroundGraceExpired()) { lock(); return@runAction }
             try { api.restoreSession(saved.text("session")) }
             catch (failure: CancellationException) { throw failure }
             catch (_: Exception) { api.clearSession() }
@@ -240,10 +264,11 @@ class PortfolioModel(
             if (calendar.isEmpty() && education.isEmpty()) loadPublicData()
             loadPrivateData()
             storage.save(origin, JsonRecord().put("origin", origin).put("email", email).put("password", password).put("session", api.sessionSnapshot()).toString())
-            if (!foreground) { lock(); return@runAction }
+            if (!foreground && backgroundGraceExpired()) { lock(); return@runAction }
             user = account
             loadInvestmentTarget()
             locked = false
+            if (!foreground) scheduleBackgroundLock()
         }
     }
 
@@ -282,11 +307,13 @@ class PortfolioModel(
         catch (_: Exception) { message = "Signed in. Your password could not be saved to the password manager." }
         user = account
         loadInvestmentTarget()
-        loadPrivateData()
+        loadPrivateData(force = true)
         if (savePassword) saveSignIn(email, password)
     }
 
-    suspend fun loadPrivateData() {
+    suspend fun loadPrivateData(force: Boolean = false) {
+        if (!force && privateDataLoadedAt?.elapsedNow()?.inWholeMilliseconds?.let { it < DATA_CACHE_MILLIS } == true) return
+        privateDataLoadedAt = null
         val overview = if (compactOverviewSupported == false) null else try {
             val response = api.request("/api/bonds/mobile-overview")
             if (response.optInt("version") == 1 && response.has("recentPurchaseIds") && response.has("recentHoldingIds")) {
@@ -309,6 +336,7 @@ class PortfolioModel(
         }
         historyComplete = overview == null
         if (portfolio.activeShares(Today).isNotEmpty()) refreshEquityQuotes()
+        privateDataLoadedAt = clock.markNow()
     }
 
     fun loadInvestmentHistory(force: Boolean = false) {
@@ -342,7 +370,7 @@ class PortfolioModel(
         val started = TimeSource.Monotonic.markNow()
         refreshPhase = PortfolioRefreshPhase.LOADING
         try {
-            val failure = try { loadPrivateData(); null }
+            val failure = try { loadPrivateData(force = true); null }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (error: Exception) { error }
             // Count network time toward the minimum; never delay a slow request further.
@@ -354,10 +382,13 @@ class PortfolioModel(
         } finally { if (token == generation) refreshPhase = PortfolioRefreshPhase.IDLE }
     }
     fun loadMarket(refresh: Boolean = false) = action {
+        if (!refresh && market != null && marketLoadedAt?.elapsedNow()?.inWholeMilliseconds?.let { it < DATA_CACHE_MILLIS } == true) return@action
+        marketLoadedAt = null
         market = api.request("/api/bonds/rse/market" + if (refresh) "?refresh=1" else "")
         val latest = api.request("/api/bonds/rse/quotes?kind=equities" + if (refresh) "&refresh=1" else "")
         if (latest.rows("quotes").isNotEmpty()) { quotes = latest; quoteRefreshFailed = false }
         else quoteRefreshFailed = true
+        marketLoadedAt = clock.markNow()
     }
 
     fun importPurchasePdf(actions: NativeActions, engine: InvestmentEngine, bondOnly: Boolean = false,
@@ -438,7 +469,7 @@ class PortfolioModel(
 
     private suspend fun refreshAfterWrite(success: String) {
         message = success
-        try { loadPrivateData() }
+        try { loadPrivateData(force = true) }
         catch (failure: CancellationException) { throw failure }
         catch (failure: Exception) {
             if (failure is ApiException && failure.status == 401) throw failure
@@ -469,9 +500,11 @@ class PortfolioModel(
         }
     }
 
-    override fun onCleared() { importedPdf = null; importedReview = null; vault?.lock(); api.close() }
+    override fun onCleared() { backgroundLockJob?.cancel(); importedPdf = null; importedReview = null; vault?.lock(); api.close() }
 
     private fun clearPrivateData() {
+        backgroundLockJob?.cancel(); backgroundLockJob = null; backgroundedAt = null
+        privateDataLoadedAt = null; marketLoadedAt = null
         importedPdf = null; importedReview = null; uploadedDocument = null
         refreshPhase = PortfolioRefreshPhase.IDLE
         monthlyInvestmentTarget = DEFAULT_MONTHLY_INVESTMENT_TARGET
@@ -485,3 +518,6 @@ class PortfolioModel(
         quoteRefreshFailed = false
     }
 }
+
+internal const val SESSION_BACKGROUND_GRACE_MILLIS = 30_000L
+internal const val DATA_CACHE_MILLIS = 60_000L
