@@ -24,6 +24,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.foundation.layout.*
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.BorderStroke
@@ -78,6 +80,8 @@ fun LanguageOptions() {
 /** Two explicit choices; until chosen, the selection follows the supported system language. */
 @Composable
 private fun LanguageFlagSwitch() {
+    val reducedMotion = LocalReducedMotion.current
+    val selectionFeedback = LocalSelectionFeedback.current
     val french = AppLanguage.code == "fr"
     val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
     val track = if (dark) Color(0xFF181A1D) else Color(0xFFF0F1F3)
@@ -85,7 +89,7 @@ private fun LanguageFlagSwitch() {
     val outline = if (dark) Color(0xFF484C52) else Color(0xFFD8DBE0)
     val selectedText = if (dark) Color(0xFFF5F6F7) else Color(0xFF20242A)
     val inactiveText = if (dark) Color(0xFFADB2BA) else Color(0xFF666D77)
-    val position by animateDpAsState(if (french) 0.dp else 76.dp, label = "Language selection")
+    val position by animateDpAsState(if (french) 0.dp else 76.dp, animationSpec = if (reducedMotion) snap() else spring(), label = "Language selection")
     Surface(shape = RoundedCornerShape(12.dp), color = track,
         border = BorderStroke(1.dp, outline.copy(alpha = .65f))) {
         Box(Modifier.width(160.dp).height(52.dp).selectableGroup()) {
@@ -97,7 +101,7 @@ private fun LanguageFlagSwitch() {
                 listOf("fr" to "Français", "en" to "English").forEach { (code, name) ->
                     val selected = (code == "fr") == french
                     Row(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(8.dp))
-                        .selectable(selected = selected, role = Role.RadioButton, onClick = { AppLanguage.select(code) })
+                        .selectable(selected = selected, role = Role.RadioButton, onClick = { if (!selected) { AppLanguage.select(code); selectionFeedback() } })
                         .semantics(mergeDescendants = true) { contentDescription = name },
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
                         LanguageFlag(code, selected)
