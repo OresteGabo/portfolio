@@ -228,19 +228,26 @@ private fun CalendarDay(
         !currentMonth -> colors.onSurfaceVariant.copy(alpha = .45f)
         else -> colors.onSurface
     }
-    Box(modifier.height(48.dp).clickable(role = Role.Button, onClick = choose).semantics(mergeDescendants = true) {
+    BoxWithConstraints(modifier.height(48.dp).clickable(role = Role.Button, onClick = choose).semantics(mergeDescendants = true) {
         contentDescription = date.calendarLabel() + localized(if (date == today) ", today" else "") +
             (range?.let { localized(", ${localized(it.record.text("title"))}, subscription window ${it.start} to ${it.end}") } ?: "") +
             (if (events.isEmpty()) localized(", no events") else ", ${events.joinToString { localized(it.label) }}")
         this.selected = chosen || endpoint
     }, contentAlignment = Alignment.Center) {
+        val dayDiameter = minOf(38.dp, maxWidth)
+        val endpointInset = (maxWidth - dayDiameter) / 2
         if (range != null) {
-            val left = if (date == range.start) 24.dp else 0.dp
-            val right = if (date == range.end) 24.dp else 0.dp
-            Box(Modifier.fillMaxWidth().height(38.dp).clip(RoundedCornerShape(topStart = left, bottomStart = left,
+            val first = date == range.start
+            val last = date == range.end
+            val left = if (first) dayDiameter / 2 else 0.dp
+            val right = if (last) dayDiameter / 2 else 0.dp
+            // End caps share the date circle's bounds rather than the wider day cell.
+            Box(Modifier.fillMaxWidth().height(dayDiameter)
+                .padding(start = if (first) endpointInset else 0.dp, end = if (last) endpointInset else 0.dp)
+                .clip(RoundedCornerShape(topStart = left, bottomStart = left,
                 topEnd = right, bottomEnd = right)).background(colors.primary.copy(alpha = if (range === focused) .16f else .08f)))
         }
-        Surface(modifier = Modifier.size(38.dp), shape = CircleShape,
+        Surface(modifier = Modifier.size(dayDiameter), shape = CircleShape,
             border = if (!solid && (date == today || chosen)) BorderStroke(1.dp, colors.primary) else null,
             color = if (solid) colors.primary else Color.Transparent) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
