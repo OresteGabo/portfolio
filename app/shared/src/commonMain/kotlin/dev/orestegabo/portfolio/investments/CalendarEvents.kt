@@ -65,8 +65,8 @@ fun investmentCalendarEvents(issuances: List<JsonRecord>, portfolio: PortfolioSn
 }
 
 internal fun calendarDate(value: String): LocalDate? = runCatching { LocalDate.parse(value) }.getOrNull()
-internal fun LocalDate.monthLabel() = month.name.lowercase().replaceFirstChar { it.uppercase() }
-internal fun LocalDate.dayLabel() = dayOfWeek.name.lowercase().replaceFirstChar { it.uppercase() }
+internal fun LocalDate.monthLabel() = localized(month.name.lowercase().replaceFirstChar { it.uppercase() })
+internal fun LocalDate.dayLabel() = localized(dayOfWeek.name.lowercase().replaceFirstChar { it.uppercase() })
 internal fun LocalDate.calendarLabel() = "${dayLabel()}, $day ${monthLabel()} $year"
 
 /** A real subscription window, never an inferred interval between unrelated payments. */
