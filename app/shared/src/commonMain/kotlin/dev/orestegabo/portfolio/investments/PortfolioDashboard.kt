@@ -296,7 +296,7 @@ private fun AllocationCard(total: CurrencyInvestment, modifier: Modifier) {
     val hidden = LocalNumbersHidden.current
     InsightCard("Cash allocation", InsightStyle.ALLOCATION, modifier) {
         Row(Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-            if (hidden) HiddenFinancialChart(Modifier.size(112.dp)) else Box(Modifier.size(112.dp).semantics { contentDescription = localized("Shares ${percent(fraction.toDouble())}, bonds ${percent(if (total.investedCash > 0) 1.0 - fraction else 0.0)} of cash cost") }, contentAlignment = Alignment.Center) {
+            if (hidden) HiddenFinancialChart(Modifier.size(112.dp)) else CaptureRedactionRegion(Modifier.size(112.dp), masked = { HiddenFinancialChart(Modifier.fillMaxSize()) }) { Box(Modifier.fillMaxSize().semantics { contentDescription = localized("Shares ${percent(fraction.toDouble())}, bonds ${percent(if (total.investedCash > 0) 1.0 - fraction else 0.0)} of cash cost") }, contentAlignment = Alignment.Center) {
                 Canvas(Modifier.fillMaxSize().padding(7.dp)) {
                     val stroke = Stroke(13.dp.toPx(), cap = StrokeCap.Butt)
                     drawArc(foreground.copy(alpha = .08f), -90f, 360f, false, style = stroke)
@@ -309,6 +309,7 @@ private fun AllocationCard(total: CurrencyInvestment, modifier: Modifier) {
                     AppText(if (total.investedCash > 0) "${(maxOf(fraction, 1f - fraction) * 100).roundToInt()}%" else "—", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     AppText(if (total.investedCash <= 0) "No cost" else if (fraction >= .5f) "Shares" else "Bonds", style = MaterialTheme.typography.labelSmall)
                 }
+            }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 AllocationLegend("Shares", total.shareCashCost, total.currency, DashboardGold)
@@ -421,7 +422,9 @@ private fun MonthlyTargetCard(model: PortfolioModel, modifier: Modifier) {
         }
         if (progress == null) TextButton(enabled = !model.busy, onClick = { model.loadInvestmentHistory() }) { AppText("Check progress") }
         else Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (!LocalNumbersHidden.current) LinearProgressIndicator(progress = { progress.fraction }, modifier = Modifier.fillMaxWidth())
+            if (!LocalNumbersHidden.current) CaptureRedactionRegion(Modifier.fillMaxWidth(), masked = { Spacer(Modifier.fillMaxSize()) }) {
+                LinearProgressIndicator(progress = { progress.fraction }, modifier = Modifier.fillMaxWidth())
+            }
             else Spacer(Modifier.height(4.dp))
             Row(Modifier.fillMaxWidth()) {
                 Column(Modifier.weight(1f)) {
