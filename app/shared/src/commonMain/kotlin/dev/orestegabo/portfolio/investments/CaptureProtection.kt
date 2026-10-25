@@ -5,4 +5,4 @@ expect val captureProtectionRequiresMaskedNumbers: Boolean
 expect val captureProtectionDescription: String
 
 /** Android's inactive-window privacy remains enabled even after foreground capture is permitted. */
-fun protectCaptureWindow(protectionEnabled: Boolean, inBackground: Boolean) = protectionEnabled || inBackground
+fun protectCaptureWindow(inBackground: Boolean) = inBackground
