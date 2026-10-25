@@ -25,69 +25,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @Composable
-fun DocumentsScreen(model: PortfolioModel) {
-    var search by rememberSaveable { mutableStateOf("") }
-    var category by rememberSaveable { mutableStateOf("all") }
-    var expanded by rememberSaveable { mutableStateOf<String?>(null) }
-    val actions = LocalNativeActions.current
-    fun save(document: JsonRecord) = model.action {
-        val path = document.text("downloadUrl")
-        require(path.matches(Regex("/api/bonds/documents/[A-Za-z0-9_-]+"))) { "Invalid document URL." }
-        val data = model.api.bytes(path)
-        require(data.take(5).toByteArray().decodeToString() == "%PDF-") { "The server did not return a PDF." }
-        if (actions.savePdf(document.text("originalFileName").ifBlank { "investment.pdf" }, data)) model.message = "Document saved."
-    }
-    val categories = listOf("all") + model.documents.map { it.text("category") }.distinct()
-    val filtered = model.documents.filter { (category == "all" || it.text("category") == category) && listOf("label", "instrumentName", "description", "issuer", "originalFileName").any { key -> it.text(key).contains(search, true) } }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        if (model.documents.isNotEmpty()) item { Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Field("Search documents", search, { search = it })
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.weight(1f)) { ChoiceRow(categories, category) { category = it } }
-                IconButton(onClick = model::refresh, enabled = !model.busy) { AppIcon(Icons.Outlined.Refresh, "Refresh documents") }
-            }
-        } }
-        if (filtered.isEmpty()) item { Box(Modifier.padding(20.dp)) {
-            if (model.busy) LoadingState()
-            else if (model.documents.isEmpty()) EmptyState("No documents yet", EmptyArtwork.DOCUMENTS,
-                actionLabel = "Refresh", onAction = model::refresh)
-            else EmptyState("No matches", EmptyArtwork.SEARCH, actionLabel = "Clear filters", onAction = { search = ""; category = "all" })
-        } }
-        items(filtered, key = { it.text("id") }) { document ->
-            val isExpanded = expanded == document.text("id")
-            Column {
-                ListItem(
-                    headlineContent = { FinancialText(document.text("label"), maxLines = 2, fontWeight = FontWeight.SemiBold) },
-                    supportingContent = { AppText(listOf(localized(document.text("category")), document.text("documentDate")).filter { it.isNotBlank() }.joinToString(" · ")) },
-                    leadingContent = { AppIcon(Icons.Outlined.Description, null, tint = MaterialTheme.colorScheme.primary) },
-                    trailingContent = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { save(document) }, enabled = !model.busy) { AppIcon(Icons.Outlined.Download, "Download ${privateFinancialValue(document.text("label"))}") }
-                            AppIcon(if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, if (isExpanded) "Collapse details" else "Expand details")
-                        }
-                    },
-                    modifier = Modifier.clickable { expanded = if (isExpanded) null else document.text("id") },
-                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background)
-                )
-                AppAnimatedVisibility(isExpanded) {
-                    Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        if (document.text("instrumentName").isNotBlank()) AppText(document.text("instrumentName"), fontWeight = FontWeight.SemiBold)
-                        if (document.text("description").isNotBlank()) FinancialText(document.text("description"), style = MaterialTheme.typography.bodySmall)
-                        if (document.text("issuer").isNotBlank()) Fact("Issuer", document.text("issuer"))
-                        document.optJSONObject("details")?.let { details ->
-                            if (details.text("summary").isNotBlank()) FinancialText(details.text("summary"), style = MaterialTheme.typography.bodySmall)
-                            listOf("facts", "charges", "flow").forEach { key -> details.rows(key).forEach { Fact(it.text("label"), it.text("value")) } }
-                            details.rows("sections").forEach { section -> AppText(section.text("title"), fontWeight = FontWeight.Bold); section.rows("items").forEach { Fact(it.text("label"), it.text("value")) } }
-                        }
-                    }
-                }
-                HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = MaterialTheme.colorScheme.outlineVariant)
-            }
-        }
-    }
-}
-
-@Composable
 private fun CompanyPriceChart(
     symbol: String, name: String, quote: JsonRecord?, quotes: JsonRecord?, history: JsonRecord?,
     failed: Boolean, period: String, onPeriod: (String) -> Unit, onRetry: () -> Unit,
