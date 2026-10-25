@@ -16,26 +16,44 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
-import kotlin.math.roundToInt
+import androidx.compose.ui.unit.sp
+import kotlin.math.abs
+import kotlinx.datetime.LocalDate
 
 val LocalChartStyle = staticCompositionLocalOf { "area" }
 
 /** The same observed values in three views; bars use a zero baseline. */
 @Composable
-fun InvestmentChart(values: List<Double>, labels: List<String> = emptyList()) {
+fun InvestmentChart(values: List<Double>, labels: List<String> = emptyList(), notes: List<String> = emptyList(), sparse: Boolean = false, dateRange: ClosedRange<LocalDate>? = null) {
     if (LocalNumbersHidden.current) { HiddenFinancialChart(Modifier.fillMaxWidth().height(276.dp)); return }
-    val points = values.indices.filter { values[it].isFinite() && values[it] >= 0 }.map { values[it] to labels.getOrElse(it) { "Observation ${it + 1}" } }
+    val validIndices = values.indices.filter { values[it].isFinite() && values[it] >= 0 }
+    val pointNotes = validIndices.map { notes.getOrNull(it) }
+    val points = validIndices.map { values[it] to labels.getOrElse(it) { "Observation ${it + 1}" } }
     if (points.isEmpty()) return
+    val dates = points.map { runCatching { LocalDate.parse(it.second).toEpochDays().toDouble() }.getOrNull() }
+    val dated = dates.all { it != null } && dates.zipWithNext().all { (a, b) -> a!! < b!! }
+    val axisRange = dateRange?.takeIf { dated && it.start < it.endInclusive }
+    val axisStart = axisRange?.start?.toEpochDays()?.toDouble() ?: dates.first()
+    val axisEnd = axisRange?.endInclusive?.toEpochDays()?.toDouble() ?: dates.last()
+    val fractions = points.indices.map { index ->
+        if (dated && axisRange != null) ((dates[index]!! - axisStart!!) / (axisEnd!! - axisStart)).toFloat().coerceIn(0f, 1f)
+        else if (points.size == 1) .5f
+        else if (dated) ((dates[index]!! - dates.first()!!) / (dates.last()!! - dates.first()!!)).toFloat()
+        else index.toFloat() / points.lastIndex
+    }
     val style = LocalChartStyle.current
     var selected by remember(values, labels, style) { mutableStateOf<Int?>(null) }
     val current = points[selected?.coerceIn(points.indices) ?: points.lastIndex]
     val first = points.first().first
-    val change = if (first > 0) (points.last().first - first) / first else null
+    val change = if (first > 0 && points.size > 1) (points.last().first - first) / first else null
     val accent = MaterialTheme.colorScheme.primary
     val grid = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f)
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
@@ -48,7 +66,8 @@ fun InvestmentChart(values: List<Double>, labels: List<String> = emptyList()) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 FinancialText(money(current.first), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text(if (selected == null) "Latest · ${current.second}" else current.second,
+                AppText((if (selected == null) "Latest · ${current.second}" else current.second) +
+                    pointNotes.getOrNull(selected ?: points.lastIndex)?.let { " · ${localized(it)}" }.orEmpty(),
                     style = MaterialTheme.typography.labelSmall, color = muted)
             }
             if (change != null) Surface(shape = MaterialTheme.shapes.large,
@@ -64,18 +83,18 @@ fun InvestmentChart(values: List<Double>, labels: List<String> = emptyList()) {
                 }
             }
             Canvas(Modifier.weight(1f).fillMaxHeight()
-                .semantics { contentDescription = "$style chart, ${points.size} observations. ${current.second}, ${money(current.first)}" }
-                .pointerInput(points, style) {
+                .semantics { contentDescription = localized("${localized(style.replaceFirstChar { it.uppercase() })} chart, ${points.size} observations. ${current.second}, ${money(current.first)}") }
+                .pointerInput(points, style, axisRange) {
                     detectTapGestures { tap ->
                         val inset = 8.dp.toPx()
                         val fraction = ((tap.x - inset) / (size.width - inset * 2).coerceAtLeast(1f)).coerceIn(0f, 1f)
-                        selected = (fraction * (points.size - 1)).roundToInt()
+                        selected = fractions.indices.minByOrNull { abs(fractions[it] - fraction) }
                     }
                 }) {
                 val inset = 8.dp.toPx()
                 val plotHeight = size.height - inset * 2
                 val plotWidth = size.width - inset * 2
-                fun x(index: Int) = inset + if (points.size == 1) plotWidth / 2 else index.toFloat() / (points.size - 1) * plotWidth
+                fun x(index: Int) = inset + fractions[index] * plotWidth
                 fun y(value: Double) = size.height - inset - ((value - minimum) / (maximum - minimum) * plotHeight).toFloat()
                 listOf(0f, .5f, 1f).forEach { fraction ->
                     val height = inset + plotHeight * fraction
@@ -92,11 +111,15 @@ fun InvestmentChart(values: List<Double>, labels: List<String> = emptyList()) {
                     val line = Path().apply { points.forEachIndexed { index, point ->
                         if (index == 0) moveTo(x(index), y(point.first)) else lineTo(x(index), y(point.first))
                     } }
-                    if (style == "area") {
+                    if (style == "area" && !sparse) {
                         val area = Path().apply { addPath(line); lineTo(x(points.lastIndex), size.height - inset); lineTo(x(0), size.height - inset); close() }
                         drawPath(area, Brush.verticalGradient(listOf(accent.copy(alpha = .28f), Color.Transparent)))
                     }
-                    drawPath(line, accent, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
+                    drawPath(line, accent, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round,
+                        pathEffect = if (sparse) PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 5.dp.toPx())) else null))
+                    if (sparse || points.size == 1) points.forEachIndexed { index, point ->
+                        drawCircle(accent, 3.dp.toPx(), Offset(x(index), y(point.first)))
+                    }
                 }
                 val focus = selected ?: points.lastIndex
                 if (selected != null) drawLine(accent.copy(alpha = .4f), Offset(x(focus), inset), Offset(x(focus), size.height - inset), 1.dp.toPx())
@@ -106,9 +129,30 @@ fun InvestmentChart(values: List<Double>, labels: List<String> = emptyList()) {
                 }
             }
         }
-        Row(Modifier.fillMaxWidth().padding(start = 62.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            listOf(points.first().second, points.last().second).forEach {
-                Text(it, style = MaterialTheme.typography.labelSmall, color = muted)
+        if (axisRange != null) {
+            val ticks = chartMonthTicks(axisRange)
+            val measurer = rememberTextMeasurer()
+            val labelStyle = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, color = muted)
+            Canvas(Modifier.fillMaxWidth().padding(start = 62.dp).height(42.dp)
+                .semantics { contentDescription = localized("Months: ") + ticks.joinToString { localized(it.second) } }) {
+                val inset = 8.dp.toPx()
+                val plotWidth = size.width - inset * 2
+                ticks.forEach { (date, month) ->
+                    val fraction = (date.toEpochDays().toDouble() - axisStart!!) / (axisEnd!! - axisStart)
+                    val x = inset + fraction.toFloat() * plotWidth
+                    drawLine(grid, Offset(x, 0f), Offset(x, 4.dp.toPx()), 1.dp.toPx())
+                    val text = measurer.measure(localized(month), labelStyle)
+                    val anchor = Offset(x, 20.dp.toPx())
+                    rotate(-45f, anchor) {
+                        drawText(text, topLeft = Offset(x - text.size.width / 2f, anchor.y - text.size.height / 2f))
+                    }
+                }
+            }
+        } else {
+            Row(Modifier.fillMaxWidth().padding(start = 62.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                listOf(points.first().second, points.last().second).forEach {
+                    AppText(it, style = MaterialTheme.typography.labelSmall, color = muted)
+                }
             }
         }
     }
