@@ -1023,4 +1023,6 @@ internal val frenchStrings: Map<String, String> = mapOf(
     "Total payable" to "Total à payer",
     "Treasury bond" to "Obligation du Trésor",
     "Equities" to "Actions",
+    "Only masked numbers appear in screen captures" to "Seuls les montants masqués apparaissent dans les captures",
+    "Captures show masked numbers; your screen stays readable" to "Montants masqués dans les captures ; écran lisible pour vous",
 )
