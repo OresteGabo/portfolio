@@ -329,6 +329,19 @@ private fun UnlockScreen(model: PortfolioModel) {
 
 @Composable
 fun Field(label: String, value: String, change: (String) -> Unit, keyboard: KeyboardType = KeyboardType.Text, helper: String? = null, autofill: ContentType? = null, enabled: Boolean = true) {
+    if (keyboard in listOf(KeyboardType.Number, KeyboardType.Decimal) && LocalCaptureBackdropRegistry.current != null && !LocalNumbersHidden.current) {
+        CaptureRedactionRegion(Modifier.fillMaxWidth(), masked = {
+            OutlinedTextField("••••", {}, Modifier.fillMaxWidth(), enabled = false, singleLine = true,
+                label = { AppText(label) }, supportingText = helper?.let { { AppText(it) } },
+                colors = OutlinedTextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledBorderColor = MaterialTheme.colorScheme.outline))
+        }) { FieldContent(label, value, change, keyboard, helper, autofill, enabled) }
+    } else FieldContent(label, value, change, keyboard, helper, autofill, enabled)
+}
+
+@Composable
+private fun FieldContent(label: String, value: String, change: (String) -> Unit, keyboard: KeyboardType, helper: String?, autofill: ContentType?, enabled: Boolean) {
     OutlinedTextField(value, change, Modifier.fillMaxWidth().then(if (autofill != null) Modifier.semantics { contentType = autofill } else Modifier), label = { AppText(label) }, singleLine = true, enabled = enabled,
         visualTransformation = if (LocalNumbersHidden.current && keyboard in listOf(KeyboardType.Number, KeyboardType.Decimal)) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
         keyboardOptions = KeyboardOptions(keyboardType = keyboard, platformImeOptions = if (autofill == ContentType.Username) credentialImeOptions(CredentialInput.USERNAME) else null), supportingText = helper?.let { { AppText(it) } })
