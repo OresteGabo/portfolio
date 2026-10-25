@@ -8,6 +8,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.*
 import kotlin.test.*
+import kotlin.time.TestTimeSource
+import kotlin.time.Duration.Companion.seconds
 
 class SecureSessionTest {
     private val origin = "https://secure.example.test"
@@ -26,6 +28,7 @@ class SecureSessionTest {
         override fun lock() { locks++ }
     }
     private class Scenario {
+        val clock = TestTimeSource()
         val vault = Vault()
         val store = ViewModelStore()
         var sessionValid = true
@@ -45,7 +48,7 @@ class SecureSessionTest {
         return PortfolioModel(object : ServerSettings {
             override fun readOrigin() = origin
             override fun writeOrigin(origin: String) {}
-        }, assets = { "[]".encodeToByteArray() }, vault = scenario.vault, apiFactory = { selected ->
+        }, assets = { "[]".encodeToByteArray() }, vault = scenario.vault, clock = scenario.clock, apiFactory = { selected ->
             PortfolioApi(selected, MockEngine(MockEngineConfig().apply {
                 this.dispatcher = dispatcher
                 addHandler { request ->
@@ -114,7 +117,7 @@ class SecureSessionTest {
         try {
             advanceUntilIdle(); model.unlock(); advanceUntilIdle()
             var wrote = false
-            model.action { delay(1000); wrote = true }
+            model.action { delay(60_000); wrote = true }
             runCurrent(); model.background(); advanceUntilIdle()
             assertFalse(wrote); assertTrue(model.locked); assertNull(model.user); assertTrue(model.purchases.isEmpty())
             assertNotNull(scenario.vault.value)
@@ -237,6 +240,7 @@ class SecureSessionTest {
             model.foreground(); advanceUntilIdle()
             assertEquals(1, scenario.vault.reads)
             model.background()
+            advanceTimeBy(SESSION_BACKGROUND_GRACE_MILLIS); runCurrent()
             assertTrue(model.locked); assertNull(model.user)
             model.foreground(); advanceUntilIdle()
             assertEquals(2, scenario.vault.reads)
@@ -271,6 +275,97 @@ class SecureSessionTest {
             model.background(); model.foreground(); advanceUntilIdle()
             assertEquals(0, scenario.vault.reads)
             assertFalse(model.locked)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun screenshotStyleInterruptionRetainsUnlockSnapshotAndMakesNoRequests() = runTest {
+        val scenario = Scenario().also(::seed)
+        val model = model(scenario)
+        try {
+            model.foreground(); advanceUntilIdle()
+            val snapshot = model.portfolio
+            val requests = scenario.requests
+            val reads = scenario.vault.reads
+            repeat(3) {
+                model.background()
+                advanceTimeBy(500)
+                scenario.clock += 0.5.seconds
+                model.foreground(); runCurrent()
+                assertFalse(model.locked)
+                assertSame(snapshot, model.portfolio)
+            }
+            advanceUntilIdle()
+            assertEquals(reads, scenario.vault.reads)
+            assertEquals(requests, scenario.requests)
+            assertNotNull(model.user)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun suspendedBackgroundTimeoutIsCheckedBeforeResumingEvenIfTimerNeverRan() = runTest {
+        val scenario = Scenario().also(::seed)
+        val model = model(scenario)
+        try {
+            model.foreground(); advanceUntilIdle()
+            model.background()
+            scenario.clock += 31.seconds // Simulate iOS suspension without executing the coroutine timer.
+            model.foreground()
+            assertTrue(model.locked)
+            assertNull(model.user)
+            assertTrue(model.purchases.isEmpty())
+            advanceUntilIdle()
+            assertFalse(model.locked)
+            assertEquals(2, scenario.vault.reads)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun recentDataIsReusedButExpiryExplicitRefreshAndWritesFetchAgain() = runTest {
+        val scenario = Scenario().also(::seed)
+        val model = model(scenario)
+        try {
+            model.foreground(); advanceUntilIdle()
+            val initial = scenario.requests
+            model.action { model.loadPrivateData() }; advanceUntilIdle()
+            assertEquals(initial, scenario.requests)
+            scenario.clock += 61.seconds
+            model.action { model.loadPrivateData() }; advanceUntilIdle()
+            assertTrue(scenario.requests > initial)
+            val afterExpiry = scenario.requests
+            model.refresh(); advanceUntilIdle()
+            assertTrue(scenario.requests > afterExpiry)
+            val afterRefresh = scenario.requests
+            model.savePurchase(JsonRecord().put("faceValue", 100000), null) { }
+            advanceUntilIdle()
+            assertTrue(scenario.requests > afterRefresh + 1)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun marketCacheAvoidsRepeatedTabRequestsAndExplicitRefreshBypassesIt() = runTest {
+        val scenario = Scenario().also(::seed)
+        val model = model(scenario)
+        try {
+            model.foreground(); advanceUntilIdle()
+            model.loadMarket(); advanceUntilIdle()
+            val requests = scenario.requests
+            model.loadMarket(); advanceUntilIdle()
+            assertEquals(requests, scenario.requests)
+            model.loadMarket(refresh = true); advanceUntilIdle()
+            assertTrue(scenario.requests > requests)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun enablingSavedSignInDuringBackgroundStillHonorsTheOriginalTimeout() = runTest {
+        val scenario = Scenario()
+        val model = model(scenario)
+        try {
+            advanceUntilIdle()
+            model.login("saved@example.test", "synthetic-password-only", savePassword = true)
+            model.background()
+            runCurrent()
+            assertTrue(model.secureSignInEnabled)
+            assertFalse(model.locked)
+            advanceTimeBy(SESSION_BACKGROUND_GRACE_MILLIS); runCurrent()
+            assertTrue(model.locked)
+            assertNull(model.user)
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
 
