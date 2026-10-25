@@ -117,7 +117,7 @@ fun InvestmentApp(model: PortfolioModel) {
     }
     val colors = if (dark) darkColorScheme(primary = BrandCream, onPrimary = Ink, primaryContainer = Color(0xFF514716), onPrimaryContainer = BrandCream, secondary = BrandCream, secondaryContainer = Color(0xFF514716), onSecondaryContainer = BrandCream, background = Color(0xFF11150F), surface = Color(0xFF1D2219), onSurface = Color(0xFFF3F1E8), onSurfaceVariant = Color(0xFFC5C7BA), outlineVariant = Color(0xFF414735))
         else lightColorScheme(primary = BrandOlive, onPrimary = Color.White, primaryContainer = BrandCream, onPrimaryContainer = Ink, secondary = BrandOlive, secondaryContainer = BrandCream, onSecondaryContainer = Ink, background = Color(0xFFFAF8F2), surface = Color.White, onSurface = Ink)
-    CompositionLocalProvider(LocalChartStyle provides chartStyle, LocalNumbersHidden provides model.numbersHidden) {
+    CompositionLocalProvider(LocalChartStyle provides chartStyle, LocalNumbersHidden provides model.numbersConcealed) {
     MaterialTheme(colorScheme = colors, typography = Typography()) {
         val nested = missingDocuments || pendingEntry || importReview != null || investmentHistory || detail != null || editor != null || equityEditor != null || newPurchase || simulator || education
         val back = {
@@ -152,23 +152,23 @@ fun InvestmentApp(model: PortfolioModel) {
                 if (!portfolioHome) TopAppBar(
                     title = {
                         Column {
-                            Text(screenTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                            if (model.user == null && !nested) Text("Investment journal", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            AppText(screenTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                            if (model.user == null && !nested) AppText("Investment journal", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     },
                     navigationIcon = {
-                        if (nested) IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
-                        else Image(painterResource(Res.drawable.gabo_mark), "Gabo logo", Modifier.padding(start = 16.dp, end = 4.dp).size(40.dp))
+                        if (nested) IconButton(onClick = back) { AppIcon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                        else Image(painterResource(Res.drawable.gabo_mark), localized("Gabo logo"), Modifier.padding(start = 16.dp, end = 4.dp).size(40.dp))
                     },
-                    actions = { if (model.user != null && !model.locked) NumberVisibilityButton(model.numbersHidden, model::toggleNumberVisibility) },
+                    actions = { if (model.user != null && !model.locked) NumberVisibilityButton(model.numbersConcealed, model::toggleNumberVisibility, model.numbersRevealBlocked) },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
                 )
             },
             floatingActionButton = {
                 if (model.user != null && !model.locked && !nested && tab == "Portfolio") ExtendedFloatingActionButton(
                     onClick = { importReview = null; confirmationTarget = null; newPurchase = true },
-                    modifier = Modifier.semantics { contentDescription = "Add purchase" },
-                    icon = { Icon(Icons.Filled.Add, null) }, text = { Text("Add purchase") }
+                    modifier = Modifier.semantics { contentDescription = localized("Add purchase") },
+                    icon = { AppIcon(Icons.Filled.Add, null) }, text = { AppText("Add purchase") }
                 )
             },
             bottomBar = {
@@ -178,8 +178,8 @@ fun InvestmentApp(model: PortfolioModel) {
                         NavigationBarItem(
                             selected = selected,
                             onClick = { tab = destination.title },
-                            icon = { Icon(if (selected) destination.selectedIcon else destination.icon, contentDescription = null, modifier = Modifier.size(24.dp)) },
-                            label = { Text(destination.title, maxLines = 1) },
+                            icon = { AppIcon(if (selected) destination.selectedIcon else destination.icon, contentDescription = null, modifier = Modifier.size(24.dp)) },
+                            label = { AppText(destination.title, maxLines = 1) },
                             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.secondaryContainer)
                         )
                     }
@@ -229,7 +229,7 @@ internal fun Notice(text: String, error: Boolean, dismiss: () -> Unit) {
     Surface(color = if (error) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             FinancialText(text, Modifier.weight(1f).padding(vertical = 10.dp), style = MaterialTheme.typography.bodySmall)
-            TextButton(onClick = dismiss) { Text("Dismiss") }
+            TextButton(onClick = dismiss) { AppText("Dismiss") }
         }
     }
 }
@@ -237,9 +237,9 @@ internal fun Notice(text: String, error: Boolean, dismiss: () -> Unit) {
 @Composable
 fun PageTitle(eyebrow: String, title: String, subtitle: String) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(eyebrow, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
-        Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        AppText(eyebrow, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+        AppText(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        AppText(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
     }
 }
 
@@ -253,8 +253,8 @@ fun Panel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> 
 @Composable
 fun Fact(label: String, value: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(label, Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-        FinancialText(value.ifBlank { "—" }, Modifier.weight(1f), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodySmall)
+        AppText(label, Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+        FinancialText(displayRecordValue(value).ifBlank { "—" }, Modifier.weight(1f), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -272,24 +272,24 @@ private fun SignInScreen(model: PortfolioModel) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
         item { PageTitle("Your investment journal", if (register) "Get started" else "Welcome back", "Track your investments, coupon income, and what comes next.") }
         item { Panel {
-            Text(if (register) "Create your account" else "Sign in to your portfolio", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text(if (register) "Your invitation works once. Your portfolio stays private to your account." else "Use your email and password to access your own investments.", style = MaterialTheme.typography.bodySmall)
+            AppText(if (register) "Create your account" else "Sign in to your portfolio", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            AppText(if (register) "Your invitation works once. Your portfolio stays private to your account." else "Use your email and password to access your own investments.", style = MaterialTheme.typography.bodySmall)
             Field("Email", email, { email = it }, keyboard = KeyboardType.Email, autofill = ContentType.Username, enabled = !model.busy)
-            OutlinedTextField(password, { password = it.take(128) }, Modifier.fillMaxWidth().semantics { contentType = if (register) ContentType.NewPassword else ContentType.Password }, label = { Text("Password") }, singleLine = true, enabled = !model.busy,
+            OutlinedTextField(password, { password = it.take(128) }, Modifier.fillMaxWidth().semantics { contentType = if (register) ContentType.NewPassword else ContentType.Password }, label = { AppText("Password") }, singleLine = true, enabled = !model.busy,
                 visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password,
                     platformImeOptions = credentialImeOptions(if (register) CredentialInput.NEW_PASSWORD else CredentialInput.PASSWORD)))
             if (register) {
                 OutlinedTextField(confirmation, { confirmation = it.take(128) }, Modifier.fillMaxWidth().semantics { contentType = ContentType.NewPassword },
-                    label = { Text("Confirm password") }, singleLine = true, enabled = !model.busy, visualTransformation = PasswordVisualTransformation(),
+                    label = { AppText("Confirm password") }, singleLine = true, enabled = !model.busy, visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, platformImeOptions = credentialImeOptions(CredentialInput.NEW_PASSWORD)))
                 Field("Invitation token", invitation, { invitation = it }, enabled = !model.busy)
-                Text("Use at least 15 characters. A long, unique passphrase works well.", style = MaterialTheme.typography.bodySmall)
+                AppText("Use at least 15 characters. A long, unique passphrase works well.", style = MaterialTheme.typography.bodySmall)
             }
             Row(Modifier.fillMaxWidth().toggleable(value = savePassword, enabled = model.secureSignInAvailable && !model.busy, role = Role.Checkbox, onValueChange = { savePassword = it }), verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(savePassword, null, enabled = model.secureSignInAvailable && !model.busy)
                 Column {
-                    Text("Save sign-in with ${model.unlockLabel}", style = MaterialTheme.typography.bodyMedium)
-                    Text(if (model.secureSignInAvailable) "Securely saved on this device" else "Set up device authentication first", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    AppText("Save sign-in with ${localized(model.unlockLabel)}", style = MaterialTheme.typography.bodyMedium)
+                    AppText(if (model.secureSignInAvailable) "Securely saved on this device" else "Set up device authentication first", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Button(onClick = {
@@ -303,10 +303,10 @@ private fun SignInScreen(model: PortfolioModel) {
                         actions.offerPasswordSave(submittedOrigin, submittedEmail, submittedPassword)
                     }
                 }
-            }, enabled = !model.busy && email.isNotBlank() && password.isNotEmpty(), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(if (register) "Create account" else "Open private portfolio") }
-            TextButton(onClick = { register = !register }, enabled = !model.busy) { Text(if (register) "Already have an account? Sign in" else "Use an invitation") }
+            }, enabled = !model.busy && email.isNotBlank() && password.isNotEmpty(), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { AppText(if (register) "Create account" else "Open private portfolio") }
+            TextButton(onClick = { register = !register }, enabled = !model.busy) { AppText(if (register) "Already have an account? Sign in" else "Use an invitation") }
         } }
-        item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Outlined.Lock, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant); Spacer(Modifier.width(6.dp)); Text("Your portfolio stays private", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) } }
+        item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) { AppIcon(Icons.Outlined.Lock, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant); Spacer(Modifier.width(6.dp)); AppText("Your portfolio stays private", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) } }
     }
 }
 
@@ -315,39 +315,39 @@ private fun UnlockScreen(model: PortfolioModel) {
     Column(Modifier.fillMaxSize().padding(32.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         Image(painterResource(Res.drawable.gabo_mark), "Gabo", Modifier.size(80.dp))
         Spacer(Modifier.height(24.dp))
-        Text("Portfolio locked", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        AppText("Portfolio locked", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(12.dp))
-        Text("Your saved sign-in is protected on this device.", style = MaterialTheme.typography.bodyMedium)
+        AppText("Your saved sign-in is protected on this device.", style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(24.dp))
         Button(onClick = model::unlock, enabled = !model.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
-            Icon(when (model.unlockLabel) { "Face ID" -> Icons.Outlined.Face; "Touch ID" -> Icons.Outlined.Fingerprint; else -> Icons.Outlined.Lock }, null); Spacer(Modifier.width(8.dp))
-            Text(if (model.busy) "Unlocking…" else "Unlock with ${model.unlockLabel}")
+            AppIcon(when (model.unlockLabel) { "Face ID" -> Icons.Outlined.Face; "Touch ID" -> Icons.Outlined.Fingerprint; else -> Icons.Outlined.Lock }, null); Spacer(Modifier.width(8.dp))
+            AppText(if (model.busy) "Unlocking…" else "Unlock with ${localized(model.unlockLabel)}")
         }
-        TextButton(onClick = model::usePassword, enabled = !model.busy) { Text("Use password instead") }
+        TextButton(onClick = model::usePassword, enabled = !model.busy) { AppText("Use password instead") }
     }
 }
 
 @Composable
 fun Field(label: String, value: String, change: (String) -> Unit, keyboard: KeyboardType = KeyboardType.Text, helper: String? = null, autofill: ContentType? = null, enabled: Boolean = true) {
-    OutlinedTextField(value, change, Modifier.fillMaxWidth().then(if (autofill != null) Modifier.semantics { contentType = autofill } else Modifier), label = { Text(label) }, singleLine = true, enabled = enabled,
+    OutlinedTextField(value, change, Modifier.fillMaxWidth().then(if (autofill != null) Modifier.semantics { contentType = autofill } else Modifier), label = { AppText(label) }, singleLine = true, enabled = enabled,
         visualTransformation = if (LocalNumbersHidden.current && keyboard in listOf(KeyboardType.Number, KeyboardType.Decimal)) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboard, platformImeOptions = if (autofill == ContentType.Username) credentialImeOptions(CredentialInput.USERNAME) else null), supportingText = helper?.let { { Text(it) } })
+        keyboardOptions = KeyboardOptions(keyboardType = keyboard, platformImeOptions = if (autofill == ContentType.Username) credentialImeOptions(CredentialInput.USERNAME) else null), supportingText = helper?.let { { AppText(it) } })
 }
 
 @Composable
 fun ChoiceRow(choices: List<String>, selected: String, choose: (String) -> Unit) {
     androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(choices) { item -> FilterChip(selected = item == selected, onClick = { choose(item) }, label = { Text(item.replaceFirstChar { it.uppercase() }) }) }
+        items(choices) { item -> FilterChip(selected = item == selected, onClick = { choose(item) }, label = { AppText(item.replaceFirstChar { it.uppercase() }) }) }
     }
 }
 
 @Composable
 private fun PurchaseDetails(model: PortfolioModel, purchase: JsonRecord, engine: InvestmentEngine, imported: (JsonRecord) -> Unit, back: () -> Unit, edit: () -> Unit) {
     var confirmDelete by remember { mutableStateOf(false) }
-    if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("Delete purchase?") }, text = { Text("This removes ${purchase.text("bondName")} from your synchronized portfolio.") },
-        confirmButton = { TextButton(enabled = !model.busy, onClick = { model.deletePurchase(purchase.text("id"), back); confirmDelete = false }) { Text("Delete") } }, dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep purchase") } })
+    if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { AppText("Delete purchase?") }, text = { AppText("This removes ${purchase.text("bondName")} from your synchronized portfolio.") },
+        confirmButton = { TextButton(enabled = !model.busy, onClick = { model.deletePurchase(purchase.text("id"), back); confirmDelete = false }) { AppText("Delete") } }, dismissButton = { TextButton(onClick = { confirmDelete = false }) { AppText("Keep purchase") } })
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        item { TextButton(onClick = back) { Text("← Back") }; PageTitle("Purchase details", purchase.text("bondName"), purchase.text("isin")) }
+        item { TextButton(onClick = back) { AppText("← Back") }; PageTitle("Purchase details", purchase.text("bondName"), purchase.text("isin")) }
         item { Panel {
             if (purchase.text("status") == "submitted") PendingPurchaseFacts(purchase) else BondPurchaseFacts(purchase)
         } }
@@ -355,18 +355,18 @@ private fun PurchaseDetails(model: PortfolioModel, purchase: JsonRecord, engine:
         if (purchase.text("status") != "submitted") purchase.terms()?.let { terms ->
             val tracking = trackBond(terms, Today)
             item { Panel {
-                Text("Coupon tracking", fontWeight = FontWeight.Bold)
+                AppText("Coupon tracking", fontWeight = FontWeight.Bold)
                 Fact("Net per payment", money(tracking.netPerPayment, purchase.text("currency")))
                 Fact("Scheduled to date", money(tracking.couponsPaid, purchase.text("currency")))
                 Fact("Accrued", money(tracking.accruedCoupon, purchase.text("currency")))
                 Fact("Remaining coupons", money(tracking.remainingCoupons, purchase.text("currency")))
-                Text("${purchase.text("scheduleConfidence")} schedule · as of $Today", style = MaterialTheme.typography.bodySmall)
+                AppText("${purchase.text("scheduleConfidence")} schedule · as of $Today", style = MaterialTheme.typography.bodySmall)
             } }
             items(tracking.schedule) { date -> Panel { Fact(date.toString(), "${if (date <= Today) "Scheduled past" else "Upcoming"} · ${money(tracking.netPerPayment, purchase.text("currency"))}") } }
         }
         item { Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (purchase.text("status") != "submitted") Button(onClick = edit, enabled = !model.busy) { Text("Edit purchase") }
-            OutlinedButton(onClick = { confirmDelete = true }, enabled = !model.busy) { Text("Delete") }
+            if (purchase.text("status") != "submitted") Button(onClick = edit, enabled = !model.busy) { AppText("Edit purchase") }
+            OutlinedButton(onClick = { confirmDelete = true }, enabled = !model.busy) { AppText("Delete") }
         } }
     }
 }
