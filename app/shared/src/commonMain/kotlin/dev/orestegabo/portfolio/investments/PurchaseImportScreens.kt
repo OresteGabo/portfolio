@@ -23,27 +23,27 @@ fun PendingBondScreen(model: PortfolioModel, initialIssueId: String? = null, don
     val issue = choices.find { it.text("id") == selectedId }
     var amount by rememberSaveable { mutableStateOf("") }
     var choosing by remember { mutableStateOf(false) }
-    val draft = issue?.let { runCatching { pendingBondInput(it, amount.toDoubleOrNull() ?: 0.0, Today) }.getOrNull() }
+    val draft = issue?.let { runCatching { pendingBondInput(it, amount.toInputNumberOrNull() ?: 0.0, Today) }.getOrNull() }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { Text("Pending bond", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
-        item { Text("No file needed. Confirm later with your BNR PDF.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        item { AppText("Pending bond", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
+        item { AppText("No file needed. Confirm later with your BNR PDF.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         if (choices.isEmpty()) item { EmptyState("No published bonds", EmptyArtwork.BONDS, compact = true) }
         else {
-            item { ListItem(headlineContent = { Text(issue?.text("title") ?: "Choose a bond") },
-                supportingContent = { Text(issue?.text("settlementDate").orEmpty()) },
-                trailingContent = { Icon(Icons.Outlined.ArrowDropDown, "Choose bond") }, modifier = Modifier.clickable { choosing = true }) }
+            item { ListItem(headlineContent = { AppText(issue?.text("title") ?: "Choose a bond") },
+                supportingContent = { AppText(issue?.text("settlementDate").orEmpty()) },
+                trailingContent = { AppIcon(Icons.Outlined.ArrowDropDown, "Choose bond") }, modifier = Modifier.clickable { choosing = true }) }
             item { Field("Amount applied (RWF)", amount, { amount = it.filter(Char::isDigit).take(15) }, KeyboardType.Number, "In RWF 100,000 increments") }
             item { Panel {
                 Fact("Commission", money(PendingBondCommission, "RWF"))
-                Fact("Total paid", money((amount.toDoubleOrNull() ?: 0.0) + PendingBondCommission, "RWF"))
+                Fact("Total paid", money((amount.toInputNumberOrNull() ?: 0.0) + PendingBondCommission, "RWF"))
             } }
-            item { Button(enabled = draft != null && !model.busy, onClick = { draft?.let { model.savePurchase(it, null, done) } }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Save pending purchase") } }
+            item { Button(enabled = draft != null && !model.busy, onClick = { draft?.let { model.savePurchase(it, null, done) } }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { AppText("Save pending purchase") } }
         }
     }
     if (choosing) ModalBottomSheet(onDismissRequest = { choosing = false }) {
         LazyColumn(Modifier.fillMaxWidth().navigationBarsPadding(), contentPadding = PaddingValues(bottom = 24.dp)) {
             items(choices, key = { it.text("id") }) { row ->
-                ListItem(headlineContent = { Text(row.text("title")) }, supportingContent = { Text(row.text("settlementDate")) },
+                ListItem(headlineContent = { AppText(row.text("title")) }, supportingContent = { AppText(row.text("settlementDate")) },
                     leadingContent = { RadioButton(selected = selectedId == row.text("id"), onClick = null) },
                     modifier = Modifier.clickable { selectedId = row.text("id"); choosing = false })
             }
@@ -70,25 +70,25 @@ fun PurchaseImportReview(model: PortfolioModel, review: JsonRecord, target: Json
     val ready = body != null && !wrongTarget && (!bond || model.historyComplete) &&
         (selected != null && pendingMatchesConfirmation(selected, body) || target == null && matches.isEmpty()) && confirmedBody != null
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { Text("Review purchase", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
+        item { AppText("Review purchase", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
         if (body == null) item { EmptyState(parsed.exceptionOrNull()?.message ?: "Could not read this PDF", EmptyArtwork.DOCUMENTS, compact = true) }
         else {
             if (wrongTarget) item { NoticeForImport("This PDF does not match the pending bond or applied amount.") }
             if (bond && !model.historyComplete) item {
-                if (model.busy) LoadingState() else TextButton(onClick = { model.error = null; model.loadInvestmentHistory() }) { Text("Retry loading pending purchases") }
+                if (model.busy) LoadingState() else TextButton(onClick = { model.error = null; model.loadInvestmentHistory() }) { AppText("Retry loading pending purchases") }
             }
             if (target == null && matches.isNotEmpty()) {
-                item { Text("Confirm a pending purchase", fontWeight = FontWeight.SemiBold) }
+                item { AppText("Confirm a pending purchase", fontWeight = FontWeight.SemiBold) }
                 items(matches, key = { it.text("id") }) { row ->
                     ListItem(headlineContent = { FinancialText(row.text("bondName")) }, supportingContent = { FinancialText("Applied · ${money(row.optDouble("faceValue"), row.text("currency"))}") },
                         leadingContent = { RadioButton(selected = selectedId == row.text("id"), onClick = null) },
                         modifier = Modifier.clickable { selection = row.text("id") })
                 }
             }
-            if (target != null) item { Text("Updates your pending purchase", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary) }
+            if (target != null) item { AppText("Updates your pending purchase", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary) }
             item { Panel {
                 if (bond) {
-                    Text(body.text("bondName"), fontWeight = FontWeight.Bold)
+                    AppText(body.text("bondName"), fontWeight = FontWeight.Bold)
                     Fact("Allocated", money(body.optDouble("faceValue"), body.text("currency")))
                     Fact("Settlement", body.text("settlementDate"))
                     Fact("Maturity", body.text("maturityDate"))
@@ -96,17 +96,17 @@ fun PurchaseImportReview(model: PortfolioModel, review: JsonRecord, target: Json
                     Fact("Price", "${body.optDouble("pricePercent")}%")
                     confirmedBody?.let { Fact("Commission", money(it.optDouble("feesPaid", 0.0), it.text("currency"))) }
                 } else {
-                    Text(body.text("securityName"), fontWeight = FontWeight.Bold)
+                    AppText(body.text("securityName"), fontWeight = FontWeight.Bold)
                     Fact("Shares", body.text("shares")); Fact("Cost", money(body.optDouble("netAmountPayable"), body.text("currency")))
                     Fact("Trade date", body.text("tradeDate"))
                 }
             } }
-            if (review.optBoolean("usedOcr")) item { Text("Text recognition used. Check the figures against your PDF.", style = MaterialTheme.typography.bodySmall) }
+            if (review.optBoolean("usedOcr")) item { AppText("Text recognition used. Check the figures against your PDF.", style = MaterialTheme.typography.bodySmall) }
             item { Button(enabled = ready && !model.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), onClick = {
                 confirmedBody?.let { model.saveImportedPurchase(review, if (bond) it else body, selected?.text("id"), done) }
-            }) { Text(if (selected != null) "Confirm purchase" else "Save purchase") } }
+            }) { AppText(if (selected != null) "Confirm purchase" else "Save purchase") } }
         }
     }
 }
 
-@Composable private fun NoticeForImport(text: String) { Text(text, color = MaterialTheme.colorScheme.error) }
+@Composable private fun NoticeForImport(text: String) { AppText(text, color = MaterialTheme.colorScheme.error) }
