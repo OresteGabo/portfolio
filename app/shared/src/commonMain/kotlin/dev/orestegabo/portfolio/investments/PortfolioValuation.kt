@@ -18,6 +18,9 @@ fun PortfolioSnapshot.valuedShares(today: LocalDate, quotes: JsonRecord?): List<
 data class ValuedSharePosition(val position: SharePosition, val closingPrice: Double?) {
     val estimatedValue get() = closingPrice?.let { position.shares * it } ?: position.cashCost
     val gainLoss get() = closingPrice?.let { estimatedValue - position.cashCost }
+    /** Return on the combined cost of all lots, including purchase fees. */
+    val gainLossRate get() = gainLoss?.takeIf { it.isFinite() && position.cashCost.isFinite() && position.cashCost > 0 }
+        ?.let { it / position.cashCost }
 }
 
 data class CurrencyValuation(val cost: CurrencyInvestment, val shares: List<ValuedSharePosition>) {
