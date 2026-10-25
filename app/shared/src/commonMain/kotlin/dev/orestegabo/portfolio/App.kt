@@ -26,6 +26,8 @@ fun App() {
     remember(settings) { AppLanguage.initialize(settings) }
     val systemLanguage = platformSystemLanguage()
     SideEffect { AppLanguage.systemLanguage = systemLanguage }
+    val reducedMotion = rememberReducedMotion()
+    val selectionFeedback = rememberSelectionFeedback()
     val actions = rememberNativeActions()
     val vault = rememberSecureSignIn()
     val model = viewModel { PortfolioModel(settings, vault = vault) }
@@ -48,7 +50,7 @@ fun App() {
             }
         },
     )
-    CompositionLocalProvider(LocalNativeActions provides actions) {
+    CompositionLocalProvider(LocalNativeActions provides actions, LocalReducedMotion provides reducedMotion, LocalSelectionFeedback provides selectionFeedback) {
         CaptureBackdropHost(enabled = model.captureProtectionEnabled) {
             Box(Modifier.fillMaxSize()) {
                 Box(if (privacyCover) Modifier.semantics { hideFromAccessibility() } else Modifier) { InvestmentApp(model) }
