@@ -52,6 +52,7 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
     val valuation = model.portfolio.valuation(Today, model.quotes)
     val insights = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val reducedMotion = LocalReducedMotion.current
     val topInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding()
     val payments = remember(model.portfolio) { investmentCalendarEvents(emptyList(), model.portfolio) }
     PortfolioPullRefresh(model) {
@@ -70,10 +71,16 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
                 Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     AppText("Asset allocation", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     IconButton(enabled = insights.canScrollBackward, onClick = {
-                        scope.launch { insights.animateScrollToItem((insights.firstVisibleItemIndex - 1).coerceAtLeast(0)) }
+                        scope.launch {
+                            val index = (insights.firstVisibleItemIndex - 1).coerceAtLeast(0)
+                            if (reducedMotion) insights.scrollToItem(index) else insights.animateScrollToItem(index)
+                        }
                     }) { AppIcon(Icons.Outlined.ChevronLeft, "Previous insight") }
                     IconButton(enabled = insights.canScrollForward, onClick = {
-                        scope.launch { insights.animateScrollToItem((insights.firstVisibleItemIndex + 1).coerceAtMost(summary.size * 2)) }
+                        scope.launch {
+                            val index = (insights.firstVisibleItemIndex + 1).coerceAtMost(summary.size * 2)
+                            if (reducedMotion) insights.scrollToItem(index) else insights.animateScrollToItem(index)
+                        }
                     }) { AppIcon(Icons.Outlined.ChevronRight, "Next insight") }
                 }
                 BoxWithConstraints(Modifier.fillMaxWidth()) {
