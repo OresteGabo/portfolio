@@ -33,7 +33,7 @@ fun InvestmentHistoryScreen(model: PortfolioModel, uploadPending: (JsonRecord) -
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) { ChoiceRow(listOf("all", "shares", "bonds"), kind) { kind = it } }
-            IconButton(enabled = !model.busy, onClick = { model.loadInvestmentHistory(force = true) }) { Icon(Icons.Outlined.Refresh, "Refresh investment history") }
+            IconButton(enabled = !model.busy, onClick = { model.loadInvestmentHistory(force = true) }) { AppIcon(Icons.Outlined.Refresh, "Refresh investment history") }
         } }
         if (!model.historyComplete) item {
             if (model.busy) LoadingState()
@@ -47,9 +47,9 @@ fun InvestmentHistoryScreen(model: PortfolioModel, uploadPending: (JsonRecord) -
                     actionLabel = if (search.isNotBlank() || year != "all") "Clear filters" else null,
                     onAction = if (search.isNotBlank() || year != "all") ({ search = ""; year = "all"; kind = "all" }) else null)
             }
-            if (bonds.isNotEmpty()) item { Text("Bonds", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold) }
+            if (bonds.isNotEmpty()) item { AppText("Bonds", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold) }
             items(bonds, key = { "bond:${it.text("id")}" }) { BondPurchaseTile(it, uploadConfirmation = { uploadPending(it) }) { detail(it) } }
-            if (shares.isNotEmpty()) item { Text("Shares", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold) }
+            if (shares.isNotEmpty()) item { AppText("Shares", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold) }
             items(shares, key = { "share:${it.text("id")}" }) { SharePurchaseTile(it) }
         }
     }
