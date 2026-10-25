@@ -304,3 +304,47 @@ Native simulator automation could activate accessibility controls but did not de
 Android assembly/lint, physical-iPhone Kotlin compilation, 76 Android shared tests, 82 iOS shared tests and the signed Xcode simulator build passed. New tests cover fixed masks for currency, negative/large values, rates and share quantities; readable navigation dates; account-reference masking; unchanged formatting/calculation data; preference persistence; and toggling without extra portfolio requests.
 
 Native iPhone simulator verification used only synthetic amounts on a disposable localhost API. The eye toggle masked the hero and target card, removed target percentage semantics, and hid share quantities/costs in history and expanded share details. Accessibility inspection returned Financial numbers hidden rather than original values. After terminating/reopening, the app still had hidden numbers and the allocation chart exposed only Financial chart hidden; toggling again restored amounts and proportions. Preview: [Numbers hidden](screenshots/ios-numbers-hidden.png). Original visible-number preference was restored, the test app/API were stopped, and the simulator returned to its initial shut-down state. No production account data was changed; this feature needs an app rebuild, with no server deployment.
+
+## Initial persistent-masking capture protection — 24 October 2026
+
+Historical validation of the first implementation; the best-effort iPhone secure-container implementation below supersedes its always-masked policy.
+
+Android assembly/lint, physical-iPhone Kotlin compilation, 79 Android shared tests, 85 iOS shared tests and signed Xcode simulator builds passed. Shared policy tests verify protection defaults before data loads, eye-toggle bypass prevention on iPhone, Settings-only override and persistence, preservation of manual hiding, and background window protection independent of a foreground override.
+
+A new Android instrumentation test ran successfully on an isolated disposable Android 16 emulator. Real UiAutomation screenshots of a synthetic magenta window were black with protection enabled and magenta after the explicit override. The test also verified re-protection while inactive, foreground restoration of the override, re-enabling protection, and saved permission on a fresh Activity. Its local API served only an unauthenticated test response. An earlier run on a read-only existing emulator failed installation due insufficient storage; it did not change the saved emulator. The successful fresh device is removed after testing.
+
+Native iPhone simulator inspection used a disposable localhost API with synthetic financial data. The initial Portfolio was masked with protection enabled; the eye action displayed Settings guidance without revealing values. Settings showed the default enabled capture switch, its honest persistent-masking explanation, and the disabled forced Hide numbers switch. No iPhone screenshot-blocking API is claimed: screenshot notifications arrive after capture, so the default protection keeps values masked while enabled. Actual opt-out semantics were covered by shared tests; the iPhone UI protection switch was left enabled. No production data was read or changed, and both temporary test environments were cleaned up.
+
+Primary references: https://developer.apple.com/documentation/uikit/uiapplication/userdidtakescreenshotnotification, https://developer.apple.com/forums/thread/824922, https://developer.android.com/security/fraud-prevention/activities.
+
+### Shared contract price history (24 October 2026)
+
+- 83 shared Android host tests passed, including I&M at 90 on 22 July followed by a published 115 close, source precedence, date/range filtering, missing quotes and contract price ranges.
+- Android debug assembly/lint and shared iPhone device compilation passed. No iPhone runtime or visual chart verification was performed for this change.
+- Companion website: 21 market/history tests passed; the extended contract test also verified long-history endpoints/extrema. Tests used isolated PGlite storage and synthetic multi-account records. TypeScript and targeted ESLint passed.
+- Existing confirmed contract records contribute via an anonymous database projection; official closing-price storage and current valuation remain unchanged. The API must be deployed separately; no production data was changed or website files published.
+
+### Swipeable company charts (24 October 2026)
+
+Android debug build/lint and shared iPhone device compilation passed after introducing the company chart pager. All 85 shared Android host tests passed. Native swipe interaction was not exercised on a simulator/device in this change.
+
+### Holdings returns (24 October 2026)
+
+Holdings now show company logos, market value, signed gain/loss amounts and a green/red percentage badge (neutral for unchanged/unpriced holdings). Return uses the shared valuation's combined purchase cost including fees, rather than a daily price change. Missing quotes and zero cost produce no invented percentage. All values continue through FinancialText masking. All 86 shared Android host tests, Android build/lint and shared iPhone device compilation passed; no native visual verification was performed for this card redesign.
+
+## Best-effort visible-number iPhone capture shielding — 24 October 2026
+
+Supersedes the initial always-masked iPhone policy above. The native Swift host now wraps the shared Compose controller in the secure text-layout canvas, retaining its UITextField owner. Numbers can be shown with capture protection enabled. An unrecognized/missing canvas falls back to shared masking; active scene capture also forces masking. Manual number privacy and the Settings-only capture override remain separate.
+
+Android assembly/lint, shared physical-iPhone Kotlin compilation and the signed Xcode simulator app build passed. All 86 Android shared tests and 93 iPhone simulator tests passed. A new iPhone test verifies that native readiness and recording state change an existing model immediately, manual hiding survives recording, eye toggles cannot bypass forced masking, explicit opt-out is honored and unavailable shielding fails closed.
+
+Native UI validation used fictitious holdings on a localhost-only API, with protection explicitly on through temporary launch arguments. iOS 18.6 (iPhone 16 Pro) and iOS 26.2 (iPhone 17 Pro) both showed RWF 46,000 normally; Settings reported protection on, the secure canvas available and manual Hide numbers off. Navigation/touch and accessibility remained functional. No real account was accessed or modified, and the UI capture-protection toggle was not disabled. The local server and simulator apps were stopped and both simulators shut down after inspection.
+
+These checks verify container installation, UI functionality and masking policy, not pixel exclusion from real device captures. Physical-iPhone screenshots and recordings must be checked before relying on this best-effort workaround. It shields the Compose app view as a whole, not external system pickers/apps or OS status bars. Apple does not document secure text canvas embedding as screenshot protection and its behavior may change: https://developer.apple.com/forums/thread/824922.
+
+### English/French localization (2026-10-24)
+
+- Shared language tests cover system/region fallback, saved selection, switching, message arguments, French number/date formatting, decimal keyboard input, and financial masking with narrow no-break spaces. Android shared suite: 92 passed. iPhone simulator shared suite: 99 passed.
+- Android debug assembly, Android lint, iOS device Kotlin compilation and the native Xcode simulator build passed.
+- On iPhone 16 Pro / iOS 18.6, using fictitious data from a localhost fixture: verified the French portfolio and calendar layouts, Settings → Appearance → Language, immediate English/French switching, and retention of the selected language after terminating and relaunching the app. No production account was used.
+- Checked the shared catalog for duplicate keys and coverage of all 251 bundled education blocks. Original PDF contents, company names and API identifiers stay unchanged.
