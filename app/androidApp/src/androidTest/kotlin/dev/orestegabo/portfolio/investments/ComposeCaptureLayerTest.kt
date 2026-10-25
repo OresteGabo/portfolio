@@ -14,9 +14,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
@@ -77,16 +84,29 @@ class ComposeCaptureLayerTest {
                 val manualMask = mutableStateOf(false)
                 val protect = mutableStateOf(true)
                 val amount = mutableStateOf("12345678")
+                val selectedTab = androidx.compose.runtime.mutableIntStateOf(0)
                 var taps = 0
+                var navigationBounds: androidx.compose.ui.geometry.Rect? = null
                 scenario.onActivity { activity ->
+                    activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     activity.setContent {
                         AndroidCaptureBackdropHost(protect.value) {
                             CompositionLocalProvider(LocalNumbersHidden provides (manualMask.value ||
                                 (protect.value && captureProtectionRequiresMaskedNumbers))) {
                                 MaterialTheme {
+                                    RefreshCapturedNavigation(selectedTab.intValue.toString())
                                     Box(Modifier.fillMaxSize().background(Color.Blue).clickable { taps++ }, contentAlignment = Alignment.Center) {
                                         FinancialText(amount.value, Modifier.width(280.dp), color = Color.White,
                                             fontSize = 32.sp, textAlign = TextAlign.Center)
+                                        Scaffold(Modifier.fillMaxSize(), containerColor = Color.Transparent, bottomBar = {
+                                            NavigationBar(Modifier.fillMaxWidth().onGloballyPositioned { navigationBounds = it.boundsInRoot() }) {
+                                                listOf("Portfolio", "Calendar", "Documents", "Stocks", "Settings").forEachIndexed { index, title ->
+                                                    NavigationBarItem(selected = selectedTab.intValue == index,
+                                                        onClick = { selectedTab.intValue = index },
+                                                        icon = { AppText("+") }, label = { AppText(title) })
+                                                }
+                                            }
+                                        }) { padding -> Box(Modifier.padding(padding)) }
                                     }
                                 }
                             }
@@ -133,6 +153,48 @@ class ComposeCaptureLayerTest {
                     }
                 }
                 assertEquals("Excluded surface must not intercept touch input", 1, taps)
+                // Navigation indicator/color animations live in child graphics layers. Their
+                // final frame must be republished even when no financial amount changed.
+                scenario.onActivity { activity ->
+                    val bounds = checkNotNull(navigationBounds)
+                    val x = bounds.left + bounds.width * 2.5f / 5
+                    val y = bounds.center.y
+                    val time = android.os.SystemClock.uptimeMillis()
+                    val root = activity.findViewById<FrameLayout>(android.R.id.content)
+                    listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP).forEach { action ->
+                        MotionEvent.obtain(time, time, action, x, y, 0).also {
+                            root.dispatchTouchEvent(it); it.recycle()
+                        }
+                    }
+                }
+                assertEquals("The tapped destination must be selected", 2, selectedTab.intValue)
+                Thread.sleep(1200)
+                val navigationLatch = CountDownLatch(1)
+                var navigationLive: Bitmap? = null
+                scenario.onActivity { activity ->
+                    val root = activity.findViewById<FrameLayout>(android.R.id.content)
+                    val surface = (0 until root.childCount).map(root::getChildAt).filterIsInstance<SurfaceView>().single()
+                    navigationLive = Bitmap.createBitmap(surface.width, surface.height, Bitmap.Config.ARGB_8888)
+                    PixelCopy.request(surface, navigationLive!!, { result ->
+                        assertEquals(PixelCopy.SUCCESS, result); navigationLatch.countDown()
+                    }, Handler(Looper.getMainLooper()))
+                }
+                assertTrue(navigationLatch.await(5, TimeUnit.SECONDS))
+                val protectedTab = navigationLive!!
+                scenario.onActivity { protect.value = false }
+                Thread.sleep(500)
+                val ordinaryTab = capture()
+                val bandHeight = 400
+                val bandWidth = ordinaryTab.width
+                val bottomY = ordinaryTab.height - 80
+                var tabDifference = 0
+                for (y in bottomY - bandHeight until bottomY) for (x in ordinaryTab.width - bandWidth until ordinaryTab.width) {
+                    if (protectedTab.getPixel(x, y) != ordinaryTab.getPixel(x, y)) tabDifference++
+                }
+                assertTrue("Protected navbar must match the selected tab's settled UI; difference=$tabDifference", tabDifference < 100)
+                protectedTab.recycle(); ordinaryTab.recycle()
+                scenario.onActivity { protect.value = true }
+                Thread.sleep(500)
                 // Synthetic evidence only: verify a real recording through the OS capture path too.
                 instrumentation.uiAutomation.executeShellCommand(
                     "screenrecord --time-limit 2 /data/local/tmp/portfolio-capture-experiment.mp4"
