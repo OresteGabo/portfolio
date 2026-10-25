@@ -32,6 +32,11 @@ fun App() {
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { privacyCover = false; model.foreground() }
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { privacyCover = true }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { model.background(systemInteraction = actions.interactingWithSystem) }
+    ShakeNumberVisibility(
+        enabled = model.shakeToHideEnabled && model.user != null && !model.locked &&
+            !privacyCover && !actions.interactingWithSystem && !model.numbersRevealBlocked,
+        onShake = model::toggleNumberVisibility,
+    )
     CompositionLocalProvider(LocalNativeActions provides actions) {
         CaptureBackdropHost(enabled = model.captureProtectionEnabled) {
             Box(Modifier.fillMaxSize()) {
