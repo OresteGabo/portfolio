@@ -3,11 +3,14 @@ import SwiftUI
 import Shared
 
 struct ComposeView: UIViewControllerRepresentable {
+    @AppStorage("portfolio.screenCaptureAllowed") private var screenCaptureAllowed = false
     func makeUIViewController(context: Self.Context) -> UIViewController {
-        MainViewControllerKt.MainViewController()
+        CaptureShieldViewController(protectionEnabled: !screenCaptureAllowed)
     }
 
-    func updateUIViewController(_ uiViewController: UIViewController, context: Self.Context) {}
+    func updateUIViewController(_ uiViewController: UIViewController, context: Self.Context) {
+        (uiViewController as? CaptureShieldViewController)?.setProtectionEnabled(!screenCaptureAllowed)
+    }
 }
 
 struct ContentView: View {
