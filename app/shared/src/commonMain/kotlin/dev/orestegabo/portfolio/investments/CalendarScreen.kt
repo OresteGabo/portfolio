@@ -72,13 +72,13 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
                 Column(Modifier.padding(horizontal = 8.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { select(shiftCalendarMonth(selected, -1)) }) {
-                            Icon(Icons.Outlined.ChevronLeft, "Previous month")
+                            AppIcon(Icons.Outlined.ChevronLeft, "Previous month")
                         }
-                        Text("${selected.monthLabel()} ${selected.year}", Modifier.weight(1f),
+                        AppText("${selected.monthLabel()} ${selected.year}", Modifier.weight(1f),
                             style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        TextButton(onClick = { select(today) }) { Text("Today") }
+                        TextButton(onClick = { select(today) }) { AppText("Today") }
                         IconButton(onClick = { select(shiftCalendarMonth(selected, 1)) }) {
-                            Icon(Icons.Outlined.ChevronRight, "Next month")
+                            AppIcon(Icons.Outlined.ChevronRight, "Next month")
                         }
                     }
                     AnimatedContent(
@@ -97,9 +97,9 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
 
                             }
                             Row(Modifier.fillMaxWidth()) {
-                                listOf("M", "T", "W", "T", "F", "S", "S").forEach { day ->
+                                calendarWeekdayLabels().forEach { day ->
                                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                                        Text(day, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        AppText(day, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }
@@ -118,7 +118,7 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
                         CalendarCategory.entries.forEach { category ->
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                                 EventDot(category.color())
-                                Text(if (category == CalendarCategory.ISSUANCE) "Subscription window" else category.label, style = MaterialTheme.typography.labelSmall)
+                                AppText(if (category == CalendarCategory.ISSUANCE) "Subscription window" else category.label, style = MaterialTheme.typography.labelSmall)
                             }
                         }
                     }
@@ -128,10 +128,10 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
         item {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("${selected.monthLabel()} events", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    AppText("${selected.monthLabel()} events", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 }
-                Text("${monthEvents.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                IconButton(onClick = { showInfo = true }) { Icon(Icons.Outlined.Info, "About this calendar") }
+                AppText("${monthEvents.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                IconButton(onClick = { showInfo = true }) { AppIcon(Icons.Outlined.Info, "About this calendar") }
             }
         }
         if (monthEvents.isEmpty()) item {
@@ -145,7 +145,7 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
         }
         monthEvents.groupBy { it.date }.forEach { (date, entries) ->
             item(key = "date:$date") {
-                Text("${date.dayLabel()} · ${date.day} ${date.monthLabel()}",
+                AppText("${date.dayLabel()} · ${date.day} ${date.monthLabel()}",
                     style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold,
                     color = if (date == selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -156,55 +156,55 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
     }
     if (preferred != null) ExtendedFloatingActionButton(
         onClick = { if (!model.busy) { if (availableIssues.size == 1) addPending(preferred.record, selected) else chooseIssue = true } },
-        modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).semantics { contentDescription = "Record pending bond purchase" },
-        icon = { Icon(Icons.Outlined.Add, null) }, text = { Text("Record purchase") })
+        modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).semantics { contentDescription = localized("Record pending bond purchase") },
+        icon = { AppIcon(Icons.Outlined.Add, null) }, text = { AppText("Record purchase") })
     }
-    if (chooseIssue) AlertDialog(onDismissRequest = { chooseIssue = false }, title = { Text("Choose a bond") }, text = {
+    if (chooseIssue) AlertDialog(onDismissRequest = { chooseIssue = false }, title = { AppText("Choose a bond") }, text = {
         Column { availableIssues.forEach { range ->
-            ListItem(headlineContent = { Text(range.record.text("title")) },
-                supportingContent = { Text("${range.start.day}–${range.end.day} ${range.end.monthLabel()}") },
+            ListItem(headlineContent = { AppText(range.record.text("title")) },
+                supportingContent = { AppText("${range.start.day}–${range.end.day} ${range.end.monthLabel()}") },
                 modifier = Modifier.clickable { chooseIssue = false; addPending(range.record, selected) })
         } }
-    }, confirmButton = { TextButton(onClick = { chooseIssue = false }) { Text("Cancel") } })
+    }, confirmButton = { TextButton(onClick = { chooseIssue = false }) { AppText("Cancel") } })
 
-    if (showInfo) AlertDialog(onDismissRequest = { showInfo = false }, title = { Text("About this calendar") }, text = {
+    if (showInfo) AlertDialog(onDismissRequest = { showInfo = false }, title = { AppText("About this calendar") }, text = {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Issuances · BNR FY 2026/2027", fontWeight = FontWeight.SemiBold)
-            Text("Dates follow the BNR Treasury Bond Issuance Calendar for FY 2026/2027, as of 24 June 2026. The schedule runs from July 2026 to June 2027. Confirm changes with BNR or your broker.")
-            Text("Highlighted ranges run from the book opening date through the closing date. The calendar automatically highlights the current or nearest subscription window in the displayed month. Settlement, coupons and maturities are individual dates.")
-            Text("Your payments come from active bond purchases. Coupons are schedule estimates, not confirmation that a payment was received.")
+            AppText("Issuances · BNR FY 2026/2027", fontWeight = FontWeight.SemiBold)
+            AppText("Dates follow the BNR Treasury Bond Issuance Calendar for FY 2026/2027, as of 24 June 2026. The schedule runs from July 2026 to June 2027. Confirm changes with BNR or your broker.")
+            AppText("Highlighted ranges run from the book opening date through the closing date. The calendar automatically highlights the current or nearest subscription window in the displayed month. Settlement, coupons and maturities are individual dates.")
+            AppText("Your payments come from active bond purchases. Coupons are schedule estimates, not confirmation that a payment was received.")
         }
-    }, confirmButton = { TextButton(onClick = { showInfo = false }) { Text("Got it") } })
+    }, confirmButton = { TextButton(onClick = { showInfo = false }) { AppText("Got it") } })
 }
 
 @Composable
 private fun SubscriptionRangeHeader(range: CalendarSubscriptionRange, choose: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Surface(Modifier.fillMaxWidth().padding(horizontal = 8.dp).clickable(onClick = choose).clearAndSetSemantics {
-        contentDescription = "${range.record.text("title")}, subscriptions open ${range.start.calendarLabel()}, close ${range.end.calendarLabel()}"
+        contentDescription = localized("${localized(range.record.text("title"))}, subscriptions open ${range.start.calendarLabel()}, close ${range.end.calendarLabel()}")
         role = Role.Button
         onClick { choose(); true }
     },
         shape = RoundedCornerShape(20.dp), color = colors.primaryContainer.copy(alpha = .4f)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(range.record.text("title"), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+            AppText(range.record.text("title"), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column {
-                    Text("${range.start.day} ${range.start.monthLabel().take(3)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text("Opens", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                    AppText("${range.start.day} ${range.start.monthLabel().take(3)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    AppText("Opens", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                 }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Subscriptions", style = MaterialTheme.typography.labelSmall, color = colors.primary)
+                    AppText("Subscriptions", style = MaterialTheme.typography.labelSmall, color = colors.primary)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         EventDot(colors.primary)
                         HorizontalDivider(Modifier.weight(1f), color = colors.primary.copy(alpha = .35f))
-                        Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, Modifier.size(16.dp), tint = colors.primary)
+                        AppIcon(Icons.AutoMirrored.Outlined.ArrowForward, null, Modifier.size(16.dp), tint = colors.primary)
                     }
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("${range.end.day} ${range.end.monthLabel().take(3)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text("Closes", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                    AppText("${range.end.day} ${range.end.monthLabel().take(3)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    AppText("Closes", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                 }
             }
         }
@@ -229,9 +229,9 @@ private fun CalendarDay(
         else -> colors.onSurface
     }
     Box(modifier.height(48.dp).clickable(role = Role.Button, onClick = choose).semantics(mergeDescendants = true) {
-        contentDescription = date.calendarLabel() + (if (date == today) ", today" else "") +
-            (range?.let { ", ${it.record.text("title")}, subscription window ${it.start} to ${it.end}" } ?: "") +
-            (if (events.isEmpty()) ", no events" else ", ${events.joinToString { it.label }}")
+        contentDescription = date.calendarLabel() + localized(if (date == today) ", today" else "") +
+            (range?.let { localized(", ${localized(it.record.text("title"))}, subscription window ${it.start} to ${it.end}") } ?: "") +
+            (if (events.isEmpty()) localized(", no events") else ", ${events.joinToString { localized(it.label) }}")
         this.selected = chosen || endpoint
     }, contentAlignment = Alignment.Center) {
         if (range != null) {
@@ -244,7 +244,7 @@ private fun CalendarDay(
             border = if (!solid && (date == today || chosen)) BorderStroke(1.dp, colors.primary) else null,
             color = if (solid) colors.primary else Color.Transparent) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                Text(date.day.toString(), style = MaterialTheme.typography.bodyMedium,
+                AppText(date.day.toString(), style = MaterialTheme.typography.bodyMedium,
                     fontWeight = if (solid || range != null || date == today) FontWeight.Bold else FontWeight.Normal,
                     color = color, modifier = Modifier.clearAndSetSemantics {})
                 Row(Modifier.height(6.dp), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -260,19 +260,19 @@ private fun CalendarEventTile(event: InvestmentCalendarEvent, expanded: Boolean,
     Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
         Column {
             ListItem(
-                headlineContent = { Text(event.title, fontWeight = FontWeight.SemiBold) },
+                headlineContent = { AppText(event.title, fontWeight = FontWeight.SemiBold) },
                 supportingContent = {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(event.label, color = event.category.color())
+                        AppText(event.label, color = event.category.color())
                         event.amount?.let { FinancialText(money(it, event.record.text("currency")), fontWeight = FontWeight.SemiBold) }
                     }
                 },
-                leadingContent = { Icon(when (event.category) {
+                leadingContent = { AppIcon(when (event.category) {
                     CalendarCategory.ISSUANCE -> Icons.Outlined.AccountBalance
                     CalendarCategory.COUPON -> Icons.Outlined.Payments
                     CalendarCategory.MATURITY -> Icons.Outlined.EventAvailable
                 }, null, tint = event.category.color()) },
-                trailingContent = { Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, if (expanded) "Collapse details" else "Expand details") },
+                trailingContent = { AppIcon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, if (expanded) "Collapse details" else "Expand details") },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent), modifier = Modifier.clickable(onClick = toggle),
             )
             AnimatedVisibility(expanded) {
@@ -286,7 +286,7 @@ private fun CalendarEventTile(event: InvestmentCalendarEvent, expanded: Boolean,
 
                         Fact("Recorded applications", recorded.size.toString())
                         recorded.forEach { Fact(it.text("bondName"), "${it.text("status")} · ${money(it.optDouble("faceValue", 0.0), it.text("currency"))}") }
-                        Text(when (event.label) {
+                        AppText(when (event.label) {
                             "Book opens", "Book open" -> "Confirm the terms and submit your bid to your broker before the book closes."
                             "Book closes" -> "Confirm your bid with the broker before today’s closing deadline."
                             "Settlement" -> "Check allocation, cash debit, and your purchase record with your broker."
@@ -295,7 +295,7 @@ private fun CalendarEventTile(event: InvestmentCalendarEvent, expanded: Boolean,
                     } else {
                         Fact("Date", event.date.toString())
                         Fact("Broker", event.record.text("broker").ifBlank { "—" })
-                        Text(if (event.category == CalendarCategory.COUPON) "${event.record.text("scheduleConfidence").ifBlank { "Estimated" }} schedule · Expected net coupon; confirm receipt with your broker."
+                        AppText(if (event.category == CalendarCategory.COUPON) "${localized(event.record.text("scheduleConfidence").ifBlank { "Estimated" })} schedule · Expected net coupon; confirm receipt with your broker."
                             else "Expected principal repayment; confirm receipt with your broker.", style = MaterialTheme.typography.bodySmall)
                     }
                 }
