@@ -348,3 +348,13 @@ These checks verify container installation, UI functionality and masking policy,
 - Android debug assembly, Android lint, iOS device Kotlin compilation and the native Xcode simulator build passed.
 - On iPhone 16 Pro / iOS 18.6, using fictitious data from a localhost fixture: verified the French portfolio and calendar layouts, Settings → Appearance → Language, immediate English/French switching, and retention of the selected language after terminating and relaunching the app. No production account was used.
 - Checked the shared catalog for duplicate keys and coverage of all 251 bundled education blocks. Original PDF contents, company names and API identifiers stay unchanged.
+
+## Capture-only masked iPhone backdrop — 25 October 2026
+
+The native capture host now preserves a redacted UIKit image beneath the secure live Compose content. Simulator checks with fictitious holdings showed visible live amounts with manual Hide numbers off, while the debug-only backing-image inspection showed masked amounts, a hidden allocation chart, and normal navigation/Settings. The backing image continued to follow navigation and model updates. No screenshot-export action was added.
+
+A signed build was installed on the connected iPhone 12 Pro running iOS 18.7.1. Xcode’s real-device screenshot at 05:19 showed the portfolio interface, masked financial values and the visible-numbers eye state, rather than a blank screen. The test used temporary launch arguments and read-only fictitious portfolio data. Evidence: `docs/screenshots/iphone-capture-redaction.png` (ignored artifact). The user subsequently tested a physical-device screen recording with Hide numbers off and confirmed that numbers were masked as requested. The temporary test connection was cleared by relaunching without overrides.
+
+Final validation passed: 92 Android tests, 100 iOS tests, Android debug build and lint, and a signed physical-iPhone build.
+
+Privacy regressions cover layer redaction/restore, immutable captured pixels, secure-host readiness, recording without forcing the manual visibility preference, and opt-out/fallback behavior. Android’s existing screenshot blocking remains in place. The UIKit secure-canvas behavior remains undocumented and should be checked after iOS updates.
