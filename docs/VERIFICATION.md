@@ -407,3 +407,24 @@ Validation passed: 104 Android shared tests and 112 iOS shared tests (216 total)
 - Android debug assembly and lint pass; signed iPhone device build passes. Updated builds installed on both connected phones, preserving data.
 - Native accelerometer listeners are scoped to the resumed, unlocked, signed-in app. Settings includes a persisted opt-out with English/French copy. Capture masking remains independent.
 - Physical shake sensitivity still needs hands-on testing on the phones; synthetic sensor traces verify detection rules, not device motion in a person's hand.
+
+### Portfolio report export (2026-10-25)
+
+- Android host suite: 115 tests, zero failures. Added report cases cover gains/losses, missing quotes, empty portfolios, complete-history requirements, UTF-8/Unicode preservation in the embedded JSON, PDF cross-reference offsets, export failure, cancelled saves, no accidental deletion, and keeping the compact dashboard cache unchanged.
+- Synthetic English/French PDFs cover fifteen bond purchases over three years, three equity positions including a gain, a loss and an unpriced foreign-currency holding. Strict pypdf parsing and attachment extraction preserve all records; pdfplumber confirms all text stays within the page bounds. Poppler renders were visually checked, including long records, target tables, repeated headers and gain/loss colors. No private account data is used in fixtures.
+- Android debug assembly/lint and signed iPhone device compilation pass. Native save-picker behavior reuses the existing document download path; actual report saving to a user-selected location still needs hands-on verification on both phones. No account was deleted during testing.
+- Final report builds installed successfully on the connected Android phone and iPhone without clearing application data; both apps launched successfully.
+
+### Branded PDF redesign (2026-10-25)
+
+- Android host suite remains at 115 passing tests; debug assembly/lint and the signed iPhone device build pass.
+- English and French synthetic previews each contain 14 pages for the existing 15-bond/3-share fixture (previous layout: 15). Every page carries the app logo as a crisp vector. Final rendered pages were reviewed for branding, spacing, table alignment and pagination.
+- A separate French stress preview checks very long instrument/company names and amounts of 300 billion, with a trillion-RWF monthly target. Strict PDF parsing, embedded JSON extraction and text-bound checks pass for all normal and stress pages; stress summary pages were also visually inspected.
+- Final branded-report builds installed on both connected phones without clearing data; Android and iPhone launches succeeded.
+
+### Android previous-tab highlight (2026-10-25)
+
+- Added a bounded navigation-transition refresh for the experimental Android capture renderer. Selected route changes, including programmatic calendar navigation, request fresh masked/live frames for 900 ms; normal Android/iOS rendering uses no callback.
+- Android assembly/lint and all 115 shared host tests pass. Shared iPhone compilation passes. Updated Android app installed without clearing data.
+- The native capture test now uses the app's Scaffold/bottom-bar arrangement, dispatches a real tab tap, checks selected state, and compares the excluded live surface against ordinary navigation rendering. It also retains the financial masking, recording, input and opt-out checks. Earlier simpler fixtures passed but did not reproduce the customer's exact one-tab lag.
+- After the user unlocked the Android phone, the final native check passed in 12.115 seconds (one instrumentation test). A real tab tap selected the intended destination; the protected live navbar matched ordinary rendering after its transition. Financial screenshot masking, recording, touch handling and capture opt-out checks also passed. The earlier Dozing-device attempt remains an invalid readiness run. The fixture keeps only its own test window awake, and restores the original server preference afterward.
