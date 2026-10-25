@@ -89,7 +89,7 @@ fun PurchaseEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit
                 body.put("instrumentType", instrument).put("market", market).put("status", status).put("scheduleConfidence", confidence)
                 body.put("currency", body.text("currency").uppercase()).put("isin", body.text("isin").uppercase())
                 model.savePurchase(body, id, back)
-            }.onFailure { model.error = it.message ?: "Check the purchase details." }
+            }.onFailure { model.error = userErrorMessage(it, "Check the purchase details.") }
         }) { AppText(if (model.busy) "Saving…" else "Save purchase") } }
     }
 }
@@ -126,7 +126,7 @@ fun EquityEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit, 
                 require(body.getDouble("shares") % 1.0 == 0.0 && body.getDouble("shares") > 0) { "Enter a positive whole number of shares." }
                 body.put("grossConsideration", kotlin.math.round(gross * 100) / 100.0).put("totalCharges", kotlin.math.round(fees * 100) / 100.0).put("netAmountPayable", kotlin.math.round((gross + fees) * 100) / 100.0)
                 model.saveEquity(body, back)
-            }.onFailure { model.error = it.message ?: "Check the share details." }
+            }.onFailure { model.error = userErrorMessage(it, "Check the share details.") }
         }) { AppText("Save share purchase") } }
     }
 }
