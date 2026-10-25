@@ -2,6 +2,14 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Something went wrong. Please try again." to "Une erreur s’est produite. Veuillez réessayer.",
+    "Could not connect. Check your connection and try again." to "Connexion impossible. Vérifiez votre connexion et réessayez.",
+    "Email or password is incorrect." to "L’adresse e-mail ou le mot de passe est incorrect.",
+    "You do not have permission to do that." to "Vous n’avez pas l’autorisation d’effectuer cette action.",
+    "Check the details and try again." to "Vérifiez les informations et réessayez.",
+    "This item already exists. Refresh and try again." to "Cet élément existe déjà. Actualisez et réessayez.",
+    "Too many attempts. Please wait and try again." to "Trop de tentatives. Veuillez patienter et réessayer.",
+    "The service is temporarily unavailable. Please try again later." to "Le service est temporairement indisponible. Veuillez réessayer plus tard.",
     "Could not read this purchase PDF. Use a BNR result, share purchase contract or BK Capital statement, up to 10 MB and 10 pages." to "Impossible de lire ce PDF d’achat. Utilisez un résultat BNR, un contrat d’achat d’actions ou un relevé BK Capital, de 10 Mo et 10 pages maximum.",
     "Numbers protected by capture protection. Change in Settings" to "Chiffres protégés contre la capture. Modifier dans Réglages",
     "Show financial numbers" to "Afficher les montants",
