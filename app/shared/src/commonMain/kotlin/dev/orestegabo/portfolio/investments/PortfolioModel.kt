@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.io.encoding.Base64
 import kotlin.random.Random
 import kotlin.time.TimeSource
@@ -500,6 +502,36 @@ class PortfolioModel(
         }
     }
 
+    var reportProgress by mutableStateOf<String?>(null)
+        private set
+    fun exportPortfolioReport(actions: NativeActions) = action {
+        val account = requireNotNull(user)
+        val language = AppLanguage.code
+        val target = monthlyInvestmentTarget
+        val date = Today
+        try {
+            reportProgress = "Loading all investment years…"
+            // Export requires complete, fresh records. Do not inflate the dashboard's compact cache.
+            val bonds = api.request("/api/bonds/purchases").rows("purchases")
+            val shares = api.request("/api/bonds/equities").rows("holdings")
+            val files = api.request("/api/bonds/documents").rows("documents")
+            val missing = try { api.request("/api/bonds/statement-items").rows("items") }
+            catch (failure: ApiException) {
+                if (failure.status == 404 || failure.status == 405) emptyList() else throw failure
+            }
+            val latestQuotes = if (shares.isEmpty()) null else try { api.request("/api/bonds/rse/quotes?kind=equities") }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) { if (failure is ApiException && failure.status == 401) throw failure; null }
+            reportProgress = "Building your report…"
+            val bytes = withContext(Dispatchers.Default) {
+                generatePortfolioReport(PortfolioReportData(PortfolioSnapshot(bonds, shares, files), latestQuotes,
+                    missing, account.text("email"), target, date, language))
+            }
+            reportProgress = "Choose where to save the PDF"
+            if (actions.savePdf("Gabo-Portfolio-$date.pdf", bytes)) message = "Portfolio report saved."
+        } finally { reportProgress = null }
+    }
+
     fun deleteAccount(password: String) = action {
         check(canDeleteAccount) { "Only invited accounts can be deleted here." }
         val response = api.request("/api/bonds/auth/account", "DELETE", JsonRecord().put("password", password))
@@ -536,6 +568,7 @@ class PortfolioModel(
         portfolio = PortfolioSnapshot()
         statementItems = emptyList()
         pdfImportProgress = null
+        reportProgress = null
         historyComplete = false
         market = null
         quotes = null
