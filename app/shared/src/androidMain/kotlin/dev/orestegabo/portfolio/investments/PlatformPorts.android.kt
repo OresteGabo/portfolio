@@ -26,6 +26,8 @@ actual fun rememberServerSettings(): ServerSettings {
     val context = LocalContext.current.applicationContext
     return remember(context) { object : ServerSettings {
         private val prefs = context.getSharedPreferences("connection", Context.MODE_PRIVATE)
+        override fun readScreenCaptureAllowed() = prefs.getBoolean(SCREEN_CAPTURE_ALLOWED_KEY, false)
+        override fun writeScreenCaptureAllowed(allowed: Boolean) { prefs.edit().putBoolean(SCREEN_CAPTURE_ALLOWED_KEY, allowed).apply() }
         override fun readNumbersHidden() = prefs.getBoolean("numbersHidden", false)
         override fun writeNumbersHidden(hidden: Boolean) { prefs.edit().putBoolean("numbersHidden", hidden).apply() }
         override fun forgetMonthlyTarget(account: String) { prefs.edit().remove("monthlyTarget:$account").apply() }
@@ -33,6 +35,8 @@ actual fun rememberServerSettings(): ServerSettings {
         override fun writeMonthlyTarget(account: String, amount: Long) { prefs.edit().putLong("monthlyTarget:$account", amount).apply() }
         override fun readChartStyle(): String? = prefs.getString("chartStyle", null)
         override fun writeChartStyle(style: String) { prefs.edit().putString("chartStyle", style).apply() }
+        override fun readLanguage() = prefs.getString("language", null)
+        override fun writeLanguage(language: String) { prefs.edit().putString("language", language).apply() }
         override fun readTheme(): String? = prefs.getString("theme", null)
         override fun writeTheme(theme: String) { prefs.edit().putString("theme", theme).apply() }
         override fun readOrigin(): String? = prefs.getString("origin", null)
@@ -87,7 +91,7 @@ private class AndroidActions(private val context: Context) : NativeActions {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     }
     override fun shareText(text: String) {
-        context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), "Share invitation"))
+        context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), localized("Share invitation")))
     }
 }
 @Composable
