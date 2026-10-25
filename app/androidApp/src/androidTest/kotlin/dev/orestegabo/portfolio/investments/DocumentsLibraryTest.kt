@@ -116,7 +116,7 @@ class DocumentsLibraryTest {
                     }
                 }
                 await("Documents"); click("Documents")
-                await("October Treasury Bond"); await("October 2026")
+                await("October Treasury Bond"); await("October 2026"); await("Logo: BNR")
                 screenshot("document-library-en.png")
                 click("Download October Treasury Bond")
                 assertEquals("bnr-confirmation.pdf", downloads.poll(5, TimeUnit.SECONDS))
@@ -125,11 +125,11 @@ class DocumentsLibraryTest {
                 click("October Treasury Bond")
                 assertTrue("Tapping the card expands its details", nodes().any { it.stateDescription?.toString() == "Expanded" })
                 click("Share contract")
-                await("Bank of Kigali share purchase")
+                await("Bank of Kigali share purchase"); await("Logo: Bank of Kigali")
                 assertNull("Category filter excludes bonds", find("October Treasury Bond"))
                 screenshot("document-library-shares.png")
                 scenario.onActivity { AppLanguage.select("fr") }
-                await("Fichiers enregistrés")
+                await("Fichiers enregistrés"); await("Logo : Bank of Kigali")
                 screenshot("document-library-fr.png")
             }
         } finally {
