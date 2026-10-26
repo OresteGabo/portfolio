@@ -83,3 +83,7 @@ htmlcov/
 # Do not ignore *.js, *.mjs, *.png or *.txt globally.
 # Keep bundled PDF/OCR runtime assets (bcmap, fonts, wasm, traineddata and licenses).
 # They are app dependencies, not local build outputs; fresh checkouts need them.
+
+# Local native push-provider configuration
+/app/androidApp/google-services.json
+**/AuthKey_*.p8

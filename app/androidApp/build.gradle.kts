@@ -3,7 +3,10 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeCompiler)
+    id("com.google.gms.google-services") version "4.5.0" apply false
 }
+
+if (file("google-services.json").exists()) apply(plugin = "com.google.gms.google-services")
 
 kotlin {
     compilerOptions {
@@ -11,6 +14,8 @@ kotlin {
     }
 }
 dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:35.1.0"))
+    implementation("com.google.firebase:firebase-messaging")
     implementation(project(":app:shared"))
 
     implementation(libs.androidx.activity.compose)

@@ -69,6 +69,8 @@ fun JsonRecord.terms(): BondTerms? = runCatching {
 @Composable
 fun InvestmentApp(model: PortfolioModel) {
     val selectionFeedback = LocalSelectionFeedback.current
+    var notificationScreen by rememberSaveable { mutableStateOf(false) }
+    var handledInboxRequest by rememberSaveable { mutableIntStateOf(0) }
     var tab by rememberSaveable { mutableStateOf("Portfolio") }
     var calendarFocus by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingIssueId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -93,8 +95,18 @@ fun InvestmentApp(model: PortfolioModel) {
     var chartStyle by rememberSaveable { mutableStateOf(preferences.readChartStyle()?.takeIf { it in listOf("area", "line", "bars") } ?: "area") }
     RefreshCapturedUi(tab, AppLanguage.code, theme, chartStyle, legalRoute)
     val dark = when (theme) { "light" -> false; "dark" -> true; else -> systemDark }
+    LaunchedEffect(model.user, model.locked, NativePushBridge.registration, NativePushBridge.allowed, AppLanguage.code) {
+        model.syncPushDevice()
+    }
+    LaunchedEffect(NativePushBridge.inboxRequest, model.user, model.locked) {
+        if(NativePushBridge.inboxRequest>handledInboxRequest && model.user!=null && !model.locked) {
+            tab="Stocks";notificationScreen=true;handledInboxRequest=NativePushBridge.inboxRequest
+        }
+    }
+    LaunchedEffect(NativePushBridge.updateRevision) { if(model.user!=null && !model.locked)model.refreshNotifications() }
+    LaunchedEffect(tab,model.user,model.locked) { if(tab=="Stocks" && model.user!=null && !model.locked)model.refreshNotifications() }
     LaunchedEffect(model.user) {
-        if (model.user == null) { missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; newPurchase = false; simulator = false; education = false }
+        if (model.user == null) { notificationScreen=false; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; newPurchase = false; simulator = false; education = false }
     }
     LaunchedEffect(model, model.messageRevision) {
         val revision = model.messageRevision
@@ -127,9 +139,9 @@ fun InvestmentApp(model: PortfolioModel) {
         else lightColorScheme(primary = BrandOlive, onPrimary = Color.White, primaryContainer = BrandCream, onPrimaryContainer = Ink, secondary = BrandOlive, secondaryContainer = BrandCream, onSecondaryContainer = Ink, background = Color(0xFFFAF8F2), surface = Color.White, onSurface = Ink)
     CompositionLocalProvider(LocalChartStyle provides chartStyle, LocalNumbersHidden provides model.numbersConcealed) {
     MaterialTheme(colorScheme = colors, typography = Typography()) {
-        val nested = legalRoute != null || missingDocuments || pendingEntry || importReview != null || investmentHistory || detail != null || editor != null || equityEditor != null || newPurchase || simulator || education
+        val nested = notificationScreen || legalRoute != null || missingDocuments || pendingEntry || importReview != null || investmentHistory || detail != null || editor != null || equityEditor != null || newPurchase || simulator || education
         val back = {
-            if (legalRoute != null) {
+            if (notificationScreen) { notificationScreen=false } else if (legalRoute != null) {
                 legalRoute = when {
                     legalRoute!!.startsWith("notices:") -> "notices"
                     legalRoute == "notices" -> "credits"
@@ -142,6 +154,7 @@ fun InvestmentApp(model: PortfolioModel) {
             }
         }
         val screenTitle = when {
+            notificationScreen -> "Price notifications"
             legalRoute != null -> legalTitle(legalRoute!!)
             missingDocuments -> "Missing documents"
             importReview?.text("kind") == "bond-issuance" -> "Review issuance"
@@ -178,6 +191,8 @@ fun InvestmentApp(model: PortfolioModel) {
                         if (nested) IconButton(onClick = back) { AppIcon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                         else Image(painterResource(Res.drawable.gabo_mark), localized("Gabo logo"), Modifier.padding(start = 16.dp, end = 4.dp).size(40.dp))
                     },
+                    actions = { if(tab=="Stocks" && !nested && model.user!=null && !model.locked)
+                        StockNotificationBell(model.unreadNotifications) { notificationScreen=true } },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
                 )
             },
@@ -195,7 +210,9 @@ fun InvestmentApp(model: PortfolioModel) {
                         NavigationBarItem(
                             selected = selected,
                             onClick = { if (!selected) { tab = destination.title; selectionFeedback() } },
-                            icon = { AppIcon(if (selected) destination.selectedIcon else destination.icon, contentDescription = null, modifier = Modifier.size(24.dp)) },
+                            icon = { BadgedBox(badge={ if(destination.title=="Stocks" && model.unreadNotifications>0) Badge {
+                                AppText(if(model.unreadNotifications>99) "99+" else model.unreadNotifications.toString())
+                            } }) { AppIcon(if (selected) destination.selectedIcon else destination.icon, contentDescription = null, modifier = Modifier.size(24.dp)) } },
                             label = { AppText(destination.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.secondaryContainer)
                         )
@@ -214,6 +231,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     legalRoute != null -> LegalScreen(legalRoute!!) { legalRoute = it }
                     model.locked -> UnlockScreen(model) { legalRoute = "hub" }
                     model.user == null -> SignInScreen(model) { legalRoute = "hub" }
+                    notificationScreen -> StockNotificationsScreen(model)
                     missingDocuments && importReview == null -> MissingDocumentsScreen(model, ::uploadMissing)
                     pendingEntry -> PendingBondScreen(model, pendingIssueId) { pendingEntry = false; pendingIssueId = null }
                     importReview?.text("kind") == "statement" -> StatementReviewScreen(model, importReview!!, ::uploadMissing)

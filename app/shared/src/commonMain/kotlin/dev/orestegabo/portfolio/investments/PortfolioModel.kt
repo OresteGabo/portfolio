@@ -98,6 +98,60 @@ class PortfolioModel(
         set(value) { messageText = value; messageRevision++ }
     var portfolio by mutableStateOf(PortfolioSnapshot())
         private set
+    var notifications by mutableStateOf<List<JsonRecord>>(emptyList())
+        private set
+    var unreadNotifications by mutableIntStateOf(0)
+        private set
+    var notificationNextBefore by mutableStateOf<String?>(null)
+        private set
+    var notificationsLoading by mutableStateOf(false)
+        private set
+    var notificationsError by mutableStateOf<String?>(null)
+        private set
+    private var notificationLoadedAt: TimeMark? = null
+    private var notificationGeneration = 0
+    private suspend fun fetchNotifications(more: Boolean = false) {
+        if(user==null || notificationsLoading)return
+        val account=user?.text("id");val revision=notificationGeneration
+        notificationsLoading=true
+        try {
+            val response=api.request("/api/bonds/notifications"+(if(more) "?before=${notificationNextBefore ?: return}" else ""))
+            if(revision!=notificationGeneration || account!=user?.text("id"))return
+            val rows=response.rows("notifications")
+            notifications=if(more)(notifications+rows).distinctBy { it.text("id") } else rows
+            unreadNotifications=response.optInt("unreadCount")
+            notificationNextBefore=response.text("nextBefore").takeIf { it.isNotBlank() && it!="null" }
+            notificationsError=null;notificationLoadedAt=clock.markNow()
+        } catch(cancelled: CancellationException) { throw cancelled }
+        catch(failure: Exception) {
+            if(revision==notificationGeneration) notificationsError=if(failure is ApiException && failure.status==404)
+                "Price notifications need the updated server." else "Notifications could not be loaded. Try again."
+        } finally { if(revision==notificationGeneration)notificationsLoading=false }
+    }
+    fun refreshNotifications() { if(user!=null && !locked)viewModelScope.launch { fetchNotifications() } }
+    fun moreNotifications() { if(user!=null && !locked)viewModelScope.launch { fetchNotifications(true) } }
+    fun readNotification(id: String) { viewModelScope.launch {
+        val revision=notificationGeneration
+        try {
+            api.request("/api/bonds/notifications/read","POST",JsonRecord().put("ids",JsonList(listOf(id))))
+            if(revision==notificationGeneration) {
+                val wasUnread=notifications.any { it.text("id")==id && !it.optBoolean("read") }
+                notifications=notifications.map { if(it.text("id")==id)JsonRecord(it.toString()).put("read",true) else it }
+                if(wasUnread)unreadNotifications=(unreadNotifications-1).coerceAtLeast(0)
+                notificationsError=null
+            }
+        } catch(cancelled: CancellationException) { throw cancelled }
+        catch(_: Exception) { if(revision==notificationGeneration)notificationsError="Could not mark this notification as read." }
+    } }
+    suspend fun syncPushDevice() {
+        if(user==null || locked)return
+        val registration=NativePushBridge.registration ?: return
+        try {
+            if(NativePushBridge.allowed) api.request("/api/bonds/notifications/devices","POST",JsonRecord(registration.toString()).put("language",AppLanguage.code))
+            else api.request("/api/bonds/notifications/devices/${registration.text("deviceId")}","DELETE")
+        } catch(cancelled: CancellationException) { throw cancelled }
+        catch(_: Exception) { /* A provider or older API must not block the portfolio. */ }
+    }
     var statementItems by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
     var historyComplete by mutableStateOf(false)
@@ -172,6 +226,7 @@ class PortfolioModel(
         if (expired) lock()
         if (locked && !automaticUnlockAttempted) automaticUnlockPending = true
         tryAutomaticUnlock()
+        if(user!=null && !locked && notificationLoadedAt?.elapsedNow()?.inWholeMilliseconds?.let { it<DATA_CACHE_MILLIS }!=true)refreshNotifications()
     }
     private fun tryAutomaticUnlock() {
         if (!automaticUnlockPending || !foreground || busy || !locked || !secureSignInEnabled || vault?.authenticating == true) return
@@ -281,6 +336,7 @@ class PortfolioModel(
             user = account
             loadInvestmentTarget()
             locked = false
+            fetchNotifications()
             if (!foreground) scheduleBackgroundLock()
         }
     }
@@ -361,6 +417,7 @@ class PortfolioModel(
         }
         historyComplete = overview == null
         if (portfolio.activeShares(Today).isNotEmpty()) refreshEquityQuotes()
+        fetchNotifications()
         privateDataLoadedAt = clock.markNow()
     }
 
@@ -577,7 +634,7 @@ class PortfolioModel(
     }
 
     fun logout() = action {
-        try { api.request("/api/bonds/auth/logout", "POST") }
+        try { api.request("/api/bonds/auth/logout", "POST", JsonRecord().apply { NativePushBridge.registration?.let { put("deviceId",it.text("deviceId")) } }) }
         finally {
             try { vault?.delete(origin) }
             finally { secureSignInEnabled = false; locked = false; api.clearSession(); clearPrivateData() }
@@ -587,6 +644,8 @@ class PortfolioModel(
     override fun onCleared() { backgroundLockJob?.cancel(); importedPdf = null; importedReview = null; vault?.lock(); api.close() }
 
     private fun clearPrivateData() {
+        notificationGeneration++;notifications=emptyList();unreadNotifications=0;notificationNextBefore=null
+        notificationsError=null;notificationsLoading=false;notificationLoadedAt=null
         backgroundLockJob?.cancel(); backgroundLockJob = null; backgroundedAt = null
         privateDataLoadedAt = null; marketLoadedAt = null
         privateDataAvailable = false

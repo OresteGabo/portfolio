@@ -79,6 +79,11 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                     }
                 }
             }
+            if (NativePushBridge.available) item { SettingsSection("Notifications") {
+                SettingsRow(Icons.Outlined.Notifications, "Phone notifications",
+                    if(NativePushBridge.allowed) "Enabled" else "Disabled",
+                    onClick=NativePushBridge::requestPermission)
+            } }
             item { SettingsSection("Privacy") {
                 SettingsRow(Icons.Outlined.ScreenLockPortrait, "Protect screenshots & recordings",
                     captureProtectionDescription,
