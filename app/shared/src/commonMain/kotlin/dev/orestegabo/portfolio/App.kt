@@ -30,7 +30,7 @@ fun App() {
     val selectionFeedback = rememberSelectionFeedback()
     val actions = rememberNativeActions()
     val vault = rememberSecureSignIn()
-    val model = viewModel { PortfolioModel(settings, vault = vault) }
+    val model = viewModel { PortfolioModel(settings, vault = vault, initialOrigin = developmentApiOrigin()) }
     val haptics = LocalHapticFeedback.current
     NativePrivacyCover(protectCaptures = model.captureProtectionEnabled)
     var privacyCover by remember { mutableStateOf(false) }
