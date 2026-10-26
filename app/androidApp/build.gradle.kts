@@ -47,7 +47,12 @@ android {
         }
     }
     buildTypes {
+        debug {
+            val origin = providers.gradleProperty("developmentApiOrigin").orElse("").get()
+            buildConfigField("String", "DEVELOPMENT_API_ORIGIN", "\"${origin.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
+        }
         release {
+            buildConfigField("String", "DEVELOPMENT_API_ORIGIN", "\"\"")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
