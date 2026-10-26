@@ -51,5 +51,36 @@ class StockNotificationsTest {
             val count=notificationFetches
             model.refreshNotifications();advanceUntilIdle();assertEquals(count,notificationFetches)
         } finally { store.clear();Dispatchers.resetMain() }
+    }    @Test fun failedPreferenceSaveKeepsAcknowledgedValueAndLateResponseCannotRestoreSignedOutData() = runTest {
+        val dispatcher=StandardTestDispatcher(testScheduler);Dispatchers.setMain(dispatcher)
+        val store=ViewModelStore();var fail=true
+        val categories="""{"prices":true,"coupons":true,"maturities":true,"subscriptions":true,"pending":true,"documents":true,"targets":true,"reports":true,"security":true}"""
+        fun prefs(auto: Boolean)="""{"configured":true,"categories":$categories,"autoCoupon":$auto,"monthlyTarget":200000}"""
+        val model=PortfolioModel(object: ServerSettings {
+            override fun readOrigin()="https://synthetic.example.test"
+            override fun writeOrigin(origin: String) {}
+        },assets={ "[]".encodeToByteArray() },apiFactory={ origin -> PortfolioApi(origin,MockEngine(MockEngineConfig().apply {
+            this.dispatcher=dispatcher
+            addHandler { request -> when(request.url.encodedPath) {
+                "/api/bonds/auth/session" -> respond("""{"authenticated":true,"user":{"id":"synthetic"}}""")
+                "/api/bonds/notifications/preferences" -> if(request.method==HttpMethod.Put) {
+                    if(fail)respond("{}",HttpStatusCode.ServiceUnavailable)
+                    else { kotlinx.coroutines.delay(1000);respond(prefs(true)) }
+                } else respond(prefs(false))
+                "/api/bonds/notifications" -> respond("""{"notifications":[],"unreadCount":0}""")
+                else -> respond("{}")
+            } }
+        })) })
+        store.put("model",model)
+        try {
+            advanceUntilIdle();assertTrue(model.notificationSettingsAvailable)
+            model.updateNotificationPreference(enabled=true);advanceUntilIdle()
+            assertFalse(model.notificationPreferences.optBoolean("autoCoupon"));assertNotNull(model.error)
+            fail=false;model.updateNotificationPreference(enabled=true);runCurrent()
+            model.logout();runCurrent();advanceUntilIdle()
+            assertNull(model.user);assertFalse(model.notificationSettingsAvailable)
+            assertFalse(model.notificationPreferences.has("autoCoupon"))
+        } finally { store.clear();Dispatchers.resetMain() }
     }
+
 }

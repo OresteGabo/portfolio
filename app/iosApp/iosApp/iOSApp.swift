@@ -17,6 +17,10 @@ import Shared
 final class PricePushDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     private var enabled: Bool { (Bundle.main.object(forInfoDictionaryKey: "GaboPushEnabled") as? String) == "YES" }
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        let defaults = UserDefaults.standard
+        let id = defaults.string(forKey: "portfolio.push.deviceId") ?? UUID().uuidString.lowercased()
+        defaults.set(id, forKey: "portfolio.push.deviceId")
+        NativePushBridge.shared.identify(deviceId: id, platform: "ios")
         guard enabled else { return true }
         UNUserNotificationCenter.current().delegate = self
         refreshPermission()

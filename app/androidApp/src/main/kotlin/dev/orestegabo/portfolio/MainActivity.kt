@@ -29,11 +29,12 @@ class MainActivity : FragmentActivity() {
                 pushPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
             } else startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,packageName))
         }
-        if(!configured)return
-        if(Build.VERSION.SDK_INT>=26)getSystemService(NotificationManager::class.java).createNotificationChannel(
-            NotificationChannel("price_changes",if(resources.configuration.locales[0].language=="fr") "Cours des actions" else "Share price changes",NotificationManager.IMPORTANCE_DEFAULT))
         val prefs=getSharedPreferences("portfolio.push",MODE_PRIVATE)
         val id=prefs.getString("deviceId",null) ?: UUID.randomUUID().toString().also { prefs.edit().putString("deviceId",it).apply() }
+        NativePushBridge.identify(id,"android")
+        if(!configured)return
+        if(Build.VERSION.SDK_INT>=26)getSystemService(NotificationManager::class.java).createNotificationChannel(
+            NotificationChannel("price_changes",if(resources.configuration.locales[0].language=="fr") "Notifications du portefeuille" else "Portfolio updates",NotificationManager.IMPORTANCE_DEFAULT))
         prefs.getString("token",null)?.let { NativePushBridge.register(id,"android",it,"production") }
         FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
             prefs.edit().putString("token",token).apply();NativePushBridge.register(id,"android",token,"production")

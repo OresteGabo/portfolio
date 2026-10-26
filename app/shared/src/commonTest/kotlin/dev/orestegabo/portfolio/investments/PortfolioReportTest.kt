@@ -50,6 +50,15 @@ class PortfolioReportTest {
         assertFalse(archive.has("session"))
         assertTrue(pdf.contains("Objectifs d'investissement"))
     }
+    @Test fun couponReceiptsKeepManualAndAutomaticEvidenceInTheReportArchive() {
+        val receipts=listOf(JsonRecord().put("purchaseId","bond-1").put("dueDate","2026-10-25").put("amount",68400).put("received",true).put("method","manual"),
+            JsonRecord().put("purchaseId","bond-2").put("dueDate","2026-10-25").put("amount",68400).put("received",false).put("method","manual"))
+        val pdf=generatePortfolioReport(reportFixture().copy(couponReceipts=receipts)).decodeToString()
+        assertTrue(pdf.contains("Coupon receipts"));assertTrue(pdf.contains("Not received"))
+        val attachment=pdf.substringAfter("/Subtype /application#2Fjson /Length ").substringAfter("stream\n").substringBefore("\nendstream")
+        assertEquals(2,JsonRecord(attachment).rows("couponReceipts").size)
+        assertFalse(JsonRecord(attachment).rows("couponReceipts").last().optBoolean("received"))
+    }
     @Test fun emptyAndUnpricedReportsRemainValidAndCompactOverviewIsRejected() {
         val empty = reportFixture().copy(snapshot = PortfolioSnapshot(), quotes = null)
         assertTrue(generatePortfolioReport(empty).decodeToString().contains("No investments recorded yet."))

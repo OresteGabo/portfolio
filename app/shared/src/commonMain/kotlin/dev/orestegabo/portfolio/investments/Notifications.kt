@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,6 +28,11 @@ import androidx.compose.ui.unit.dp
 
 /** Native delivery only; accounts, unread state and all financial calculations live in Spring. */
 object NativePushBridge {
+    var deviceId: String=""
+        private set
+    var platform: String=""
+        private set
+    fun identify(deviceId: String,platform: String) { this.deviceId=deviceId;this.platform=platform }
     var registration by mutableStateOf<JsonRecord?>(null)
         private set
     var available by mutableStateOf(false)
@@ -61,7 +66,7 @@ fun NotificationBell(unread: Int, open: () -> Unit) {
 }
 
 @Composable
-fun NotificationsScreen(model: PortfolioModel, openStocks: () -> Unit) {
+fun NotificationsScreen(model: PortfolioModel, openStocks: () -> Unit, openNotification: (JsonRecord) -> Unit) {
     LaunchedEffect(Unit) { model.refreshNotifications() }
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         if(model.notifications.isNotEmpty()) item {
@@ -94,6 +99,10 @@ fun NotificationsScreen(model: PortfolioModel, openStocks: () -> Unit) {
                 secondaryAction=if(enablePush) openStocks else null)
         }
         items(model.notifications,key={ it.text("id") }) { item ->
+            if(item.text("kind").isNotBlank() && item.text("kind")!="prices") {
+                GeneralNotificationCard(model,item,openNotification)
+                return@items
+            }
             var expanded by rememberSaveable(item.text("id")) { mutableStateOf(false) }
             val up=item.optDouble("impact")>=0
             val color=if(up) androidx.compose.ui.graphics.Color(0xFF32845B) else MaterialTheme.colorScheme.error
@@ -174,6 +183,65 @@ private fun NotificationEmptyCard(
                 AppText(actionLabel,textAlign=TextAlign.Center)
             }
             if(secondaryLabel!=null && secondaryAction!=null) TextButton(onClick=secondaryAction) { AppText(secondaryLabel) }
+        }
+    }
+}
+
+
+internal fun JsonRecord.withDeviceIdentity(): JsonRecord = apply {
+    if(NativePushBridge.deviceId.isNotBlank())put("deviceId",NativePushBridge.deviceId).put("platform",NativePushBridge.platform)
+}
+
+@Composable
+private fun GeneralNotificationCard(model: PortfolioModel,item: JsonRecord,open: (JsonRecord) -> Unit) {
+    val kind=item.text("kind")
+    val received=if(kind=="coupons") model.couponReceipt(item.text("purchaseId"),item.text("dueDate"))?.optBoolean("received") ?: item.optBoolean("received") else false
+    val automatic=(model.couponReceipt(item.text("purchaseId"),item.text("dueDate"))?.text("method") ?: item.text("receiptMethod"))=="automatic"
+    val title=when(kind) {
+        "coupons" -> if(received) "Coupon received" else if(item.text("stage")=="soon") "Upcoming coupon" else "Coupon due"
+        "maturities" -> "Bond maturity"
+        "subscriptions" -> if(item.text("stage")=="closing") "Subscriptions closing" else "Subscriptions open"
+        "pending" -> "Purchase awaiting confirmation"
+        "documents" -> "Missing purchase document"
+        "targets" -> "Monthly target reached"
+        "reports" -> "Portfolio report saved."
+        "security" -> "New device signed in"
+        else -> "Notifications"
+    }
+    val icon=when(kind) {
+        "coupons" -> Icons.Outlined.Payments
+        "maturities" -> Icons.Outlined.AccountBalance
+        "subscriptions" -> Icons.Outlined.CalendarMonth
+        "pending" -> Icons.Outlined.HourglassEmpty
+        "documents","reports" -> Icons.Outlined.Description
+        "targets" -> Icons.Outlined.Flag
+        "security" -> Icons.Outlined.Security
+        else -> Icons.Outlined.Notifications
+    }
+    Card(onClick={ model.readNotification(item.text("id")) },colors=CardDefaults.cardColors(
+        containerColor=if(item.optBoolean("read"))MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.secondaryContainer)) {
+        Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement=Arrangement.spacedBy(12.dp),verticalAlignment=Alignment.CenterVertically) {
+                AppIcon(icon,null,Modifier.size(26.dp))
+                Column(Modifier.weight(1f)) {
+                    AppText(title,fontWeight=FontWeight.SemiBold)
+                    AppText(item.text("date"),style=MaterialTheme.typography.labelSmall)
+                }
+            }
+            if(item.text("title").isNotBlank())AppText(displayRecordValue(item.text("title")),style=MaterialTheme.typography.bodyMedium)
+            if(item.text("dueDate").isNotBlank())AppText(item.text("dueDate"),style=MaterialTheme.typography.bodyMedium)
+            if(item.has("amount"))FinancialText(money(item.optDouble("amount"),item.text("currency").ifBlank { "RWF" }),style=MaterialTheme.typography.titleMedium)
+            if(kind=="targets")AppText(item.text("month"),style=MaterialTheme.typography.bodySmall)
+            if(kind=="security")AppText(if(item.text("platform")=="ios") "iPhone" else "Android",style=MaterialTheme.typography.bodyMedium)
+            if(item.optBoolean("resolved"))AppText("Resolved",style=MaterialTheme.typography.labelMedium)
+            else if(kind=="coupons" && item.text("dueDate")<=model.notificationDate.toString()) {
+                if(received) {
+                    AppText(if(automatic) "Marked automatically" else "Confirmed by you",style=MaterialTheme.typography.labelMedium)
+                    TextButton(enabled=!model.busy,onClick={ model.confirmCoupon(item.text("purchaseId"),item.text("dueDate"),false) }) { AppText("Mark not received") }
+                } else Button(enabled=!model.busy,onClick={ model.confirmCoupon(item.text("purchaseId"),item.text("dueDate")) }) { AppText("Confirm received") }
+            } else TextButton(onClick={ model.readNotification(item.text("id"));open(item) }) {
+                AppText(when(item.text("action")) { "calendar","coupon" -> "View calendar";"purchase" -> "Upload confirmation";"documents" -> "View missing documents"; else -> "Open settings" })
+            }
         }
     }
 }

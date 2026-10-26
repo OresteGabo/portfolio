@@ -12,6 +12,7 @@ internal data class PortfolioReportData(
     val monthlyTarget: Long,
     val today: LocalDate,
     val language: String,
+    val couponReceipts: List<JsonRecord>? = null,
 )
 
 /** Uses the same valuation and contribution rules as the dashboard; never a truncated preview. */
@@ -67,6 +68,17 @@ internal fun generatePortfolioReport(data: PortfolioReportData): ByteArray {
         "Date des cours : ${quoteDate.ifBlank { "indisponible" }}. Les gains latents incluent les frais d'achat enregistrés. Produits de vente, gains réalisés, dividendes, liquidités, dettes et frais de vente futurs ne sont pas calculés. Les coupons sont des estimations annuelles, pas des revenus reçus. Le capital obligataire n'est pas une valeur de marché."))
     if (data.quotes?.optJSONObject("source")?.let { it.optBoolean("stale") || it.text("status") == "error" } == true)
         pdf.paragraph(t("Available prices may be stale. Check the quote date before relying on this estimate.", "Les cours disponibles peuvent être anciens. Vérifiez leur date avant de vous fier à cette estimation."))
+    data.couponReceipts?.let { receipts ->
+        pdf.newPage()
+        pdf.heading(t("Coupon receipts", "Réceptions des coupons"), large = true)
+        pdf.paragraph(t("Receipts reflect manual confirmations or automatic marking, not bank verification. Due dates use Rwanda time.",
+            "Les réceptions sont confirmées manuellement ou marquées automatiquement, sans vérification bancaire. Les échéances suivent l'heure du Rwanda."))
+        if(receipts.isEmpty())pdf.paragraph(t("No coupon receipts recorded.", "Aucune réception de coupon enregistrée."))
+        else pdf.table(listOf(t("Due date", "Échéance"),t("Bond", "Obligation"),t("Net amount", "Montant net"),t("Status", "Statut")),
+            receipts.map { receipt -> listOf(receipt.text("dueDate"),snapshot.purchases.firstOrNull { it.text("id")==receipt.text("purchaseId") }?.text("bondName") ?: receipt.text("purchaseId"),
+                cash(receipt.optDouble("amount"),receipt.text("currency").ifBlank { "RWF" }),if(!receipt.optBoolean("received"))t("Not received","Non reçu") else if(receipt.text("method")=="automatic")t("Automatic","Automatique") else t("Confirmed","Confirmé")) },
+            listOf(95.0,160.0,145.0,123.0))
+    }
     pdf.newPage()
     pdf.heading(t("Shares: gains and losses", "Actions : gains et pertes"), large = true)
     val positions = snapshot.valuedShares(data.today, data.quotes).sortedWith(compareBy<ValuedSharePosition> { it.position.currency }.thenByDescending { it.gainLoss ?: -Double.MAX_VALUE })
@@ -143,7 +155,7 @@ internal fun generatePortfolioReport(data: PortfolioReportData): ByteArray {
         t("Date", "Date") to row.text("date"), t("Amount", "Montant") to cash(row.optDouble("amount")),
         t("Contract", "Contrat") to row.text("contractNote"), t("Record ID", "Identifiant") to row.text("id"))) }
     val archive = JsonRecord().put("format", "gabo-portfolio-report-v1").put("generatedOn", data.today.toString())
-        .put("email", data.email).put("monthlyTargetRwf", data.monthlyTarget).put("targetBasis", "current-setting-not-historical")
+        .put("couponReceipts", data.couponReceipts?.let(::JsonList)).put("email", data.email).put("monthlyTargetRwf", data.monthlyTarget).put("targetBasis", "current-setting-not-historical")
         .put("purchases", JsonList(snapshot.purchases)).put("holdings", JsonList(snapshot.holdings))
         .put("documents", JsonList(snapshot.documents)).put("missingStatementItems", JsonList(data.statementItems))
     return pdf.finish(archive.toString())

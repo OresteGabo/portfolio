@@ -79,10 +79,12 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                     }
                 }
             }
-            if (NativePushBridge.available) item { SettingsSection("Notifications") {
-                SettingsRow(Icons.Outlined.Notifications, "Phone notifications",
-                    if(NativePushBridge.allowed) "Enabled" else "Disabled",
-                    onClick=NativePushBridge::requestPermission)
+            item { SettingsSection("Notifications") {
+                SettingsRow(Icons.Outlined.Notifications, "Notification preferences", "Categories & coupon receipts", onClick={ dialog="notifications" })
+                if(NativePushBridge.available) {
+                    SettingsDivider()
+                    SettingsRow(Icons.Outlined.PhoneIphone, "Phone notifications",if(NativePushBridge.allowed) "Enabled" else "Disabled",onClick=NativePushBridge::requestPermission)
+                }
             } }
             item { SettingsSection("Privacy") {
                 SettingsRow(Icons.Outlined.ScreenLockPortrait, "Protect screenshots & recordings",
@@ -221,6 +223,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 AppText(if (dialog == "privacy") "PDFs are read on your device. Saving a purchase uploads its PDF to your private Documents. Review the figures before confirming."
                     else "Your phone’s password manager can fill your login. Enable Password AutoFill in your phone’s settings to use saved passwords.\n\nSecure sign-in is separate: it lets you reopen this app with device authentication without typing your password.")
             }, confirmButton = { TextButton(onClick = { dialog = null }) { AppText("Done") } })
+        if(dialog=="notifications") NotificationPreferencesDialog(model) { dialog=null }
         if (dialog == "report") AlertDialog(onDismissRequest = { dialog = null },
             title = { AppText("Portfolio report") },
             text = { AppText("Export all bonds, shares, estimated gains and losses, and target progress. The PDF includes your financial figures even when Hide numbers is on. Original PDFs must be downloaded separately.") },

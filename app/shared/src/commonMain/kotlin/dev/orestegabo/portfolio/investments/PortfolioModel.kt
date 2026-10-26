@@ -98,6 +98,57 @@ class PortfolioModel(
         set(value) { messageText = value; messageRevision++ }
     var portfolio by mutableStateOf(PortfolioSnapshot())
         private set
+    var notificationPreferences by mutableStateOf(JsonRecord())
+        private set
+    var notificationSettingsAvailable by mutableStateOf(false)
+        private set
+    var notificationSettingsSaving by mutableStateOf(false)
+        private set
+    var notificationDate by mutableStateOf(Today)
+        private set
+    var couponReceipts by mutableStateOf<List<JsonRecord>>(emptyList())
+        private set
+    var couponTrackingAvailable by mutableStateOf(false)
+        private set
+    private suspend fun fetchNotificationSettings() {
+        val revision=notificationGeneration;val account=user?.text("id")
+        try {
+            var value=api.request("/api/bonds/notifications/preferences")
+            if(revision!=notificationGeneration || account!=user?.text("id") || !value.has("categories"))return
+            if(!value.optBoolean("configured")) value=api.request("/api/bonds/notifications/preferences","PUT",JsonRecord().put("monthlyTarget",monthlyInvestmentTarget))
+            if(revision!=notificationGeneration || account!=user?.text("id"))return
+            notificationPreferences=value;notificationSettingsAvailable=true
+            value.text("monthlyTarget").toLongOrNull()?.takeIf(::validInvestmentTarget)?.let {
+                monthlyInvestmentTarget=it;targetAccount()?.let { account -> settings.writeMonthlyTarget(account,it) }
+            }
+        } catch(cancelled: CancellationException) { throw cancelled }
+        catch(_: Exception) { /* Older APIs still support their existing inbox and portfolio. */ }
+    }
+    fun updateNotificationPreference(category: String? = null,enabled: Boolean) {
+        if(!notificationSettingsAvailable || notificationSettingsSaving || user==null || locked)return
+        val revision=notificationGeneration
+        viewModelScope.launch {
+            notificationSettingsSaving=true
+            try {
+                val change=JsonRecord()
+                if(category==null)change.put("autoCoupon",enabled)
+                else {
+                    val categories=JsonRecord(notificationPreferences.optJSONObject("categories")?.toString() ?: "{}")
+                    categories.put(category,enabled);change.put("categories",categories)
+                }
+                val saved=api.request("/api/bonds/notifications/preferences","PUT",change)
+                if(revision==notificationGeneration) { notificationPreferences=saved;fetchNotifications() }
+            } catch(cancelled: CancellationException) { throw cancelled }
+            catch(_: Exception) { if(revision==notificationGeneration)error="Notification settings could not be saved." }
+            finally { if(revision==notificationGeneration)notificationSettingsSaving=false }
+        }
+    }
+    fun confirmCoupon(purchaseId: String,dueDate: String,received: Boolean=true) = action {
+        val result=api.request("/api/bonds/notifications/coupons","POST",JsonRecord().put("purchaseId",purchaseId).put("dueDate",dueDate).put("received",received))
+        couponReceipts=result.rows("receipts");couponTrackingAvailable=true
+        fetchNotifications()
+    }
+    fun couponReceipt(purchaseId: String,dueDate: String)=couponReceipts.firstOrNull { it.text("purchaseId")==purchaseId && it.text("dueDate")==dueDate }
     var notifications by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
     var unreadNotifications by mutableIntStateOf(0)
@@ -115,7 +166,15 @@ class PortfolioModel(
         val account=user?.text("id");val revision=notificationGeneration
         notificationsLoading=true
         try {
+            if(!more)fetchNotificationSettings()
             val response=api.request("/api/bonds/notifications"+(if(more) "?before=${notificationNextBefore ?: return}" else ""))
+            if(revision!=notificationGeneration || account!=user?.text("id"))return
+            notificationDate=calendarDate(response.text("serverDate")) ?: Today
+            try {
+                val receipts=api.request("/api/bonds/notifications/coupons")
+                if(revision==notificationGeneration && receipts.has("receipts")) { couponReceipts=receipts.rows("receipts");couponTrackingAvailable=true }
+            } catch(cancelled: CancellationException) { throw cancelled }
+            catch(_: Exception) { }
             if(revision!=notificationGeneration || account!=user?.text("id"))return
             val rows=response.rows("notifications")
             notifications=if(more)(notifications+rows).distinctBy { it.text("id") } else rows
@@ -145,6 +204,10 @@ class PortfolioModel(
     } }
     suspend fun syncPushDevice() {
         if(user==null || locked)return
+        try {
+            if(NativePushBridge.deviceId.isNotBlank())api.request("/api/bonds/notifications/session-device","POST",JsonRecord().withDeviceIdentity())
+        } catch(cancelled: CancellationException) { throw cancelled }
+        catch(_: Exception) { }
         val registration=NativePushBridge.registration ?: return
         try {
             if(NativePushBridge.allowed) api.request("/api/bonds/notifications/devices","POST",JsonRecord(registration.toString()).put("language",AppLanguage.code))
@@ -171,6 +234,15 @@ class PortfolioModel(
         val account = requireNotNull(targetAccount())
         settings.writeMonthlyTarget(account, amount)
         monthlyInvestmentTarget = amount
+        val revision=notificationGeneration
+        viewModelScope.launch {
+            try {
+                val saved=api.request("/api/bonds/notifications/preferences","PUT",JsonRecord().put("monthlyTarget",amount))
+                if(revision==notificationGeneration)notificationPreferences=saved
+            }
+            catch(cancelled: CancellationException) { throw cancelled }
+            catch(_: Exception) { if(revision==notificationGeneration)error="Target saved on this device. Server sync failed." }
+        }
     }
     fun monthlyTargetProgress(month: LocalDate = Today): MonthlyInvestmentProgress? =
         if (privateDataAvailable) monthlyInvestmentProgress(portfolio, month, monthlyInvestmentTarget, Today) else null
@@ -319,7 +391,7 @@ class PortfolioModel(
             if (account == null) {
                 api.clearSession()
                 try {
-                    account = api.request("/api/bonds/auth/login", "POST", JsonRecord().put("email", email).put("password", password)).getJSONObject("user")
+                    account = api.request("/api/bonds/auth/login", "POST", JsonRecord().put("email", email).put("password", password).withDeviceIdentity()).getJSONObject("user")
                 } catch (failure: ApiException) {
                     if (failure.status == 401 || failure.status == 403) {
                         storage.delete(origin); secureSignInEnabled = false; locked = false
@@ -367,7 +439,7 @@ class PortfolioModel(
         onAuthenticated: suspend () -> Unit = {}) = action {
         val register = invitation.isNotBlank()
         val response = api.request("/api/bonds/auth/${if (register) "register" else "login"}", "POST",
-            JsonRecord().put("email", email.trim()).put("password", password).apply { if (register) put("invite", invitation.trim()) })
+            JsonRecord().put("email", email.trim()).put("password", password).withDeviceIdentity().apply { if (register) put("invite", invitation.trim()) })
         val account = response.getJSONObject("user")
         // Only submit the password-manager form after the server accepts these credentials.
         // Declining/failing a password save must not turn a successful login into a failed one.
@@ -608,13 +680,24 @@ class PortfolioModel(
             val latestQuotes = if (shares.isEmpty()) null else try { api.request("/api/bonds/rse/quotes?kind=equities") }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) { if (failure is ApiException && failure.status == 401) throw failure; null }
+            val receipts=try { api.request("/api/bonds/notifications/coupons").let { if(it.has("receipts")) it.rows("receipts") else null } }
+            catch(cancelled: CancellationException) { throw cancelled }
+            catch(_: Exception) { null }
             reportProgress = "Building your report…"
             val bytes = withContext(Dispatchers.Default) {
                 generatePortfolioReport(PortfolioReportData(PortfolioSnapshot(bonds, shares, files), latestQuotes,
-                    missing, account.text("email"), target, date, language))
+                    missing, account.text("email"), target, date, language, receipts))
             }
             reportProgress = "Choose where to save the PDF"
-            if (actions.savePdf("Gabo-Portfolio-$date.pdf", bytes)) message = "Portfolio report saved."
+            if (actions.savePdf("Gabo-Portfolio-$date.pdf", bytes)) {
+                message = "Portfolio report saved."
+                try {
+                    api.request("/api/bonds/notifications/report","POST",JsonRecord().put("date",date.toString())
+                        .put("exportId",Random.nextBytes(16).joinToString("") { (it.toInt() and 255).toString(16).padStart(2,'0') }))
+                    fetchNotifications()
+                } catch(cancelled: CancellationException) { throw cancelled }
+                catch(_: Exception) { /* Saving the report remains successful if its optional notice fails. */ }
+            }
         } finally { reportProgress = null }
     }
 
@@ -644,6 +727,8 @@ class PortfolioModel(
     override fun onCleared() { backgroundLockJob?.cancel(); importedPdf = null; importedReview = null; vault?.lock(); api.close() }
 
     private fun clearPrivateData() {
+        notificationPreferences=JsonRecord();notificationSettingsAvailable=false;notificationSettingsSaving=false
+        couponReceipts=emptyList();couponTrackingAvailable=false;notificationDate=Today
         notificationGeneration++;notifications=emptyList();unreadNotifications=0;notificationNextBefore=null
         notificationsError=null;notificationsLoading=false;notificationLoadedAt=null
         backgroundLockJob?.cancel(); backgroundLockJob = null; backgroundedAt = null

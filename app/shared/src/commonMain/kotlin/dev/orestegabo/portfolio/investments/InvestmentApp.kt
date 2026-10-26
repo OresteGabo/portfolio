@@ -69,6 +69,7 @@ fun JsonRecord.terms(): BondTerms? = runCatching {
 @Composable
 fun InvestmentApp(model: PortfolioModel) {
     val selectionFeedback = LocalSelectionFeedback.current
+    var notificationPurchase by remember { mutableStateOf<JsonRecord?>(null) }
     var notificationScreen by rememberSaveable { mutableStateOf(false) }
     var handledInboxRequest by rememberSaveable { mutableIntStateOf(0) }
     var tab by rememberSaveable { mutableStateOf("Portfolio") }
@@ -106,7 +107,7 @@ fun InvestmentApp(model: PortfolioModel) {
     LaunchedEffect(NativePushBridge.updateRevision) { if(model.user!=null && !model.locked)model.refreshNotifications() }
     LaunchedEffect(tab,model.user,model.locked) { if(tab=="Stocks" && model.user!=null && !model.locked)model.refreshNotifications() }
     LaunchedEffect(model.user) {
-        if (model.user == null) { notificationScreen=false; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; newPurchase = false; simulator = false; education = false }
+        if (model.user == null) { notificationPurchase=null;notificationScreen=false; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; newPurchase = false; simulator = false; education = false }
     }
     LaunchedEffect(model, model.messageRevision) {
         val revision = model.messageRevision
@@ -130,6 +131,10 @@ fun InvestmentApp(model: PortfolioModel) {
     fun uploadPendingPurchase(purchase: JsonRecord) = model.importPurchasePdf(actions, engine, bondOnly = true) { review ->
         confirmationTarget = purchase
         imported(review)
+    }
+    LaunchedEffect(notificationPurchase,model.busy) {
+        val purchase=notificationPurchase
+        if(purchase!=null && !model.busy) { notificationPurchase=null;uploadPendingPurchase(purchase) }
     }
     fun uploadMissing(item: JsonRecord) = model.importPurchasePdf(actions, engine, bondOnly = item.text("kind") == "bond", expectedStatement = item) { review ->
         confirmationTarget = null
@@ -231,7 +236,14 @@ fun InvestmentApp(model: PortfolioModel) {
                     legalRoute != null -> LegalScreen(legalRoute!!) { legalRoute = it }
                     model.locked -> UnlockScreen(model) { legalRoute = "hub" }
                     model.user == null -> SignInScreen(model) { legalRoute = "hub" }
-                    notificationScreen -> NotificationsScreen(model) { notificationScreen=false;tab="Stocks" }
+                    notificationScreen -> NotificationsScreen(model,openStocks={ notificationScreen=false;tab="Stocks" },openNotification={ item ->
+                        when(item.text("action")) {
+                            "calendar","coupon" -> { calendarFocus=item.text("dueDate");notificationScreen=false;tab="Calendar" }
+                            "purchase" -> model.action { val result=model.api.request("/api/bonds/purchases/${item.text("purchaseId")}");notificationScreen=false;notificationPurchase=result.getJSONObject("purchase") }
+                            "documents" -> { notificationScreen=false;missingDocuments=true }
+                            else -> { notificationScreen=false;tab="Settings" }
+                        }
+                    })
                     missingDocuments && importReview == null -> MissingDocumentsScreen(model, ::uploadMissing)
                     pendingEntry -> PendingBondScreen(model, pendingIssueId) { pendingEntry = false; pendingIssueId = null }
                     importReview?.text("kind") == "statement" -> StatementReviewScreen(model, importReview!!, ::uploadMissing)
@@ -360,11 +372,21 @@ private fun PurchaseDetails(model: PortfolioModel, purchase: JsonRecord, engine:
                 AppText("Coupon tracking", fontWeight = FontWeight.Bold)
                 Fact("Net per payment", money(tracking.netPerPayment, purchase.text("currency")))
                 Fact("Scheduled to date", money(tracking.couponsPaid, purchase.text("currency")))
+                Fact("Confirmed received",if(model.couponTrackingAvailable)money(model.couponReceipts.filter { it.text("purchaseId")==purchase.text("id") && it.optBoolean("received") }.sumOf { it.optDouble("amount") },purchase.text("currency")) else "—")
                 Fact("Accrued", money(tracking.accruedCoupon, purchase.text("currency")))
                 Fact("Remaining coupons", money(tracking.remainingCoupons, purchase.text("currency")))
                 AppText("${purchase.text("scheduleConfidence")} schedule · as of $Today", style = MaterialTheme.typography.bodySmall)
             } }
-            items(tracking.schedule) { date -> Panel { Fact(date.toString(), "${if (date <= Today) "Scheduled past" else "Upcoming"} · ${money(tracking.netPerPayment, purchase.text("currency"))}") } }
+            items(tracking.schedule) { date -> Panel {
+                val receipt=model.couponReceipt(purchase.text("id"),date.toString())
+                val received=receipt?.optBoolean("received")==true
+                Fact(date.toString(),money(tracking.netPerPayment,purchase.text("currency")))
+                AppText(if(received) { if(receipt?.text("method")=="automatic") "Marked automatically" else "Confirmed by you" }
+                    else if(date<=model.notificationDate) "Not confirmed received" else "Upcoming",style=MaterialTheme.typography.bodySmall)
+                if(date<=model.notificationDate && model.couponTrackingAvailable) TextButton(enabled=!model.busy,onClick={ model.confirmCoupon(purchase.text("id"),date.toString(),!received) }) {
+                    AppText(if(received) "Mark not received" else "Confirm received")
+                }
+            } }
         }
         item { Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             if (purchase.text("status") != "submitted") Button(onClick = edit, enabled = !model.busy) { AppText("Edit purchase") }
