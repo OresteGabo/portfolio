@@ -144,6 +144,7 @@ fun InvestmentApp(model: PortfolioModel) {
         val screenTitle = when {
             legalRoute != null -> legalTitle(legalRoute!!)
             missingDocuments -> "Missing documents"
+            importReview?.text("kind") == "bond-issuance" -> "Review issuance"
             importReview?.text("kind") == "statement" -> "Statement review"
             pendingEntry -> "Pending purchase"
             importReview != null -> "Review purchase"
@@ -216,6 +217,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     missingDocuments && importReview == null -> MissingDocumentsScreen(model, ::uploadMissing)
                     pendingEntry -> PendingBondScreen(model, pendingIssueId) { pendingEntry = false; pendingIssueId = null }
                     importReview?.text("kind") == "statement" -> StatementReviewScreen(model, importReview!!, ::uploadMissing)
+                    importReview?.text("kind") == "bond-issuance" -> BondIssuanceReview(model, importReview!!) { importReview = null }
                     importReview != null -> PurchaseImportReview(model, importReview!!, confirmationTarget) { importReview = null; confirmationTarget = null; detail = null }
                     newPurchase -> PurchaseEntryScreen(model, engine, ::imported) { legalRoute = "privacy" }
                     tab == "Settings" && !nested -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
@@ -232,7 +234,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     tab == "Calendar" -> CalendarScreen(model, initialDate = calendarFocus?.let(::calendarDate), addPending = { issue, date ->
                         pendingIssueId = issue.text("id"); calendarFocus = date.toString(); confirmationTarget = null; pendingEntry = true
                     })
-                    tab == "Documents" -> DocumentsScreen(model)
+                    tab == "Documents" -> DocumentsScreen(model) { model.importPurchasePdf(actions, engine, completed = ::imported) }
                     tab == "Stocks" -> StocksScreen(model)
                 }
             }
