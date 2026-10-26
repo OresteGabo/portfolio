@@ -26,6 +26,7 @@ Kotlin 2.3.21 also avoids Kotlin 2.4 metadata errors in AGP 9.0’s bundled D8 c
 
 - **Portfolio:** authenticated bond and share purchases, separate currency totals, net coupon income, scheduled past coupons, accrued income, status filters, bond details, coupon schedule, add/edit/delete bonds, and add shares.
 - **Add purchase → PDF import:** a prominent portfolio action opens PDF import first. Select a BNR result or RSE equity purchase note, extract text/OCR locally, automatically fill the bond/share form, review warnings and every field, then explicitly save through the original API. PDFs are limited to 10 MB and 10 pages, matching the web importer.
+- **BNR issuance reports:** upload a summary market results PDF from Documents or Add purchase. Review bond terms, auction totals, and every explicit coupon date, then save the report before any personal confirmation. The saved issue appears among pending bond choices and overlays matching calendar entries. Repeated uploads reuse one shared issuance record per security code/settlement date, even if the PDF bytes differ; conflicting terms return a review error. This requires the Spring API’s issuance support and Flyway V3/V4 migrations. Personal confirmations remain separate private documents.
 - **Calendar:** a Monday-first month grid with selectable dates, event markers, month navigation and Today. Filter issuances or personal payments, then expand an event for dates, recorded applications, and expected coupon/principal amounts. Uses the complete published FY 2026/2027 issuance data and active portfolio purchases. The published schedule is bundled; it does not automatically acquire later BNR calendars.
 - **Documents:** compact, expandable list tiles with search/category filters and a download icon on the right. Expanded rows retain all supplied facts/charges/flow/sections; authenticated PDF export uses the native document picker. Owner-only visibility follows the existing API.
 - **Stocks:** a chart-first screen with stock selection, month/year/all ranges, automatic saved-price history loading, a compact ten-company watchlist, source freshness, holding valuations and bond prices. Charts only use actual saved observations.
@@ -51,7 +52,7 @@ Without secure sign-in, credentials and cookies stay in memory and another proce
 
 The app connects to the configured production API automatically, without exposing a server editor. The default server requires HTTPS; release builds reject HTTP. Internal debug configuration still supports local emulator development and tests. API errors appear visibly; the app never supplies fabricated holdings or market prices.
 
-No backend or private web files were modified or copied. The app has no access to credentials in the web project's `.data` or environment files.
+BNR issuance imports also require the updated separate Spring backend; see [issuance import setup](docs/BOND_ISSUANCE_IMPORT.md). Private web files and credentials were not copied into the app.
 
 ## Refresh copied public logic
 
