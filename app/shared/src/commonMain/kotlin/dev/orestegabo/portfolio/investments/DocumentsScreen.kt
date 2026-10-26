@@ -34,7 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun DocumentsScreen(model: PortfolioModel) {
+fun DocumentsScreen(model: PortfolioModel, upload: () -> Unit = {}) {
     var search by rememberSaveable { mutableStateOf("") }
     var category by rememberSaveable { mutableStateOf("all") }
     var expanded by rememberSaveable { mutableStateOf<String?>(null) }
@@ -71,6 +71,9 @@ fun DocumentsScreen(model: PortfolioModel) {
         calendarDate(document.text("documentDate"))?.let { "${it.year}-${it.month}" }.orEmpty()
     }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        item { OutlinedButton(onClick = upload, enabled = !model.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+            AppIcon(Icons.Outlined.UploadFile, null); Spacer(Modifier.width(8.dp)); AppText("Upload PDF")
+        } }
         if (model.documents.isNotEmpty()) {
             item { DocumentLibraryHeader(model.documents.size, model.busy, model.busy && saving == null, model::refresh) }
             item {
