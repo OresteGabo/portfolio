@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>GaboDevelopmentApiOrigin</key>
+	<string>$(GABO_DEVELOPMENT_API_ORIGIN)</string>
 	<key>NSMotionUsageDescription</key>
 	<string>Detect a shake to hide or show financial amounts.</string>
     <key>GaboPasswordSharingEnabled</key>
