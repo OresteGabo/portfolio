@@ -135,3 +135,38 @@ export function parseBondPdfText(raw: string, usedOcr = false): BondPdfImport {
   const missingFields = required.filter(([key]) => fields[key] === undefined || fields[key] === "").map(([, label]) => label);
   return { fields, warnings, missingFields, usedOcr };
 }
+
+
+export type BondIssuanceImport = {
+  kind: "bond-issuance";
+  fields: Partial<BondPurchaseInput> & { issuanceDate?: string; amountOffered?: number; appliedAmount?: number; amountSold?: number; bidCount?: number; yieldRate?: number };
+  warnings: string[]; missingFields: string[]; usedOcr: boolean;
+};
+
+/** Public auction results have no investor allocation and must never become a purchase. */
+export function parseBondIssuancePdfText(raw: string, usedOcr = false): BondIssuanceImport | null {
+  if (!/SUMMARY\s+MARKET\s+RESULTS/i.test(raw) || /INVESTOR\s+RESULTS/i.test(raw)) return null;
+  // PDF glyph runs sometimes insert spaces inside identifiers and years. Restrict repairs to labels.
+  const text = raw.replace(/((?:ISSUANCE|ISSUE)\s+NUMBER|BOND\s+CODE|SETTLEMENT\s+DATE|REDEMP?E?TION\s+DATE|MATURITY\s+DATE|Coupon\s+(?:Interest\s+)?rate|Y\s*ield\s+rate)([^\n]+)/gi,
+    (_, label, value) => label + " " + value.replace(/\s/g, ""))
+    .replace(/((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*-\s*)(\d)\s+(\d)\b/gi, "$1$2$3");
+  const base = parseBondPdfText(text, usedOcr);
+  if (!isRecognizedBondResult(base, text)) return null;
+  const fields: BondIssuanceImport["fields"] = { ...base.fields };
+  delete fields.purchaseDate; delete fields.faceValue; delete fields.broker;
+  const summary = text.split(/SUMMARY\s+MARKET\s+RESULTS/i)[1] ?? "";
+  const issueDate = summary.match(/\b(\d(?:\s*\d)?)\s*[-/]\s*(\d(?:\s*\d)?)\s*[-/]\s*(\d(?:\s*\d){3})\b/);
+  if (issueDate) fields.issuanceDate = isoDate(number(issueDate[3])!, number(issueDate[2])!, number(issueDate[1])!) ?? undefined;
+  const amountMatches = [...summary.matchAll(/\b\d(?:\s*\d){0,2}(?:\s*,\s*\d\s*\d\s*\d){2,}(?:\s*\.\s*\d+)?\b/g)];
+  const totals = amountMatches.map(m => number(m[0])!);
+  if (totals.length === 3) [fields.amountOffered, fields.appliedAmount, fields.amountSold] = totals;
+  const lastAmount = amountMatches.at(-1);
+  const bids = lastAmount && summary.slice(lastAmount.index! + lastAmount[0].length).match(/^\s+(\d+)\s+[\d\s.]+%/);
+  if (bids) fields.bidCount = +bids[1];
+  const yieldMatch = text.match(/Y\s*ield\s+rate\s*[:\s]*(\d+(?:\.\d+)?)\s*%/i);
+  if (yieldMatch) fields.yieldRate = +yieldMatch[1] / 100;
+  const required = ["bondName", "isin", "tenorYears", "pricePercent", "couponRate", "settlementDate", "maturityDate", "firstCouponDate", "issuanceDate", "amountOffered", "appliedAmount", "amountSold", "bidCount", "yieldRate"] as const;
+  return { kind: "bond-issuance", fields, usedOcr,
+    warnings: base.warnings.filter(w => !w.startsWith("Trade date defaults")),
+    missingFields: required.filter(k => fields[k] === undefined || fields[k] === "") };
+}
