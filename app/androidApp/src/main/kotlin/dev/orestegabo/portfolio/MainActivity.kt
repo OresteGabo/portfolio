@@ -12,6 +12,7 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         applyInitialCaptureProtection(this)
         PlatformBuild.debug = BuildConfig.DEBUG
+        PlatformBuild.apiOrigin = BuildConfig.DEVELOPMENT_API_ORIGIN
         enableEdgeToEdge()
         setContent { App() }
         installExperimentalCaptureLayer(this)
