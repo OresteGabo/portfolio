@@ -5,6 +5,15 @@ plugins {
     alias(libs.plugins.androidMultiplatformLibrary)
 }
 
+// Explicit local smoke check using the real shared HTTP client. No credentials in build arguments.
+tasks.register<JavaExec>("verifyLocalSpringApi") {
+    val target = kotlin.targets.getByName("jvm") as org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
+    val compilation = target.compilations.getByName("test")
+    dependsOn(compilation.compileTaskProvider)
+    classpath(compilation.output.allOutputs, compilation.runtimeDependencyFiles)
+    mainClass.set("dev.orestegabo.portfolio.investments.LocalSpringApiCheckKt")
+}
+
 kotlin {
     iosArm64()
     iosSimulatorArm64()
