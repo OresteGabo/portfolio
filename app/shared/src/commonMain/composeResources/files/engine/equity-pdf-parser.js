@@ -1,5 +1,5 @@
 import { parseEquityPurchase, validEquityDate } from "./equity-validation.js";
-import { isRecognizedBondResult, parseBondPdfText } from "./pdf-import-parser.js";
+import { isRecognizedBondResult, parseBondPdfText, parseBondIssuancePdfText } from "./pdf-import-parser.js";
 import { BondPdfImportError } from "./pdf-import-errors.js";
 export const EMPTY_EQUITY = {
     instrumentType: "equity", exchange: "RSE", securityName: "", ticker: "", isin: "", tradeDate: "", settlementDate: "",
@@ -65,6 +65,9 @@ export function parseEquityPdfText(raw, usedOcr = false) {
     return { kind: "equity", fields, missingFields, warnings, usedOcr };
 }
 export function parsePurchasePdfText(text, usedOcr = false) {
+    const issuance = parseBondIssuancePdfText(text, usedOcr);
+    if (issuance)
+        return issuance;
     const equity = parseEquityPdfText(text, usedOcr);
     const bond = parseBondPdfText(text, usedOcr);
     const isBond = isRecognizedBondResult(bond, text);
