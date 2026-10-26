@@ -1,10 +1,10 @@
 import type { EquityHoldingInput } from "./types";
 import { parseEquityPurchase, validEquityDate } from "./equity-validation";
-import { isRecognizedBondResult, parseBondPdfText, type BondPdfImport } from "./pdf-import-parser";
+import { isRecognizedBondResult, parseBondPdfText, parseBondIssuancePdfText, type BondIssuanceImport, type BondPdfImport } from "./pdf-import-parser";
 import { BondPdfImportError } from "./pdf-import-errors";
 
 export type EquityPdfImport = { kind: "equity"; fields: EquityHoldingInput; warnings: string[]; missingFields: string[]; usedOcr: boolean };
-export type PurchasePdfImport = (BondPdfImport & { kind: "bond" }) | EquityPdfImport;
+export type PurchasePdfImport = (BondPdfImport & { kind: "bond" }) | EquityPdfImport | BondIssuanceImport;
 export const EMPTY_EQUITY: EquityHoldingInput = {
   instrumentType: "equity", exchange: "RSE", securityName: "", ticker: "", isin: "", tradeDate: "", settlementDate: "",
   shares: 0, pricePerShare: 0, grossConsideration: 0, brokerageCommission: 0, rseTransactionFee: 0, csdTransactionLevy: 0,
@@ -59,6 +59,8 @@ export function parseEquityPdfText(raw: string, usedOcr = false): EquityPdfImpor
   return { kind: "equity", fields, missingFields, warnings, usedOcr };
 }
 export function parsePurchasePdfText(text: string, usedOcr = false): PurchasePdfImport {
+  const issuance = parseBondIssuancePdfText(text, usedOcr);
+  if (issuance) return issuance;
   const equity = parseEquityPdfText(text, usedOcr);
   const bond = parseBondPdfText(text, usedOcr);
   const isBond = isRecognizedBondResult(bond, text);
