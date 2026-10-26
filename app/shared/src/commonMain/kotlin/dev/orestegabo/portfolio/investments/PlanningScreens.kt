@@ -18,14 +18,14 @@ fun PdfImportButton(model: PortfolioModel, engine: InvestmentEngine, imported: (
     val actions = LocalNativeActions.current
     fun choosePdf() = model.importPurchasePdf(actions, engine, bondOnly, expectedStatement, imported)
     Panel {
-        AppText(if (bondOnly) "Confirm purchase" else "Import confirmed purchase", fontWeight = FontWeight.Bold)
+        AppText(if (bondOnly) "Confirm purchase" else "Import investment PDF", fontWeight = FontWeight.Bold)
         if (bondOnly) AppText("BNR confirmation PDFs only", style = MaterialTheme.typography.bodySmall)
         else {
             AppText("Accepted PDFs", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            AppText("BNR bond results • Share purchase contracts • BK Capital statements", style = MaterialTheme.typography.bodySmall)
+            AppText("BNR issuance reports • Bond confirmations • Share purchase contracts • BK Capital statements", style = MaterialTheme.typography.bodySmall)
         }
         Button(enabled = !model.busy, onClick = ::choosePdf, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
-            AppIcon(Icons.Outlined.UploadFile, null); Spacer(Modifier.width(8.dp)); AppText(if (model.pdfImportProgress != null) "Reading PDF…" else if (bondOnly) "Upload confirmation" else "Choose purchase PDF")
+            AppIcon(Icons.Outlined.UploadFile, null); Spacer(Modifier.width(8.dp)); AppText(if (model.pdfImportProgress != null) "Reading PDF…" else if (bondOnly) "Upload confirmation" else "Choose PDF")
         }
         AppText("Read on your device · Up to 10 MB", style = MaterialTheme.typography.labelSmall)
     }
