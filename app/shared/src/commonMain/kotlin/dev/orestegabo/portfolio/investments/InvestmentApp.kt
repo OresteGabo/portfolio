@@ -154,7 +154,7 @@ fun InvestmentApp(model: PortfolioModel) {
             }
         }
         val screenTitle = when {
-            notificationScreen -> "Price notifications"
+            notificationScreen -> "Notifications"
             legalRoute != null -> legalTitle(legalRoute!!)
             missingDocuments -> "Missing documents"
             importReview?.text("kind") == "bond-issuance" -> "Review issuance"
@@ -192,7 +192,7 @@ fun InvestmentApp(model: PortfolioModel) {
                         else Image(painterResource(Res.drawable.gabo_mark), localized("Gabo logo"), Modifier.padding(start = 16.dp, end = 4.dp).size(40.dp))
                     },
                     actions = { if(tab=="Stocks" && !nested && model.user!=null && !model.locked)
-                        StockNotificationBell(model.unreadNotifications) { notificationScreen=true } },
+                        NotificationBell(model.unreadNotifications) { notificationScreen=true } },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
                 )
             },
@@ -231,7 +231,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     legalRoute != null -> LegalScreen(legalRoute!!) { legalRoute = it }
                     model.locked -> UnlockScreen(model) { legalRoute = "hub" }
                     model.user == null -> SignInScreen(model) { legalRoute = "hub" }
-                    notificationScreen -> StockNotificationsScreen(model) { notificationScreen=false;tab="Stocks" }
+                    notificationScreen -> NotificationsScreen(model) { notificationScreen=false;tab="Stocks" }
                     missingDocuments && importReview == null -> MissingDocumentsScreen(model, ::uploadMissing)
                     pendingEntry -> PendingBondScreen(model, pendingIssueId) { pendingEntry = false; pendingIssueId = null }
                     importReview?.text("kind") == "statement" -> StatementReviewScreen(model, importReview!!, ::uploadMissing)

@@ -52,21 +52,21 @@ object NativePushBridge {
 }
 
 @Composable
-fun StockNotificationBell(unread: Int, open: () -> Unit) {
+fun NotificationBell(unread: Int, open: () -> Unit) {
     IconButton(onClick=open) {
         BadgedBox(badge={ if(unread>0) Badge { AppText(if(unread>99) "99+" else unread.toString()) } }) {
-            AppIcon(Icons.Outlined.Notifications, "Price notifications")
+            AppIcon(Icons.Outlined.Notifications, "Notifications")
         }
     }
 }
 
 @Composable
-fun StockNotificationsScreen(model: PortfolioModel, openStocks: () -> Unit) {
+fun NotificationsScreen(model: PortfolioModel, openStocks: () -> Unit) {
     LaunchedEffect(Unit) { model.refreshNotifications() }
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         if(model.notifications.isNotEmpty()) item {
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                AppText("Price changes",style=MaterialTheme.typography.titleMedium,modifier=Modifier.weight(1f))
+                AppText("Latest",style=MaterialTheme.typography.titleMedium,modifier=Modifier.weight(1f))
                 IconButton(onClick={ model.refreshNotifications() },enabled=!model.notificationsLoading) { AppIcon(Icons.Outlined.Refresh,"Refresh") }
             }
         }
@@ -87,7 +87,7 @@ fun StockNotificationsScreen(model: PortfolioModel, openStocks: () -> Unit) {
         if(model.notifications.isEmpty() && !model.notificationsLoading && model.notificationsError==null) item {
             val enablePush=NativePushBridge.available && !NativePushBridge.allowed
             NotificationEmptyCard(
-                title="No price alerts yet",subtitle="For companies you own.",
+                title="You’re all caught up",subtitle="Updates will appear here.",
                 actionLabel=if(enablePush) "Enable phone notifications" else "View stocks",
                 onAction=if(enablePush) NativePushBridge::requestPermission else openStocks,
                 secondaryLabel=if(enablePush) "View stocks" else null,

@@ -125,7 +125,7 @@ class PortfolioModel(
         } catch(cancelled: CancellationException) { throw cancelled }
         catch(failure: Exception) {
             if(revision==notificationGeneration) notificationsError=if(failure is ApiException && failure.status==404)
-                "Price notifications need the updated server." else "Notifications could not be loaded. Try again."
+                "Notifications need the updated server." else "Notifications could not be loaded. Try again."
         } finally { if(revision==notificationGeneration)notificationsLoading=false }
     }
     fun refreshNotifications() { if(user!=null && !locked)viewModelScope.launch { fetchNotifications() } }
