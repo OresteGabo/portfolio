@@ -6,6 +6,12 @@ internal const val CONNECTION_ERROR_MESSAGE = "Could not connect. Check your con
 /** Exact, app-authored messages only. Never trust free-form exception or server response text. */
 private val approvedErrorMessages = setOf(
     PDF_READ_ERROR,
+    "Choose the PDF again before saving.",
+    "Some issuance details could not be verified. Choose a clearer BNR market results PDF.",
+    "The issuance report could not be saved. Try again.",
+    "This bond issuance is already saved with different figures. Review the existing report.",
+    "Bond issuance and PDF saved. Could not refresh the portfolio. Pull down on Portfolio to update; do not submit it again.",
+    "This issuance is already saved. No extra copy was stored. Could not refresh the portfolio. Pull down on Portfolio to update; do not submit it again.",
     "A document picker is already open.",
     "A file picker is already open.",
     "A save dialog is already open.",
