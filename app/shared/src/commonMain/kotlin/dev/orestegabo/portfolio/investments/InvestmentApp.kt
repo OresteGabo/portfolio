@@ -231,7 +231,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     legalRoute != null -> LegalScreen(legalRoute!!) { legalRoute = it }
                     model.locked -> UnlockScreen(model) { legalRoute = "hub" }
                     model.user == null -> SignInScreen(model) { legalRoute = "hub" }
-                    notificationScreen -> StockNotificationsScreen(model)
+                    notificationScreen -> StockNotificationsScreen(model) { notificationScreen=false;tab="Stocks" }
                     missingDocuments && importReview == null -> MissingDocumentsScreen(model, ::uploadMissing)
                     pendingEntry -> PendingBondScreen(model, pendingIssueId) { pendingEntry = false; pendingIssueId = null }
                     importReview?.text("kind") == "statement" -> StatementReviewScreen(model, importReview!!, ::uploadMissing)

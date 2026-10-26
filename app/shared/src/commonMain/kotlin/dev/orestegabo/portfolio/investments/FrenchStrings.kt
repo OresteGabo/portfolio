@@ -1119,4 +1119,8 @@ internal val frenchStrings: Map<String, String> = mapOf(
     "Notifications" to "Notifications",
     "Enabled" to "Activées",
     "Disabled" to "Désactivées",
+    "No price alerts yet" to "Aucune alerte de cours",
+    "For companies you own." to "Pour les sociétés de votre portefeuille.",
+    "View stocks" to "Voir les actions",
+    "Notifications unavailable" to "Notifications indisponibles",
 )
