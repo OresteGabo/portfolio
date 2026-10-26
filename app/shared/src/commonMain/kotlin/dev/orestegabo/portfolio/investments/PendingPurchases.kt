@@ -12,7 +12,7 @@ fun pendingBondInput(issue: JsonRecord, amount: Double, recorded: LocalDate): Js
     require(maturity > recorded && maturity > settlement) { "Choose a bond that has not matured." }
     require(issue.text("title").isNotBlank() && issue.optDouble("tenorYears", 0.0) > 0) { "Choose a published bond." }
     return JsonRecord().put("instrumentType", "treasury").put("issuer", "Government of Rwanda").put("currency", "RWF")
-        .put("market", "primary").put("bondName", issue.text("title")).put("isin", "")
+        .put("market", "primary").put("bondName", issue.text("title")).put("isin", issue.text("isin"))
         .put("purchaseDate", recorded.toString()).put("settlementDate", settlement.toString()).put("maturityDate", maturity.toString())
         .put("tenorYears", issue.optDouble("tenorYears")).put("faceValue", amount)
         // Required legacy storage defaults, never presented as executed terms or counted in active totals.
