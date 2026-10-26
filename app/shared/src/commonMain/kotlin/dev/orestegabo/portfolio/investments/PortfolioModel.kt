@@ -22,8 +22,9 @@ class PortfolioModel(
     private val apiFactory: (String) -> PortfolioApi = { PortfolioApi(it) },
     private val captureMaskRequired: Boolean? = null,
     private val clock: TimeSource = TimeSource.Monotonic,
+    initialOrigin: String? = null,
 ) : ViewModel() {
-    var origin by mutableStateOf(settings.readOrigin() ?: DEFAULT_ORIGIN)
+    var origin by mutableStateOf(initialOrigin ?: settings.readOrigin() ?: DEFAULT_ORIGIN)
         private set
     var api = apiFactory(origin)
         private set
@@ -126,8 +127,8 @@ class PortfolioModel(
         private set
     var quoteRefreshFailed by mutableStateOf(false)
         private set
-    var calendar by mutableStateOf<List<JsonRecord>>(emptyList())
-        private set
+    private var publishedCalendar by mutableStateOf<List<JsonRecord>>(emptyList())
+    val calendar get() = mergeBondIssuances(publishedCalendar, documents)
     var education by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
 
@@ -137,7 +138,7 @@ class PortfolioModel(
     } }
 
     private suspend fun loadPublicData() {
-        calendar = JsonList(assets("issuance-calendar.json").decodeToString()).objects()
+        publishedCalendar = JsonList(assets("issuance-calendar.json").decodeToString()).objects()
         education = JsonList(assets("education.json").decodeToString()).objects()
     }
     fun action(block: suspend () -> Unit) = runAction(false, block = block)
@@ -471,6 +472,34 @@ class PortfolioModel(
             importedPdf = null; importedReview = null; uploadedDocument = null
             completed()
             refreshAfterWrite("Purchase and PDF saved.")
+        } finally { pdfImportProgress = null }
+    }
+
+    fun saveImportedIssuance(review: JsonRecord, completed: () -> Unit) = action {
+        require(importedReview === review && importedPdf != null) { "Choose the PDF again before saving." }
+        val issuance = importedIssuanceInput(review)
+        try {
+            val pdf = importedPdf!!
+            val chunkSize = 512 * 1024
+            val count = (pdf.size + chunkSize - 1) / chunkSize
+            val metadata = JsonRecord().put("label", "Bond issuance results").put("category", "Bond issuance")
+                .put("instrumentName", issuance.text("bondName")).put("issuer", issuance.text("issuer"))
+                .put("documentDate", issuance.text("issuanceDate")).put("issuance", issuance)
+            var duplicate = false
+            for (index in 0 until count) {
+                pdfImportProgress = PdfImportProgress(PdfImportStage.UPLOADING, "${index + 1} / $count")
+                val response = api.request("/api/bonds/documents", "POST", JsonRecord()
+                    .put("uploadId", pdfUploadId).put("index", index).put("count", count)
+                    .put("content", Base64.encode(pdf.copyOfRange(index * chunkSize, minOf(pdf.size, (index + 1) * chunkSize))))
+                    .put("metadata", metadata))
+                if (index == count - 1) {
+                    require(response.text("documentId").isNotBlank()) { "The issuance report could not be saved. Try again." }
+                    duplicate = response.optBoolean("duplicate")
+                }
+            }
+            discardImportedPdf(review)
+            completed()
+            refreshAfterWrite(if (duplicate) "This issuance is already saved. No extra copy was stored." else "Bond issuance and PDF saved.")
         } finally { pdfImportProgress = null }
     }
 
