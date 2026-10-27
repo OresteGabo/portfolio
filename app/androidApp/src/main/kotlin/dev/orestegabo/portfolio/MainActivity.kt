@@ -41,7 +41,7 @@ class MainActivity : FragmentActivity() {
         }
     }
     override fun onResume() { super.onResume();installPush() }
-    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent);setIntent(intent);if(intent.getBooleanExtra("stockNotifications",false) || intent.getStringExtra("route")=="stock-notifications")NativePushBridge.openInbox() }
+    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent);setIntent(intent);receivePdf(intent);if(intent.getBooleanExtra("stockNotifications",false) || intent.getStringExtra("route")=="stock-notifications")NativePushBridge.openInbox() }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applyInitialCaptureProtection(this)
@@ -50,6 +50,7 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
         installPush()
         if(intent.getBooleanExtra("stockNotifications",false) || intent.getStringExtra("route")=="stock-notifications")NativePushBridge.openInbox()
+        receivePdf(intent)
         setContent { App() }
         installExperimentalCaptureLayer(this)
     }

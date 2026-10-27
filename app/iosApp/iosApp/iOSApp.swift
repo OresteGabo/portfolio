@@ -6,6 +6,7 @@ struct iOSApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onOpenURL { url in IosPdfReceiver.shared.receive(url: url.absoluteString) }
         }
     }
 }

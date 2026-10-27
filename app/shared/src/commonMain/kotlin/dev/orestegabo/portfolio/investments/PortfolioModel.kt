@@ -785,7 +785,7 @@ class PortfolioModel(
         try { api.request("/api/bonds/auth/logout", "POST", JsonRecord().apply { NativePushBridge.registration?.let { put("deviceId",it.text("deviceId")) } }) }
         finally {
             try { vault?.delete(origin) }
-            finally { secureSignInEnabled = false; locked = false; api.clearSession(); clearPrivateData() }
+            finally { NativePdfInbox.dismiss(); secureSignInEnabled = false; locked = false; api.clearSession(); clearPrivateData() }
         }
     }
 

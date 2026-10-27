@@ -142,6 +142,20 @@ fun InvestmentApp(model: PortfolioModel) {
         confirmationTarget = purchase
         imported(review)
     }
+    val incomingPdf = NativePdfInbox.pending
+    LaunchedEffect(incomingPdf?.id, model.user?.text("id"), model.locked, model.busy,
+        introductionRequested, importReview, editor, equityEditor, pendingEntry, legalRoute) {
+        if (incomingPdf != null && model.user != null && !model.locked && !model.busy &&
+            !introductionRequested && importReview == null && editor == null && equityEditor == null && !pendingEntry && legalRoute == null) {
+            NativePdfInbox.take(incomingPdf.id)?.let { received ->
+                confirmationTarget = null
+                model.importPurchasePdf(ReceivedPdfActions(actions, received.bytes), engine) { review ->
+                    notificationScreen = false
+                    imported(review)
+                }
+            }
+        }
+    }
     LaunchedEffect(notificationPurchase,model.busy) {
         val purchase=notificationPurchase
         if(purchase!=null && !model.busy) { notificationPurchase=null;uploadPendingPurchase(purchase) }
@@ -243,6 +257,10 @@ fun InvestmentApp(model: PortfolioModel) {
                     model.error?.let { Notice(it, true) { model.error = null } }
                     model.message?.let { Notice(it, false) { model.message = null } }
                 }
+                NativePdfInbox.error?.let { Notice(it, true, NativePdfInbox::dismissError) }
+                if (NativePdfInbox.pending != null) Notice(
+                    if (model.user == null || model.locked) "PDF received. Sign in or unlock to review and import it."
+                    else "PDF received. Finish your current action to review and import it.", false, NativePdfInbox::dismiss)
                 when {
                     legalRoute != null -> LegalScreen(legalRoute!!) { next ->
                         legalHistory = legalHistory + legalRoute!!
