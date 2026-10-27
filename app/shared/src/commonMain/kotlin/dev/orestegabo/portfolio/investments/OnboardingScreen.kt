@@ -37,7 +37,7 @@ internal enum class IntroductionStep(val eyebrow: String, val title: String, val
     OVERVIEW("A LITTLE STRUCTURE", "Your portfolio.\nA clearer picture.",
         "Bring your Rwanda bond and share records together, so the details make more sense."),
     IMPORT("FROM PAPER TO PERSPECTIVE", "Less typing.\nMore understanding.",
-        "Import a supported broker PDF, review the extracted details and save the records you want to keep."),
+        "Turn a broker PDF into clear bond and share records. Review the details before they reach your portfolio."),
     CALENDAR("MAKE ROOM FOR WHAT’S NEXT", "Important dates.\nIn plain sight.",
         "See subscription windows, expected coupons and maturities. Choose the reminders that matter to you in Settings."),
     REPORTS("YOUR RECORD, WHEN YOU NEED IT", "A year of investing.\nClearly documented.",
@@ -75,25 +75,26 @@ internal fun OnboardingScreen(replay: Boolean = false, finish: () -> Unit) {
                     TextButton(onClick = finish) { AppText(if (replay) "Close" else "Skip") }
                 }
                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+                    val copyFirst = maxHeight < 420.dp
                     val artHeight = (maxHeight * .43f).coerceIn(144.dp, 280.dp)
+                    val diagramHeight = (maxWidth - 72.dp) * (290f / 440f) + 24.dp
                     HorizontalPager(pager, Modifier.fillMaxSize(), beyondViewportPageCount = 1) { index ->
                         val step = pages[index]
                         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(Modifier.fillMaxWidth().height(artHeight).clip(RoundedCornerShape(32.dp))
+                            if (copyFirst) {
+                                IntroductionCopy(step, compact = true)
+                                Spacer(Modifier.height(20.dp))
+                            }
+                            Box(Modifier.fillMaxWidth().height(if (step == IntroductionStep.IMPORT) diagramHeight else artHeight).clip(RoundedCornerShape(32.dp))
                                 .background(Brush.radialGradient(listOf(colors.primary.copy(alpha = .06f), artworkSurface))),
                                 contentAlignment = Alignment.Center) {
                                 IntroductionArtwork(step, dark)
                             }
-                            Spacer(Modifier.height(24.dp))
-                            AppText(step.eyebrow, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold,
-                                color = colors.primary, textAlign = TextAlign.Center)
-                            Spacer(Modifier.height(10.dp))
-                            AppText(step.title, Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                            Spacer(Modifier.height(14.dp))
-                            AppText(step.body, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,
-                                color = colors.onSurfaceVariant)
+                            if (!copyFirst) {
+                                Spacer(Modifier.height(24.dp))
+                                IntroductionCopy(step, compact = false)
+                            }
                             Spacer(Modifier.height(20.dp))
                         }
                     }
@@ -135,6 +136,22 @@ internal fun OnboardingScreen(replay: Boolean = false, finish: () -> Unit) {
     }
 }
 
+/** Short viewports lead with readable copy; artwork remains available by scrolling. */
+@Composable
+private fun IntroductionCopy(step: IntroductionStep, compact: Boolean) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        AppText(step.eyebrow, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(if (compact) 8.dp else 10.dp))
+        AppText(step.title, Modifier.semantics { heading() },
+            style = if (compact) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(if (compact) 10.dp else 14.dp))
+        AppText(step.body, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
 @Composable
 private fun IntroductionArtwork(step: IntroductionStep, dark: Boolean) {
     val primary = MaterialTheme.colorScheme.primary
@@ -145,11 +162,11 @@ private fun IntroductionArtwork(step: IntroductionStep, dark: Boolean) {
                 border = BorderStroke(1.dp, primary.copy(alpha = .16f))) {}
             StructMark(Modifier.size(138.dp))
         }
-        IntroductionStep.IMPORT -> IntroductionImage(if (dark) Res.drawable.onboarding_import_dark else Res.drawable.onboarding_import_light)
+        IntroductionStep.IMPORT -> ImportFlowDiagram(dark)
         IntroductionStep.CALENDAR -> IntroductionImage(if (dark) Res.drawable.onboarding_calendar_dark else Res.drawable.onboarding_calendar_light)
         IntroductionStep.REPORTS -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             IntroductionImage(if (dark) Res.drawable.onboarding_reports_dark else Res.drawable.onboarding_reports_light)
-            Surface(Modifier.align(Alignment.Center).offset(x = 62.dp, y = 50.dp), shape = RoundedCornerShape(15.dp),
+            Surface(Modifier.align(Alignment.BottomEnd).padding(end = 24.dp, bottom = 8.dp), shape = RoundedCornerShape(15.dp),
                 color = if (dark) Color(0xFF272B1B) else Color(0xFFFAF8F2), border = BorderStroke(1.dp, primary.copy(alpha = .2f))) {
                 StructMark(Modifier.padding(8.dp).size(40.dp))
             }

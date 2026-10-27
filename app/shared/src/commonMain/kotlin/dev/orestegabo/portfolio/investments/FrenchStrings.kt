@@ -2,6 +2,19 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Costs & fees" to "Frais d’achat",
+    "Bonds · Shares · Costs" to "Obligations · Actions · Frais",
+    "Turn a broker PDF into clear bond and share records. Review the details before they reach your portfolio." to "Transformez un PDF de courtier en données claires sur vos obligations et actions. Vérifiez les détails avant de les ajouter au portefeuille.",
+    "Broker PDF" to "PDF du courtier",
+    "Extract & review" to "Extraire et vérifier",
+    "Review before saving" to "Vérifier avant d’enregistrer",
+    "Bond records" to "Obligations",
+    "Share records" to "Actions",
+    "Purchase costs" to "Coûts d’achat",
+    "Portfolio mix" to "Répartition",
+    "Estimated value" to "Valeur estimée",
+    "Coupon dates" to "Dates des coupons",
+    "A broker PDF is extracted and reviewed. Bond records, share records and purchase costs feed your portfolio mix, estimated value and coupon dates. Review the details before saving." to "Les données d’un PDF de courtier sont extraites et vérifiées. Obligations, actions et coûts d’achat alimentent la répartition du portefeuille, sa valeur estimée et les dates des coupons. Vérifiez les détails avant l’enregistrement.",
     "A LITTLE STRUCTURE" to "UN PEU DE STRUCTURE",
     "Your portfolio.\nA clearer picture." to "Votre portefeuille.\nUne vision plus claire.",
     "Bring your Rwanda bond and share records together, so the details make more sense." to "Regroupez vos obligations et vos actions au Rwanda pour mieux comprendre vos investissements.",

@@ -440,3 +440,12 @@ Validation passed: 104 Android shared tests and 112 iOS shared tests (216 total)
 - Fixed Settings' root layout so the in-scene target editor overlays the list instead of being placed after the full-height list in the app's parent Column. Target progress remains folded while editing.
 - Android assembly, all 115 shared host tests and the signed iPhone build pass. Updated application installed on both phones without clearing data.
 - A real-device SettingsTargetEditorTest passes in 6.817 seconds using synthetic account data. It starts from the folded row, opens the editor within the viewport, saves the 300k preset, saves a typed 450000 amount, reopens, changes to 500k then cancels, and verifies the persisted target remains 450000. The original connection preference is restored afterward; real account targets are untouched.
+
+### Compact onboarding (2026-10-27)
+
+- Exercised all four pages on an isolated Android emulator at 320 × 568dp and 360 × 640dp. Each viewport covers English/light and French/dark at normal text size, plus English/dark and French/light at 135% text size. Synthetic local session responses keep account data out of the fixtures.
+- The viewport test checks primary, Skip and Previous touch targets remain on screen and at least 48dp tall, scrolls the content, captures initial/intermediate/artwork views, advances through every page and verifies completion persistence. Captures were visually inspected for wrapping, readable paragraph endings and artwork clipping.
+- Short content areas now show the explanation before the artwork, with a smaller heading and tighter spacing. The main text keeps system scaling and scrolls independently of navigation. The same connected processor diagram is used at every width, with captions sized to keep whole words inside their nodes and a full localized spoken description. The report logo badge stays within the illustration bounds.
+- Android debug and instrumentation APK assembly, iOS Simulator shared-source compilation, and all 149 shared Android host tests pass. The viewport renders were checked on Android emulation; this is not a physical iPhone small-screen verification. Longer text and artwork require vertical scrolling at compact sizes.
+
+- Connected-diagram follow-up: removed the three-arrow width fallback. Rechecked all four pages at 320 × 568dp in English/light and French/dark at normal size, and English/dark plus French/light at 135%; the enlarged-text checks also pass at 360 × 640dp. Android and iOS shared-source builds pass.

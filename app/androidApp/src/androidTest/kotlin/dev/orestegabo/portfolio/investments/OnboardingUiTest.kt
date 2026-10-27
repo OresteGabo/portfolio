@@ -8,6 +8,8 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.orestegabo.portfolio.MainActivity
@@ -21,6 +23,9 @@ import java.util.concurrent.Executors
 class OnboardingUiTest {
     @Test fun tourSupportsThemesFrenchSkipCompletionAndPersistence() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val largeTextOnly = InstrumentationRegistry.getArguments().getString("largeTextOnly") == "true"
+        val smallScreenOnly = InstrumentationRegistry.getArguments().getString("smallScreenOnly") == "true"
+        val profile = InstrumentationRegistry.getArguments().getString("smallProfile") ?: "small"
         val prefs = instrumentation.targetContext.getSharedPreferences("connection", 0)
         val previous = prefs.all.toMap()
         val previousLanguage = AppLanguage.preference
@@ -77,8 +82,12 @@ class OnboardingUiTest {
         fun scrollSettings() {
             val metrics = instrumentation.targetContext.resources.displayMetrics
             val x = metrics.widthPixels * .5f
-            val start = metrics.heightPixels * .74f
-            val end = metrics.heightPixels * .34f
+            val onboardingAction = if (smallScreenOnly) nodes().firstOrNull {
+                it.isVisibleToUser && it.text?.toString() in listOf(localized("Continue"), localized("Get started"))
+            } else null
+            val actionBounds = onboardingAction?.let { Rect().also(it::getBoundsInScreen) }
+            val start = actionBounds?.let { it.top - 72 * metrics.density } ?: (metrics.heightPixels * .74f)
+            val end = if (actionBounds != null) 130 * metrics.density else metrics.heightPixels * .34f
             val down = SystemClock.uptimeMillis()
             for (index in 0..12) {
                 val action = when (index) { 0 -> MotionEvent.ACTION_DOWN; 12 -> MotionEvent.ACTION_UP; else -> MotionEvent.ACTION_MOVE }
@@ -97,18 +106,87 @@ class OnboardingUiTest {
             File(instrumentation.targetContext.cacheDir, name).outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
             image.recycle()
         }
+        var largeText = false
+        var textScaleOverride: Float? = null
         fun launch(): ActivityScenario<MainActivity> = ActivityScenario.launch(MainActivity::class.java).also { scenario ->
             scenario.onActivity { activity ->
                 activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
                 val model = PortfolioModel(settings, assets = { "[]".encodeToByteArray() }, captureMaskRequired = false)
                 activity.viewModelStore.put("onboarding-test", model)
                 activity.setContent {
-                    CompositionLocalProvider(LocalNativeActions provides rememberNativeActions()) { InvestmentApp(model) }
+                    val density = LocalDensity.current
+                    CompositionLocalProvider(LocalNativeActions provides rememberNativeActions(),
+                        LocalDensity provides Density(density.density, textScaleOverride ?: if (largeText) 1.35f else density.fontScale)) { InvestmentApp(model) }
                 }
             }
         }
         try {
-            for ((theme, language) in listOf("light" to "en", "dark" to "en", "dark" to "fr")) {
+            if (smallScreenOnly) {
+                val steps = listOf(
+                    "Your portfolio.\nA clearer picture." to "Bring your Rwanda bond and share records together, so the details make more sense.",
+                    "Less typing.\nMore understanding." to "Turn a broker PDF into clear bond and share records. Review the details before they reach your portfolio.",
+                    "Important dates.\nIn plain sight." to "See subscription windows, expected coupons and maturities. Choose the reminders that matter to you in Settings.",
+                    "A year of investing.\nClearly documented." to "Keep your documents together and generate an annual report whenever you need one. You choose what to export.",
+                )
+                fun scrollTo(label: String) {
+                    repeat(10) {
+                        // Semantics can lag a completed pager animation or screenshot briefly.
+                        // Wait before scrolling so a transient missing node does not move it off screen.
+                        repeat(3) {
+                            if (nodes().any { node -> node.isVisibleToUser && node.text?.toString() == label }) return
+                            Thread.sleep(100)
+                        }
+                        scrollSettings()
+                    }
+                    await(label)
+                }
+                fun assertReachableButton(label: String) {
+                    var node = await(label)
+                    while (!node.isClickable && node.parent != null) node = node.parent
+                    val bounds = Rect().also(node::getBoundsInScreen)
+                    val display = instrumentation.targetContext.resources.displayMetrics
+                    assertTrue("$profile: $label stays inside the screen", bounds.top >= 0 && bounds.bottom <= display.heightPixels && bounds.left >= 0 && bounds.right <= display.widthPixels)
+                    assertTrue("$profile: $label keeps a 48dp touch target", bounds.height() >= (48 * display.density).toInt())
+                }
+                for ((theme, language, scale) in listOf(Triple("light", "en", 1f), Triple("dark", "fr", 1f),
+                    Triple("dark", "en", 1.35f), Triple("light", "fr", 1.35f)).filter {
+                        InstrumentationRegistry.getArguments().getString("smallLargeTextOnly") != "true" || it.third > 1f
+                    }) {
+                    textScaleOverride = scale
+                    prefs.edit().putString("origin", origin).putString("theme", theme).putString("language", language)
+                        .putBoolean("onboardingCompleted", false).commit()
+                    AppLanguage.select(language)
+                    launch().use {
+                        val next = localized("Continue")
+                        steps.forEachIndexed { index, (title, body) ->
+                            if (index > 0) tap(next)
+                            val stepLabel = "${localized("Step")} ${index + 1} ${localized("of")} 4: ${localized(title).replace('\n', ' ')}"
+                            await(stepLabel)
+                            Thread.sleep(400)
+                            val action = localized(if (index == 3) "Get started" else "Continue")
+                            assertReachableButton(action)
+                            assertReachableButton(localized("Skip"))
+                            val file = "onboarding-small-$profile-$theme-$language-${scale}-$index"
+                            screenshot("$file-start.png")
+                            await(localized(title))
+                            scrollTo(localized(body))
+                            screenshot("$file-read.png")
+                            // Also inspect the artwork below the explanation on short viewports.
+                            scrollSettings()
+                            screenshot("$file-middle.png")
+                            repeat(2) { scrollSettings() }
+                            screenshot("$file-art.png")
+                            assertReachableButton(action)
+                            if (index > 0) assertReachableButton(localized("Previous step"))
+                        }
+                        tap(localized("Get started"))
+                        await(localized("Welcome back"))
+                        assertTrue(prefs.getBoolean("onboardingCompleted", false))
+                    }
+                }
+                return
+            }
+            for ((theme, language) in if (largeTextOnly) emptyList() else listOf("light" to "en", "dark" to "en", "dark" to "fr")) {
                 prefs.edit().putString("origin", origin).putString("theme", theme).putString("language", language).putBoolean("onboardingCompleted", false).commit()
                 AppLanguage.select(language)
                 launch().use { scenario ->
@@ -122,6 +200,17 @@ class OnboardingUiTest {
                             3 -> if (french) "Les dates importantes.\nBien en vue." else "Important dates.\nIn plain sight."
                             else -> if (french) "Une année d’investissement.\nClairement documentée." else "A year of investing.\nClearly documented."
                         })
+                        if (page == 2) await(if (french)
+                            "Les données d’un PDF de courtier sont extraites et vérifiées. Obligations, actions et coûts d’achat alimentent la répartition du portefeuille, sa valeur estimée et les dates des coupons. Vérifiez les détails avant l’enregistrement."
+                            else "A broker PDF is extracted and reviewed. Bond records, share records and purchase costs feed your portfolio mix, estimated value and coupon dates. Review the details before saving.")
+                        if (page == 2) {
+                            val copy = await(if (french)
+                                "Transformez un PDF de courtier en données claires sur vos obligations et actions. Vérifiez les détails avant de les ajouter au portefeuille."
+                                else "Turn a broker PDF into clear bond and share records. Review the details before they reach your portfolio.")
+                            val copyBounds = Rect().also(copy::getBoundsInScreen)
+                            val buttonBounds = Rect().also(await(if (french) "Continuer" else "Continue")::getBoundsInScreen)
+                            assertTrue("The explanation stays above the navigation controls", copyBounds.bottom <= buttonBounds.top)
+                        }
                         screenshot("onboarding-$theme-$language-$page.png")
                     }
                     tap(if (french) "Étape précédente" else "Previous step")
@@ -133,6 +222,21 @@ class OnboardingUiTest {
                 }
                 launch().use { await(if (language == "fr") "Bon retour" else "Welcome back") }
             }
+            largeText = true
+            prefs.edit().putString("origin", origin).putBoolean("onboardingCompleted", false).putString("theme", "dark").putString("language", "en").commit()
+            AppLanguage.select("en")
+            launch().use {
+                tap("Continue")
+                await("A broker PDF is extracted and reviewed. Bond records, share records and purchase costs feed your portfolio mix, estimated value and coupon dates. Review the details before saving.")
+                screenshot("onboarding-import-large-text-top.png")
+                scrollSettings()
+                await("Less typing.\nMore understanding.")
+                screenshot("onboarding-import-large-text-bottom.png")
+                tap("Skip")
+                await("Welcome back")
+            }
+            largeText = false
+            if (largeTextOnly) return
             prefs.edit().putBoolean("onboardingCompleted", false).commit()
             AppLanguage.select("en")
             launch().use {
