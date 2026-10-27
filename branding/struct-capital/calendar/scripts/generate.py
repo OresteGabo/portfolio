@@ -6,9 +6,12 @@ from pathlib import Path
 import html
 import json
 import subprocess
+import shutil
+import xml.etree.ElementTree as ET
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+LOGO = ET.parse(ROOT / 'scripts/struct-capital-symbol.svg').getroot()
 TEXT = json.loads((ROOT / 'scripts/text-outlines.json').read_text())
 PALETTES = {
     'dark': dict(line='#E3D19A', muted='#B6A66F', accent='#B89A28', band='#6D5E0F', surface='#272B1B', card='#FAF8ED', ink='#272B1B', badge='#6D5E0F'),
@@ -110,6 +113,14 @@ def calendar(p, detail=False, locale='en'):
     parts += ['</g>']
     return ''.join(parts)
 
+def phone_logo(p):
+    shapes=[]
+    for element in LOGO.iter('{http://www.w3.org/2000/svg}path'):
+        d=element.attrib['d']
+        shapes.append(path(d,p['line'],8) if element.attrib.get('fill')=='none' else f'<path d="{d}" fill="{p["line"]}"/>')
+    return '<g id="phone-struct-capital-symbol" transform="translate(553 250) scale(.05)"><g transform="translate(-248 -183)">'+''.join(shapes)+'</g></g>'
+
+
 def phone(p):
     c=p['line']; parts=['<g id="phone-notifications">']
     # Opaque phone fill makes overlapping outlines read correctly on any host surface.
@@ -119,7 +130,7 @@ def phone(p):
         bell(529,288,24,c),badge(551,289,3,p),bars(568,291,[135,125,46],c,10,2.4),
         path('M569 367H710Q718 367 718 375V405Q718 413 710 413H598L585 424V413H569Q561 413 561 405V375Q561 367 569 367Z',c,2.7,p['surface']),
         bell(572,377,24,c),bars(606,379,[96,87,40],c,10,2.4)]
-    parts+=['</g>']; return ''.join(parts)
+    parts+=[phone_logo(p),'</g>']; return ''.join(parts)
 
 VIEWS={'calendar-notifications':('0 0 760 560',760,560), 'calendar-detail':('0 0 760 560',760,560), 'calendar-detail-fr':('0 0 760 560',760,560), 'calendar':('0 0 590 530',590,530), 'notifications':('469 204 278 318',278,318)}
 
@@ -178,8 +189,17 @@ def main():
     french+=['</svg>']; (ROOT/'preview-fr.svg').write_text(''.join(french))
     subprocess.run(['rsvg-convert','-o',str(ROOT/'preview-fr.png'),str(ROOT/'preview-fr.svg')],check=True)
     with zipfile.ZipFile(ROOT/'calendar-assets.zip','w',zipfile.ZIP_DEFLATED) as z:
-        for f in sorted(ROOT.rglob('*')):
-            if f.is_file() and f.suffix!='.zip': z.write(f,Path('calendar-assets')/f.relative_to(ROOT))
+        files=[ROOT/'README.md',ROOT/'manifest.json']
+        files+=list((ROOT/'scripts').glob('*.py'))+list((ROOT/'scripts').glob('*.swift'))+list((ROOT/'scripts').glob('*.json'))+list((ROOT/'scripts').glob('*.svg'))
+        files+=list((ROOT/'svg').glob('*.svg'))+list((ROOT/'png').glob('*/*.png'))+list(ROOT.glob('preview*.svg'))+list(ROOT.glob('preview*.png'))
+        mirror=ROOT/'calendar-assets'
+        for file in sorted(files):
+            if file.exists():
+                z.write(file,Path('calendar-assets')/file.relative_to(ROOT))
+                if mirror.is_dir():
+                    destination=mirror/file.relative_to(ROOT)
+                    destination.parent.mkdir(parents=True,exist_ok=True)
+                    shutil.copy2(file,destination)
     print(f'Generated {len(assets)} SVGs, {len(assets)*3} PNGs, preview, manifest and ZIP.')
 
 if __name__=='__main__': main()

@@ -1,6 +1,6 @@
 # Data-processing illustration assets
 
-Language-neutral vector artwork inspired by the supplied AI-generated reference. The processor, flowing mesh ribbon, branching circuits, documents, charts, and small calendar are independently reusable. No phone mockup, logo, onboarding copy, buttons, or app screens are included.
+Language-neutral vector artwork inspired by the supplied AI-generated reference. The processor, flowing mesh ribbon, branching circuits, documents, charts, and small calendar are independently reusable. The official Struct Capital symbol is engraved on the chip and printed on documents and calendar headers. No phone mockup, onboarding copy, buttons, or app screens are included.
 
 ## Contents
 
@@ -9,7 +9,7 @@ Language-neutral vector artwork inspired by the supplied AI-generated reference.
 | Component | Contents | 1× PNG dimensions |
 | --- | --- | --- |
 | `processor-flow` | Complete isometric processor with branching traces and flowing mesh ribbon | 640 × 460 |
-| `processor-core` | Processor body, engraved substrate, inset die, and exposed pins | 480 × 360 |
+| `processor-core` | Processor body, engraved substrate, inset die with engraved Struct Capital symbol, and exposed pins | 480 × 360 |
 | `circuit-traces` | Branching circuit paths, terminal nodes, and top arrow, without chip or ribbon | 624 × 462 |
 | `data-ribbon` | Flowing wire mesh, without chip or traces | 492 × 420 |
 | `document-stack` | Four folded financial documents | 320 × 380 |
@@ -48,7 +48,15 @@ The SVGs preserve fine technical engraving when enlarged. For small layouts, use
 - `manifest.json`: every production asset's name, theme, SVG viewBox, dimensions, and PNG export paths. `locale` is null for all assets.
 - `data-processing-assets.zip`: complete package with artwork, previews, manifest, documentation, and reproducible source.
 
-Only illustration files were generated. App resource registration, theme selection, and onboarding implementation are intentionally left for the later app work.
+The app bundles matching dark/light 2× versions as `onboarding_processor`, `onboarding_reports`, `onboarding_event`, and the chart assets. Run `python3 scripts/sync-onboarding-art.py` from the repository root after rebuilding the source packs to refresh those Compose resources without changing their dimensions or filenames.
+
+## Branding
+
+The chip carries the official Struct Capital hexagon and SC ribbon symbol. The exact source paths are projected onto the die's isometric plane, with tiny opposing edge tones in the light and dark variants to suggest shallow engraving. Monochrome variants retain a single ink color. The branding appears in `processor-core`, `processor-flow`, and `data-pipeline`, across all four themes and PNG densities.
+
+Documents carry a small printed seal in the header; the event calendar carries the symbol between its binding rings. These details also appear in the assembled pipeline. Graph areas remain clear.
+
+The source symbol is included in `scripts/struct-capital-symbol.svg` so the package remains self-contained when rebuilding. It is a snapshot of the existing Struct Capital brand master.
 
 ## Reuse and editing
 
@@ -73,3 +81,5 @@ swift -module-cache-path /tmp/data-processing-swift-cache branding/struct-capita
 ```
 
 Artwork was redrawn as vector geometry inspired by the reference, rather than extracted from the raster image. No image-generation service or installed fonts are needed to rebuild it.
+
+When a `data-processing-assets/` extracted copy already exists beside the canonical files, the generator refreshes its known deliverables as well. The ZIP contains one clean package without nested extracted copies.

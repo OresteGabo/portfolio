@@ -2,7 +2,7 @@
 import Foundation
 import CoreText
 import CoreGraphics
-let labels = ["Bond Subscription", "Opens", "Subscription", "Window Closes", "Dividend", "Payment", "Notification", "Dividend Payment", "Coupon Paid", "Mar 27,", "Mar 19,", "2023"] + (1...31).map(String.init)
+let labels = ["Bond Subscription", "Opens", "Subscription", "Window Closes", "Dividend", "Payment", "Notification", "Dividend Payment", "Coupon Paid", "Mar 27,", "Mar 19,", "2023", "Souscription obligataire", "Ouverture", "Souscription", "Clôture", "Dividende", "versé", "Dividende versé", "Coupon versé", "27 mars", "19 mars"] + (1...31).map(String.init)
 let font = CTFontCreateWithName("ArialMT" as CFString, 1000, nil)
 var result: [String: [String: Any]] = [:]
 func n(_ x: CGFloat) -> String { String(format: "%.3f", Double(x)) }

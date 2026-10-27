@@ -5,9 +5,13 @@ Rebuild with Python 3 and rsvg-convert (librsvg). No third-party Python packages
 from pathlib import Path
 import json
 import subprocess
+import shutil
 import zipfile
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
+LOGO = ET.parse(ROOT / 'scripts/struct-capital-symbol.svg').getroot()
+LOGO_PATHS = list(LOGO.iter('{http://www.w3.org/2000/svg}path'))
 THEMES = {
     'dark': dict(ink='#E3D19A', fine='#AFA16A', accent='#C7AC50', surface='#272B1B', face='#343723', inset='#1E2419'),
     'light': dict(ink='#6D5E0F', fine='#A19563', accent='#9D8120', surface='#FAF8F2', face='#EEE8D0', inset='#DDD3A7'),
@@ -59,6 +63,37 @@ def pin_ends():
     return result
 
 
+def printed_logo(p,x,y,scale,name):
+    paths=[]
+    for element in LOGO_PATHS:
+        d=element.attrib['d']
+        paths.append(path(d,p['ink'],8) if element.attrib.get('fill')=='none' else f'<path d="{d}" fill="{p["ink"]}"/>')
+    return f'<g id="{name}-struct-capital-symbol" transform="translate({x} {y}) scale({scale})"><g transform="translate(-248 -183)">{"".join(paths)}</g></g>'
+
+
+def engraved_logo(p):
+    """Project the official symbol onto the same u/v plane as the silicon die.
+
+    The source artwork's 512-square canvas maps to u/v .31..69. Offsets are
+    applied after projection so the shallow engraving bevel has uniform depth.
+    """
+    def layer(color,offset=0):
+        paths=[]
+        for element in LOGO_PATHS:
+            d=element.attrib['d']
+            if element.attrib.get('fill')=='none':
+                paths.append(path(d,color,8))
+            else:
+                paths.append(f'<path d="{d}" fill="{color}"/>')
+        return f'<g transform="translate(0 {offset})"><g transform="matrix(.0890625 .048984375 -.0890625 .048984375 320 140.92)"><g transform="translate(-248 -183)">{"".join(paths)}</g></g></g>'
+    out=['<g id="struct-capital-engraving">']
+    if p['ink'] != p['fine']:
+        # Tiny opposing rims suggest a laser-etched, recessed metal marking.
+        out += [layer(p['surface'],-.6),layer(p['ink'],.55)]
+    out += [layer(p['accent'])]
+    return ''.join(out)+'</g>'
+
+
 def core(p):
     c=p['ink']; fine=p['fine']; out=['<g id="isometric-processor-core">']
     # Leadframe: pins are behind the chip body.
@@ -74,7 +109,7 @@ def core(p):
         t=i/43
         out += [path('M'+point(iso(t,.025))+'L'+point(iso(t,.975)),fine,.55),path('M'+point(iso(.025,t))+'L'+point(iso(.975,t)),fine,.55)]
     out += [poly(quad(.065,.935),c,1.15),poly(quad(.255,.745),c,1.8,p['surface']),poly(quad(.295,.705),p['accent'],1.3,p['inset']),path('M'+point(iso(.295,.705))+'L'+point(iso(.295,.295))+'L'+point(iso(.705,.295)),fine,.8)]
-    out += [circle(*iso(.13,.84),2,c,p['surface'],1)]
+    out += [engraved_logo(p),circle(*iso(.13,.84),2,c,p['surface'],1)]
     return ''.join(out)+'</g>'
 
 
@@ -115,6 +150,7 @@ def document(p,stack=True):
     for y,length in [(68,48),(80,48),(92,33),(115,117),(127,117),(139,117),(151,117),(163,117),(175,117),(187,87),(199,49),(224,43),(234,43)]:
         x=56 if y<220 else 141
         out += [path(f'M{x} {y}h{length}',c,1.4)]
+    out += [printed_logo(p,110,54,.075,'document')]
     return ''.join(out)+'</g>'
 
 
@@ -150,7 +186,7 @@ def event_calendar(p):
             x=51+col*24; y=100+row*22
             fill=p['face'] if (row,col) in [(0,3),(1,1),(2,3)] else 'none'
             out += [rect(x,y,23,21,0,fill,p['fine'],.85)]
-    out += [path('M78 132l4 4 8-9',p['accent'],1.9)]
+    out += [printed_logo(p,99,61,.042,'calendar'),path('M78 132l4 4 8-9',p['accent'],1.9)]
     return ''.join(out)+'</g>'
 
 
@@ -176,7 +212,7 @@ def pipeline(p):
 
 ASSETS={
     'processor-flow': ('0 0 640 460',640,460,processor,'Isometric processor with branching circuit traces and a flowing mesh data ribbon.'),
-    'processor-core': ('160 70 320 240',480,360,core,'Isometric microprocessor with engraved substrate, inset die, and exposed pins.'),
+    'processor-core': ('160 70 320 240',480,360,core,'Isometric microprocessor with engraved substrate, inset die with the Struct Capital symbol engraved into its surface, and exposed pins.'),
     'circuit-traces': ('105 35 520 385',624,462,traces,'Independent branching circuit paths with terminal nodes and a data arrow.'),
     'data-ribbon': ('18 216 246 210',492,420,ribbon,'Flowing wire mesh ribbon, independent of the processor.'),
     'document-stack': ('0 15 240 285',320,380,document,'Stack of folded financial documents with abstract ruled lines.'),
@@ -222,15 +258,22 @@ def main():
     (ROOT/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     preview('preview',list(ASSETS))
     preview('processor-preview',['processor-flow'])
+    preview('chip-preview',['processor-core'])
     for theme in ('dark','light'):
         dest=ROOT/f'pipeline-preview-{theme}.svg'; dest.write_text(svg('data-pipeline',theme,True))
         subprocess.run(['rsvg-convert','-o',str(ROOT/f'pipeline-preview-{theme}.png'),str(dest)],check=True)
     with zipfile.ZipFile(ROOT/'data-processing-assets.zip','w',zipfile.ZIP_DEFLATED) as z:
         # Package only our explicit deliverables, never extracted copies of a previous ZIP.
-        files=[ROOT/'README.md',ROOT/'manifest.json',ROOT/'scripts/generate.py',ROOT/'scripts/verify.swift']
+        files=[ROOT/'README.md',ROOT/'manifest.json',ROOT/'scripts/generate.py',ROOT/'scripts/verify.swift',ROOT/'scripts/struct-capital-symbol.svg']
         files+=list((ROOT/'svg').glob('*.svg'))+list((ROOT/'png').glob('*/*.png'))+list(ROOT.glob('*preview*.svg'))+list(ROOT.glob('*preview*.png'))
+        mirror=ROOT/'data-processing-assets'
         for file in sorted(files):
-            if file.exists(): z.write(file,Path('data-processing-assets')/file.relative_to(ROOT))
+            if file.exists():
+                z.write(file,Path('data-processing-assets')/file.relative_to(ROOT))
+                if mirror.is_dir():
+                    destination=mirror/file.relative_to(ROOT)
+                    destination.parent.mkdir(parents=True,exist_ok=True)
+                    shutil.copy2(file,destination)
     print(f'Generated {len(manifest)} SVGs, {len(manifest)*3} transparent PNGs, previews, manifest, and ZIP.')
 
 if __name__=='__main__': main()

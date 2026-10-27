@@ -1,6 +1,6 @@
 # Calendar illustration assets
 
-Editable vector recreation of the supplied AI-generated calendar reference, adapted to Struct Capital's olive and cream palette. Only artwork is included; no onboarding screens or application code were changed.
+Editable vector recreation of the supplied AI-generated calendar reference, adapted to Struct Capital's olive and cream palette. Only artwork is included. The app uses matching theme-specific calendar PNGs in onboarding.
 
 ## Files
 
@@ -30,7 +30,7 @@ Choose `calendar-detail-fr-{theme}.svg` for French, and the existing `calendar-d
 
 French labels include “Souscription obligataire / Ouverture”, “Souscription / Clôture”, “Dividende / versé / Notification”, “Dividende versé / Notification”, and “Coupon versé”. Dates use “27 mars” and “19 mars”. Accents are preserved in the outlined paths, so fonts are not required.
 
-Language-neutral compositions are shared by both locales. Selecting assets when the app language changes remains a future integration step; this delivery only supplies image files.
+Language-neutral compositions are shared by both locales. Labeled variants remain separate language-specific artwork; the existing onboarding uses the language-neutral calendar illustration.
 
 ## Colors and surfaces
 
@@ -47,7 +47,7 @@ All 20 have transparent outer canvases. Phone and card interiors have intentiona
 
 Two extra full compositions, `calendar-notifications-dark-background` and `calendar-notifications-light-background`, include solid theme backgrounds for uses where a self-contained image is useful. These are the only opaque-canvas exports.
 
-For future onboarding, start with `calendar-notifications-dark.svg` / `calendar-notifications-light.svg`. Keep explanatory copy in the app for translation and accessibility. Use the PNG equivalents when the target renderer cannot display SVG paths. The existing Compose app can consume PNGs; this package deliberately does not add them to generated resources or wire up a screen.
+For onboarding, use `calendar-notifications-dark.svg` / `calendar-notifications-light.svg`. Keep explanatory copy in the app for translation and accessibility. Use the PNG equivalents when the target renderer cannot display SVG paths. The app bundles the neutral dark/light 2× PNGs as `onboarding_calendar_dark.png` and `onboarding_calendar_light.png`. After rebuilding this pack, run `python3 scripts/sync-onboarding-art.py` from the repository root to refresh the existing Compose resources.
 
 ## Resolution
 
@@ -69,3 +69,9 @@ python3 branding/struct-capital/calendar/scripts/generate.py
 ```
 
 The reference was visually redrawn as vector geometry; this is a recreation rather than an exact pixel trace. The source image is not embedded or redistributed in this package.
+
+## Branding and copies
+
+The illustrated phone carries the official Struct Capital symbol centered below its notch. This printed mark is present in the neutral, English, French, standalone phone, and background variants, across all themes and PNG densities. The source symbol is included in `scripts/struct-capital-symbol.svg`.
+
+If a `calendar-assets/` extracted copy already exists beside the canonical files, the generator refreshes its known files. ZIP generation includes one clean package rather than recursively bundling extracted copies.

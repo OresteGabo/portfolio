@@ -5,6 +5,7 @@
     "transparent": true,
     "width": 760,
     "height": 560,
+    "locale": null,
     "text": "no words; counter digits outlined",
     "png": [
       {
@@ -30,6 +31,7 @@
     "transparent": true,
     "width": 760,
     "height": 560,
+    "locale": null,
     "text": "no words; counter digits outlined",
     "png": [
       {
@@ -55,6 +57,7 @@
     "transparent": true,
     "width": 760,
     "height": 560,
+    "locale": null,
     "text": "no words; counter digits outlined",
     "png": [
       {
@@ -80,6 +83,7 @@
     "transparent": true,
     "width": 760,
     "height": 560,
+    "locale": null,
     "text": "no words; counter digits outlined",
     "png": [
       {
@@ -105,6 +109,7 @@
     "transparent": true,
     "width": 760,
     "height": 560,
+    "locale": "en",
     "text": "outlined English labels",
     "png": [
       {
@@ -130,6 +135,7 @@
     "transparent": true,
     "width": 760,
     "height": 560,
+    "locale": "en",
     "text": "outlined English labels",
     "png": [
       {
@@ -155,6 +161,7 @@
     "transparent": true,
     "width": 760,
     "height": 560,
+    "locale": "en",
     "text": "outlined English labels",
     "png": [
       {
@@ -180,6 +187,7 @@
     "transparent": true,
     "width": 760,
     "height": 560,
+    "locale": "en",
     "text": "outlined English labels",
     "png": [
       {
@@ -200,11 +208,116 @@
     ]
   },
   {
+    "name": "calendar-detail-fr-dark",
+    "svg": "svg/calendar-detail-fr-dark.svg",
+    "transparent": true,
+    "width": 760,
+    "height": 560,
+    "locale": "fr",
+    "text": "outlined French labels",
+    "png": [
+      {
+        "path": "png/1x/calendar-detail-fr-dark.png",
+        "width": 760,
+        "height": 560
+      },
+      {
+        "path": "png/2x/calendar-detail-fr-dark.png",
+        "width": 1520,
+        "height": 1120
+      },
+      {
+        "path": "png/3x/calendar-detail-fr-dark.png",
+        "width": 2280,
+        "height": 1680
+      }
+    ]
+  },
+  {
+    "name": "calendar-detail-fr-light",
+    "svg": "svg/calendar-detail-fr-light.svg",
+    "transparent": true,
+    "width": 760,
+    "height": 560,
+    "locale": "fr",
+    "text": "outlined French labels",
+    "png": [
+      {
+        "path": "png/1x/calendar-detail-fr-light.png",
+        "width": 760,
+        "height": 560
+      },
+      {
+        "path": "png/2x/calendar-detail-fr-light.png",
+        "width": 1520,
+        "height": 1120
+      },
+      {
+        "path": "png/3x/calendar-detail-fr-light.png",
+        "width": 2280,
+        "height": 1680
+      }
+    ]
+  },
+  {
+    "name": "calendar-detail-fr-mono-olive",
+    "svg": "svg/calendar-detail-fr-mono-olive.svg",
+    "transparent": true,
+    "width": 760,
+    "height": 560,
+    "locale": "fr",
+    "text": "outlined French labels",
+    "png": [
+      {
+        "path": "png/1x/calendar-detail-fr-mono-olive.png",
+        "width": 760,
+        "height": 560
+      },
+      {
+        "path": "png/2x/calendar-detail-fr-mono-olive.png",
+        "width": 1520,
+        "height": 1120
+      },
+      {
+        "path": "png/3x/calendar-detail-fr-mono-olive.png",
+        "width": 2280,
+        "height": 1680
+      }
+    ]
+  },
+  {
+    "name": "calendar-detail-fr-mono-cream",
+    "svg": "svg/calendar-detail-fr-mono-cream.svg",
+    "transparent": true,
+    "width": 760,
+    "height": 560,
+    "locale": "fr",
+    "text": "outlined French labels",
+    "png": [
+      {
+        "path": "png/1x/calendar-detail-fr-mono-cream.png",
+        "width": 760,
+        "height": 560
+      },
+      {
+        "path": "png/2x/calendar-detail-fr-mono-cream.png",
+        "width": 1520,
+        "height": 1120
+      },
+      {
+        "path": "png/3x/calendar-detail-fr-mono-cream.png",
+        "width": 2280,
+        "height": 1680
+      }
+    ]
+  },
+  {
     "name": "calendar-dark",
     "svg": "svg/calendar-dark.svg",
     "transparent": true,
     "width": 590,
     "height": 530,
+    "locale": null,
     "text": "no words; counter digits outlined",
     "png": [
       {
@@ -230,6 +343,7 @@
     "transparent": true,
     "width": 590,
     "height": 530,
+    "locale": null,
     "text": "no words; counter digits outlined",
     "png": [
       {
@@ -255,6 +369,7 @@
     "transparent": true,
     "width": 590,
     "height": 530,
+    "locale": null,
     "text": "no words; counter digits outlined",
     "png": [
       {
@@ -280,6 +395,7 @@
     "transparent": true,
     "width": 590,
     "height": 530,
+    "locale": null,
     "text": "no words; counter digits outlined",
     "png": [
       {
@@ -305,6 +421,7 @@
     "transparent": true,
     "width": 278,
     "height": 318,
+    "locale": null,
     "text": "no words; counter digits outlined",
     "png": [
       {
@@ -330,6 +447,7 @@
     "transparent": true,
     "width": 278,
     "height": 318,
+    "locale": null,
     "text": "no words; counter digits outlined",
     "png": [
       {
@@ -355,6 +473,7 @@
     "transparent": true,
     "width": 278,
     "height": 318,
+    "locale": null,
     "text": "no words; counter digits outlined",
     "png": [
       {
@@ -380,6 +499,7 @@
     "transparent": true,
     "width": 278,
     "height": 318,
+    "locale": null,
     "text": "no words; counter digits outlined",
     "png": [
       {
@@ -405,6 +525,7 @@
     "transparent": false,
     "width": 760,
     "height": 560,
+    "locale": null,
     "text": "no words; counter digits outlined",
     "png": [
       {
@@ -430,6 +551,7 @@
     "transparent": false,
     "width": 760,
     "height": 560,
+    "locale": null,
     "text": "no words; counter digits outlined",
     "png": [
       {
