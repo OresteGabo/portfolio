@@ -42,6 +42,15 @@ class PendingPurchasesTest {
         assertFalse(pendingMatchesConfirmation(pending, JsonRecord(confirmed.toString()).put("settlementDate", "2026-11-13")))
         assertFalse(pendingMatchesConfirmation(pending.put("status", "active"), confirmed))
     }
+    @Test fun manuallyConfirmedPurchaseCanReceiveItsPersonalPdfWithoutAnotherPurchase() {
+        val purchase=pendingBondInput(issue(),1_000_000.0,today).put("status","active").put("confirmationMethod","manual")
+        assertTrue(needsPersonalConfirmation(purchase))
+        assertTrue(pendingMatchesConfirmation(purchase,importedPurchaseInput(confirmation())))
+        assertEquals(11_000.0,completePendingPurchase(confirmation(),purchase).optDouble("feesPaid"))
+        purchase.put("confirmationDocumentId","stored-pdf")
+        assertFalse(needsPersonalConfirmation(purchase))
+        assertFalse(pendingMatchesConfirmation(purchase,importedPurchaseInput(confirmation())))
+    }
     @Test fun completingPendingKeepsRecordedCommissionOnceAndUsesActualAllocationAndPrice() {
         val pending = pendingBondInput(issue(), 1_000_000.0, today)
         val review = confirmation()

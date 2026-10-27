@@ -365,7 +365,10 @@ private fun PurchaseDetails(model: PortfolioModel, purchase: JsonRecord, engine:
         item { Panel {
             if (purchase.text("status") == "submitted") PendingPurchaseFacts(purchase) else BondPurchaseFacts(purchase)
         } }
-        if (purchase.text("status") == "submitted") item { PdfImportButton(model, engine, imported, bondOnly = true) }
+        if (needsPersonalConfirmation(purchase)) item {
+            PendingConfirmationAction(purchase,!model.busy) { model.confirmPendingPurchase(purchase,back) }
+            PdfImportButton(model, engine, imported, bondOnly = true)
+        }
         if (purchase.text("status") != "submitted") purchase.terms()?.let { terms ->
             val tracking = trackBond(terms, Today)
             item { Panel {

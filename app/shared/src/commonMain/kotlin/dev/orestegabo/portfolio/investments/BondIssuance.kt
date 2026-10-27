@@ -57,7 +57,7 @@ fun BondIssuanceReview(model: PortfolioModel, review: JsonRecord, done: () -> Un
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { AppText("Review bond issuance", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
         item { AppText("This public report and its bond details will be available to all invited users.", style = MaterialTheme.typography.bodySmall) }
-        item { AppText("Save public bond terms before your purchase confirmation arrives. Your allocation stays unconfirmed.") }
+        item { AppText("Matching pending purchases receive these terms. Your allocation stays unconfirmed.") }
         item { Panel {
             AppText(p.text("bondName"), fontWeight = FontWeight.Bold)
             Fact("Tenor (years)", p.text("tenorYears")); Fact("Security code", p.text("isin")); Fact("Issuance date", p.text("issuanceDate"))

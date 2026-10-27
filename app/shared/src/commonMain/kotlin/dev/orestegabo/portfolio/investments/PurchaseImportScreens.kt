@@ -26,7 +26,7 @@ fun PendingBondScreen(model: PortfolioModel, initialIssueId: String? = null, don
     val draft = issue?.let { runCatching { pendingBondInput(it, amount.toInputNumberOrNull() ?: 0.0, Today) }.getOrNull() }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { AppText("Pending bond", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
-        item { AppText("No file needed. Confirm later with your BNR PDF.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        item { AppText("No file needed. Confirm later with your PDF or published issuance terms.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         if (choices.isEmpty()) item { EmptyState("No published bonds", EmptyArtwork.BONDS, compact = true) }
         else {
             item { ListItem(headlineContent = { AppText(issue?.text("title") ?: "Choose a bond") },
@@ -78,14 +78,14 @@ fun PurchaseImportReview(model: PortfolioModel, review: JsonRecord, target: Json
                 if (model.busy) LoadingState() else TextButton(onClick = { model.error = null; model.loadInvestmentHistory() }) { AppText("Retry loading pending purchases") }
             }
             if (target == null && matches.isNotEmpty()) {
-                item { AppText("Confirm a pending purchase", fontWeight = FontWeight.SemiBold) }
+                item { AppText("Match an existing purchase", fontWeight = FontWeight.SemiBold) }
                 items(matches, key = { it.text("id") }) { row ->
                     ListItem(headlineContent = { FinancialText(row.text("bondName")) }, supportingContent = { FinancialText("Applied · ${money(row.optDouble("faceValue"), row.text("currency"))}") },
                         leadingContent = { RadioButton(selected = selectedId == row.text("id"), onClick = null) },
                         modifier = Modifier.clickable { selection = row.text("id") })
                 }
             }
-            if (target != null) item { AppText("Updates your pending purchase", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary) }
+            if (target != null) item { AppText(if(target?.text("status")=="submitted") "Updates your pending purchase" else "Adds your confirmation PDF", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary) }
             item { Panel {
                 if (bond) {
                     AppText(body.text("bondName"), fontWeight = FontWeight.Bold)

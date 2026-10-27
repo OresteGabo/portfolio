@@ -125,7 +125,7 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
                 if (bonds.isEmpty() && recentBonds.isNotEmpty()) item { Inset {
                     EmptyState("No ${displayRecordValue(status)} bonds", EmptyArtwork.SEARCH, compact = true, actionLabel = "Show all", onAction = { status = "all" })
                 } }
-                items(bonds, key = { "bond:${it.text("id")}" }) { purchase -> Inset { BondPurchaseTile(purchase, uploadConfirmation = { uploadPending(purchase) }) { detail(purchase) } } }
+                items(bonds, key = { "bond:${it.text("id")}" }) { purchase -> Inset { BondPurchaseTile(purchase, uploadConfirmation = { uploadPending(purchase) }, manualConfirmation={ model.confirmPendingPurchase(purchase) }, confirming=model.busy) { detail(purchase) } } }
             }
             if (kind != "bonds") {
                 if (kind == "all") item { SectionLabel("Shares") }

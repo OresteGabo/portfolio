@@ -22,11 +22,14 @@ fun pendingBondInput(issue: JsonRecord, amount: Double, recorded: LocalDate): Js
         .put("status", "submitted").put("notes", "Pending application. Allocation, executed price and coupon are unconfirmed; stored price is provisional.")
 }
 
+fun needsPersonalConfirmation(purchase: JsonRecord) = purchase.text("status")=="submitted" ||
+    purchase.text("confirmationMethod")=="manual" && purchase.text("confirmationDocumentId").isBlank()
+
 fun pendingMatchesConfirmation(pending: JsonRecord, confirmed: JsonRecord): Boolean =
-    pending.text("status") == "submitted" && pending.text("currency") == confirmed.text("currency") &&
+    needsPersonalConfirmation(pending) && pending.text("currency") == confirmed.text("currency") &&
         pending.text("settlementDate") == confirmed.text("settlementDate") &&
         pending.text("maturityDate") == confirmed.text("maturityDate") &&
-        (pending.text("isin").isBlank() || pending.text("isin") == confirmed.text("isin")) &&
+        (pending.text("isin").isBlank() || pending.text("isin").uppercase().removeSuffix("/MN") == confirmed.text("isin").uppercase().removeSuffix("/MN")) &&
         confirmed.optDouble("faceValue", 0.0) > 0 && confirmed.optDouble("faceValue", 0.0) <= pending.optDouble("faceValue", 0.0)
 
 fun importedPurchaseInput(review: JsonRecord): JsonRecord {

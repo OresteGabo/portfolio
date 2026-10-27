@@ -48,7 +48,7 @@ fun InvestmentHistoryScreen(model: PortfolioModel, uploadPending: (JsonRecord) -
                     onAction = if (search.isNotBlank() || year != "all") ({ search = ""; year = "all"; kind = "all" }) else null)
             }
             if (bonds.isNotEmpty()) item { AppText("Bonds", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold) }
-            items(bonds, key = { "bond:${it.text("id")}" }) { BondPurchaseTile(it, uploadConfirmation = { uploadPending(it) }) { detail(it) } }
+            items(bonds, key = { "bond:${it.text("id")}" }) { BondPurchaseTile(it, uploadConfirmation = { uploadPending(it) }, manualConfirmation={ model.confirmPendingPurchase(it) }, confirming=model.busy) { detail(it) } }
             if (shares.isNotEmpty()) item { AppText("Shares", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold) }
             items(shares, key = { "share:${it.text("id")}" }) { SharePurchaseTile(it) }
         }

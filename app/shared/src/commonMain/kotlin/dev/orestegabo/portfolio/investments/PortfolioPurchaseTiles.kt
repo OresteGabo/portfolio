@@ -52,7 +52,7 @@ private fun PurchaseTile(
 }
 
 @Composable
-fun BondPurchaseTile(purchase: JsonRecord, uploadConfirmation: () -> Unit, manage: () -> Unit) {
+fun BondPurchaseTile(purchase: JsonRecord, uploadConfirmation: () -> Unit, manualConfirmation: (() -> Unit)? = null, confirming: Boolean = false, manage: () -> Unit) {
     var expanded by rememberSaveable(purchase.text("id")) { mutableStateOf(false) }
     val currency = purchase.text("currency")
     val pending = purchase.text("status") == "submitted"
@@ -72,8 +72,9 @@ fun BondPurchaseTile(purchase: JsonRecord, uploadConfirmation: () -> Unit, manag
                 style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             tracking.schedule.forEach { date -> Fact(date.toString(), money(tracking.netPerPayment, currency)) }
         }
-        OutlinedButton(onClick = if (pending) uploadConfirmation else manage, modifier = Modifier.fillMaxWidth()) { AppText(if (pending) "Upload confirmation" else "Manage purchase") }
-        if (pending) TextButton(onClick = manage, modifier = Modifier.fillMaxWidth()) { AppText("Details") }
+        if(pending && manualConfirmation!=null) PendingConfirmationAction(purchase,!confirming,manualConfirmation)
+        OutlinedButton(onClick = if (needsPersonalConfirmation(purchase)) uploadConfirmation else manage, modifier = Modifier.fillMaxWidth()) { AppText(if (needsPersonalConfirmation(purchase)) "Upload confirmation" else "Manage purchase") }
+        if (needsPersonalConfirmation(purchase)) TextButton(onClick = manage, modifier = Modifier.fillMaxWidth()) { AppText("Details") }
     }
 }
 
@@ -95,6 +96,8 @@ fun BondPurchaseFacts(purchase: JsonRecord) {
     Fact("Withholding tax", percent(purchase.optDouble("withholdingTaxRate", 0.0)))
     if (purchase.has("couponFrequency")) Fact("Payments per year", purchase.text("couponFrequency"))
     Fact("Annual net coupon", money(purchase.netAnnualBondCoupon(), currency))
+    if(purchase.text("confirmationMethod")=="manual") Fact("Confirmation","Confirmed by you")
+    if(purchase.text("confirmationMethod")=="document") Fact("Confirmation","Confirmation PDF uploaded")
     PurchaseSourceAndNotes(purchase)
 }
 
@@ -135,4 +138,16 @@ fun PendingPurchaseFacts(purchase: JsonRecord) {
     Fact("Recorded", purchase.text("purchaseDate"))
     Fact("Expected settlement", purchase.text("settlementDate"))
     Fact("Maturity", purchase.text("maturityDate"))
+    if(purchase.optBoolean("publishedTermsAvailable")) {
+        HorizontalDivider()
+        AppText("Published issuance terms",fontWeight=FontWeight.SemiBold)
+        purchase.optJSONObject("manualConfirmation")?.let { Fact("Security code",it.text("isin")) }
+        Fact("Coupon rate",percent(purchase.optDouble("couponRate")))
+        Fact("First coupon",purchase.text("firstCouponDate"))
+        val dates=purchase.optJSONArray("couponDates") ?: JsonList()
+        var showDates by rememberSaveable(purchase.text("id")) { mutableStateOf(false) }
+        TextButton(onClick={ showDates=!showDates }) { AppText("Coupon payment dates");Spacer(Modifier.width(6.dp));AppText(dates.length().toString()) }
+        if(showDates)for(index in 0 until dates.length())Fact((index+1).toString(),dates.getString(index))
+        if(!purchase.optBoolean("canConfirmWithoutPdf"))AppText("A personal PDF is needed to confirm the final price.",style=MaterialTheme.typography.bodySmall)
+    }
 }

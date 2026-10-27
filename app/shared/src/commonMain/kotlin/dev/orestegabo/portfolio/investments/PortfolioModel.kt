@@ -597,11 +597,18 @@ class PortfolioModel(
             }
             pdfImportProgress = PdfImportProgress(PdfImportStage.SAVING)
             api.request(if (bond) "/api/bonds/purchases" + (id?.let { "/$it" } ?: "") else "/api/bonds/equities",
-                if (bond && id != null) "PUT" else "POST", purchase)
+                if (bond && id != null) "PUT" else "POST", JsonRecord(purchase.toString()).apply { if(bond)put("confirmationDocumentId",uploadedDocument) })
             importedPdf = null; importedReview = null; uploadedDocument = null
             completed()
             refreshAfterWrite("Purchase and PDF saved.")
         } finally { pdfImportProgress = null }
+    }
+
+    fun confirmPendingPurchase(purchase: JsonRecord,completed: () -> Unit = {}) = action {
+        require(purchase.optBoolean("canConfirmWithoutPdf")) { "Use your personal PDF to confirm the final allocation and price." }
+        api.request("/api/bonds/purchases/${purchase.text("id")}/confirm","POST",JsonRecord().put("confirmed",true).put("issuanceDocumentId",purchase.text("issuanceDocumentId")))
+        completed()
+        refreshAfterWrite("Purchase confirmed. No personal PDF was added.")
     }
 
     fun saveImportedIssuance(review: JsonRecord, completed: () -> Unit) = action {
