@@ -51,12 +51,13 @@ actual fun rememberServerSettings(): ServerSettings = remember { object : Server
 } }
 private class IosActions : NativeActions {
     private var savingPassword = false
-    override val interactingWithSystem get() = picker != null || savingPassword
+    override val interactingWithSystem get() = picker != null || savingPassword || sharing != null
     override suspend fun offerPasswordSave(origin: String, email: String, password: String) = withContext(Dispatchers.Main) {
         savingPassword = true
         try { offerIosPasswordSave(origin, email, password) }
         finally { savingPassword = false }
     }
+    private var sharing: UIActivityViewController? = null
     private var delegate: UIDocumentPickerDelegateProtocol? = null
     private var picker: UIDocumentPickerViewController? = null
     private suspend fun select(controller: UIDocumentPickerViewController): NSURL? = suspendCancellableCoroutine { result ->
@@ -120,6 +121,30 @@ private class IosActions : NativeActions {
         try {
             withContext(Dispatchers.Default) { check(bytes.toData().writeToURL(url, atomically = true)) { "Unable to prepare the document." } }
             select(UIDocumentPickerViewController(forExportingURLs = listOf(url), asCopy = true)) != null
+        } finally { NSFileManager.defaultManager.removeItemAtPath(directory, error = null) }
+    }
+    override suspend fun sharePdf(fileName: String, bytes: ByteArray): Boolean = withContext(Dispatchers.Main) {
+        check(sharing == null) { "A share sheet is already open." }
+        val directory = NSTemporaryDirectory() + NSUUID().UUIDString
+        NSFileManager.defaultManager.createDirectoryAtPath(directory, withIntermediateDirectories = true, attributes = null, error = null)
+        val name = fileName.replace(Regex("[^A-Za-z0-9._-]"), "_").take(120).ifBlank { "investment.pdf" }
+            .let { if (it.endsWith(".pdf", true)) it else "$it.pdf" }
+        val url = NSURL.fileURLWithPath("$directory/$name")
+        try {
+            withContext(Dispatchers.Default) { check(bytes.toData().writeToURL(url, atomically = true)) { "Unable to prepare the document." } }
+            suspendCancellableCoroutine { result ->
+                val controller = UIActivityViewController(activityItems = listOf(url), applicationActivities = null)
+                sharing = controller
+                controller.completionWithItemsHandler = { _, completed, _, _ ->
+                    sharing = null
+                    if (result.isActive) result.resume(completed)
+                }
+                val presenter = presentingController()
+                controller.popoverPresentationController?.sourceView = presenter.view
+                controller.popoverPresentationController?.sourceRect = CGRectMake(0.0, 0.0, 1.0, 1.0)
+                result.invokeOnCancellation { controller.dismissViewControllerAnimated(true, null); sharing = null }
+                presenter.presentViewController(controller, animated = true, completion = null)
+            }
         } finally { NSFileManager.defaultManager.removeItemAtPath(directory, error = null) }
     }
     override fun openUrl(url: String) {

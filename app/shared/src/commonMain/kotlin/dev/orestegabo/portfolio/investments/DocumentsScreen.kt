@@ -53,7 +53,7 @@ fun DocumentsScreen(model: PortfolioModel, upload: () -> Unit = {}) {
             require(path.matches(Regex("/api/bonds/documents/[A-Za-z0-9_-]+"))) { "Invalid document URL." }
             val data = model.api.bytes(path)
             require(data.take(5).toByteArray().decodeToString() == "%PDF-") { "The server did not return a PDF." }
-            if (actions.savePdf(document.text("originalFileName").ifBlank { "investment.pdf" }, data)) model.message = "Document saved."
+            if (actions.sharePdf(document.text("originalFileName").ifBlank { "investment.pdf" }, data)) model.message = "PDF ready to share."
         } finally { saving = null }
     }
     var historyRequested by remember(model.user?.text("id")) { mutableStateOf(false) }
@@ -249,7 +249,7 @@ private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolea
                     shape = RoundedCornerShape(15.dp),
                     colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = accent.copy(alpha = .09f), contentColor = accent)) {
                     if (saving) CircularProgressIndicator(Modifier.size(20.dp).semantics { contentDescription = localized("Downloading document") }, strokeWidth = 2.dp)
-                    else AppIcon(Icons.Outlined.Download, "Download ${privateFinancialValue(title)}", Modifier.size(22.dp))
+                    else AppIcon(Icons.Outlined.Share, "${localized("Share PDF")}: ${privateFinancialValue(title)}", Modifier.size(22.dp))
                 }
             }
             AppAnimatedVisibility(expanded) {

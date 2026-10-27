@@ -719,15 +719,15 @@ class PortfolioModel(
                 generatePortfolioReport(PortfolioReportData(PortfolioSnapshot(bonds, shares, files), latestQuotes,
                     missing, account.text("email"), target, date, language, receipts))
             }
-            reportProgress = "Choose where to save the PDF"
-            if (actions.savePdf("Struct-Capital-$date.pdf", bytes)) {
-                message = "Portfolio report saved."
+            reportProgress = "Choose where to share the PDF"
+            if (actions.sharePdf("Struct-Capital-$date.pdf", bytes)) {
+                message = "Portfolio report ready to share."
                 try {
                     api.request("/api/bonds/notifications/report","POST",JsonRecord().put("date",date.toString())
                         .put("exportId",Random.nextBytes(16).joinToString("") { (it.toInt() and 255).toString(16).padStart(2,'0') }))
                     fetchNotifications()
                 } catch(cancelled: CancellationException) { throw cancelled }
-                catch(_: Exception) { /* Saving the report remains successful if its optional notice fails. */ }
+                catch(_: Exception) { /* Exporting the report remains successful if its optional notice fails. */ }
             }
         } finally { reportProgress = null }
     }
@@ -758,8 +758,8 @@ class PortfolioModel(
             catch (failure: Exception) { if (failure is ApiException && failure.status == 401) throw failure; null }
             reportProgress = "Building your report…"
             val bytes = withContext(Dispatchers.Default) { generateAnnualReport(data.copy(couponReceipts = receipts), year, histories) }
-            reportProgress = "Choose where to save the PDF"
-            if (actions.savePdf("Struct-Capital-Annual-$year.pdf", bytes)) message = "Annual report saved."
+            reportProgress = "Choose where to share the PDF"
+            if (actions.sharePdf("Struct-Capital-Annual-$year.pdf", bytes)) message = "Annual report ready to share."
         } finally {
             reportProgress = null
             annualReportYear = null

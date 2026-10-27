@@ -2,6 +2,12 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Share PDF" to "Partager le PDF",
+    "PDF ready to share." to "PDF prêt à être partagé.",
+    "Portfolio report ready to share." to "Rapport du portefeuille prêt à être partagé.",
+    "Annual report ready to share." to "Rapport annuel prêt à être partagé.",
+    "Choose where to share the PDF" to "Choisissez où partager le PDF",
+    "A share sheet is already open." to "Une fenêtre de partage est déjà ouverte.",
     "Costs & fees" to "Frais d’achat",
     "Bonds · Shares · Costs" to "Obligations · Actions · Frais",
     "Turn a broker PDF into clear bond and share records. Review the details before they reach your portfolio." to "Transformez un PDF de courtier en données claires sur vos obligations et actions. Vérifiez les détails avant de les ajouter au portefeuille.",

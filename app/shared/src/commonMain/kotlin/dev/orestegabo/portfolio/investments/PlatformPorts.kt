@@ -31,6 +31,8 @@ interface NativeActions {
     suspend fun offerPasswordSave(origin: String, email: String, password: String) {}
     suspend fun pickPdf(onSelected: () -> Unit = {}): ByteArray?
     suspend fun savePdf(fileName: String, bytes: ByteArray): Boolean
+    /** Present native sharing, including available save/export actions. */
+    suspend fun sharePdf(fileName: String, bytes: ByteArray): Boolean = savePdf(fileName, bytes)
     fun openUrl(url: String)
     /** Open a draft in the mail app; platforms without one can share the address. */
     fun openEmail(address: String) { shareText(address) }

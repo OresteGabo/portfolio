@@ -65,7 +65,8 @@ class DocumentsLibraryTest {
         }
         val actions = object : NativeActions {
             override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? = null
-            override suspend fun savePdf(fileName: String, bytes: ByteArray): Boolean {
+            override suspend fun savePdf(fileName: String, bytes: ByteArray): Boolean = error("Use native PDF sharing")
+            override suspend fun sharePdf(fileName: String, bytes: ByteArray): Boolean {
                 assertTrue(bytes.decodeToString().startsWith("%PDF-")); downloads.add(fileName); return true
             }
             override fun openUrl(url: String) = Unit
@@ -119,10 +120,14 @@ class DocumentsLibraryTest {
                 }
                 await("Documents"); click("Documents")
                 await("October Treasury Bond"); await("October 2026"); await("Logo: BNR")
+                val readyDeadline = System.currentTimeMillis() + 10_000
+                while (model.busy && System.currentTimeMillis() < readyDeadline) Thread.sleep(50)
+                assertFalse("Wait for document history before sharing", model.busy)
+                instrumentation.waitForIdleSync()
                 screenshot("document-library-en.png")
-                click("Download October Treasury Bond")
-                assertEquals("bnr-confirmation.pdf", downloads.poll(5, TimeUnit.SECONDS))
-                assertFalse("Download must not expand the card", nodes().any { it.stateDescription?.toString() == "Expanded" })
+                click("Share PDF: October Treasury Bond")
+                assertEquals("Share error=${model.error}, busy=${model.busy}", "bnr-confirmation.pdf", downloads.poll(5, TimeUnit.SECONDS))
+                assertFalse("Sharing must not expand the card", nodes().any { it.stateDescription?.toString() == "Expanded" })
                 scenario.onActivity { model.message = null }
                 click("October Treasury Bond")
                 assertTrue("Tapping the card expands its details", nodes().any { it.stateDescription?.toString() == "Expanded" })

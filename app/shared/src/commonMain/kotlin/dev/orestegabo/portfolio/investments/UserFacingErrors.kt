@@ -6,6 +6,7 @@ internal const val CONNECTION_ERROR_MESSAGE = "Could not connect. Check your con
 /** Exact, app-authored messages only. Never trust free-form exception or server response text. */
 private val approvedErrorMessages = setOf(
     PDF_READ_ERROR,
+    "A share sheet is already open.",
     "This pending purchase is no longer available. Refresh your portfolio.",
     "The purchase changed. Review its latest details before confirming.",
     "This PDF does not match the pending bond or applied amount.",

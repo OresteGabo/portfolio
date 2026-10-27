@@ -515,7 +515,8 @@ class PortfolioModelTest {
     private class ReportActions(private val saveResult: Boolean = true) : NativeActions {
         val saved = kotlinx.coroutines.CompletableDeferred<ByteArray>()
         override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? = error("Not used")
-        override suspend fun savePdf(fileName: String, bytes: ByteArray): Boolean {
+        override suspend fun savePdf(fileName: String, bytes: ByteArray): Boolean = error("Use the native share sheet")
+        override suspend fun sharePdf(fileName: String, bytes: ByteArray): Boolean {
             assertTrue(fileName.endsWith(".pdf"))
             saved.complete(bytes)
             return saveResult
@@ -540,7 +541,7 @@ class PortfolioModelTest {
             assertEquals(0, scenario.deletionRequests)
             assertNotNull(model.user)
             assertNull(model.reportProgress)
-            assertEquals("Portfolio report saved.", model.message)
+            assertEquals("Portfolio report ready to share.", model.message)
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
     @Test fun failedExportNeverOffersAPartialPdfAndDoesNotDeleteAccount() = runTest {
@@ -594,7 +595,7 @@ class PortfolioModelTest {
             assertSame(cached, model.portfolio)
             assertNull(model.annualReportYear)
             assertNull(model.reportProgress)
-            assertEquals("Annual report saved.", model.message)
+            assertEquals("Annual report ready to share.", model.message)
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
 
