@@ -1,5 +1,6 @@
 package dev.orestegabo.portfolio.investments
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,6 +18,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.sp
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.contentDescription
@@ -31,7 +36,8 @@ private fun CompanyPriceChart(
 ) {
     val observations = stockPriceHistory(history, quotes, symbol, period, Today)
     Panel {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            InvestmentLogo(ticker = symbol)
             Column(Modifier.weight(1f)) {
                 AppText(symbol, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 AppText(name, style = MaterialTheme.typography.bodySmall)
@@ -40,7 +46,18 @@ private fun CompanyPriceChart(
                 style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         }
         ChoiceRow(listOf("month", "year", "all"), period, onPeriod)
-        Box(Modifier.fillMaxWidth().heightIn(min = 360.dp)) {
+        Box(Modifier.fillMaxWidth().heightIn(min = 360.dp).clip(MaterialTheme.shapes.medium)) {
+            // Decorative identity stays with each pager page, including loading and empty states.
+            val logo = investmentLogoResource(symbol)
+            if (logo != null) {
+                Image(painterResource(logo), contentDescription = null,
+                    modifier = Modifier.align(Alignment.Center).fillMaxWidth(.72f).height(200.dp),
+                    contentScale = ContentScale.Fit, alpha = .08f)
+            } else {
+                Text(symbol, modifier = Modifier.align(Alignment.Center),
+                    fontSize = 64.sp, fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = .06f))
+            }
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (history == null && !failed) LinearProgressIndicator(Modifier.fillMaxWidth())
                 if (observations.isNotEmpty()) {

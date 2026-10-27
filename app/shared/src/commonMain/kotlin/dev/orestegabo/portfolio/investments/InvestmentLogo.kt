@@ -14,10 +14,9 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import portfolio.app.shared.generated.resources.*
 
-@Composable
-fun InvestmentLogo(ticker: String = "", bond: Boolean = false, modifier: Modifier = Modifier, compact: Boolean = false) {
+internal fun investmentLogoResource(ticker: String, bond: Boolean = false): org.jetbrains.compose.resources.DrawableResource? {
     val symbol = ticker.trim().uppercase()
-    val resource = when {
+    return when {
         bond -> Res.drawable.logo_bnr
         symbol in listOf("BOK", "BK", "BK GROUP") -> Res.drawable.logo_bk
         symbol in listOf("IMR", "I&M", "IMBANK") -> Res.drawable.logo_im
@@ -28,6 +27,12 @@ fun InvestmentLogo(ticker: String = "", bond: Boolean = false, modifier: Modifie
         symbol in listOf("EQTY", "EQUITY", "EQUITY BANK") -> Res.drawable.logo_equity
         else -> null
     }
+}
+
+@Composable
+fun InvestmentLogo(ticker: String = "", bond: Boolean = false, modifier: Modifier = Modifier, compact: Boolean = false) {
+    val symbol = ticker.trim().uppercase()
+    val resource = investmentLogoResource(ticker, bond)
     Surface(modifier.size(44.dp), shape = CircleShape,
         color = if (resource != null) Color.White else MaterialTheme.colorScheme.primaryContainer) {
         Box(contentAlignment = Alignment.Center) {
