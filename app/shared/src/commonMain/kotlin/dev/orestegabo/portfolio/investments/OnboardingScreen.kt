@@ -44,8 +44,8 @@ internal enum class IntroductionStep(val eyebrow: String, val title: String, val
         "Keep your documents together and generate an annual report whenever you need one. You choose what to export."),
 }
 
-internal fun shouldShowIntroduction(requested: Boolean, replay: Boolean, signedIn: Boolean, locked: Boolean, loading: Boolean): Boolean =
-    requested && (replay || (!signedIn && !locked && !loading))
+/** First-run presentation never waits for network work or dismisses itself when a session arrives. */
+internal fun shouldShowIntroduction(requested: Boolean, locked: Boolean): Boolean = requested && !locked
 
 @Composable
 internal fun OnboardingScreen(replay: Boolean = false, finish: () -> Unit) {

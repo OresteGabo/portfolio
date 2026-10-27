@@ -23,6 +23,9 @@ import java.util.concurrent.Executors
 class OnboardingUiTest {
     @Test fun tourSupportsThemesFrenchSkipCompletionAndPersistence() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val startupOnly = InstrumentationRegistry.getArguments().getString("startupOnly") == "true"
+        val sessionGate = java.util.concurrent.atomic.AtomicReference(java.util.concurrent.CountDownLatch(0))
+        val sessionStarted = java.util.concurrent.atomic.AtomicReference(java.util.concurrent.CountDownLatch(1))
         val largeTextOnly = InstrumentationRegistry.getArguments().getString("largeTextOnly") == "true"
         val smallScreenOnly = InstrumentationRegistry.getArguments().getString("smallScreenOnly") == "true"
         val profile = InstrumentationRegistry.getArguments().getString("smallProfile") ?: "small"
@@ -39,6 +42,10 @@ class OnboardingUiTest {
                     val reader = client.getInputStream().bufferedReader()
                     val path = reader.readLine().orEmpty().split(' ').getOrNull(1).orEmpty()
                     while (!reader.readLine().isNullOrEmpty()) { }
+                    if (startupOnly && path.endsWith("/auth/session")) {
+                        sessionStarted.get().countDown()
+                        sessionGate.get().await(30, java.util.concurrent.TimeUnit.SECONDS)
+                    }
                     val body = (if (path.endsWith("/auth/session") && signedIn.get())
                         """{"authenticated":true,"user":{"id":"onboarding-test","email":"demo@example.test","isOwner":false}}"""
                         else if (path.endsWith("/auth/session")) "{\"authenticated\":false}" else "{}").toByteArray()
@@ -106,12 +113,14 @@ class OnboardingUiTest {
             File(instrumentation.targetContext.cacheDir, name).outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
             image.recycle()
         }
+        var launchedModel: PortfolioModel? = null
         var largeText = false
         var textScaleOverride: Float? = null
         fun launch(): ActivityScenario<MainActivity> = ActivityScenario.launch(MainActivity::class.java).also { scenario ->
             scenario.onActivity { activity ->
                 activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
                 val model = PortfolioModel(settings, assets = { "[]".encodeToByteArray() }, captureMaskRequired = false)
+                launchedModel = model
                 activity.viewModelStore.put("onboarding-test", model)
                 activity.setContent {
                     val density = LocalDensity.current
@@ -121,6 +130,45 @@ class OnboardingUiTest {
             }
         }
         try {
+            if (startupOnly) {
+                for (authenticated in listOf(false, true)) {
+                    signedIn.set(authenticated)
+                    sessionGate.set(java.util.concurrent.CountDownLatch(1))
+                    sessionStarted.set(java.util.concurrent.CountDownLatch(1))
+                    prefs.edit().putString("origin", origin).putString("theme", "light").putString("language", "en")
+                        .putBoolean("onboardingCompleted", false).commit()
+                    AppLanguage.select("en")
+                    launch().use {
+                        await("Your portfolio.\nA clearer picture.")
+                        assertTrue("Session loading starts behind onboarding", sessionStarted.get().await(2, java.util.concurrent.TimeUnit.SECONDS))
+                        assertTrue("The tour is visible before the session resolves", requireNotNull(launchedModel).busy)
+                        assertFalse(nodes().any { it.isVisibleToUser && it.text?.toString() == "Welcome back" })
+                        tap("Continue")
+                        await("Less typing.\nMore understanding.")
+                        screenshot("onboarding-startup-$authenticated-loading.png")
+                        sessionGate.get().countDown()
+                        val deadline = SystemClock.uptimeMillis() + 12_000
+                        while (requireNotNull(launchedModel).busy && SystemClock.uptimeMillis() < deadline) Thread.sleep(80)
+                        assertFalse("Background initialization finishes during the tour", requireNotNull(launchedModel).busy)
+                        assertEquals(authenticated, requireNotNull(launchedModel).user != null)
+                        await("Less typing.\nMore understanding.")
+                        assertFalse("A background response does not complete the tour", prefs.getBoolean("onboardingCompleted", false))
+                        tap("Continue")
+                        await("Important dates.\nIn plain sight.")
+                        tap("Continue")
+                        await("A year of investing.\nClearly documented.")
+                        tap("Get started")
+                        if (authenticated) { tap("Settings"); await("Notifications") }
+                        else await("Welcome back")
+                        assertTrue(prefs.getBoolean("onboardingCompleted", false))
+                    }
+                    launch().use {
+                        if (authenticated) await("Portfolio") else await("Welcome back")
+                        assertFalse(nodes().any { it.isVisibleToUser && it.text?.toString() == "Your portfolio.\nA clearer picture." })
+                    }
+                }
+                return
+            }
             if (smallScreenOnly) {
                 val steps = listOf(
                     "Your portfolio.\nA clearer picture." to "Bring your Rwanda bond and share records together, so the details make more sense.",
@@ -267,6 +315,7 @@ class OnboardingUiTest {
                 await("Settings")
             }
         } finally {
+            sessionGate.get().countDown()
             AppLanguage.select(previousLanguage)
             prefs.edit().clear().apply {
                 previous.forEach { (key, value) -> when (value) {

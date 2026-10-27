@@ -89,7 +89,7 @@ fun InvestmentApp(model: PortfolioModel) {
     DisposableEffect(engine) { onDispose { engine.destroy() } }
     var newPurchase by rememberSaveable { mutableStateOf(false) }
     val preferences = rememberServerSettings()
-    var introductionRequested by rememberSaveable { mutableStateOf(!preferences.readOnboardingCompleted()) }
+    var introductionRequested by rememberSaveable { mutableStateOf(!preferences.readOnboardingCompleted() && !model.locked) }
     var replayIntroduction by rememberSaveable { mutableStateOf(false) }
     fun finishIntroduction() {
         preferences.writeOnboardingCompleted(true)
@@ -97,7 +97,9 @@ fun InvestmentApp(model: PortfolioModel) {
         replayIntroduction = false
     }
     LaunchedEffect(model.user) {
-        if (model.user != null && !replayIntroduction) finishIntroduction()
+        // Existing device-protected sessions can bypass the tour at unlock. A session arriving
+        // while the user is reading it must not interrupt the tour or mark it completed.
+        if (model.user != null && !introductionRequested && !replayIntroduction) finishIntroduction()
     }
     val systemDark = isSystemInDarkTheme()
     var theme by rememberSaveable { mutableStateOf(preferences.readTheme()?.takeIf { it in listOf("system", "light", "dark") } ?: "system") }
@@ -152,7 +154,7 @@ fun InvestmentApp(model: PortfolioModel) {
         else lightColorScheme(primary = BrandOlive, onPrimary = Color.White, primaryContainer = BrandCream, onPrimaryContainer = Ink, secondary = BrandOlive, secondaryContainer = BrandCream, onSecondaryContainer = Ink, background = Color(0xFFFAF8F2), surface = Color.White, onSurface = Ink)
     CompositionLocalProvider(LocalChartStyle provides chartStyle, LocalNumbersHidden provides model.numbersConcealed) {
     MaterialTheme(colorScheme = colors, typography = Typography()) {
-        if (shouldShowIntroduction(introductionRequested, replayIntroduction, model.user != null, model.locked, model.busy)) {
+        if (shouldShowIntroduction(introductionRequested, model.locked)) {
             PlatformSystemBarAppearance(dark)
             OnboardingScreen(replayIntroduction, ::finishIntroduction)
             return@MaterialTheme
