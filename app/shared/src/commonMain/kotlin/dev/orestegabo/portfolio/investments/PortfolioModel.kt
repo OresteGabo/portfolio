@@ -611,9 +611,10 @@ class PortfolioModel(
         refreshAfterWrite("Purchase confirmed. No personal PDF was added.")
     }
 
-    fun saveImportedIssuance(review: JsonRecord, completed: () -> Unit) = action {
+    fun saveImportedIssuance(review: JsonRecord, confirmationTarget: JsonRecord? = null, completed: () -> Unit) = action {
         require(importedReview === review && importedPdf != null) { "Choose the PDF again before saving." }
         val issuance = importedIssuanceInput(review)
+        val expectedConfirmation = confirmationTarget?.let { pendingIssuanceConfirmation(review, it) }
         try {
             val pdf = importedPdf!!
             val chunkSize = 512 * 1024
@@ -622,20 +623,43 @@ class PortfolioModel(
                 .put("instrumentName", issuance.text("bondName")).put("issuer", issuance.text("issuer"))
                 .put("documentDate", issuance.text("issuanceDate")).put("issuance", issuance)
             var duplicate = false
-            for (index in 0 until count) {
+            if (uploadedDocument == null) for (index in 0 until count) {
                 pdfImportProgress = PdfImportProgress(PdfImportStage.UPLOADING, "${index + 1} / $count")
                 val response = api.request("/api/bonds/documents", "POST", JsonRecord()
                     .put("uploadId", pdfUploadId).put("index", index).put("count", count)
                     .put("content", Base64.encode(pdf.copyOfRange(index * chunkSize, minOf(pdf.size, (index + 1) * chunkSize))))
                     .put("metadata", metadata))
                 if (index == count - 1) {
-                    require(response.text("documentId").isNotBlank()) { "The issuance report could not be saved. Try again." }
+                    uploadedDocument = response.text("documentId").takeIf { it.isNotBlank() }
+                    require(uploadedDocument != null) { "The issuance report could not be saved. Try again." }
                     duplicate = response.optBoolean("duplicate")
+                }
+            }
+            if (confirmationTarget != null && expectedConfirmation != null) {
+                pdfImportProgress = PdfImportProgress(PdfImportStage.SAVING)
+                val current = api.request("/api/bonds/purchases").rows("purchases")
+                    .singleOrNull { it.text("id") == confirmationTarget.text("id") }
+                    ?: error("This pending purchase is no longer available. Refresh your portfolio.")
+                require(current.text("issuanceDocumentId") == uploadedDocument) { "This PDF does not match the pending bond or applied amount." }
+                // A retry after a lost success response must not apply the purchase twice.
+                if (current.text("status") == "active") {
+                    require(current.text("confirmationMethod") == "manual" &&
+                        listOf("faceValue", "feesPaid", "pricePercent", "couponRate").all {
+                            current.optDouble(it, Double.NaN) == expectedConfirmation.optDouble(it, Double.NaN)
+                        }) { "The purchase changed. Review its latest details before confirming." }
+                } else {
+                    val latest = pendingIssuanceConfirmation(review, current)
+                    require(current.optBoolean("canConfirmWithoutPdf")) { "Use your personal PDF to confirm the final allocation and price." }
+                    require(listOf("faceValue", "feesPaid", "accruedInterestPaid", "amountInvested").all {
+                            latest.optDouble(it) == expectedConfirmation.optDouble(it)
+                        }) { "The purchase changed. Review its latest details before confirming." }
+                    api.request("/api/bonds/purchases/${current.text("id")}/confirm", "POST",
+                        JsonRecord().put("confirmed", true).put("issuanceDocumentId", uploadedDocument))
                 }
             }
             discardImportedPdf(review)
             completed()
-            refreshAfterWrite(if (duplicate) "This issuance is already saved. No extra copy was stored." else "Bond issuance and PDF saved.")
+            refreshAfterWrite(if (confirmationTarget != null) "PDF saved and purchase confirmed." else if (duplicate) "This issuance is already saved. No extra copy was stored." else "Bond issuance and PDF saved.")
         } finally { pdfImportProgress = null }
     }
 

@@ -6,6 +6,11 @@ internal const val CONNECTION_ERROR_MESSAGE = "Could not connect. Check your con
 /** Exact, app-authored messages only. Never trust free-form exception or server response text. */
 private val approvedErrorMessages = setOf(
     PDF_READ_ERROR,
+    "This pending purchase is no longer available. Refresh your portfolio.",
+    "The purchase changed. Review its latest details before confirming.",
+    "This PDF does not match the pending bond or applied amount.",
+    "Use your personal PDF to confirm the final allocation and price.",
+    "PDF saved and purchase confirmed. Could not refresh the portfolio. Pull down on Portfolio to update; do not submit it again.",
     "Choose the PDF again before saving.",
     "Some issuance details could not be verified. Choose a clearer BNR market results PDF.",
     "The issuance report could not be saved. Try again.",

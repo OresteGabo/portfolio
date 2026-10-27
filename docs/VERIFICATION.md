@@ -449,3 +449,9 @@ Validation passed: 104 Android shared tests and 112 iOS shared tests (216 total)
 - Android debug and instrumentation APK assembly, iOS Simulator shared-source compilation, and all 149 shared Android host tests pass. The viewport renders were checked on Android emulation; this is not a physical iPhone small-screen verification. Longer text and artwork require vertical scrolling at compact sizes.
 
 - Connected-diagram follow-up: removed the three-arrow width fallback. Rechecked all four pages at 320 × 568dp in English/light and French/dark at normal size, and English/dark plus French/light at 135%; the enlarged-text checks also pass at 360 × 640dp. Android and iOS shared-source builds pass.
+
+### One-step pending-bond PDF confirmation (2026-10-27)
+
+- Preserved the selected pending purchase when the parser identifies a public issuance PDF. Its review shows the recorded full allocation and commission and uses one Save PDF and confirm purchase action. After storage succeeds, the app verifies the server's matching report, eligibility and current purchase values, confirms that same purchase and refreshes the portfolio. General report uploads continue to publish terms without confirming unrelated purchases.
+- Six new shared regression tests cover wrong security/dates/cash, upload failure, confirmation failure with upload reuse, a lost success response, changed allocation, server-required personal proof and general report uploads. The existing personal-confirmation regression now also checks the purchase PUT includes active status and the saved private document ID.
+- All 155 shared Android host tests pass; Android debug assembly and iOS Simulator shared-source compilation pass. Tests use synthetic PDFs and mocked API responses; no production purchase or document was created or changed.

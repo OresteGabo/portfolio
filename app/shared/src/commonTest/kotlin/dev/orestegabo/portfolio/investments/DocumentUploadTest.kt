@@ -44,6 +44,9 @@ class DocumentUploadTest {
                     "/api/bonds/purchases/pending-id" -> {
                         assertTrue(uploaded)
                         assertEquals(HttpMethod.Put, request.method)
+                        val body = JsonRecord((request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString())
+                        assertEquals("active", body.text("status"))
+                        assertEquals("synthetic-document", body.text("confirmationDocumentId"))
                         events += "confirm"
                         if (failConfirmation) respond("""{"error":"Save failed"}""", HttpStatusCode.ServiceUnavailable)
                         else { saved = true; respond("{}") }
@@ -65,7 +68,7 @@ class DocumentUploadTest {
             override fun cancel() {}
             override fun destroy() {}
         }
-        val input = JsonRecord().put("bondName", "Synthetic").put("issuer", "BNR").put("purchaseDate", "2026-10-23")
+        val input = JsonRecord().put("bondName", "Synthetic").put("issuer", "BNR").put("purchaseDate", "2026-10-23").put("status", "active")
         try {
             advanceUntilIdle()
             model.importPurchasePdf(actions, engine) { assertSame(review, it) }

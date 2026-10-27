@@ -132,7 +132,6 @@ fun InvestmentApp(model: PortfolioModel) {
         }
     }
     fun imported(review: JsonRecord) {
-        if (review.text("kind") == "bond-issuance") confirmationTarget = null
         importReview = review
         missingDocuments = false
         editor = null; equityEditor = null; newPurchase = false; pendingEntry = false
@@ -260,7 +259,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     missingDocuments && importReview == null -> MissingDocumentsScreen(model, ::uploadMissing)
                     pendingEntry -> PendingBondScreen(model, pendingIssueId) { pendingEntry = false; pendingIssueId = null }
                     importReview?.text("kind") == "statement" -> StatementReviewScreen(model, importReview!!, ::uploadMissing)
-                    importReview?.text("kind") == "bond-issuance" -> BondIssuanceReview(model, importReview!!) { importReview = null; confirmationTarget = null; detail = null }
+                    importReview?.text("kind") == "bond-issuance" -> BondIssuanceReview(model, importReview!!, confirmationTarget) { importReview = null; confirmationTarget = null; detail = null }
                     importReview != null -> PurchaseImportReview(model, importReview!!, confirmationTarget) { importReview = null; confirmationTarget = null; detail = null }
                     newPurchase -> PurchaseEntryScreen(model, engine, ::imported) { legalRoute = "privacy" }
                     tab == "Settings" && !nested -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },

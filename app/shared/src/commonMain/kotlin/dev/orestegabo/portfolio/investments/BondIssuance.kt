@@ -33,6 +33,31 @@ fun importedIssuanceInput(review: JsonRecord): JsonRecord {
     return p
 }
 
+/** A targeted review explicitly confirms the recorded full allocation; auction totals never supply it. */
+fun pendingIssuanceConfirmation(review: JsonRecord, pending: JsonRecord): JsonRecord {
+    val issue = importedIssuanceInput(review)
+    require(pending.text("status") == "submitted" && pending.text("currency") == "RWF" &&
+        pending.text("issuer") == "Government of Rwanda" && pending.text("market") == "primary" &&
+        pending.text("settlementDate") == issue.text("settlementDate") &&
+        pending.text("maturityDate") == issue.text("maturityDate") &&
+        pending.optDouble("tenorYears") == issue.optDouble("tenorYears") &&
+        (pending.text("isin").isBlank() || pending.text("isin").uppercase().removeSuffix("/MN") == issue.text("isin").uppercase().removeSuffix("/MN"))) {
+        "This PDF does not match the pending bond or applied amount."
+    }
+    val principal = pending.optDouble("faceValue")
+    val fees = pending.optDouble("feesPaid", 0.0)
+    val accrued = pending.optDouble("accruedInterestPaid", 0.0)
+    val recordedCash = pending.optDouble("amountInvested", principal + fees + accrued)
+    val cost = principal * issue.optDouble("pricePercent") / 100 + fees + accrued
+    require(principal.isFinite() && principal >= 100_000 && principal % 100_000 == 0.0 &&
+        fees.isFinite() && fees >= 0 && accrued.isFinite() && accrued >= 0 &&
+        recordedCash.isFinite() && kotlin.math.abs(recordedCash - cost) < .01) {
+        "Use your personal PDF to confirm the final allocation and price."
+    }
+    return JsonRecord(issue.toString()).put("faceValue", principal).put("feesPaid", fees)
+        .put("accruedInterestPaid", accrued).put("amountInvested", cost).put("currency", "RWF")
+}
+
 /** Fill only unread public terms after an exact security/settlement match; never invent an allocation or price. */
 fun purchaseReviewWithPublishedTerms(review: JsonRecord, documents: List<JsonRecord>): JsonRecord {
     if (review.text("kind") != "bond") return review
@@ -84,14 +109,23 @@ fun mergeBondIssuances(published: List<JsonRecord>, documents: List<JsonRecord>)
 }
 
 @Composable
-fun BondIssuanceReview(model: PortfolioModel, review: JsonRecord, done: () -> Unit) {
+fun BondIssuanceReview(model: PortfolioModel, review: JsonRecord, target: JsonRecord? = null, done: () -> Unit) {
     DisposableEffect(review) { onDispose { model.discardImportedPdf(review) } }
     val parsed = remember(review) { runCatching { importedIssuanceInput(review) } }
     val p = review.optJSONObject("fields") ?: JsonRecord()
+    val confirmation = remember(review, target) { target?.let { runCatching { pendingIssuanceConfirmation(review, it) } } }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { AppText("Review bond issuance", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
+        item { AppText(if (target == null) "Review bond issuance" else "Review purchase", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
         item { AppText("This public report and its bond details will be available to all invited users.", style = MaterialTheme.typography.bodySmall) }
-        item { AppText("Matching pending purchases receive these terms. Your allocation stays unconfirmed.") }
+        if (target == null) item { AppText("Matching pending purchases receive these terms. Your allocation stays unconfirmed.") }
+        else item { Panel {
+            AppText("Confirm purchase", fontWeight = FontWeight.Bold)
+            AppText("Confirm that your full applied amount was allocated and these figures are correct.")
+            Fact("Amount applied", money(target.optDouble("faceValue"), target.text("currency")))
+            Fact("Commission", money(target.optDouble("feesPaid", 0.0), target.text("currency")))
+            confirmation?.getOrNull()?.let { Fact("Total cash cost", money(it.optDouble("amountInvested"), "RWF")) }
+            AppText("The public report supplies the bond terms. Your recorded amount is used for this purchase.", style = MaterialTheme.typography.bodySmall)
+        } }
         item { Panel {
             AppText(p.text("bondName"), fontWeight = FontWeight.Bold)
             Fact("Tenor (years)", p.text("tenorYears")); Fact("Security code", p.text("isin")); Fact("Issuance date", p.text("issuanceDate"))
@@ -112,6 +146,10 @@ fun BondIssuanceReview(model: PortfolioModel, review: JsonRecord, done: () -> Un
         for (i in 0 until warnings.length()) item { AppText(warnings.getString(i), style = MaterialTheme.typography.bodySmall) }
         if (parsed.isFailure) item { AppText(parsed.exceptionOrNull()?.message.orEmpty(), color = MaterialTheme.colorScheme.error) }
         item { AppText("Repeated uploads reuse the saved issuance. Different figures require review.", style = MaterialTheme.typography.bodySmall) }
-        item { Button(enabled = parsed.isSuccess && !model.busy, onClick = { model.saveImportedIssuance(review, done) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { AppText("Save bond issuance") } }
+        if (confirmation?.isFailure == true) item { AppText(confirmation.exceptionOrNull()?.message.orEmpty(), color = MaterialTheme.colorScheme.error) }
+        item { Button(enabled = parsed.isSuccess && (target == null || confirmation?.isSuccess == true) && !model.busy,
+            onClick = { model.saveImportedIssuance(review, target, done) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+            AppText(if (target == null) "Save bond issuance" else "Save PDF and confirm purchase")
+        } }
     }
 }
