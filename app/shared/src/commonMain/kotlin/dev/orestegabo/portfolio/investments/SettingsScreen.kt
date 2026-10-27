@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -> Unit,
     chartStyle: String, changeChartStyle: (String) -> Unit,
-    openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit, openLegal: () -> Unit = {}, openAbout: () -> Unit = {}) {
+    openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit, openLegal: () -> Unit = {}, openAbout: () -> Unit = {}, openIntroduction: () -> Unit = {}) {
     val actions = LocalNativeActions.current
     var setupSecure by remember { mutableStateOf(false) }
     var targetExpanded by remember { mutableStateOf(false) }
@@ -168,6 +168,8 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
             } }
             item { SettingsSection("About") {
                 SettingsRow(Icons.Outlined.Info, "About Struct Capital", "The app, the brand and how to reach us", onClick = openAbout)
+                SettingsDivider()
+                SettingsRow(Icons.Outlined.AutoStories, "Replay introduction", "A quick tour of Struct Capital", onClick = openIntroduction)
             } }
             item { SettingsSection("Legal & privacy") {
                 SettingsRow(Icons.Outlined.Email, "Contact support", BrandContacts.SUPPORT, onClick = { actions.openEmail(BrandContacts.SUPPORT) })

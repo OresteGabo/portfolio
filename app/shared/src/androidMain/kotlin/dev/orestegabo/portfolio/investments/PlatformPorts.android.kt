@@ -26,6 +26,8 @@ actual fun rememberServerSettings(): ServerSettings {
     val context = LocalContext.current.applicationContext
     return remember(context) { object : ServerSettings {
         private val prefs = context.getSharedPreferences("connection", Context.MODE_PRIVATE)
+        override fun readOnboardingCompleted() = prefs.getBoolean("onboardingCompleted", false)
+        override fun writeOnboardingCompleted(completed: Boolean) { prefs.edit().putBoolean("onboardingCompleted", completed).apply() }
         override fun readScreenCaptureAllowed() = prefs.getBoolean(SCREEN_CAPTURE_ALLOWED_KEY, false)
         override fun writeScreenCaptureAllowed(allowed: Boolean) { prefs.edit().putBoolean(SCREEN_CAPTURE_ALLOWED_KEY, allowed).apply() }
         override fun readShakeToHideEnabled() = prefs.getBoolean("shakeToHideEnabled", true)

@@ -89,6 +89,16 @@ fun InvestmentApp(model: PortfolioModel) {
     DisposableEffect(engine) { onDispose { engine.destroy() } }
     var newPurchase by rememberSaveable { mutableStateOf(false) }
     val preferences = rememberServerSettings()
+    var introductionRequested by rememberSaveable { mutableStateOf(!preferences.readOnboardingCompleted()) }
+    var replayIntroduction by rememberSaveable { mutableStateOf(false) }
+    fun finishIntroduction() {
+        preferences.writeOnboardingCompleted(true)
+        introductionRequested = false
+        replayIntroduction = false
+    }
+    LaunchedEffect(model.user) {
+        if (model.user != null && !replayIntroduction) finishIntroduction()
+    }
     val systemDark = isSystemInDarkTheme()
     var theme by rememberSaveable { mutableStateOf(preferences.readTheme()?.takeIf { it in listOf("system", "light", "dark") } ?: "system") }
     var chartStyle by rememberSaveable { mutableStateOf(preferences.readChartStyle()?.takeIf { it in listOf("area", "line", "bars") } ?: "area") }
@@ -143,6 +153,11 @@ fun InvestmentApp(model: PortfolioModel) {
         else lightColorScheme(primary = BrandOlive, onPrimary = Color.White, primaryContainer = BrandCream, onPrimaryContainer = Ink, secondary = BrandOlive, secondaryContainer = BrandCream, onSecondaryContainer = Ink, background = Color(0xFFFAF8F2), surface = Color.White, onSurface = Ink)
     CompositionLocalProvider(LocalChartStyle provides chartStyle, LocalNumbersHidden provides model.numbersConcealed) {
     MaterialTheme(colorScheme = colors, typography = Typography()) {
+        if (shouldShowIntroduction(introductionRequested, replayIntroduction, model.user != null, model.locked, model.busy)) {
+            PlatformSystemBarAppearance(dark)
+            OnboardingScreen(replayIntroduction, ::finishIntroduction)
+            return@MaterialTheme
+        }
         val nested = notificationScreen || legalRoute != null || missingDocuments || pendingEntry || importReview != null || investmentHistory || detail != null || editor != null || equityEditor != null || newPurchase || simulator || education
         val back = {
             if (notificationScreen) { notificationScreen=false } else if (legalRoute != null) {
@@ -250,7 +265,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     newPurchase -> PurchaseEntryScreen(model, engine, ::imported) { legalRoute = "privacy" }
                     tab == "Settings" && !nested -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
                         chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
-                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" })
+                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { replayIntroduction = true; introductionRequested = true })
                     editor != null -> PurchaseEditor(model, editor!!, { editor = null; importReview = null }, importReview)
                     equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null; importReview = null }, importReview)
                     simulator -> SimulatorScreen(model, engine) { simulator = false }

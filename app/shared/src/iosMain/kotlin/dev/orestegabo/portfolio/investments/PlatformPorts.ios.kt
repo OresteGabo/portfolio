@@ -29,6 +29,8 @@ internal fun presentingController(): UIViewController {
 }
 @Composable
 actual fun rememberServerSettings(): ServerSettings = remember { object : ServerSettings {
+    override fun readOnboardingCompleted() = NSUserDefaults.standardUserDefaults.boolForKey("portfolio.onboardingCompleted")
+    override fun writeOnboardingCompleted(completed: Boolean) { NSUserDefaults.standardUserDefaults.setBool(completed, forKey = "portfolio.onboardingCompleted") }
     override fun readScreenCaptureAllowed() = NSUserDefaults.standardUserDefaults.boolForKey("portfolio.screenCaptureAllowed")
     override fun writeScreenCaptureAllowed(allowed: Boolean) { NSUserDefaults.standardUserDefaults.setBool(allowed, forKey = "portfolio.screenCaptureAllowed") }
     override fun readShakeToHideEnabled() = NSUserDefaults.standardUserDefaults.objectForKey("portfolio.shakeToHideEnabled") == null || NSUserDefaults.standardUserDefaults.boolForKey("portfolio.shakeToHideEnabled")
