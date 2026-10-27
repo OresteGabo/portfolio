@@ -85,7 +85,7 @@ fun StocksScreen(model: PortfolioModel) {
     val reducedMotion = LocalReducedMotion.current
     var section by rememberSaveable { mutableStateOf("shares") }
     var search by rememberSaveable { mutableStateOf("") }
-    var period by rememberSaveable { mutableStateOf("month") }
+    var period by rememberSaveable { mutableStateOf("year") }
     val histories = remember { mutableStateMapOf<String, JsonRecord>() }
     val failedHistories = remember { mutableStateMapOf<String, Boolean>() }
     var refreshRevision by remember { mutableIntStateOf(0) }
