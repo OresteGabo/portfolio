@@ -60,8 +60,8 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
         verticalArrangement = Arrangement.spacedBy(20.dp)) {
         item { PortfolioHero(valuation, topInset, model.quoteRefreshFailed || model.quotes?.optJSONObject("source")?.optBoolean("stale") == true,
             model.quotes?.optJSONObject("source")?.text("publishedAt").orEmpty().take(10)) {
-            if (model.busy && model.refreshPhase == PortfolioRefreshPhase.IDLE || model.error != null || model.message != null) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (model.busy && model.refreshPhase == PortfolioRefreshPhase.IDLE) LinearProgressIndicator(Modifier.fillMaxWidth())
+            Column(Modifier.fillMaxWidth().smoothContentSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                AppLoadingLine(model.busy && model.refreshPhase == PortfolioRefreshPhase.IDLE)
                 model.error?.let { Notice(it, true) { model.error = null } }
                 model.message?.let { Notice(it, false) { model.message = null } }
             }
@@ -103,7 +103,7 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
                 AppText("Missing documents", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 if (model.statementItems.size > 3) TextButton(onClick = allMissing) { AppText("See all") }
             } } }
-            items(model.statementItems.take(3), key = { "missing:${it.text("id")}" }) { row -> Inset { MissingStatementTile(row) { openMissing(row) } } }
+            items(model.statementItems.take(3), key = { "missing:${it.text("id")}" }) { row -> AppMovingItem { Inset { MissingStatementTile(row) { openMissing(row) } } } }
         }
         item { Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -125,12 +125,15 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
                 if (bonds.isEmpty() && recentBonds.isNotEmpty()) item { Inset {
                     EmptyState("No ${displayRecordValue(status)} bonds", EmptyArtwork.SEARCH, compact = true, actionLabel = "Show all", onAction = { status = "all" })
                 } }
-                items(bonds, key = { "bond:${it.text("id")}" }) { purchase -> Inset { BondPurchaseTile(purchase, uploadConfirmation = { uploadPending(purchase) }, manualConfirmation={ model.confirmPendingPurchase(purchase) }, confirming=model.busy) { detail(purchase) } } }
+                items(bonds, key = { "bond:${it.text("id")}" }) { purchase -> AppMovingItem { Inset {
+                    BondPurchaseTile(purchase, uploadConfirmation = { uploadPending(purchase) },
+                        manualConfirmation = { model.confirmPendingPurchase(purchase) }, confirming = model.busy) { detail(purchase) }
+                } } }
             }
             if (kind != "bonds") {
                 if (kind == "all") item { SectionLabel("Shares") }
                 if (recentShares.isEmpty()) item { Inset { EmptyState("No shares in the past year", EmptyArtwork.SHARES, compact = true) } }
-                items(recentShares, key = { "share:${it.text("id")}" }) { holding -> Inset { SharePurchaseTile(holding) } }
+                items(recentShares, key = { "share:${it.text("id")}" }) { holding -> AppMovingItem { Inset { SharePurchaseTile(holding) } } }
             }
         }
     }
@@ -153,7 +156,7 @@ private fun PortfolioHero(totals: List<CurrencyValuation>, topInset: Dp, stale: 
             Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, background), startY = 100f)))
             ImigongoMotif(Modifier.align(Alignment.CenterEnd).size(230.dp).offset(x = 52.dp, y = 24.dp), DashboardGold.copy(alpha = .26f))
         }
-        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp + topInset), verticalArrangement = Arrangement.spacedBy(38.dp)) {
+        Column(Modifier.fillMaxWidth().smoothContentSize().padding(start = 20.dp, end = 20.dp, top = 20.dp + topInset), verticalArrangement = Arrangement.spacedBy(38.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Surface(shape = RoundedCornerShape(15.dp), color = Color(0xFFFAF7E8)) {
@@ -454,8 +457,8 @@ private fun MonthlyTargetCard(model: PortfolioModel, modifier: Modifier) {
             AppIcon(if (progress?.achieved == true) Icons.Outlined.CheckCircle else Icons.Outlined.Flag, null)
         }
         if (progress == null) {
-            if (model.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-            else AppText("Progress unavailable", style = MaterialTheme.typography.bodySmall)
+            AppLoadingLine(model.busy, reserveSpace = true)
+            if (!model.busy) AppText("Progress unavailable", style = MaterialTheme.typography.bodySmall)
         }
         else Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (!LocalNumbersHidden.current) CaptureRedactionRegion(Modifier.fillMaxWidth(), masked = { Spacer(Modifier.fillMaxSize()) }) {

@@ -229,7 +229,7 @@ fun InvestmentApp(model: PortfolioModel) {
             Column(Modifier.fillMaxSize().padding(padding).imePadding().portfolioStatusBarFade(portfolioHome)) {
                 InvestmentEngineHost(engine)
                 if (!portfolioHome) {
-                    if (model.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+                    AppLoadingLine(model.busy)
                     model.error?.let { Notice(it, true) { model.error = null } }
                     model.message?.let { Notice(it, false) { model.message = null } }
                 }

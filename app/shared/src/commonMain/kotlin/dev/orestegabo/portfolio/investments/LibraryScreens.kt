@@ -32,10 +32,10 @@ import kotlinx.coroutines.launch
 @Composable
 private fun CompanyPriceChart(
     symbol: String, name: String, quote: JsonRecord?, quotes: JsonRecord?, history: JsonRecord?,
-    failed: Boolean, period: String, onPeriod: (String) -> Unit, onRetry: () -> Unit,
+    failed: Boolean, loading: Boolean, period: String, onPeriod: (String) -> Unit, onRetry: () -> Unit,
 ) {
     val observations = stockPriceHistory(history, quotes, symbol, period, Today)
-    Panel {
+    Panel(Modifier.smoothContentSize()) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             InvestmentLogo(ticker = symbol)
             Column(Modifier.weight(1f)) {
@@ -59,22 +59,24 @@ private fun CompanyPriceChart(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = .06f))
             }
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (history == null && !failed) LinearProgressIndicator(Modifier.fillMaxWidth())
-                if (observations.isNotEmpty()) {
-                    InvestmentChart(observations.map { it.price }, observations.map { it.date.toString() },
-                        notes = observations.map { it.note }, sparse = observations.any { it.contract },
-                        dateRange = if (period == "year") yearlyPriceChartRange(Today) else null)
-                    AppText(if (observations.any { it.contract }) "Closes & trades · known dates only"
-                        else "Exchange closes · known dates only",
-                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (history != null && !history.optBoolean("tradeHistoryAvailable")) AppText("Contract prices unavailable",
-                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                AppLoadingLine(loading, reserveSpace = true)
+                if (observations.isNotEmpty()) AppFadeIn("$symbol/$period") {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        InvestmentChart(observations.map { it.price }, observations.map { it.date.toString() },
+                            notes = observations.map { it.note }, sparse = observations.any { it.contract },
+                            dateRange = if (period == "year") yearlyPriceChartRange(Today) else null)
+                        AppText(if (observations.any { it.contract }) "Closes & trades · known dates only"
+                            else "Exchange closes · known dates only",
+                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (history != null && !history.optBoolean("tradeHistoryAvailable")) AppText("Contract prices unavailable",
+                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 } else if (history != null) {
                     Box(Modifier.fillMaxWidth().height(276.dp), contentAlignment = Alignment.Center) {
                         EmptyState("No price history", EmptyArtwork.CHARTS, compact = true, framed = false)
                     }
                 }
-                if (failed) TextButton(onClick = onRetry) { AppText("Retry price history") }
+                AppReveal(failed) { TextButton(onClick = onRetry) { AppText("Retry price history") } }
             }
         }
     }
@@ -88,6 +90,8 @@ fun StocksScreen(model: PortfolioModel) {
     var period by rememberSaveable { mutableStateOf("year") }
     val histories = remember { mutableStateMapOf<String, JsonRecord>() }
     val failedHistories = remember { mutableStateMapOf<String, Boolean>() }
+    val loadedRevisions = remember { mutableStateMapOf<String, Int>() }
+    val loadingRevisions = remember { mutableStateMapOf<String, Int>() }
     var refreshRevision by remember { mutableIntStateOf(0) }
     val quoteRows = model.quotes?.rows("quotes").orEmpty()
     val watchlist = listOf("BOK" to "BK Group", "BLR" to "Bralirwa", "IMR" to "I&M Bank Rwanda", "CMR" to "Cimerwa", "RHB" to "RH Bophelo", "NMG" to "Nation Media Group", "USL" to "Uchumi", "KCB" to "KCB", "MTNR" to "MTN Rwanda", "EQTY" to "Equity Bank Group")
@@ -108,21 +112,26 @@ fun StocksScreen(model: PortfolioModel) {
         val symbol = watchlist[pager.settledPage].first
         val selectedPeriod = period
         val key = "$symbol/$selectedPeriod"
-        if (histories.containsKey(key)) return@LaunchedEffect
+        val revision = refreshRevision
+        if (histories.containsKey(key) && loadedRevisions[key] == revision) return@LaunchedEffect
+        loadingRevisions[key] = revision
         failedHistories.remove(key)
         try {
             histories[key] = model.api.request("/api/bonds/rse/equity-history?tickers=$symbol&period=$selectedPeriod")
+            loadedRevisions[key] = revision
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
             failedHistories[key] = true
+        } finally {
+            if (loadingRevisions[key] == revision) loadingRevisions.remove(key)
         }
     }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) { ChoiceRow(listOf("shares", "bonds"), section) { section = it } }
             model.quotes?.optJSONObject("source")?.let { source -> AppText(if (source.optBoolean("stale")) "Stale prices" else source.text("publishedAt").take(10), style = MaterialTheme.typography.labelSmall, color = if (source.optBoolean("stale")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant) }
-            IconButton(enabled = !model.busy, onClick = { histories.clear(); failedHistories.clear(); refreshRevision++; model.loadMarket(true) }) { AppIcon(Icons.Outlined.Refresh, "Refresh prices") }
+            IconButton(enabled = !model.busy, onClick = { failedHistories.clear(); refreshRevision++; model.loadMarket(true) }) { AppIcon(Icons.Outlined.Refresh, "Refresh prices") }
         } }
         if (section == "shares") {
             item {
@@ -138,7 +147,8 @@ fun StocksScreen(model: PortfolioModel) {
                     val (symbol, name) = watchlist[page]
                     val key = "$symbol/$period"
                     CompanyPriceChart(symbol, name, quoteRows.find { it.text("ticker") == symbol }, model.quotes,
-                        histories[key], failedHistories[key] == true, period,
+                        histories[key], failedHistories[key] == true,
+                        loading = loadingRevisions.containsKey(key) || histories[key] == null && failedHistories[key] != true, period = period,
                         onPeriod = { period = it }, onRetry = { failedHistories.remove(key); refreshRevision++ })
                 }
             }

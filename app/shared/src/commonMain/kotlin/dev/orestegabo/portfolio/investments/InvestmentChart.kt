@@ -1,5 +1,8 @@
 package dev.orestegabo.portfolio.investments
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -16,6 +19,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
@@ -57,6 +61,13 @@ private fun InvestmentChartContent(values: List<Double>, labels: List<String>, n
         else index.toFloat() / points.lastIndex
     }
     val style = LocalChartStyle.current
+    val reducedMotion = LocalReducedMotion.current
+    // Reveal real observations in date order; never interpolate financial values.
+    val reveal = remember(values, labels, style) { Animatable(if (reducedMotion) 1f else 0f) }
+    LaunchedEffect(reveal, reducedMotion) {
+        if (reducedMotion) reveal.snapTo(1f)
+        else reveal.animateTo(1f, tween(520, easing = FastOutSlowInEasing))
+    }
     var selected by remember(values, labels, style) { mutableStateOf<Int?>(null) }
     val current = points[selected?.coerceIn(points.indices) ?: points.lastIndex]
     val first = points.first().first
@@ -107,32 +118,34 @@ private fun InvestmentChartContent(values: List<Double>, labels: List<String>, n
                     val height = inset + plotHeight * fraction
                     drawLine(grid, Offset(0f, height), Offset(size.width, height), 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 5.dp.toPx())))
                 }
-                if (style == "bars") {
-                    val width = (plotWidth / points.size * .62f).coerceIn(2.dp.toPx(), 20.dp.toPx())
-                    points.forEachIndexed { index, point ->
-                        drawRoundRect(Brush.verticalGradient(listOf(accent, accent.copy(alpha = .4f))),
-                            Offset(x(index) - width / 2, y(point.first)), Size(width, (y(0.0) - y(point.first)).coerceAtLeast(0f)),
-                            CornerRadius(3.dp.toPx()), alpha = if (selected == null || selected == index) 1f else .3f)
+                clipRect(right = size.width * reveal.value) {
+                    if (style == "bars") {
+                        val width = (plotWidth / points.size * .62f).coerceIn(2.dp.toPx(), 20.dp.toPx())
+                        points.forEachIndexed { index, point ->
+                            drawRoundRect(Brush.verticalGradient(listOf(accent, accent.copy(alpha = .4f))),
+                                Offset(x(index) - width / 2, y(point.first)), Size(width, (y(0.0) - y(point.first)).coerceAtLeast(0f)),
+                                CornerRadius(3.dp.toPx()), alpha = if (selected == null || selected == index) 1f else .3f)
+                        }
+                    } else {
+                        val line = Path().apply { points.forEachIndexed { index, point ->
+                            if (index == 0) moveTo(x(index), y(point.first)) else lineTo(x(index), y(point.first))
+                        } }
+                        if (style == "area" && !sparse) {
+                            val area = Path().apply { addPath(line); lineTo(x(points.lastIndex), size.height - inset); lineTo(x(0), size.height - inset); close() }
+                            drawPath(area, Brush.verticalGradient(listOf(accent.copy(alpha = .28f), Color.Transparent)))
+                        }
+                        drawPath(line, accent, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round,
+                            pathEffect = if (sparse) PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 5.dp.toPx())) else null))
+                        if (sparse || points.size == 1) points.forEachIndexed { index, point ->
+                            drawCircle(accent, 3.dp.toPx(), Offset(x(index), y(point.first)))
+                        }
                     }
-                } else {
-                    val line = Path().apply { points.forEachIndexed { index, point ->
-                        if (index == 0) moveTo(x(index), y(point.first)) else lineTo(x(index), y(point.first))
-                    } }
-                    if (style == "area" && !sparse) {
-                        val area = Path().apply { addPath(line); lineTo(x(points.lastIndex), size.height - inset); lineTo(x(0), size.height - inset); close() }
-                        drawPath(area, Brush.verticalGradient(listOf(accent.copy(alpha = .28f), Color.Transparent)))
+                    val focus = selected ?: points.lastIndex
+                    if (selected != null) drawLine(accent.copy(alpha = .4f), Offset(x(focus), inset), Offset(x(focus), size.height - inset), 1.dp.toPx())
+                    if (style != "bars" || selected != null) {
+                        drawCircle(accent.copy(alpha = .15f), 8.dp.toPx(), Offset(x(focus), y(points[focus].first)))
+                        drawCircle(accent, 3.5.dp.toPx(), Offset(x(focus), y(points[focus].first)))
                     }
-                    drawPath(line, accent, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round,
-                        pathEffect = if (sparse) PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 5.dp.toPx())) else null))
-                    if (sparse || points.size == 1) points.forEachIndexed { index, point ->
-                        drawCircle(accent, 3.dp.toPx(), Offset(x(index), y(point.first)))
-                    }
-                }
-                val focus = selected ?: points.lastIndex
-                if (selected != null) drawLine(accent.copy(alpha = .4f), Offset(x(focus), inset), Offset(x(focus), size.height - inset), 1.dp.toPx())
-                if (style != "bars" || selected != null) {
-                    drawCircle(accent.copy(alpha = .15f), 8.dp.toPx(), Offset(x(focus), y(points[focus].first)))
-                    drawCircle(accent, 3.5.dp.toPx(), Offset(x(focus), y(points[focus].first)))
                 }
             }
         }

@@ -1,7 +1,9 @@
 package dev.orestegabo.portfolio.investments
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.ui.Alignment
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 
@@ -22,6 +24,7 @@ internal fun ColumnScope.AppAnimatedVisibility(
             enter = androidx.compose.animation.EnterTransition.None,
             exit = androidx.compose.animation.ExitTransition.None, content = content)
     } else {
-        AnimatedVisibility(visible, content = content)
+        AnimatedVisibility(visible, enter = fadeIn(tween(180)) + expandVertically(tween(240), expandFrom = Alignment.Top),
+            exit = fadeOut(tween(140)) + shrinkVertically(tween(240), shrinkTowards = Alignment.Top), content = content)
     }
 }
