@@ -54,7 +54,8 @@ fun PendingBondScreen(model: PortfolioModel, initialIssueId: String? = null, don
 @Composable
 fun PurchaseImportReview(model: PortfolioModel, review: JsonRecord, target: JsonRecord?, done: () -> Unit) {
     DisposableEffect(review) { onDispose { model.discardImportedPdf(review) } }
-    val parsed = remember(review) { runCatching { importedPurchaseInput(review) } }
+    val effectiveReview = remember(review, model.documents) { purchaseReviewWithPublishedTerms(review, model.documents) }
+    val parsed = remember(effectiveReview) { runCatching { importedPurchaseInput(effectiveReview) } }
     val body = parsed.getOrNull()
     val bond = review.text("kind") == "bond"
     LaunchedEffect(review, model.busy, model.historyComplete) {
@@ -65,12 +66,13 @@ fun PurchaseImportReview(model: PortfolioModel, review: JsonRecord, target: Json
     // Resolve the single match after full history arrives, without a transient "new" save.
     val selectedId = selection ?: matches.singleOrNull()?.text("id")
     val selected = model.purchases.find { it.text("id") == selectedId }
-    val confirmedBody = if (body == null) null else runCatching { completePendingPurchase(review, selected) }.getOrNull()
+    val confirmedBody = if (body == null) null else runCatching { completePendingPurchase(effectiveReview, selected) }.getOrNull()
     val wrongTarget = target != null && (body == null || !bond || !pendingMatchesConfirmation(target, body))
     val ready = body != null && !wrongTarget && (!bond || model.historyComplete) &&
         (selected != null && pendingMatchesConfirmation(selected, body) || target == null && matches.isEmpty()) && confirmedBody != null
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { AppText("Review purchase", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
+        if (effectiveReview.has("termsSourceDocumentId")) item { AppText("Coupon details from the shared BNR issuance report", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         if (body == null) item { EmptyState(userErrorMessage(parsed.exceptionOrNull(), "Could not read this PDF."), EmptyArtwork.DOCUMENTS, compact = true) }
         else {
             if (wrongTarget) item { NoticeForImport("This PDF does not match the pending bond or applied amount.") }

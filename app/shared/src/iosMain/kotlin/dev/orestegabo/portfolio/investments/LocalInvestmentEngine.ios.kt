@@ -64,7 +64,7 @@ class IosInvestmentEngine : InvestmentEngine {
             withContext(Dispatchers.Main) { onProgress("Reading page ${index + 1u} of ${document.pageCount}…") }
             val page = document.pageAtIndex(index) ?: error(PDF_READ_ERROR)
             require(page.annotations.all { annotation ->
-                annotation is PDFAnnotation && annotation.type == "Widget" && annotation.widgetFieldType == "Sig" && annotation.action == null && annotation.valueForAnnotationKey("AA") == null
+                annotation is PDFAnnotation && annotation.type == "Widget" && annotation.widgetFieldType == PDFAnnotationWidgetSubtypeSignature && annotation.action == null && annotation.valueForAnnotationKey("AA") == null
             }) { PDF_READ_ERROR }
             page.pageRef?.let { pageRef -> require(!hasKey(CGPDFPageGetDictionary(pageRef), "AA")) { PDF_READ_ERROR } }
             var text = page.string.orEmpty()

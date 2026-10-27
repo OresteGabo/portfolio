@@ -38,8 +38,9 @@ suspend fun readPurchasePdf(
         engine.onProgress = { progress(PdfImportProgress(PdfImportStage.EXTRACTING, it)) }
         val review = engine.run("pdf", pdf = bytes)
         progress(PdfImportProgress(PdfImportStage.CHECKING))
-        require(!bondOnly || review.text("kind") == "bond") { "Use a BNR bond confirmation PDF." }
-        require(expectedStatement == null || statementConfirmationMatches(expectedStatement, review)) {
+        val publicIssuance = review.text("kind") == "bond-issuance"
+        require(!bondOnly || review.text("kind") == "bond" || publicIssuance) { "Use a BNR bond confirmation PDF." }
+        require(expectedStatement == null || publicIssuance && expectedStatement.text("kind") == "bond" || statementConfirmationMatches(expectedStatement, review)) {
             "This PDF does not match the statement purchase. Choose its confirmation document."
         }
         selectedPdf(bytes)

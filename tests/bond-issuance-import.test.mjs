@@ -48,3 +48,9 @@ test('Android PDF.js glyph spacing preserves rates, auction totals and every cou
   const extracted = fs.readFileSync(new URL('./fixtures/bnr-market-results-pdfjs-2026.txt', import.meta.url), 'utf8');
   assert.deepEqual(parsePurchasePdfText(extracted), parsePurchasePdfText(report));
 });
+
+
+test('iPhone PDFKit extraction of the supplied signed report preserves all shared terms', () => {
+  const extracted = fs.readFileSync(new URL('./fixtures/bnr-market-results-pdfkit-2026.txt', import.meta.url), 'utf8');
+  assert.deepEqual(parsePurchasePdfText(extracted), parsePurchasePdfText(report));
+});

@@ -68,7 +68,7 @@ export async function importBondPdf(file, signal, onProgress, preparedBytes) {
             throw new BondPdfImportError("invalid_pdf");
         stage = "document-policy";
         const [actions, attachments, fieldObjects] = await wait(Promise.all([pdf.getJSActions(), pdf.getAttachments(), pdf.getFieldObjects()]));
-        const fields = [...(fieldObjects?.values() ?? [])].flat();
+        const fields = (fieldObjects instanceof Map ? [...fieldObjects.values()] : Object.values(fieldObjects ?? {})).flat();
         if (hasPdfEntries(actions) || hasPdfEntries(attachments) || fields.some((field) => field.type !== "signature" || !field.id || hasPdfEntries(field.actions)))
             throw new BondPdfImportError("unsafe_content");
         const signatures = new Set();

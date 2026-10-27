@@ -19,7 +19,7 @@ fun PdfImportButton(model: PortfolioModel, engine: InvestmentEngine, imported: (
     fun choosePdf() = model.importPurchasePdf(actions, engine, bondOnly, expectedStatement, imported)
     Panel {
         AppText(if (bondOnly) "Confirm purchase" else "Import investment PDF", fontWeight = FontWeight.Bold)
-        if (bondOnly) AppText("BNR confirmation PDFs only", style = MaterialTheme.typography.bodySmall)
+        if (bondOnly) AppText("BNR confirmation or issuance results PDF", style = MaterialTheme.typography.bodySmall)
         else {
             AppText("Accepted PDFs", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             AppText("BNR issuance reports • Bond confirmations • Share purchase contracts • BK Capital statements", style = MaterialTheme.typography.bodySmall)

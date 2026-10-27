@@ -7,6 +7,7 @@ import kotlinx.coroutines.test.*
 import platform.Foundation.*
 import platform.UIKit.*
 import platform.CoreGraphics.*
+import platform.PDFKit.*
 import kotlin.test.*
 
 class IosInvestmentEngineTest {
@@ -30,6 +31,20 @@ class IosInvestmentEngineTest {
             assertEquals("bond", result.text("kind"))
             assertEquals(1_000_000.0, result.getJSONObject("fields").getDouble("faceValue"), .01)
             assertEquals(.12, result.getJSONObject("fields").getDouble("couponRate"), .0001)
+        } finally { engine.destroy(); Dispatchers.resetMain() }
+    }
+    @Test fun passiveSignatureWidgetsAreAcceptedUsingThePdfKitSubtypeConstant() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val engine = IosInvestmentEngine()
+        try {
+            val document = PDFDocument(data = bondPdf(scanned = false).toData())
+            val signature = PDFAnnotation(bounds = CGRectMake(10.0, 10.0, 40.0, 20.0), forType = PDFAnnotationSubtypeWidget, withProperties = null)
+            signature.widgetFieldType = PDFAnnotationWidgetSubtypeSignature
+            document.pageAtIndex(0u)!!.addAnnotation(signature)
+            assertEquals("/Sig", signature.widgetFieldType)
+            val result = withContext(Dispatchers.Default) { engine.run("pdf", pdf = document.dataRepresentation()!!.toBytes()) }
+            assertEquals("bond", result.text("kind"))
+            assertEquals(1_000_000.0, result.getJSONObject("fields").getDouble("faceValue"), .01)
         } finally { engine.destroy(); Dispatchers.resetMain() }
     }
     @Test fun scannedPdfUsesNativeVisionThenTheSameSharedParser() = runTest {

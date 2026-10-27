@@ -33,6 +33,40 @@ fun importedIssuanceInput(review: JsonRecord): JsonRecord {
     return p
 }
 
+/** Fill only unread public terms after an exact security/settlement match; never invent an allocation or price. */
+fun purchaseReviewWithPublishedTerms(review: JsonRecord, documents: List<JsonRecord>): JsonRecord {
+    if (review.text("kind") != "bond") return review
+    val original = review.optJSONObject("fields") ?: return review
+    if (original.text("isin").isBlank() || calendarDate(original.text("settlementDate")) == null ||
+        original.text("issuer") != "Government of Rwanda" || original.text("currency") != "RWF") return review
+    val document = documents.filter { doc ->
+        val issue = doc.optJSONObject("issuance")
+        doc.text("category") == "Bond issuance" && issue != null &&
+            issue.text("isin").uppercase().removeSuffix("/MN") == original.text("isin").uppercase().removeSuffix("/MN") &&
+            issue.text("settlementDate") == original.text("settlementDate") &&
+            (original.text("maturityDate").isBlank() || original.text("maturityDate") == issue.text("maturityDate"))
+    }.singleOrNull() ?: return review
+    val issue = document.getJSONObject("issuance")
+    if (runCatching { importedIssuanceInput(JsonRecord().put("kind", "bond-issuance").put("fields", issue).put("missingFields", JsonList())) }.isFailure) return review
+    val fields = JsonRecord(original.toString())
+    val supplied = mutableSetOf<String>()
+    for ((key, label) in listOf("bondName" to "Bond name", "maturityDate" to "Maturity date", "firstCouponDate" to "Coupon schedule")) {
+        if (fields.text(key).isBlank()) { fields.put(key, issue.text(key)); supplied += label }
+    }
+    for ((key, label) in listOf("tenorYears" to "Tenor", "couponRate" to "Coupon rate")) {
+        if (fields.isNull(key)) { fields.put(key, issue.getDouble(key)); supplied += label }
+    }
+    if ((fields.optJSONArray("couponDates")?.length() ?: 0) == 0) {
+        fields.put("couponDates", issue.getJSONArray("couponDates")).put("couponFrequency", issue.optInt("couponFrequency", 2))
+            .put("scheduleConfidence", issue.text("scheduleConfidence").ifBlank { "estimated" })
+        supplied += "Coupon schedule"
+    }
+    if (supplied.isEmpty()) return review
+    val missing = review.optJSONArray("missingFields") ?: return review
+    return JsonRecord(review.toString()).put("fields", fields).put("termsSourceDocumentId", document.text("id"))
+        .put("missingFields", JsonList((0 until missing.length()).map(missing::getString).filterNot { it in supplied }))
+}
+
 /** Overlay the auction's actual terms on its published calendar row; retain book-open dates. */
 fun mergeBondIssuances(published: List<JsonRecord>, documents: List<JsonRecord>): List<JsonRecord> {
     val result = published.toMutableList()

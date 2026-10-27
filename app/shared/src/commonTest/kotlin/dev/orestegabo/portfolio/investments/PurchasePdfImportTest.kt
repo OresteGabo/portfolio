@@ -65,6 +65,15 @@ class PurchasePdfImportTest {
         assertTrue(reviewed)
         assertNull(progress.last())
     }
+    @Test fun pendingUploadAcceptsPublicResultsWithoutTreatingThemAsAPersonalConfirmation() = runTest {
+        val review = JsonRecord().put("kind", "bond-issuance")
+        assertSame(review, readPurchasePdf(Actions(byteArrayOf(1)), Engine(review), bondOnly = true))
+        assertSame(review, readPurchasePdf(Actions(byteArrayOf(1)), Engine(review), bondOnly = true,
+            expectedStatement = JsonRecord().put("kind", "bond")))
+        assertFailsWith<IllegalArgumentException> {
+            readPurchasePdf(Actions(byteArrayOf(1)), Engine(review), expectedStatement = JsonRecord().put("kind", "equity"))
+        }
+    }
     @Test fun pendingUploadStillRejectsShareDocumentsAndCleansUpProgress() = runTest {
         val engine = Engine(JsonRecord().put("kind", "equity"))
         val progress = mutableListOf<PdfImportProgress?>()
