@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="1024" height="1024" viewBox="0 0 1024 1024"><title>Struct Capital app icon</title><g id="Background" inkscape:groupmode="layer" inkscape:label="Background"><rect width="1024" height="1024" fill="#FAF8F2"/></g><g id="SC monogram" inkscape:groupmode="layer" inkscape:label="SC monogram"><g transform="translate(102.4 102.4) scale(1.6)"><g transform="translate(-248 -183)" fill="#6D5E0F">
+ <path id="hexagon" fill="none" stroke="#6D5E0F" stroke-width="8" stroke-linejoin="round" d="M488 222 Q503 213 518 222 L684 318 Q699 327 699 344 V536 Q699 553 684 562 L518 658 Q503 667 488 658 L324 562 Q309 553 309 536 V344 Q309 327 324 318 Z"/>
+ <path id="S-ribbon" d="M565 312 L425 392 L548 463 Q563 472 563 489 V560 Q563 577 548 586 L516 598 Q503 605 490 598 L375 532 Q361 524 361 508 V456 L502 537 V511 L376 439 Q361 431 361 415 V373 Q361 358 375 350 L489 284 Q502 276 515 284 Z"/>
+ <path id="C-upper" d="M566 326 Q579 318 592 326 L635 351 Q649 359 649 375 V423 L582 385 Q574 381 567 386 Q563 389 563 395 V459 L502 424 V375 Q502 359 516 351 Z"/>
+ <path id="C-lower" d="M575 500 L649 458 V508 Q649 524 635 532 L575 567 Z"/>
+ </g></g></g></svg>

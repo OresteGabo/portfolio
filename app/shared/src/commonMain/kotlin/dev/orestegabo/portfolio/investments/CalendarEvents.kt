@@ -95,3 +95,19 @@ fun preferredSubscriptionRange(ranges: List<CalendarSubscriptionRange>, anchor: 
 fun calendarMonthEvents(events: List<InvestmentCalendarEvent>, month: LocalDate) = events.filter {
     it.date.year == month.year && it.date.month == month.month && it.label != "Book open"
 }.sortedWith(compareBy({ it.date }, { it.category.ordinal }, { it.title }, { it.id }))
+
+/** Date-based status from the published window; closing-day cutoff times are not provided. */
+enum class SubscriptionStatus(val label: String) {
+    UPCOMING("Upcoming"), OPEN("Subscriptions open"), CLOSING_TODAY("Closing today"), CLOSED("Subscriptions closed")
+}
+
+fun CalendarSubscriptionRange.statusOn(today: LocalDate): SubscriptionStatus = when {
+    today < start -> SubscriptionStatus.UPCOMING
+    today > end -> SubscriptionStatus.CLOSED
+    today == end -> SubscriptionStatus.CLOSING_TODAY
+    else -> SubscriptionStatus.OPEN
+}
+
+/** BNR subscription dates follow the market's date, regardless of the phone's timezone. */
+internal fun bondSubscriptionDate(now: kotlin.time.Instant): LocalDate =
+    now.toLocalDateTime(TimeZone.of("Africa/Kigali")).date

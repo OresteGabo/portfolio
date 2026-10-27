@@ -93,4 +93,30 @@ class CalendarEventsTest {
         assertEquals(listOf(1, 19, 21, 23), agenda.map { it.date.day })
     }
 
+    @Test fun subscriptionStatusUsesTodayRatherThanTheSelectedCalendarDate() {
+        val range = calendarSubscriptionRanges(listOf(JsonRecord()
+            .put("openBookDate", "2026-10-19").put("closingBookDate", "2026-10-21"))).single()
+        assertEquals(SubscriptionStatus.UPCOMING, range.statusOn(LocalDate(2026, 10, 18)))
+        assertEquals(SubscriptionStatus.OPEN, range.statusOn(LocalDate(2026, 10, 19)))
+        assertEquals(SubscriptionStatus.OPEN, range.statusOn(LocalDate(2026, 10, 20)))
+        assertEquals(SubscriptionStatus.CLOSING_TODAY, range.statusOn(LocalDate(2026, 10, 21)))
+        assertEquals(SubscriptionStatus.CLOSED, range.statusOn(LocalDate(2026, 10, 22)))
+    }
+
+    @Test fun singleDayAndCrossYearWindowsKeepTheirClosingDayStatus() {
+        fun range(start: String, end: String) = calendarSubscriptionRanges(listOf(JsonRecord()
+            .put("openBookDate", start).put("closingBookDate", end))).single()
+        assertEquals(SubscriptionStatus.CLOSING_TODAY,
+            range("2026-10-21", "2026-10-21").statusOn(LocalDate(2026, 10, 21)))
+        val crossYear = range("2026-12-30", "2027-01-04")
+        assertEquals(SubscriptionStatus.OPEN, crossYear.statusOn(LocalDate(2027, 1, 1)))
+        assertEquals(SubscriptionStatus.CLOSING_TODAY, crossYear.statusOn(LocalDate(2027, 1, 4)))
+        assertEquals(SubscriptionStatus.CLOSED, crossYear.statusOn(LocalDate(2027, 1, 5)))
+    }
+
+    @Test fun subscriptionDayChangesAtMidnightInRwanda() {
+        assertEquals(LocalDate(2026, 10, 20), bondSubscriptionDate(kotlin.time.Instant.parse("2026-10-20T21:59:59Z")))
+        assertEquals(LocalDate(2026, 10, 21), bondSubscriptionDate(kotlin.time.Instant.parse("2026-10-20T22:00:00Z")))
+    }
+
 }

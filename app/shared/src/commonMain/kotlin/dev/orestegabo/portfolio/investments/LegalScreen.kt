@@ -60,12 +60,16 @@ internal fun readableLicence(source: String): String {
     }.joinToString("\n").trim()
 }
 
-internal fun legalTitle(route: String): String = legalDocuments.find { it.id == route }?.title?.display()
+internal fun legalTitle(route: String): String = if (route == "about") localized("About Struct Capital") else legalDocuments.find { it.id == route }?.title?.display()
     ?: legalNoticeGroups.find { "notices:${it.id}" == route }?.title?.display()
     ?: if (route == "notices") localized("Open-source notices") else localized("Legal & privacy")
 
 @Composable
 internal fun LegalScreen(route: String, open: (String) -> Unit) {
+    if (route == "about") {
+        AboutScreen(open)
+        return
+    }
     val actions = LocalNativeActions.current
     val doc = legalDocuments.find { it.id == route }
     val group = legalNoticeGroups.find { "notices:${it.id}" == route }
@@ -112,6 +116,13 @@ internal fun LegalScreen(route: String, open: (String) -> Unit) {
                         LegalParagraphs(section.body.display())
                     }
                 }
+                item {
+                    val privacyRequest = doc.id == "privacy" || doc.id == "data"
+                    val address = if (privacyRequest) BrandContacts.PRIVACY else BrandContacts.SUPPORT
+                    LegalLink(localized(if (privacyRequest) "Privacy and data requests" else "App support"), address, "contact") {
+                        actions.openEmail(address)
+                    }
+                }
                 if (doc.id == "privacy") item {
                     TextButton(onClick = { actions.openUrl("https://dpo.gov.rw/") }) { AppText("Data Protection & Privacy Office") }
                 }
@@ -120,11 +131,21 @@ internal fun LegalScreen(route: String, open: (String) -> Unit) {
                 }
             }
             else -> {
-                item { AppText("Gabo Portfolio · Rwanda", style = MaterialTheme.typography.titleMedium) }
+                item { AppText("Struct Capital · Rwanda", style = MaterialTheme.typography.titleMedium) }
+                item { LegalLink(localized("About Struct Capital"), localized("The app, the brand and how to reach us"), "about") { open("about") } }
                 items(legalDocuments, key = { it.id }) { document ->
                     LegalLink(document.title.display(), document.summary.display(), document.id) { open(document.id) }
                 }
-                item { SelectionContainer { AppText("orestegabo@icloud.com", style = MaterialTheme.typography.bodyMedium) } }
+                item { AppText("Contact", Modifier.semantics { heading() }, style = MaterialTheme.typography.titleMedium) }
+                items(listOf(
+                    "General enquiries" to BrandContacts.HELLO,
+                    "App support" to BrandContacts.SUPPORT,
+                    "Privacy and data requests" to BrandContacts.PRIVACY,
+                    "Security and phishing reports" to BrandContacts.SECURITY,
+                    "Business enquiries" to BrandContacts.INFO,
+                )) { (label, address) ->
+                    LegalLink(localized(label), address, "contact") { actions.openEmail(address) }
+                }
             }
         }
     }
@@ -153,6 +174,8 @@ private fun LegalLink(title: String, subtitle: String, kind: String, onClick: ()
                 "financial" -> Icons.Outlined.AccountBalance
                 "credits" -> Icons.Outlined.Info
                 "software" -> Icons.Outlined.Description
+                "contact" -> Icons.Outlined.Email
+                "about" -> Icons.Outlined.Info
                 else -> Icons.Outlined.Gavel
             }, null) },
             trailingContent = { AppIcon(Icons.Filled.ChevronRight, null) },

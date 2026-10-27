@@ -26,13 +26,26 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.delay
+import kotlin.time.Clock
 import kotlinx.datetime.LocalDate
 
 @Composable
 fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPending: (JsonRecord, LocalDate) -> Unit) {
     val reducedMotion = LocalReducedMotion.current
     val selectionFeedback = LocalSelectionFeedback.current
-    val today = Today
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val today by produceState(bondSubscriptionDate(Clock.System.now()), lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                value = bondSubscriptionDate(Clock.System.now())
+                delay(30_000)
+            }
+        }
+    }
     var selectedValue by rememberSaveable(initialDate) { mutableStateOf((initialDate ?: today).toString()) }
     var expanded by rememberSaveable { mutableStateOf<String?>(null) }
     var showInfo by rememberSaveable { mutableStateOf(false) }
@@ -56,6 +69,9 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
         Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 108.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        /*item(key = "subscription-status") {
+            SubscriptionTodayCard(ranges, today, ::select)
+        }*/
         item {
             Surface(modifier = Modifier.pointerInput(Unit) {
                 var distance = 0f
@@ -79,7 +95,7 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
                         IconButton(onClick = { select(shiftCalendarMonth(selected, -1)) }) {
                             AppIcon(Icons.Outlined.ChevronLeft, "Previous month")
                         }
-                        AppText("${selected.monthLabel()} ${selected.year}", Modifier.weight(1f),
+                        AppText("${selected.monthLabel().take(3)} ${selected.year}", Modifier.weight(1f),
                             style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         TextButton(onClick = { select(today) }) { AppText("Today") }
                         IconButton(onClick = { select(shiftCalendarMonth(selected, 1)) }) {
@@ -99,7 +115,7 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
                         val focusedRange = preferredSubscriptionRange(monthRanges, selected)
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             focusedRange?.let { range ->
-                                SubscriptionRangeHeader(range) { select(range.start) }
+                                SubscriptionRangeHeader(range, today) { select(range.start) }
 
                             }
                             Row(Modifier.fillMaxWidth()) {
@@ -178,21 +194,86 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
             AppText("Issuances · BNR FY 2026/2027", fontWeight = FontWeight.SemiBold)
             AppText("Dates follow the BNR Treasury Bond Issuance Calendar for FY 2026/2027, as of 24 June 2026. The schedule runs from July 2026 to June 2027. Confirm changes with BNR or your broker.")
             AppText("Highlighted ranges run from the book opening date through the closing date. The calendar automatically highlights the current or nearest subscription window in the displayed month. Settlement, coupons and maturities are individual dates.")
+            AppText("Subscription status follows published dates in Rwanda time and updates automatically. On the closing date, confirm the exact deadline with your broker. It does not confirm that bids are currently being accepted.")
             AppText("Your payments come from active bond purchases. Coupons are schedule estimates, not confirmation that a payment was received.")
         }
     }, confirmButton = { TextButton(onClick = { showInfo = false }) { AppText("Got it") } })
 }
 
+/*
 @Composable
-private fun SubscriptionRangeHeader(range: CalendarSubscriptionRange, choose: () -> Unit) {
+private fun SubscriptionTodayCard(ranges: List<CalendarSubscriptionRange>, today: LocalDate, select: (LocalDate) -> Unit) {
+    val active = ranges.filter { today in it }
+    val upcoming = ranges.firstOrNull { it.start > today }
+    Surface(
+        modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .4f)),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            AppText("${localized("Today")} · ${today.day} ${today.monthLabel()}",
+                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (active.isNotEmpty()) {
+                active.forEach { range ->
+                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { select(today) }.padding(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        SubscriptionStatusBadge(range.statusOn(today))
+                        AppText(range.record.text("title"), fontWeight = FontWeight.SemiBold)
+                        AppText(if (today == range.end) "Confirm the closing deadline with your broker."
+                            else "${localized("Closes")} · ${range.end.calendarLabel()}",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            } else {
+                AppText(if (ranges.isEmpty()) "No subscription dates available" else "No subscriptions scheduled today",
+                    style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                upcoming?.let { range ->
+                    TextButton(onClick = { select(range.start) }, contentPadding = PaddingValues(0.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            AppText(range.record.text("title"), fontWeight = FontWeight.Medium)
+                            AppText("${localized("Opens")} · ${range.start.calendarLabel()}", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
+            AppText("Based on published dates · Rwanda time", style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+*/
+
+@Composable
+private fun SubscriptionStatusBadge(status: SubscriptionStatus) {
+    val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
+    val color = when (status) {
+        SubscriptionStatus.OPEN -> if (dark) Color(0xFF8DDBB7) else Color(0xFF22705D)
+        SubscriptionStatus.CLOSING_TODAY -> if (dark) Color(0xFFFFD180) else Color(0xFF875000)
+        SubscriptionStatus.UPCOMING -> MaterialTheme.colorScheme.primary
+        SubscriptionStatus.CLOSED -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Surface(shape = CircleShape, color = color.copy(alpha = .12f)) {
+        Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            EventDot(color, 7)
+            AppText(status.label, style = MaterialTheme.typography.labelMedium, color = color, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+private fun SubscriptionRangeHeader(range: CalendarSubscriptionRange, today: LocalDate, choose: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Surface(Modifier.fillMaxWidth().padding(horizontal = 8.dp).clickable(onClick = choose).clearAndSetSemantics {
-        contentDescription = localized("${localized(range.record.text("title"))}, subscriptions open ${range.start.calendarLabel()}, close ${range.end.calendarLabel()}")
+        contentDescription = "${localized(range.record.text("title"))}, ${localized(range.statusOn(today).label)}. " +
+            localized("subscriptions open ${range.start.calendarLabel()}, close ${range.end.calendarLabel()}")
         role = Role.Button
         onClick { choose(); true }
     },
         shape = RoundedCornerShape(20.dp), color = colors.primaryContainer.copy(alpha = .4f)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            SubscriptionStatusBadge(range.statusOn(today))
             AppText(range.record.text("title"), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column {

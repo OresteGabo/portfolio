@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -> Unit,
     chartStyle: String, changeChartStyle: (String) -> Unit,
-    openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit, openLegal: () -> Unit = {}) {
+    openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit, openLegal: () -> Unit = {}, openAbout: () -> Unit = {}) {
     val actions = LocalNativeActions.current
     var setupSecure by remember { mutableStateOf(false) }
     var targetExpanded by remember { mutableStateOf(false) }
@@ -166,17 +166,23 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 SettingsDivider()
                 SettingsRow(Icons.Outlined.Search, "Find bond purchases", onClick = { ownerSection = "bonds" })
             } }
+            item { SettingsSection("About") {
+                SettingsRow(Icons.Outlined.Info, "About Struct Capital", "The app, the brand and how to reach us", onClick = openAbout)
+            } }
             item { SettingsSection("Legal & privacy") {
+                SettingsRow(Icons.Outlined.Email, "Contact support", BrandContacts.SUPPORT, onClick = { actions.openEmail(BrandContacts.SUPPORT) })
+                SettingsDivider()
                 SettingsRow(Icons.Outlined.Policy, "Legal documents", "Terms, privacy, data rights & credits", onClick = openLegal)
             } }
             item { SettingsSection("Links", "These links open in your browser.") {
                 val links = listOf(
-                    Triple("/portfolio", "Portfolio website", Icons.Outlined.AccountBalanceWallet),
-                    Triple("/create-password", "Password setup", Icons.Outlined.Key),
+                    Triple(OFFICIAL_WEBSITE_ORIGIN, "Struct Capital", Icons.Outlined.Language),
+                    Triple(model.origin + "/portfolio", "Portfolio website", Icons.Outlined.AccountBalanceWallet),
+                    Triple(model.origin + "/create-password", "Password setup", Icons.Outlined.Key),
                 )
-                links.forEachIndexed { index, (path, title, icon) ->
+                links.forEachIndexed { index, (url, title, icon) ->
                     if (index > 0) SettingsDivider()
-                    SettingsRow(icon, title, onClick = { actions.openUrl(model.origin + path) },
+                    SettingsRow(icon, title, onClick = { actions.openUrl(url) },
                         trailing = { AppIcon(Icons.Outlined.OpenInNew, "Opens in browser", Modifier.size(19.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) })
                 }
             } }

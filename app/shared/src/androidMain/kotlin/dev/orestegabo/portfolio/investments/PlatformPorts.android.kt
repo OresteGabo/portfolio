@@ -92,6 +92,16 @@ private class AndroidActions(private val context: Context) : NativeActions {
         require(Uri.parse(url).scheme in listOf("https", "http"))
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     }
+    override fun openEmail(address: String) {
+        try {
+            context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.fromParts("mailto", address, null)))
+        } catch (_: android.content.ActivityNotFoundException) {
+            context.startActivity(Intent.createChooser(
+                Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, address),
+                localized("Share email address"),
+            ))
+        }
+    }
     override fun shareText(text: String) {
         context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), localized("Share invitation")))
     }

@@ -31,6 +31,7 @@ class PortfolioModelTest {
         var expired = false
         var deletionStatus = HttpStatusCode.OK
         var deletionConfirmed = true
+        val requests = mutableListOf<Pair<HttpMethod, String>>()
         var deletionRequests = 0
         var failDocuments = false
         var equityWrites = 0
@@ -56,6 +57,7 @@ class PortfolioModelTest {
             val engine = MockEngine(MockEngineConfig().apply {
                 this.dispatcher = dispatcher
                 addHandler { request ->
+                    scenario.requests += request.method to request.url.encodedPath
                     when (request.url.encodedPath) {
                         "/api/bonds/mobile-overview" -> {
                             scenario.overviewReads++
@@ -570,6 +572,45 @@ class PortfolioModelTest {
             assertNull(model.reportProgress)
             assertNotNull(model.user)
             assertEquals(0, scenario.deletionRequests)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun annualExportFetchesFreshRecordsAndNeverCreatesADatabaseDocument() = runTest {
+        val scenario = Scenario().apply { compact = true }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle()
+            val cached = model.portfolio
+            val reads = scenario.purchaseReads
+            scenario.requests.clear()
+            scenario.failDocuments = true // Generated PDFs do not depend on stored files.
+            val actions = ReportActions()
+            model.exportAnnualReport(2025, actions)
+            assertTrue(actions.saved.await().decodeToString().contains("ANNUAL REPORT 2025"))
+            advanceUntilIdle()
+            assertEquals(reads + 1, scenario.purchaseReads)
+            assertTrue(scenario.requests.all { it.first == HttpMethod.Get })
+            assertFalse(scenario.requests.any { it.second == "/api/bonds/documents" })
+            assertSame(cached, model.portfolio)
+            assertNull(model.annualReportYear)
+            assertNull(model.reportProgress)
+            assertEquals("Annual report saved.", model.message)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun incompleteAnnualExportNeverOffersAPartialReport() = runTest {
+        val scenario = Scenario()
+        val model = model(scenario)
+        try {
+            advanceUntilIdle()
+            scenario.failContributionReads = true
+            val actions = ReportActions()
+            model.exportAnnualReport(2025, actions)
+            advanceUntilIdle()
+            assertFalse(actions.saved.isCompleted)
+            assertNotNull(model.error)
+            assertNull(model.annualReportYear)
+            assertNull(model.reportProgress)
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
 

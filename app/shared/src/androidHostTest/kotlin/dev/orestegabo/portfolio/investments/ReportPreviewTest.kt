@@ -13,6 +13,10 @@ class ReportPreviewTest {
             assertTrue(bytes.size > 10000)
             File(folder, "portfolio-$language.pdf").writeBytes(bytes)
         }
+        listOf("en", "fr").forEach { language ->
+            File(folder, "annual-2025-$language.pdf").writeBytes(generateAnnualReport(reportFixture(language), 2025))
+            File(folder, "annual-2026-$language.pdf").writeBytes(generateAnnualReport(reportFixture(language), 2026))
+        }
         val stress = reportFixture("fr", lots = 2).let { data ->
             data.snapshot.purchases.forEach { it.put("faceValue", 300_000_000_000L).put("bondName", "Obligation à long terme / ".repeat(15)) }
             data.snapshot.holdings.forEach { it.put("netAmountPayable", 300_000_000_000L).put("securityName", "Société de développement et d'investissement / ".repeat(10)) }

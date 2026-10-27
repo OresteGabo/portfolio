@@ -30,6 +30,8 @@ interface NativeActions {
     suspend fun pickPdf(onSelected: () -> Unit = {}): ByteArray?
     suspend fun savePdf(fileName: String, bytes: ByteArray): Boolean
     fun openUrl(url: String)
+    /** Open a draft in the mail app; platforms without one can share the address. */
+    fun openEmail(address: String) { shareText(address) }
     fun shareText(text: String)
 }
 interface InvestmentEngine {

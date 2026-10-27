@@ -125,6 +125,12 @@ private class IosActions : NativeActions {
         require(destination.scheme in listOf("https", "http"))
         UIApplication.sharedApplication.openURL(destination, options = emptyMap<Any?, Any?>(), completionHandler = null)
     }
+    override fun openEmail(address: String) {
+        val destination = requireNotNull(NSURL.URLWithString("mailto:$address"))
+        UIApplication.sharedApplication.openURL(destination, options = emptyMap<Any?, Any?>()) { opened ->
+            if (!opened) shareText(address)
+        }
+    }
     override fun shareText(text: String) {
         val controller = UIActivityViewController(activityItems = listOf(text), applicationActivities = null)
         val presenter = presentingController()

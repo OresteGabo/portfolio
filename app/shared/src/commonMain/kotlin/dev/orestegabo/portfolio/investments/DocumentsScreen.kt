@@ -39,6 +39,7 @@ fun DocumentsScreen(model: PortfolioModel, upload: () -> Unit = {}) {
     var category by rememberSaveable { mutableStateOf("all") }
     var expanded by rememberSaveable { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf<String?>(null) }
+    var annualToExport by rememberSaveable { mutableStateOf<Int?>(null) }
     val actions = LocalNativeActions.current
     val focus = LocalFocusManager.current
     val feedback = LocalSelectionFeedback.current
@@ -55,7 +56,15 @@ fun DocumentsScreen(model: PortfolioModel, upload: () -> Unit = {}) {
             if (actions.savePdf(document.text("originalFileName").ifBlank { "investment.pdf" }, data)) model.message = "Document saved."
         } finally { saving = null }
     }
-    val categories = listOf("all") + model.documents.map { it.text("category") }.filter { it.isNotBlank() }.distinct()
+    var historyRequested by remember(model.user?.text("id")) { mutableStateOf(false) }
+    LaunchedEffect(model.user?.text("id"), model.busy) {
+        if (!model.busy && !historyRequested) {
+            historyRequested = true
+            model.loadInvestmentHistory()
+        }
+    }
+    val libraryDocuments = model.documents + annualReportDocuments(model.portfolio, bondSubscriptionDate(kotlin.time.Clock.System.now()))
+    val categories = listOf("all") + libraryDocuments.map { it.text("category") }.filter { it.isNotBlank() }.distinct()
     LaunchedEffect(categories) { if (category !in categories) category = "all" }
     LaunchedEffect(category, categories, AppLanguage.code) {
         val index = categories.indexOf(category)
@@ -63,9 +72,10 @@ fun DocumentsScreen(model: PortfolioModel, upload: () -> Unit = {}) {
             if (reducedMotion) filters.scrollToItem(index) else filters.animateScrollToItem(index)
         }
     }
-    val filtered = model.documents.filter { document ->
+    val filtered = libraryDocuments.filter { document ->
         (category == "all" || document.text("category") == category) &&
-            listOf("label", "instrumentName", "description", "issuer", "originalFileName").any { document.text(it).contains(search, true) }
+            (listOf("label", "instrumentName", "description", "issuer", "originalFileName").any { document.text(it).contains(search, true) } ||
+                (document.optInt("annualReportYear") > 0 && localized("Annual report").contains(search, true)))
     }.sortedByDescending { calendarDate(it.text("documentDate")) }
     val groups = filtered.groupBy { document ->
         calendarDate(document.text("documentDate"))?.let { "${it.year}-${it.month}" }.orEmpty()
@@ -74,8 +84,9 @@ fun DocumentsScreen(model: PortfolioModel, upload: () -> Unit = {}) {
         item { OutlinedButton(onClick = upload, enabled = !model.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
             AppIcon(Icons.Outlined.UploadFile, null); Spacer(Modifier.width(8.dp)); AppText("Upload PDF")
         } }
-        if (model.documents.isNotEmpty()) {
-            item { DocumentLibraryHeader(model.documents.size, model.busy, model.busy && saving == null, model::refresh) }
+        if (libraryDocuments.isNotEmpty()) {
+            item { DocumentLibraryHeader(libraryDocuments.size, model.busy, model.busy && saving == null && model.annualReportYear == null,
+                { historyRequested = false; model.refresh() }) }
             item {
                 OutlinedTextField(search, { search = it }, Modifier.fillMaxWidth(),
                     placeholder = { AppText("Search documents") }, singleLine = true,
@@ -111,7 +122,7 @@ fun DocumentsScreen(model: PortfolioModel, upload: () -> Unit = {}) {
         if (filtered.isEmpty()) item {
             when {
                 model.busy -> LoadingState()
-                model.documents.isEmpty() -> EmptyState("No documents yet", EmptyArtwork.DOCUMENTS, actionLabel = "Refresh", onAction = model::refresh)
+                libraryDocuments.isEmpty() -> EmptyState("No documents yet", EmptyArtwork.DOCUMENTS, actionLabel = "Refresh", onAction = model::refresh)
                 else -> EmptyState("No matches", EmptyArtwork.SEARCH, actionLabel = "Clear filters", onAction = { search = ""; category = "all" })
             }
         }
@@ -125,12 +136,27 @@ fun DocumentsScreen(model: PortfolioModel, upload: () -> Unit = {}) {
                 }
             }
             items(documents, key = { "document:${it.text("id")}" }) { document ->
-                DocumentCard(document, expanded == document.text("id"), saving == document.text("id"), !model.busy,
+                DocumentCard(document, expanded == document.text("id"), saving == document.text("id") || model.annualReportYear == document.optInt("annualReportYear", -1), !model.busy,
                     toggle = { expanded = if (expanded == document.text("id")) null else document.text("id") },
-                    download = { save(document) })
+                    download = { if (document.optInt("annualReportYear") > 0) annualToExport = document.optInt("annualReportYear") else save(document) })
             }
         }
     }
+    annualToExport?.let { year ->
+        AlertDialog(onDismissRequest = { annualToExport = null }, title = { AppText("${localized("Annual report")} · $year") },
+            text = { AppText("Generate a calendar-year PDF with your financial figures, even when Hide numbers is on. The current year is limited to today. Original documents are not included.") },
+            confirmButton = { TextButton(enabled = !model.busy, onClick = { annualToExport = null; model.exportAnnualReport(year, actions) }) { AppText("Generate PDF") } },
+            dismissButton = { TextButton(onClick = { annualToExport = null }) { AppText("Cancel") } })
+    }
+    if (model.annualReportYear != null) model.reportProgress?.let { progress ->
+        AlertDialog(onDismissRequest = {}, title = { AppText("Annual report") }, text = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                CircularProgressIndicator(Modifier.size(28.dp))
+                AppText(progress, Modifier.weight(1f))
+            }
+        }, confirmButton = {})
+    }
+
 }
 
 @Composable
@@ -142,7 +168,7 @@ private fun DocumentLibraryHeader(count: Int, busy: Boolean, refreshing: Boolean
         Box(Modifier.fillMaxWidth().heightIn(min = 142.dp).background(Brush.linearGradient(listOf(start, colours.surface)))) {
             DocumentStack(Modifier.align(Alignment.CenterEnd).padding(end = 30.dp).size(112.dp), colours.primary, colours.surface)
             Column(Modifier.padding(22.dp).padding(end = 132.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                AppText("Saved files", style = MaterialTheme.typography.labelLarge, color = colours.onSurfaceVariant)
+                AppText("Documents", style = MaterialTheme.typography.labelLarge, color = colours.onSurfaceVariant)
                 FinancialText(count.toString(), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
                 AppText("PDF", style = MaterialTheme.typography.labelSmall, color = colours.primary)
             }
@@ -177,11 +203,13 @@ private fun DocumentStack(modifier: Modifier, ink: Color, paper: Color) {
 private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolean, canDownload: Boolean, toggle: () -> Unit, download: () -> Unit) {
     val colours = MaterialTheme.colorScheme
     val category = document.text("category")
+    val annualYear = document.optInt("annualReportYear")
+    val generated = annualYear > 0
     val logo = remember(document) { documentInvestmentLogo(document) }
     val shares = category.contains("share", true) || category.contains("equity", true) || (logo != null && !logo.bond)
     val dark = colours.surface.luminance() < .5f
     val accent = if (shares) (if (dark) Color(0xFF9CCBBA) else Color(0xFF397562)) else colours.primary
-    val title = document.text("label").ifBlank { document.text("originalFileName").ifBlank { "PDF" } }
+    val title = if (generated) "${localized("Annual report")} · $annualYear" else document.text("label").ifBlank { document.text("originalFileName").ifBlank { "PDF" } }
     val date = calendarDate(document.text("documentDate"))
     Surface(shape = RoundedCornerShape(22.dp), color = colours.surface,
         border = BorderStroke(1.dp, if (expanded) accent.copy(alpha = .4f) else colours.outlineVariant.copy(alpha = .5f))) {
@@ -193,13 +221,14 @@ private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolea
                 horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(width = 58.dp, height = 72.dp)) {
                     PdfCover(accent)
-                    if (logo != null || shares) {
+                    if (generated || logo != null || shares) {
                         Surface(Modifier.align(Alignment.BottomEnd).size(36.dp)
                             .then(if (logo != null) Modifier.semantics { contentDescription = localized("Logo: ${logo.name}") } else Modifier),
                             shape = androidx.compose.foundation.shape.CircleShape, color = colours.surface,
                             border = BorderStroke(2.dp, colours.surface), shadowElevation = 1.dp) {
                             Box(Modifier.padding(2.dp), contentAlignment = Alignment.Center) {
-                                if (logo != null) InvestmentLogo(ticker = logo.ticker, bond = logo.bond,
+                                if (generated) StructMark(Modifier.fillMaxSize().padding(3.dp))
+                                else if (logo != null) InvestmentLogo(ticker = logo.ticker, bond = logo.bond,
                                     modifier = Modifier.fillMaxSize(), compact = true)
                                 else AppIcon(Icons.AutoMirrored.Outlined.TrendingUp, "Shares", Modifier.size(20.dp), tint = accent)
                             }
@@ -209,6 +238,7 @@ private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolea
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (category.isNotBlank()) AppText(category, style = MaterialTheme.typography.labelSmall, color = accent)
                     FinancialText(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    if (generated) AppText(document.text("description"), style = MaterialTheme.typography.labelSmall, color = colours.onSurfaceVariant)
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         AppText(date?.let { "${it.day} ${it.monthLabel().take(3)} ${it.year}" } ?: document.text("documentDate"),
                             Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = colours.onSurfaceVariant)

@@ -25,9 +25,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.ui.graphics.vector.ImageVector
-import org.jetbrains.compose.resources.painterResource
-import portfolio.app.shared.generated.resources.Res
-import portfolio.app.shared.generated.resources.gabo_mark
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.autofill.ContentType
@@ -84,6 +81,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var equityEditor by remember { mutableStateOf<JsonRecord?>(null) }
     var simulator by rememberSaveable { mutableStateOf(false) }
     var legalRoute by rememberSaveable { mutableStateOf<String?>(null) }
+    var legalHistory by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
     var education by rememberSaveable { mutableStateOf(false) }
     var importReview by remember { mutableStateOf<JsonRecord?>(null) }
     val actions = LocalNativeActions.current
@@ -148,12 +146,8 @@ fun InvestmentApp(model: PortfolioModel) {
         val nested = notificationScreen || legalRoute != null || missingDocuments || pendingEntry || importReview != null || investmentHistory || detail != null || editor != null || equityEditor != null || newPurchase || simulator || education
         val back = {
             if (notificationScreen) { notificationScreen=false } else if (legalRoute != null) {
-                legalRoute = when {
-                    legalRoute!!.startsWith("notices:") -> "notices"
-                    legalRoute == "notices" -> "credits"
-                    legalRoute == "hub" -> null
-                    else -> "hub"
-                }
+                legalRoute = legalHistory.lastOrNull()
+                legalHistory = legalHistory.dropLast(1)
             } else {
                 if (detail == null && editor == null && equityEditor == null && importReview == null && !pendingEntry && !newPurchase && !simulator && !education) investmentHistory = false
                 missingDocuments = false; detail = null; editor = null; equityEditor = null; newPurchase = false; pendingEntry = false; confirmationTarget = null; importReview = null; simulator = false; education = false
@@ -174,7 +168,7 @@ fun InvestmentApp(model: PortfolioModel) {
             education -> "Learn"
             detail != null -> "Bond details"
             investmentHistory -> "All investments"
-            model.user == null -> "Gabo"
+            model.user == null -> "Struct Capital"
             tab == "Settings" -> "Settings"
             else -> tab
         }
@@ -195,7 +189,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     },
                     navigationIcon = {
                         if (nested) IconButton(onClick = back) { AppIcon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
-                        else Image(painterResource(Res.drawable.gabo_mark), localized("Gabo logo"), Modifier.padding(start = 16.dp, end = 4.dp).size(40.dp))
+                        else StructMark(Modifier.padding(start = 16.dp, end = 4.dp).size(40.dp))
                     },
                     actions = { if(tab=="Stocks" && !nested && model.user!=null && !model.locked)
                         NotificationBell(model.unreadNotifications) { notificationScreen=true } },
@@ -234,7 +228,10 @@ fun InvestmentApp(model: PortfolioModel) {
                     model.message?.let { Notice(it, false) { model.message = null } }
                 }
                 when {
-                    legalRoute != null -> LegalScreen(legalRoute!!) { legalRoute = it }
+                    legalRoute != null -> LegalScreen(legalRoute!!) { next ->
+                        legalHistory = legalHistory + legalRoute!!
+                        legalRoute = next
+                    }
                     model.locked -> UnlockScreen(model) { legalRoute = "hub" }
                     model.user == null -> SignInScreen(model) { legalRoute = "hub" }
                     notificationScreen -> NotificationsScreen(model,openStocks={ notificationScreen=false;tab="Stocks" },openNotification={ item ->
@@ -253,7 +250,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     newPurchase -> PurchaseEntryScreen(model, engine, ::imported) { legalRoute = "privacy" }
                     tab == "Settings" && !nested -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
                         chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
-                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" })
+                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" })
                     editor != null -> PurchaseEditor(model, editor!!, { editor = null; importReview = null }, importReview)
                     equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null; importReview = null }, importReview)
                     simulator -> SimulatorScreen(model, engine) { simulator = false }
@@ -312,7 +309,7 @@ fun Fact(label: String, value: String) {
 @Composable
 private fun UnlockScreen(model: PortfolioModel, openLegal: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(32.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        Image(painterResource(Res.drawable.gabo_mark), "Gabo", Modifier.size(80.dp))
+        StructMark(Modifier.size(80.dp))
         Spacer(Modifier.height(24.dp))
         AppText("Portfolio locked", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(12.dp))

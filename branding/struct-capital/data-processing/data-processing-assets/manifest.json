@@ -1,0 +1,1234 @@
+[
+  {
+    "name": "processor-flow-dark",
+    "component": "processor-flow",
+    "theme": "dark",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/processor-flow-dark.svg",
+    "viewBox": "0 0 640 460",
+    "width": 640,
+    "height": 460,
+    "png": [
+      {
+        "path": "png/1x/processor-flow-dark.png",
+        "width": 640,
+        "height": 460
+      },
+      {
+        "path": "png/2x/processor-flow-dark.png",
+        "width": 1280,
+        "height": 920
+      },
+      {
+        "path": "png/3x/processor-flow-dark.png",
+        "width": 1920,
+        "height": 1380
+      }
+    ]
+  },
+  {
+    "name": "processor-flow-light",
+    "component": "processor-flow",
+    "theme": "light",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/processor-flow-light.svg",
+    "viewBox": "0 0 640 460",
+    "width": 640,
+    "height": 460,
+    "png": [
+      {
+        "path": "png/1x/processor-flow-light.png",
+        "width": 640,
+        "height": 460
+      },
+      {
+        "path": "png/2x/processor-flow-light.png",
+        "width": 1280,
+        "height": 920
+      },
+      {
+        "path": "png/3x/processor-flow-light.png",
+        "width": 1920,
+        "height": 1380
+      }
+    ]
+  },
+  {
+    "name": "processor-flow-mono-olive",
+    "component": "processor-flow",
+    "theme": "mono-olive",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/processor-flow-mono-olive.svg",
+    "viewBox": "0 0 640 460",
+    "width": 640,
+    "height": 460,
+    "png": [
+      {
+        "path": "png/1x/processor-flow-mono-olive.png",
+        "width": 640,
+        "height": 460
+      },
+      {
+        "path": "png/2x/processor-flow-mono-olive.png",
+        "width": 1280,
+        "height": 920
+      },
+      {
+        "path": "png/3x/processor-flow-mono-olive.png",
+        "width": 1920,
+        "height": 1380
+      }
+    ]
+  },
+  {
+    "name": "processor-flow-mono-cream",
+    "component": "processor-flow",
+    "theme": "mono-cream",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/processor-flow-mono-cream.svg",
+    "viewBox": "0 0 640 460",
+    "width": 640,
+    "height": 460,
+    "png": [
+      {
+        "path": "png/1x/processor-flow-mono-cream.png",
+        "width": 640,
+        "height": 460
+      },
+      {
+        "path": "png/2x/processor-flow-mono-cream.png",
+        "width": 1280,
+        "height": 920
+      },
+      {
+        "path": "png/3x/processor-flow-mono-cream.png",
+        "width": 1920,
+        "height": 1380
+      }
+    ]
+  },
+  {
+    "name": "processor-core-dark",
+    "component": "processor-core",
+    "theme": "dark",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/processor-core-dark.svg",
+    "viewBox": "160 70 320 240",
+    "width": 480,
+    "height": 360,
+    "png": [
+      {
+        "path": "png/1x/processor-core-dark.png",
+        "width": 480,
+        "height": 360
+      },
+      {
+        "path": "png/2x/processor-core-dark.png",
+        "width": 960,
+        "height": 720
+      },
+      {
+        "path": "png/3x/processor-core-dark.png",
+        "width": 1440,
+        "height": 1080
+      }
+    ]
+  },
+  {
+    "name": "processor-core-light",
+    "component": "processor-core",
+    "theme": "light",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/processor-core-light.svg",
+    "viewBox": "160 70 320 240",
+    "width": 480,
+    "height": 360,
+    "png": [
+      {
+        "path": "png/1x/processor-core-light.png",
+        "width": 480,
+        "height": 360
+      },
+      {
+        "path": "png/2x/processor-core-light.png",
+        "width": 960,
+        "height": 720
+      },
+      {
+        "path": "png/3x/processor-core-light.png",
+        "width": 1440,
+        "height": 1080
+      }
+    ]
+  },
+  {
+    "name": "processor-core-mono-olive",
+    "component": "processor-core",
+    "theme": "mono-olive",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/processor-core-mono-olive.svg",
+    "viewBox": "160 70 320 240",
+    "width": 480,
+    "height": 360,
+    "png": [
+      {
+        "path": "png/1x/processor-core-mono-olive.png",
+        "width": 480,
+        "height": 360
+      },
+      {
+        "path": "png/2x/processor-core-mono-olive.png",
+        "width": 960,
+        "height": 720
+      },
+      {
+        "path": "png/3x/processor-core-mono-olive.png",
+        "width": 1440,
+        "height": 1080
+      }
+    ]
+  },
+  {
+    "name": "processor-core-mono-cream",
+    "component": "processor-core",
+    "theme": "mono-cream",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/processor-core-mono-cream.svg",
+    "viewBox": "160 70 320 240",
+    "width": 480,
+    "height": 360,
+    "png": [
+      {
+        "path": "png/1x/processor-core-mono-cream.png",
+        "width": 480,
+        "height": 360
+      },
+      {
+        "path": "png/2x/processor-core-mono-cream.png",
+        "width": 960,
+        "height": 720
+      },
+      {
+        "path": "png/3x/processor-core-mono-cream.png",
+        "width": 1440,
+        "height": 1080
+      }
+    ]
+  },
+  {
+    "name": "circuit-traces-dark",
+    "component": "circuit-traces",
+    "theme": "dark",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/circuit-traces-dark.svg",
+    "viewBox": "105 35 520 385",
+    "width": 624,
+    "height": 462,
+    "png": [
+      {
+        "path": "png/1x/circuit-traces-dark.png",
+        "width": 624,
+        "height": 462
+      },
+      {
+        "path": "png/2x/circuit-traces-dark.png",
+        "width": 1248,
+        "height": 924
+      },
+      {
+        "path": "png/3x/circuit-traces-dark.png",
+        "width": 1872,
+        "height": 1386
+      }
+    ]
+  },
+  {
+    "name": "circuit-traces-light",
+    "component": "circuit-traces",
+    "theme": "light",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/circuit-traces-light.svg",
+    "viewBox": "105 35 520 385",
+    "width": 624,
+    "height": 462,
+    "png": [
+      {
+        "path": "png/1x/circuit-traces-light.png",
+        "width": 624,
+        "height": 462
+      },
+      {
+        "path": "png/2x/circuit-traces-light.png",
+        "width": 1248,
+        "height": 924
+      },
+      {
+        "path": "png/3x/circuit-traces-light.png",
+        "width": 1872,
+        "height": 1386
+      }
+    ]
+  },
+  {
+    "name": "circuit-traces-mono-olive",
+    "component": "circuit-traces",
+    "theme": "mono-olive",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/circuit-traces-mono-olive.svg",
+    "viewBox": "105 35 520 385",
+    "width": 624,
+    "height": 462,
+    "png": [
+      {
+        "path": "png/1x/circuit-traces-mono-olive.png",
+        "width": 624,
+        "height": 462
+      },
+      {
+        "path": "png/2x/circuit-traces-mono-olive.png",
+        "width": 1248,
+        "height": 924
+      },
+      {
+        "path": "png/3x/circuit-traces-mono-olive.png",
+        "width": 1872,
+        "height": 1386
+      }
+    ]
+  },
+  {
+    "name": "circuit-traces-mono-cream",
+    "component": "circuit-traces",
+    "theme": "mono-cream",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/circuit-traces-mono-cream.svg",
+    "viewBox": "105 35 520 385",
+    "width": 624,
+    "height": 462,
+    "png": [
+      {
+        "path": "png/1x/circuit-traces-mono-cream.png",
+        "width": 624,
+        "height": 462
+      },
+      {
+        "path": "png/2x/circuit-traces-mono-cream.png",
+        "width": 1248,
+        "height": 924
+      },
+      {
+        "path": "png/3x/circuit-traces-mono-cream.png",
+        "width": 1872,
+        "height": 1386
+      }
+    ]
+  },
+  {
+    "name": "data-ribbon-dark",
+    "component": "data-ribbon",
+    "theme": "dark",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/data-ribbon-dark.svg",
+    "viewBox": "18 216 246 210",
+    "width": 492,
+    "height": 420,
+    "png": [
+      {
+        "path": "png/1x/data-ribbon-dark.png",
+        "width": 492,
+        "height": 420
+      },
+      {
+        "path": "png/2x/data-ribbon-dark.png",
+        "width": 984,
+        "height": 840
+      },
+      {
+        "path": "png/3x/data-ribbon-dark.png",
+        "width": 1476,
+        "height": 1260
+      }
+    ]
+  },
+  {
+    "name": "data-ribbon-light",
+    "component": "data-ribbon",
+    "theme": "light",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/data-ribbon-light.svg",
+    "viewBox": "18 216 246 210",
+    "width": 492,
+    "height": 420,
+    "png": [
+      {
+        "path": "png/1x/data-ribbon-light.png",
+        "width": 492,
+        "height": 420
+      },
+      {
+        "path": "png/2x/data-ribbon-light.png",
+        "width": 984,
+        "height": 840
+      },
+      {
+        "path": "png/3x/data-ribbon-light.png",
+        "width": 1476,
+        "height": 1260
+      }
+    ]
+  },
+  {
+    "name": "data-ribbon-mono-olive",
+    "component": "data-ribbon",
+    "theme": "mono-olive",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/data-ribbon-mono-olive.svg",
+    "viewBox": "18 216 246 210",
+    "width": 492,
+    "height": 420,
+    "png": [
+      {
+        "path": "png/1x/data-ribbon-mono-olive.png",
+        "width": 492,
+        "height": 420
+      },
+      {
+        "path": "png/2x/data-ribbon-mono-olive.png",
+        "width": 984,
+        "height": 840
+      },
+      {
+        "path": "png/3x/data-ribbon-mono-olive.png",
+        "width": 1476,
+        "height": 1260
+      }
+    ]
+  },
+  {
+    "name": "data-ribbon-mono-cream",
+    "component": "data-ribbon",
+    "theme": "mono-cream",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/data-ribbon-mono-cream.svg",
+    "viewBox": "18 216 246 210",
+    "width": 492,
+    "height": 420,
+    "png": [
+      {
+        "path": "png/1x/data-ribbon-mono-cream.png",
+        "width": 492,
+        "height": 420
+      },
+      {
+        "path": "png/2x/data-ribbon-mono-cream.png",
+        "width": 984,
+        "height": 840
+      },
+      {
+        "path": "png/3x/data-ribbon-mono-cream.png",
+        "width": 1476,
+        "height": 1260
+      }
+    ]
+  },
+  {
+    "name": "document-stack-dark",
+    "component": "document-stack",
+    "theme": "dark",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/document-stack-dark.svg",
+    "viewBox": "0 15 240 285",
+    "width": 320,
+    "height": 380,
+    "png": [
+      {
+        "path": "png/1x/document-stack-dark.png",
+        "width": 320,
+        "height": 380
+      },
+      {
+        "path": "png/2x/document-stack-dark.png",
+        "width": 640,
+        "height": 760
+      },
+      {
+        "path": "png/3x/document-stack-dark.png",
+        "width": 960,
+        "height": 1140
+      }
+    ]
+  },
+  {
+    "name": "document-stack-light",
+    "component": "document-stack",
+    "theme": "light",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/document-stack-light.svg",
+    "viewBox": "0 15 240 285",
+    "width": 320,
+    "height": 380,
+    "png": [
+      {
+        "path": "png/1x/document-stack-light.png",
+        "width": 320,
+        "height": 380
+      },
+      {
+        "path": "png/2x/document-stack-light.png",
+        "width": 640,
+        "height": 760
+      },
+      {
+        "path": "png/3x/document-stack-light.png",
+        "width": 960,
+        "height": 1140
+      }
+    ]
+  },
+  {
+    "name": "document-stack-mono-olive",
+    "component": "document-stack",
+    "theme": "mono-olive",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/document-stack-mono-olive.svg",
+    "viewBox": "0 15 240 285",
+    "width": 320,
+    "height": 380,
+    "png": [
+      {
+        "path": "png/1x/document-stack-mono-olive.png",
+        "width": 320,
+        "height": 380
+      },
+      {
+        "path": "png/2x/document-stack-mono-olive.png",
+        "width": 640,
+        "height": 760
+      },
+      {
+        "path": "png/3x/document-stack-mono-olive.png",
+        "width": 960,
+        "height": 1140
+      }
+    ]
+  },
+  {
+    "name": "document-stack-mono-cream",
+    "component": "document-stack",
+    "theme": "mono-cream",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/document-stack-mono-cream.svg",
+    "viewBox": "0 15 240 285",
+    "width": 320,
+    "height": 380,
+    "png": [
+      {
+        "path": "png/1x/document-stack-mono-cream.png",
+        "width": 320,
+        "height": 380
+      },
+      {
+        "path": "png/2x/document-stack-mono-cream.png",
+        "width": 640,
+        "height": 760
+      },
+      {
+        "path": "png/3x/document-stack-mono-cream.png",
+        "width": 960,
+        "height": 1140
+      }
+    ]
+  },
+  {
+    "name": "document-dark",
+    "component": "document",
+    "theme": "dark",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/document-dark.svg",
+    "viewBox": "16 15 208 265",
+    "width": 312,
+    "height": 397,
+    "png": [
+      {
+        "path": "png/1x/document-dark.png",
+        "width": 312,
+        "height": 397
+      },
+      {
+        "path": "png/2x/document-dark.png",
+        "width": 624,
+        "height": 794
+      },
+      {
+        "path": "png/3x/document-dark.png",
+        "width": 936,
+        "height": 1191
+      }
+    ]
+  },
+  {
+    "name": "document-light",
+    "component": "document",
+    "theme": "light",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/document-light.svg",
+    "viewBox": "16 15 208 265",
+    "width": 312,
+    "height": 397,
+    "png": [
+      {
+        "path": "png/1x/document-light.png",
+        "width": 312,
+        "height": 397
+      },
+      {
+        "path": "png/2x/document-light.png",
+        "width": 624,
+        "height": 794
+      },
+      {
+        "path": "png/3x/document-light.png",
+        "width": 936,
+        "height": 1191
+      }
+    ]
+  },
+  {
+    "name": "document-mono-olive",
+    "component": "document",
+    "theme": "mono-olive",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/document-mono-olive.svg",
+    "viewBox": "16 15 208 265",
+    "width": 312,
+    "height": 397,
+    "png": [
+      {
+        "path": "png/1x/document-mono-olive.png",
+        "width": 312,
+        "height": 397
+      },
+      {
+        "path": "png/2x/document-mono-olive.png",
+        "width": 624,
+        "height": 794
+      },
+      {
+        "path": "png/3x/document-mono-olive.png",
+        "width": 936,
+        "height": 1191
+      }
+    ]
+  },
+  {
+    "name": "document-mono-cream",
+    "component": "document",
+    "theme": "mono-cream",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/document-mono-cream.svg",
+    "viewBox": "16 15 208 265",
+    "width": 312,
+    "height": 397,
+    "png": [
+      {
+        "path": "png/1x/document-mono-cream.png",
+        "width": 312,
+        "height": 397
+      },
+      {
+        "path": "png/2x/document-mono-cream.png",
+        "width": 624,
+        "height": 794
+      },
+      {
+        "path": "png/3x/document-mono-cream.png",
+        "width": 936,
+        "height": 1191
+      }
+    ]
+  },
+  {
+    "name": "allocation-chart-dark",
+    "component": "allocation-chart",
+    "theme": "dark",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/allocation-chart-dark.svg",
+    "viewBox": "0 0 250 220",
+    "width": 400,
+    "height": 352,
+    "png": [
+      {
+        "path": "png/1x/allocation-chart-dark.png",
+        "width": 400,
+        "height": 352
+      },
+      {
+        "path": "png/2x/allocation-chart-dark.png",
+        "width": 800,
+        "height": 704
+      },
+      {
+        "path": "png/3x/allocation-chart-dark.png",
+        "width": 1200,
+        "height": 1056
+      }
+    ]
+  },
+  {
+    "name": "allocation-chart-light",
+    "component": "allocation-chart",
+    "theme": "light",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/allocation-chart-light.svg",
+    "viewBox": "0 0 250 220",
+    "width": 400,
+    "height": 352,
+    "png": [
+      {
+        "path": "png/1x/allocation-chart-light.png",
+        "width": 400,
+        "height": 352
+      },
+      {
+        "path": "png/2x/allocation-chart-light.png",
+        "width": 800,
+        "height": 704
+      },
+      {
+        "path": "png/3x/allocation-chart-light.png",
+        "width": 1200,
+        "height": 1056
+      }
+    ]
+  },
+  {
+    "name": "allocation-chart-mono-olive",
+    "component": "allocation-chart",
+    "theme": "mono-olive",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/allocation-chart-mono-olive.svg",
+    "viewBox": "0 0 250 220",
+    "width": 400,
+    "height": 352,
+    "png": [
+      {
+        "path": "png/1x/allocation-chart-mono-olive.png",
+        "width": 400,
+        "height": 352
+      },
+      {
+        "path": "png/2x/allocation-chart-mono-olive.png",
+        "width": 800,
+        "height": 704
+      },
+      {
+        "path": "png/3x/allocation-chart-mono-olive.png",
+        "width": 1200,
+        "height": 1056
+      }
+    ]
+  },
+  {
+    "name": "allocation-chart-mono-cream",
+    "component": "allocation-chart",
+    "theme": "mono-cream",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/allocation-chart-mono-cream.svg",
+    "viewBox": "0 0 250 220",
+    "width": 400,
+    "height": 352,
+    "png": [
+      {
+        "path": "png/1x/allocation-chart-mono-cream.png",
+        "width": 400,
+        "height": 352
+      },
+      {
+        "path": "png/2x/allocation-chart-mono-cream.png",
+        "width": 800,
+        "height": 704
+      },
+      {
+        "path": "png/3x/allocation-chart-mono-cream.png",
+        "width": 1200,
+        "height": 1056
+      }
+    ]
+  },
+  {
+    "name": "value-chart-dark",
+    "component": "value-chart",
+    "theme": "dark",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/value-chart-dark.svg",
+    "viewBox": "0 0 250 220",
+    "width": 400,
+    "height": 352,
+    "png": [
+      {
+        "path": "png/1x/value-chart-dark.png",
+        "width": 400,
+        "height": 352
+      },
+      {
+        "path": "png/2x/value-chart-dark.png",
+        "width": 800,
+        "height": 704
+      },
+      {
+        "path": "png/3x/value-chart-dark.png",
+        "width": 1200,
+        "height": 1056
+      }
+    ]
+  },
+  {
+    "name": "value-chart-light",
+    "component": "value-chart",
+    "theme": "light",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/value-chart-light.svg",
+    "viewBox": "0 0 250 220",
+    "width": 400,
+    "height": 352,
+    "png": [
+      {
+        "path": "png/1x/value-chart-light.png",
+        "width": 400,
+        "height": 352
+      },
+      {
+        "path": "png/2x/value-chart-light.png",
+        "width": 800,
+        "height": 704
+      },
+      {
+        "path": "png/3x/value-chart-light.png",
+        "width": 1200,
+        "height": 1056
+      }
+    ]
+  },
+  {
+    "name": "value-chart-mono-olive",
+    "component": "value-chart",
+    "theme": "mono-olive",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/value-chart-mono-olive.svg",
+    "viewBox": "0 0 250 220",
+    "width": 400,
+    "height": 352,
+    "png": [
+      {
+        "path": "png/1x/value-chart-mono-olive.png",
+        "width": 400,
+        "height": 352
+      },
+      {
+        "path": "png/2x/value-chart-mono-olive.png",
+        "width": 800,
+        "height": 704
+      },
+      {
+        "path": "png/3x/value-chart-mono-olive.png",
+        "width": 1200,
+        "height": 1056
+      }
+    ]
+  },
+  {
+    "name": "value-chart-mono-cream",
+    "component": "value-chart",
+    "theme": "mono-cream",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/value-chart-mono-cream.svg",
+    "viewBox": "0 0 250 220",
+    "width": 400,
+    "height": 352,
+    "png": [
+      {
+        "path": "png/1x/value-chart-mono-cream.png",
+        "width": 400,
+        "height": 352
+      },
+      {
+        "path": "png/2x/value-chart-mono-cream.png",
+        "width": 800,
+        "height": 704
+      },
+      {
+        "path": "png/3x/value-chart-mono-cream.png",
+        "width": 1200,
+        "height": 1056
+      }
+    ]
+  },
+  {
+    "name": "event-calendar-dark",
+    "component": "event-calendar",
+    "theme": "dark",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/event-calendar-dark.svg",
+    "viewBox": "15 25 190 200",
+    "width": 342,
+    "height": 360,
+    "png": [
+      {
+        "path": "png/1x/event-calendar-dark.png",
+        "width": 342,
+        "height": 360
+      },
+      {
+        "path": "png/2x/event-calendar-dark.png",
+        "width": 684,
+        "height": 720
+      },
+      {
+        "path": "png/3x/event-calendar-dark.png",
+        "width": 1026,
+        "height": 1080
+      }
+    ]
+  },
+  {
+    "name": "event-calendar-light",
+    "component": "event-calendar",
+    "theme": "light",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/event-calendar-light.svg",
+    "viewBox": "15 25 190 200",
+    "width": 342,
+    "height": 360,
+    "png": [
+      {
+        "path": "png/1x/event-calendar-light.png",
+        "width": 342,
+        "height": 360
+      },
+      {
+        "path": "png/2x/event-calendar-light.png",
+        "width": 684,
+        "height": 720
+      },
+      {
+        "path": "png/3x/event-calendar-light.png",
+        "width": 1026,
+        "height": 1080
+      }
+    ]
+  },
+  {
+    "name": "event-calendar-mono-olive",
+    "component": "event-calendar",
+    "theme": "mono-olive",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/event-calendar-mono-olive.svg",
+    "viewBox": "15 25 190 200",
+    "width": 342,
+    "height": 360,
+    "png": [
+      {
+        "path": "png/1x/event-calendar-mono-olive.png",
+        "width": 342,
+        "height": 360
+      },
+      {
+        "path": "png/2x/event-calendar-mono-olive.png",
+        "width": 684,
+        "height": 720
+      },
+      {
+        "path": "png/3x/event-calendar-mono-olive.png",
+        "width": 1026,
+        "height": 1080
+      }
+    ]
+  },
+  {
+    "name": "event-calendar-mono-cream",
+    "component": "event-calendar",
+    "theme": "mono-cream",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/event-calendar-mono-cream.svg",
+    "viewBox": "15 25 190 200",
+    "width": 342,
+    "height": 360,
+    "png": [
+      {
+        "path": "png/1x/event-calendar-mono-cream.png",
+        "width": 342,
+        "height": 360
+      },
+      {
+        "path": "png/2x/event-calendar-mono-cream.png",
+        "width": 684,
+        "height": 720
+      },
+      {
+        "path": "png/3x/event-calendar-mono-cream.png",
+        "width": 1026,
+        "height": 1080
+      }
+    ]
+  },
+  {
+    "name": "flow-connectors-dark",
+    "component": "flow-connectors",
+    "theme": "dark",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/flow-connectors-dark.svg",
+    "viewBox": "175 145 510 435",
+    "width": 510,
+    "height": 435,
+    "png": [
+      {
+        "path": "png/1x/flow-connectors-dark.png",
+        "width": 510,
+        "height": 435
+      },
+      {
+        "path": "png/2x/flow-connectors-dark.png",
+        "width": 1020,
+        "height": 870
+      },
+      {
+        "path": "png/3x/flow-connectors-dark.png",
+        "width": 1530,
+        "height": 1305
+      }
+    ]
+  },
+  {
+    "name": "flow-connectors-light",
+    "component": "flow-connectors",
+    "theme": "light",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/flow-connectors-light.svg",
+    "viewBox": "175 145 510 435",
+    "width": 510,
+    "height": 435,
+    "png": [
+      {
+        "path": "png/1x/flow-connectors-light.png",
+        "width": 510,
+        "height": 435
+      },
+      {
+        "path": "png/2x/flow-connectors-light.png",
+        "width": 1020,
+        "height": 870
+      },
+      {
+        "path": "png/3x/flow-connectors-light.png",
+        "width": 1530,
+        "height": 1305
+      }
+    ]
+  },
+  {
+    "name": "flow-connectors-mono-olive",
+    "component": "flow-connectors",
+    "theme": "mono-olive",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/flow-connectors-mono-olive.svg",
+    "viewBox": "175 145 510 435",
+    "width": 510,
+    "height": 435,
+    "png": [
+      {
+        "path": "png/1x/flow-connectors-mono-olive.png",
+        "width": 510,
+        "height": 435
+      },
+      {
+        "path": "png/2x/flow-connectors-mono-olive.png",
+        "width": 1020,
+        "height": 870
+      },
+      {
+        "path": "png/3x/flow-connectors-mono-olive.png",
+        "width": 1530,
+        "height": 1305
+      }
+    ]
+  },
+  {
+    "name": "flow-connectors-mono-cream",
+    "component": "flow-connectors",
+    "theme": "mono-cream",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/flow-connectors-mono-cream.svg",
+    "viewBox": "175 145 510 435",
+    "width": 510,
+    "height": 435,
+    "png": [
+      {
+        "path": "png/1x/flow-connectors-mono-cream.png",
+        "width": 510,
+        "height": 435
+      },
+      {
+        "path": "png/2x/flow-connectors-mono-cream.png",
+        "width": 1020,
+        "height": 870
+      },
+      {
+        "path": "png/3x/flow-connectors-mono-cream.png",
+        "width": 1530,
+        "height": 1305
+      }
+    ]
+  },
+  {
+    "name": "data-pipeline-dark",
+    "component": "data-pipeline",
+    "theme": "dark",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/data-pipeline-dark.svg",
+    "viewBox": "0 0 920 700",
+    "width": 920,
+    "height": 700,
+    "png": [
+      {
+        "path": "png/1x/data-pipeline-dark.png",
+        "width": 920,
+        "height": 700
+      },
+      {
+        "path": "png/2x/data-pipeline-dark.png",
+        "width": 1840,
+        "height": 1400
+      },
+      {
+        "path": "png/3x/data-pipeline-dark.png",
+        "width": 2760,
+        "height": 2100
+      }
+    ]
+  },
+  {
+    "name": "data-pipeline-light",
+    "component": "data-pipeline",
+    "theme": "light",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/data-pipeline-light.svg",
+    "viewBox": "0 0 920 700",
+    "width": 920,
+    "height": 700,
+    "png": [
+      {
+        "path": "png/1x/data-pipeline-light.png",
+        "width": 920,
+        "height": 700
+      },
+      {
+        "path": "png/2x/data-pipeline-light.png",
+        "width": 1840,
+        "height": 1400
+      },
+      {
+        "path": "png/3x/data-pipeline-light.png",
+        "width": 2760,
+        "height": 2100
+      }
+    ]
+  },
+  {
+    "name": "data-pipeline-mono-olive",
+    "component": "data-pipeline",
+    "theme": "mono-olive",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/data-pipeline-mono-olive.svg",
+    "viewBox": "0 0 920 700",
+    "width": 920,
+    "height": 700,
+    "png": [
+      {
+        "path": "png/1x/data-pipeline-mono-olive.png",
+        "width": 920,
+        "height": 700
+      },
+      {
+        "path": "png/2x/data-pipeline-mono-olive.png",
+        "width": 1840,
+        "height": 1400
+      },
+      {
+        "path": "png/3x/data-pipeline-mono-olive.png",
+        "width": 2760,
+        "height": 2100
+      }
+    ]
+  },
+  {
+    "name": "data-pipeline-mono-cream",
+    "component": "data-pipeline",
+    "theme": "mono-cream",
+    "locale": null,
+    "transparent": true,
+    "svg": "svg/data-pipeline-mono-cream.svg",
+    "viewBox": "0 0 920 700",
+    "width": 920,
+    "height": 700,
+    "png": [
+      {
+        "path": "png/1x/data-pipeline-mono-cream.png",
+        "width": 920,
+        "height": 700
+      },
+      {
+        "path": "png/2x/data-pipeline-mono-cream.png",
+        "width": 1840,
+        "height": 1400
+      },
+      {
+        "path": "png/3x/data-pipeline-mono-cream.png",
+        "width": 2760,
+        "height": 2100
+      }
+    ]
+  }
+]

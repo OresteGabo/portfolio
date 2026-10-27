@@ -13,6 +13,8 @@ import kotlin.time.Clock
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+// Keep the live transport origin until the new Vercel host serves the API directly.
+// See docs/DOMAINS.md before changing this value or migrating saved origins.
 const val DEFAULT_ORIGIN = "https://bonds.orestegabo.dev"
 class ApiException(val status: Int, message: String) : Exception(message)
 expect fun createPlatformHttpEngine(): HttpClientEngine

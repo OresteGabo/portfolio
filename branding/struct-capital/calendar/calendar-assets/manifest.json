@@ -1,0 +1,452 @@
+[
+  {
+    "name": "calendar-notifications-dark",
+    "svg": "svg/calendar-notifications-dark.svg",
+    "transparent": true,
+    "width": 760,
+    "height": 560,
+    "text": "no words; counter digits outlined",
+    "png": [
+      {
+        "path": "png/1x/calendar-notifications-dark.png",
+        "width": 760,
+        "height": 560
+      },
+      {
+        "path": "png/2x/calendar-notifications-dark.png",
+        "width": 1520,
+        "height": 1120
+      },
+      {
+        "path": "png/3x/calendar-notifications-dark.png",
+        "width": 2280,
+        "height": 1680
+      }
+    ]
+  },
+  {
+    "name": "calendar-notifications-light",
+    "svg": "svg/calendar-notifications-light.svg",
+    "transparent": true,
+    "width": 760,
+    "height": 560,
+    "text": "no words; counter digits outlined",
+    "png": [
+      {
+        "path": "png/1x/calendar-notifications-light.png",
+        "width": 760,
+        "height": 560
+      },
+      {
+        "path": "png/2x/calendar-notifications-light.png",
+        "width": 1520,
+        "height": 1120
+      },
+      {
+        "path": "png/3x/calendar-notifications-light.png",
+        "width": 2280,
+        "height": 1680
+      }
+    ]
+  },
+  {
+    "name": "calendar-notifications-mono-olive",
+    "svg": "svg/calendar-notifications-mono-olive.svg",
+    "transparent": true,
+    "width": 760,
+    "height": 560,
+    "text": "no words; counter digits outlined",
+    "png": [
+      {
+        "path": "png/1x/calendar-notifications-mono-olive.png",
+        "width": 760,
+        "height": 560
+      },
+      {
+        "path": "png/2x/calendar-notifications-mono-olive.png",
+        "width": 1520,
+        "height": 1120
+      },
+      {
+        "path": "png/3x/calendar-notifications-mono-olive.png",
+        "width": 2280,
+        "height": 1680
+      }
+    ]
+  },
+  {
+    "name": "calendar-notifications-mono-cream",
+    "svg": "svg/calendar-notifications-mono-cream.svg",
+    "transparent": true,
+    "width": 760,
+    "height": 560,
+    "text": "no words; counter digits outlined",
+    "png": [
+      {
+        "path": "png/1x/calendar-notifications-mono-cream.png",
+        "width": 760,
+        "height": 560
+      },
+      {
+        "path": "png/2x/calendar-notifications-mono-cream.png",
+        "width": 1520,
+        "height": 1120
+      },
+      {
+        "path": "png/3x/calendar-notifications-mono-cream.png",
+        "width": 2280,
+        "height": 1680
+      }
+    ]
+  },
+  {
+    "name": "calendar-detail-dark",
+    "svg": "svg/calendar-detail-dark.svg",
+    "transparent": true,
+    "width": 760,
+    "height": 560,
+    "text": "outlined English labels",
+    "png": [
+      {
+        "path": "png/1x/calendar-detail-dark.png",
+        "width": 760,
+        "height": 560
+      },
+      {
+        "path": "png/2x/calendar-detail-dark.png",
+        "width": 1520,
+        "height": 1120
+      },
+      {
+        "path": "png/3x/calendar-detail-dark.png",
+        "width": 2280,
+        "height": 1680
+      }
+    ]
+  },
+  {
+    "name": "calendar-detail-light",
+    "svg": "svg/calendar-detail-light.svg",
+    "transparent": true,
+    "width": 760,
+    "height": 560,
+    "text": "outlined English labels",
+    "png": [
+      {
+        "path": "png/1x/calendar-detail-light.png",
+        "width": 760,
+        "height": 560
+      },
+      {
+        "path": "png/2x/calendar-detail-light.png",
+        "width": 1520,
+        "height": 1120
+      },
+      {
+        "path": "png/3x/calendar-detail-light.png",
+        "width": 2280,
+        "height": 1680
+      }
+    ]
+  },
+  {
+    "name": "calendar-detail-mono-olive",
+    "svg": "svg/calendar-detail-mono-olive.svg",
+    "transparent": true,
+    "width": 760,
+    "height": 560,
+    "text": "outlined English labels",
+    "png": [
+      {
+        "path": "png/1x/calendar-detail-mono-olive.png",
+        "width": 760,
+        "height": 560
+      },
+      {
+        "path": "png/2x/calendar-detail-mono-olive.png",
+        "width": 1520,
+        "height": 1120
+      },
+      {
+        "path": "png/3x/calendar-detail-mono-olive.png",
+        "width": 2280,
+        "height": 1680
+      }
+    ]
+  },
+  {
+    "name": "calendar-detail-mono-cream",
+    "svg": "svg/calendar-detail-mono-cream.svg",
+    "transparent": true,
+    "width": 760,
+    "height": 560,
+    "text": "outlined English labels",
+    "png": [
+      {
+        "path": "png/1x/calendar-detail-mono-cream.png",
+        "width": 760,
+        "height": 560
+      },
+      {
+        "path": "png/2x/calendar-detail-mono-cream.png",
+        "width": 1520,
+        "height": 1120
+      },
+      {
+        "path": "png/3x/calendar-detail-mono-cream.png",
+        "width": 2280,
+        "height": 1680
+      }
+    ]
+  },
+  {
+    "name": "calendar-dark",
+    "svg": "svg/calendar-dark.svg",
+    "transparent": true,
+    "width": 590,
+    "height": 530,
+    "text": "no words; counter digits outlined",
+    "png": [
+      {
+        "path": "png/1x/calendar-dark.png",
+        "width": 590,
+        "height": 530
+      },
+      {
+        "path": "png/2x/calendar-dark.png",
+        "width": 1180,
+        "height": 1060
+      },
+      {
+        "path": "png/3x/calendar-dark.png",
+        "width": 1770,
+        "height": 1590
+      }
+    ]
+  },
+  {
+    "name": "calendar-light",
+    "svg": "svg/calendar-light.svg",
+    "transparent": true,
+    "width": 590,
+    "height": 530,
+    "text": "no words; counter digits outlined",
+    "png": [
+      {
+        "path": "png/1x/calendar-light.png",
+        "width": 590,
+        "height": 530
+      },
+      {
+        "path": "png/2x/calendar-light.png",
+        "width": 1180,
+        "height": 1060
+      },
+      {
+        "path": "png/3x/calendar-light.png",
+        "width": 1770,
+        "height": 1590
+      }
+    ]
+  },
+  {
+    "name": "calendar-mono-olive",
+    "svg": "svg/calendar-mono-olive.svg",
+    "transparent": true,
+    "width": 590,
+    "height": 530,
+    "text": "no words; counter digits outlined",
+    "png": [
+      {
+        "path": "png/1x/calendar-mono-olive.png",
+        "width": 590,
+        "height": 530
+      },
+      {
+        "path": "png/2x/calendar-mono-olive.png",
+        "width": 1180,
+        "height": 1060
+      },
+      {
+        "path": "png/3x/calendar-mono-olive.png",
+        "width": 1770,
+        "height": 1590
+      }
+    ]
+  },
+  {
+    "name": "calendar-mono-cream",
+    "svg": "svg/calendar-mono-cream.svg",
+    "transparent": true,
+    "width": 590,
+    "height": 530,
+    "text": "no words; counter digits outlined",
+    "png": [
+      {
+        "path": "png/1x/calendar-mono-cream.png",
+        "width": 590,
+        "height": 530
+      },
+      {
+        "path": "png/2x/calendar-mono-cream.png",
+        "width": 1180,
+        "height": 1060
+      },
+      {
+        "path": "png/3x/calendar-mono-cream.png",
+        "width": 1770,
+        "height": 1590
+      }
+    ]
+  },
+  {
+    "name": "notifications-dark",
+    "svg": "svg/notifications-dark.svg",
+    "transparent": true,
+    "width": 278,
+    "height": 318,
+    "text": "no words; counter digits outlined",
+    "png": [
+      {
+        "path": "png/1x/notifications-dark.png",
+        "width": 278,
+        "height": 318
+      },
+      {
+        "path": "png/2x/notifications-dark.png",
+        "width": 556,
+        "height": 636
+      },
+      {
+        "path": "png/3x/notifications-dark.png",
+        "width": 834,
+        "height": 954
+      }
+    ]
+  },
+  {
+    "name": "notifications-light",
+    "svg": "svg/notifications-light.svg",
+    "transparent": true,
+    "width": 278,
+    "height": 318,
+    "text": "no words; counter digits outlined",
+    "png": [
+      {
+        "path": "png/1x/notifications-light.png",
+        "width": 278,
+        "height": 318
+      },
+      {
+        "path": "png/2x/notifications-light.png",
+        "width": 556,
+        "height": 636
+      },
+      {
+        "path": "png/3x/notifications-light.png",
+        "width": 834,
+        "height": 954
+      }
+    ]
+  },
+  {
+    "name": "notifications-mono-olive",
+    "svg": "svg/notifications-mono-olive.svg",
+    "transparent": true,
+    "width": 278,
+    "height": 318,
+    "text": "no words; counter digits outlined",
+    "png": [
+      {
+        "path": "png/1x/notifications-mono-olive.png",
+        "width": 278,
+        "height": 318
+      },
+      {
+        "path": "png/2x/notifications-mono-olive.png",
+        "width": 556,
+        "height": 636
+      },
+      {
+        "path": "png/3x/notifications-mono-olive.png",
+        "width": 834,
+        "height": 954
+      }
+    ]
+  },
+  {
+    "name": "notifications-mono-cream",
+    "svg": "svg/notifications-mono-cream.svg",
+    "transparent": true,
+    "width": 278,
+    "height": 318,
+    "text": "no words; counter digits outlined",
+    "png": [
+      {
+        "path": "png/1x/notifications-mono-cream.png",
+        "width": 278,
+        "height": 318
+      },
+      {
+        "path": "png/2x/notifications-mono-cream.png",
+        "width": 556,
+        "height": 636
+      },
+      {
+        "path": "png/3x/notifications-mono-cream.png",
+        "width": 834,
+        "height": 954
+      }
+    ]
+  },
+  {
+    "name": "calendar-notifications-dark-background",
+    "svg": "svg/calendar-notifications-dark-background.svg",
+    "transparent": false,
+    "width": 760,
+    "height": 560,
+    "text": "no words; counter digits outlined",
+    "png": [
+      {
+        "path": "png/1x/calendar-notifications-dark-background.png",
+        "width": 760,
+        "height": 560
+      },
+      {
+        "path": "png/2x/calendar-notifications-dark-background.png",
+        "width": 1520,
+        "height": 1120
+      },
+      {
+        "path": "png/3x/calendar-notifications-dark-background.png",
+        "width": 2280,
+        "height": 1680
+      }
+    ]
+  },
+  {
+    "name": "calendar-notifications-light-background",
+    "svg": "svg/calendar-notifications-light-background.svg",
+    "transparent": false,
+    "width": 760,
+    "height": 560,
+    "text": "no words; counter digits outlined",
+    "png": [
+      {
+        "path": "png/1x/calendar-notifications-light-background.png",
+        "width": 760,
+        "height": 560
+      },
+      {
+        "path": "png/2x/calendar-notifications-light-background.png",
+        "width": 1520,
+        "height": 1120
+      },
+      {
+        "path": "png/3x/calendar-notifications-light-background.png",
+        "width": 2280,
+        "height": 1680
+      }
+    ]
+  }
+]

@@ -1,0 +1,22 @@
+--- a/proxy.ts
++++ b/proxy.ts
+@@ -1,7 +1,8 @@
+ import { NextRequest, NextResponse } from "next/server";
+
+ const BONDS_HOST = "bonds.orestegabo.dev";
++const INVESTMENT_HOSTS = new Set([BONDS_HOST, "structcapital.net"]);
+ const BONDS_LOCAL_HOST = "bonds.localhost";
+ const PORTFOLIO_HOSTS = new Set(["orestegabo.dev", "www.orestegabo.dev"]);
+
+ export function proxy(request: NextRequest) {
+@@ -19,9 +20,9 @@
+     destination.pathname = pathname.slice("/bonds".length) || "/";
+     return NextResponse.redirect(destination, isLocalPortfolioHost ? 307 : 308);
+   }
+
+-  if (hostname !== BONDS_HOST && hostname !== BONDS_LOCAL_HOST) {
++  if (!hostname || (!INVESTMENT_HOSTS.has(hostname) && hostname !== BONDS_LOCAL_HOST)) {
+     return NextResponse.next();
+   }
+
+   const bondPublicFiles: Record<string, string> = {

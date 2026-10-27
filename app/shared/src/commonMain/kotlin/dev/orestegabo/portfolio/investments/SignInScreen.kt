@@ -25,9 +25,6 @@ import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
-import org.jetbrains.compose.resources.painterResource
-import portfolio.app.shared.generated.resources.Res
-import portfolio.app.shared.generated.resources.gabo_mark
 
 @Composable
 internal fun SignInScreen(model: PortfolioModel, openLegal: () -> Unit) {
@@ -66,7 +63,8 @@ internal fun SignInScreen(model: PortfolioModel, openLegal: () -> Unit) {
             item {
                 Column(Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Image(painterResource(Res.drawable.gabo_mark), localized("Gabo logo"), Modifier.size(72.dp))
+                    StructMark(Modifier.size(72.dp))
+                    AppText("STRUCT CAPITAL", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
                     AppText(if (register) "Create account" else "Welcome back", Modifier.semantics { heading() },
                         style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 }

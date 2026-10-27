@@ -36,7 +36,7 @@ internal fun generatePortfolioReport(data: PortfolioReportData): ByteArray {
     fun status(value: String) = if (!french) value else when (value) {
         "active" -> "Actif"; "submitted" -> "En attente"; "sold" -> "Vendu"; "matured" -> "Échu"; "cancelled" -> "Annulé"; else -> value
     }
-    val pdf = ReportPdf(t("GABO / PORTFOLIO REPORT", "GABO / RAPPORT DE PORTEFEUILLE"),
+    val pdf = ReportPdf(t("STRUCT CAPITAL / PORTFOLIO REPORT", "STRUCT CAPITAL / RAPPORT DE PORTEFEUILLE"),
         t("Private financial report - All years", "Rapport financier privé - Toutes les années"), french = french)
     val snapshot = data.snapshot
     pdf.heading(t("Your investment record", "Vos investissements"), large = true)

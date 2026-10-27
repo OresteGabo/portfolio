@@ -1,6 +1,0 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="100dp" android:height="100dp" android:viewportWidth="100" android:viewportHeight="100">
-    <!-- Exact geometry and colors from branding/gabo-icon.svg in the web project. -->
-    <path android:fillColor="#fff9ee" android:pathData="M24,0 H76 A24,24 0,0 1,100,24 V76 A24,24 0,0 1,76,100 H24 A24,24 0,0 1,0,76 V24 A24,24 0,0 1,24,0 Z" />
-    <path android:pathData="M70,28 H42 L25,50 L42,72 H70 M58,50 H80" android:strokeColor="#6d5e0f" android:strokeWidth="9" android:strokeLineJoin="round" android:strokeLineCap="round" android:fillColor="#00000000" />
-    <path android:fillColor="#6d5e0f" android:pathData="M84.5,50 A4.5,4.5 0,1 1,75.5,50 A4.5,4.5 0,1 1,84.5,50" />
-</vector>

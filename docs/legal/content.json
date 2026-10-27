@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-25",
+  "version": "2026-10-27",
   "documents": [
     {
       "id": "terms",
@@ -14,8 +14,8 @@
             "fr": "À propos du service"
           },
           "body": {
-            "en": "Gabo Portfolio is an invitation-only app operated in Rwanda. It helps you keep investment records, follow payments and prepare reports. These terms cover the app and its connected service.\n\nFor help or questions, contact orestegabo@icloud.com.",
-            "fr": "Gabo Portfolio est une application accessible sur invitation, exploitée au Rwanda. Elle permet de conserver vos investissements, suivre les paiements et préparer des rapports. Ces conditions concernent l’application et son service connecté.\n\nPour toute aide ou question : orestegabo@icloud.com."
+            "en": "Struct Capital is an invitation-only app operated in Rwanda. It helps you keep investment records, follow payments and prepare reports. These terms cover the app and its connected service.\n\nFor help or questions, contact {{support}}.",
+            "fr": "Struct Capital est une application accessible sur invitation, exploitée au Rwanda. Elle permet de conserver vos investissements, suivre les paiements et préparer des rapports. Ces conditions concernent l’application et son service connecté.\n\nPour toute aide ou question : {{support}}."
           }
         },
         {
@@ -24,8 +24,8 @@
             "fr": "Votre compte"
           },
           "body": {
-            "en": "Use your own invitation and keep your sign-in details private. Tell us if you suspect someone else has accessed your account. You are responsible for the records you submit and should only upload documents you are entitled to use.",
-            "fr": "Utilisez votre propre invitation et gardez vos identifiants confidentiels. Prévenez-nous si vous soupçonnez un accès non autorisé. Vous êtes responsable des informations transmises et devez uniquement importer des documents que vous êtes autorisé à utiliser."
+            "en": "Use your own invitation and keep your sign-in details private. Contact {{security}} if you suspect someone else has accessed your account or receive a suspicious message claiming to be from Struct Capital. You are responsible for the records you submit and should only upload documents you are entitled to use.",
+            "fr": "Utilisez votre propre invitation et gardez vos identifiants confidentiels. Contactez {{security}} si vous soupçonnez un accès non autorisé ou recevez un message suspect prétendant provenir de Struct Capital. Vous êtes responsable des informations transmises et devez uniquement importer des documents que vous êtes autorisé à utiliser."
           }
         },
         {
@@ -80,8 +80,8 @@
         }
       ],
       "summary": {
-        "en": "The rules for using Gabo Portfolio.",
-        "fr": "Les règles d’utilisation de Gabo Portfolio."
+        "en": "The rules for using Struct Capital.",
+        "fr": "Les règles d’utilisation de Struct Capital."
       }
     },
     {
@@ -97,8 +97,8 @@
             "fr": "Qui est responsable"
           },
           "body": {
-            "en": "Gabo Portfolio operates this invitation-only app in Rwanda and is responsible for its use of your personal data. This policy covers the app and its connected service.\n\nFor privacy questions or requests, contact orestegabo@icloud.com.",
-            "fr": "Gabo Portfolio exploite cette application sur invitation au Rwanda et est responsable de l’utilisation de vos données personnelles. Cette politique concerne l’application et son service connecté.\n\nPour une question ou demande relative à vos données : orestegabo@icloud.com."
+            "en": "Struct Capital operates this invitation-only app in Rwanda and is responsible for its use of your personal data. This policy covers the app and its connected service.\n\nFor privacy questions or requests, contact {{privacy}}.",
+            "fr": "Struct Capital exploite cette application sur invitation au Rwanda et est responsable de l’utilisation de vos données personnelles. Cette politique concerne l’application et son service connecté.\n\nPour une question ou demande relative à vos données : {{privacy}}."
           }
         },
         {
@@ -127,8 +127,8 @@
             "fr": "Cours partagés avec les autres utilisateurs invités"
           },
           "body": {
-            "en": "Confirmed RSE share purchases can contribute the company’s ticker, trade date and unit price to historical charts for other invited users. Same-day observations are combined into a price range and a middle value (median).\n\nThis chart feed excludes your name, email, PDF, contract identifier, quantity and total investment. A rare trade may still be inferred from its date and price; this is not a guarantee of anonymity.\n\nThere is currently no in-app opt-out for this contribution. Contact orestegabo@icloud.com about objections or restrictions before importing if this concerns you.",
-            "fr": "Les achats confirmés d’actions RSE peuvent contribuer le symbole de la société, la date et le prix unitaire aux graphiques historiques des autres utilisateurs invités. Les observations d’un même jour sont regroupées en une fourchette et une valeur centrale (médiane).\n\nCe flux exclut vos nom, e-mail, PDF, identifiant de contrat, quantité et montant total investi. Une opération rare peut toutefois être déduite de sa date et de son prix ; l’anonymat n’est pas garanti.\n\nAucun refus de cette contribution n’est actuellement proposé dans l’application. Contactez orestegabo@icloud.com au sujet d’une opposition ou limitation avant l’import si cela vous préoccupe."
+            "en": "Confirmed RSE share purchases can contribute the company’s ticker, trade date and unit price to historical charts for other invited users. Same-day observations are combined into a price range and a middle value (median).\n\nThis chart feed excludes your name, email, PDF, contract identifier, quantity and total investment. A rare trade may still be inferred from its date and price; this is not a guarantee of anonymity.\n\nThere is currently no in-app opt-out for this contribution. Contact {{privacy}} about objections or restrictions before importing if this concerns you.",
+            "fr": "Les achats confirmés d’actions RSE peuvent contribuer le symbole de la société, la date et le prix unitaire aux graphiques historiques des autres utilisateurs invités. Les observations d’un même jour sont regroupées en une fourchette et une valeur centrale (médiane).\n\nCe flux exclut vos nom, e-mail, PDF, identifiant de contrat, quantité et montant total investi. Une opération rare peut toutefois être déduite de sa date et de son prix ; l’anonymat n’est pas garanti.\n\nAucun refus de cette contribution n’est actuellement proposé dans l’application. Contactez {{privacy}} au sujet d’une opposition ou limitation avant l’import si cela vous préoccupe."
           }
         },
         {
@@ -177,8 +177,8 @@
             "fr": "Lieu de traitement"
           },
           "body": {
-            "en": "The service uses Vercel for hosting and Neon for data storage. Data is not guaranteed to stay in Rwanda. Processing locations and any required permissions for overseas storage or transfers still need to be confirmed by the operator.\n\nContact orestegabo@icloud.com for information about where your data is processed.",
-            "fr": "Le service utilise Vercel pour l’hébergement et Neon pour le stockage des données. Le maintien des données au Rwanda n’est pas garanti. Les lieux de traitement et les éventuelles autorisations de stockage ou de transfert à l’étranger restent à confirmer par le responsable.\n\nContactez orestegabo@icloud.com pour connaître les lieux de traitement de vos données."
+            "en": "The service uses Vercel for hosting and Neon for data storage. Data is not guaranteed to stay in Rwanda. Processing locations and any required permissions for overseas storage or transfers still need to be confirmed by the operator.\n\nContact {{privacy}} for information about where your data is processed.",
+            "fr": "Le service utilise Vercel pour l’hébergement et Neon pour le stockage des données. Le maintien des données au Rwanda n’est pas garanti. Les lieux de traitement et les éventuelles autorisations de stockage ou de transfert à l’étranger restent à confirmer par le responsable.\n\nContactez {{privacy}} pour connaître les lieux de traitement de vos données."
           }
         },
         {
@@ -197,8 +197,8 @@
             "fr": "Sécurité"
           },
           "body": {
-            "en": "Encrypted connections, password hashing and platform secure storage help protect information. These measures reduce risk but cannot eliminate it.",
-            "fr": "Les communications chiffrées, le hachage des mots de passe et le stockage sécurisé contribuent à protéger les informations. Ces mesures réduisent les risques sans les éliminer."
+            "en": "Encrypted connections, password hashing and platform secure storage help protect information. These measures reduce risk but cannot eliminate it.\n\nReport suspected vulnerabilities, phishing or unauthorized account access to {{security}}. Do not email passwords, invitation tokens or full investment documents.",
+            "fr": "Les communications chiffrées, le hachage des mots de passe et le stockage sécurisé contribuent à protéger les informations. Ces mesures réduisent les risques sans les éliminer.\n\nSignalez les vulnérabilités présumées, les tentatives d’hameçonnage ou les accès non autorisés à {{security}}. N’envoyez pas de mots de passe, de jetons d’invitation ni de documents d’investissement complets par e-mail."
           }
         },
         {
@@ -207,8 +207,8 @@
             "fr": "Vos choix et vos droits"
           },
           "body": {
-            "en": "Under applicable Rwandan data-protection law, you may request information, access, correction, portability, erasure, objection or restriction. Where processing is based on consent, you can withdraw it. These rights are subject to the conditions in applicable law.\n\nWrite to orestegabo@icloud.com. We may need a proportionate identity check and will respond within applicable legal deadlines. Do not send your password by email.\n\nIf you are not satisfied, you may contact Rwanda’s Data Protection and Privacy Office at https://dpo.gov.rw/. Estimates and targets do not make decisions with legal effects about you. Important privacy changes will be communicated where required.",
-            "fr": "Selon le droit rwandais applicable, vous pouvez demander des informations, l’accès, la rectification, la portabilité, l’effacement, l’opposition ou la limitation. Lorsqu’un traitement repose sur votre consentement, vous pouvez le retirer. Ces droits s’exercent selon les conditions prévues par la loi.\n\nÉcrivez à orestegabo@icloud.com. Une vérification proportionnée de votre identité peut être nécessaire ; nous répondrons dans les délais légaux applicables. N’envoyez pas votre mot de passe par e-mail.\n\nSi vous n’êtes pas satisfait, vous pouvez contacter le Bureau rwandais de protection des données et de la vie privée : https://dpo.gov.rw/. Les estimations et objectifs ne prennent aucune décision produisant des effets juridiques à votre sujet. Les changements importants seront communiqués lorsque cela est requis."
+            "en": "Under applicable Rwandan data-protection law, you may request information, access, correction, portability, erasure, objection or restriction. Where processing is based on consent, you can withdraw it. These rights are subject to the conditions in applicable law.\n\nWrite to {{privacy}}. We may need a proportionate identity check and will respond within applicable legal deadlines. Do not send your password by email.\n\nIf you are not satisfied, you may contact Rwanda’s Data Protection and Privacy Office at https://dpo.gov.rw/. Estimates and targets do not make decisions with legal effects about you. Important privacy changes will be communicated where required.",
+            "fr": "Selon le droit rwandais applicable, vous pouvez demander des informations, l’accès, la rectification, la portabilité, l’effacement, l’opposition ou la limitation. Lorsqu’un traitement repose sur votre consentement, vous pouvez le retirer. Ces droits s’exercent selon les conditions prévues par la loi.\n\nÉcrivez à {{privacy}}. Une vérification proportionnée de votre identité peut être nécessaire ; nous répondrons dans les délais légaux applicables. N’envoyez pas votre mot de passe par e-mail.\n\nSi vous n’êtes pas satisfait, vous pouvez contacter le Bureau rwandais de protection des données et de la vie privée : https://dpo.gov.rw/. Les estimations et objectifs ne prennent aucune décision produisant des effets juridiques à votre sujet. Les changements importants seront communiqués lorsque cela est requis."
           }
         }
       ],
@@ -230,8 +230,8 @@
             "fr": "Des informations de suivi"
           },
           "body": {
-            "en": "Gabo Portfolio helps you understand your recorded investments. Its figures are estimates, not investment recommendations or guarantees. Use official statements and qualified advice when making financial decisions.",
-            "fr": "Gabo Portfolio vous aide à comprendre les investissements enregistrés. Ses chiffres sont des estimations, pas des recommandations ou garanties. Appuyez-vous sur les relevés officiels et un conseil qualifié pour vos décisions financières."
+            "en": "Struct Capital helps you understand your recorded investments. Its figures are estimates, not investment recommendations or guarantees. Use official statements and qualified advice when making financial decisions.",
+            "fr": "Struct Capital vous aide à comprendre les investissements enregistrés. Ses chiffres sont des estimations, pas des recommandations ou garanties. Appuyez-vous sur les relevés officiels et un conseil qualifié pour vos décisions financières."
           }
         },
         {
@@ -333,8 +333,8 @@
             "fr": "Comptes nécessitant une assistance"
           },
           "body": {
-            "en": "The main owner account and accounts managed directly by the operator do not currently have in-app deletion. Contact orestegabo@icloud.com to request access, correction, export or deletion assistance.",
-            "fr": "Le compte propriétaire principal et les comptes gérés directement par le responsable ne disposent pas actuellement de suppression dans l’application. Contactez orestegabo@icloud.com pour une demande d’accès, de rectification, d’export ou d’aide à la suppression."
+            "en": "The main owner account and accounts managed directly by the operator do not currently have in-app deletion. Contact {{privacy}} to request access, correction, export or deletion assistance.",
+            "fr": "Le compte propriétaire principal et les comptes gérés directement par le responsable ne disposent pas actuellement de suppression dans l’application. Contactez {{privacy}} pour une demande d’accès, de rectification, d’export ou d’aide à la suppression."
           }
         },
         {
@@ -353,8 +353,8 @@
             "fr": "Autres demandes"
           },
           "body": {
-            "en": "For a copy beyond the report, corrections, objections or restrictions, write to orestegabo@icloud.com. We may need a proportionate identity check to protect your account. Do not send your password by email.",
-            "fr": "Pour une copie complémentaire, une rectification, une opposition ou une limitation, écrivez à orestegabo@icloud.com. Une vérification proportionnée de votre identité peut être nécessaire pour protéger le compte. N’envoyez pas votre mot de passe par e-mail."
+            "en": "For a copy beyond the report, corrections, objections or restrictions, write to {{privacy}}. We may need a proportionate identity check to protect your account. Do not send your password by email.",
+            "fr": "Pour une copie complémentaire, une rectification, une opposition ou une limitation, écrivez à {{privacy}}. Une vérification proportionnée de votre identité peut être nécessaire pour protéger le compte. N’envoyez pas votre mot de passe par e-mail."
           }
         }
       ],
@@ -372,12 +372,12 @@
       "sections": [
         {
           "title": {
-            "en": "Gabo Portfolio",
-            "fr": "Gabo Portfolio"
+            "en": "Struct Capital",
+            "fr": "Struct Capital"
           },
           "body": {
-            "en": "An invitation-only investment tracking app operated in Rwanda.\n\nSupport and privacy: orestegabo@icloud.com\nWebsite: https://bonds.orestegabo.dev/",
-            "fr": "Une application de suivi des investissements accessible sur invitation, exploitée au Rwanda.\n\nAssistance et confidentialité : orestegabo@icloud.com\nSite : https://bonds.orestegabo.dev/"
+            "en": "An invitation-only investment tracking app operated in Rwanda.\n\nGeneral enquiries: {{hello}}\nApp support: {{support}}\nPrivacy and data requests: {{privacy}}\nSecurity and phishing reports: {{security}}\nBusiness enquiries: {{info}}\nWebsite: https://structcapital.net/",
+            "fr": "Une application de suivi des investissements accessible sur invitation, exploitée au Rwanda.\n\nQuestions générales : {{hello}}\nAssistance pour l’application : {{support}}\nConfidentialité et demandes relatives aux données : {{privacy}}\nSignalements de sécurité et d’hameçonnage : {{security}}\nDemandes commerciales : {{info}}\nSite : https://structcapital.net/"
           }
         },
         {
@@ -386,8 +386,8 @@
             "fr": "Photographie et identité visuelle"
           },
           "body": {
-            "en": "The Kigali photograph is by Faustin Nkurunziza, from Pexels, and was supplied by the operator. The operator also supplied the Gabo branding.",
-            "fr": "La photographie de Kigali est de Faustin Nkurunziza, sur Pexels, et a été fournie par le responsable. Celui-ci a également fourni l’identité visuelle Gabo."
+            "en": "The Kigali photograph is by Faustin Nkurunziza, from Pexels, and was supplied by the operator. The operator also supplied the Struct Capital branding.",
+            "fr": "La photographie de Kigali est de Faustin Nkurunziza, sur Pexels, et a été fournie par le responsable. Celui-ci a également fourni l’identité visuelle Struct Capital."
           }
         },
         {
@@ -396,8 +396,8 @@
             "fr": "Noms et logos des institutions"
           },
           "body": {
-            "en": "BNR, BK, I&M, Bralirwa, Cimerwa, KCB, MTN and Equity names and logos belong to their respective owners. They identify investments and institutions. Their appearance does not imply a partnership, endorsement or financial authorization for Gabo Portfolio.",
-            "fr": "Les noms et logos BNR, BK, I&M, Bralirwa, Cimerwa, KCB, MTN et Equity appartiennent à leurs propriétaires respectifs. Ils identifient les investissements et institutions. Leur présence ne signifie ni partenariat, ni soutien, ni agrément financier de Gabo Portfolio."
+            "en": "BNR, BK, I&M, Bralirwa, Cimerwa, KCB, MTN and Equity names and logos belong to their respective owners. They identify investments and institutions. Their appearance does not imply a partnership, endorsement or financial authorization for Struct Capital.",
+            "fr": "Les noms et logos BNR, BK, I&M, Bralirwa, Cimerwa, KCB, MTN et Equity appartiennent à leurs propriétaires respectifs. Ils identifient les investissements et institutions. Leur présence ne signifie ni partenariat, ni soutien, ni agrément financier de Struct Capital."
           }
         },
         {
@@ -416,5 +416,13 @@
         "fr": "Coordonnées, crédits visuels et mentions des logiciels."
       }
     }
-  ]
+  ],
+  "contacts": {
+    "hello": "hello@structcapital.net",
+    "support": "support@structcapital.net",
+    "privacy": "privacy@structcapital.net",
+    "security": "security@structcapital.net",
+    "info": "info@structcapital.net",
+    "oreste": "oreste@structcapital.net"
+  }
 }

@@ -696,7 +696,7 @@ class PortfolioModel(
                     missing, account.text("email"), target, date, language, receipts))
             }
             reportProgress = "Choose where to save the PDF"
-            if (actions.savePdf("Gabo-Portfolio-$date.pdf", bytes)) {
+            if (actions.savePdf("Struct-Capital-$date.pdf", bytes)) {
                 message = "Portfolio report saved."
                 try {
                     api.request("/api/bonds/notifications/report","POST",JsonRecord().put("date",date.toString())
@@ -706,6 +706,40 @@ class PortfolioModel(
                 catch(_: Exception) { /* Saving the report remains successful if its optional notice fails. */ }
             }
         } finally { reportProgress = null }
+    }
+
+    var annualReportYear by mutableStateOf<Int?>(null)
+        private set
+    fun exportAnnualReport(year: Int, actions: NativeActions) = action {
+        val account = requireNotNull(user)
+        val date = bondSubscriptionDate(kotlin.time.Clock.System.now())
+        val language = AppLanguage.code
+        annualReportYear = year
+        try {
+            reportProgress = "Loading annual investment records…"
+            val bonds = api.request("/api/bonds/purchases").rows("purchases")
+            val shares = api.request("/api/bonds/equities").rows("holdings")
+            val data = PortfolioReportData(PortfolioSnapshot(bonds, shares), null, emptyList(), account.text("email"),
+                monthlyInvestmentTarget, date, language)
+            val scope = annualReportScope(data, year)
+            val histories = mutableMapOf<String, JsonRecord>()
+            scope.closingShares.filter { it.text("currency") == "RWF" }.map { it.text("ticker") }.distinct().forEach { ticker ->
+                require(ticker.matches(Regex("[A-Za-z0-9._-]{1,24}"))) { "Invalid security ticker." }
+                try { histories[ticker] = api.request("/api/bonds/rse/equity-history?tickers=$ticker&period=all") }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (failure: Exception) { if (failure is ApiException && failure.status == 401) throw failure }
+            }
+            val receipts = try { api.request("/api/bonds/notifications/coupons").let { if (it.has("receipts")) it.rows("receipts") else null } }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) { if (failure is ApiException && failure.status == 401) throw failure; null }
+            reportProgress = "Building your report…"
+            val bytes = withContext(Dispatchers.Default) { generateAnnualReport(data.copy(couponReceipts = receipts), year, histories) }
+            reportProgress = "Choose where to save the PDF"
+            if (actions.savePdf("Struct-Capital-Annual-$year.pdf", bytes)) message = "Annual report saved."
+        } finally {
+            reportProgress = null
+            annualReportYear = null
+        }
     }
 
     fun deleteAccount(password: String) = action {

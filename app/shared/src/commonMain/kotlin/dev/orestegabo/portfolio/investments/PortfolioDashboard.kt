@@ -160,10 +160,10 @@ private fun PortfolioHero(totals: List<CurrencyValuation>, topInset: Dp, stale: 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Surface(shape = RoundedCornerShape(15.dp), color = Color(0xFFFAF7E8)) {
-                        Image(painterResource(Res.drawable.gabo_mark), localized("Gabo logo"), Modifier.padding(7.dp).size(40.dp))
+                        StructMark(Modifier.padding(7.dp).size(40.dp), onDark = false)
                     }
                     Column(Modifier.weight(1f)) {
-                        AppText("Portfolio", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                        AppText("Struct Capital", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
                         AppText("Rwanda investments", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = .75f))
                     }
                 }

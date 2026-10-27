@@ -22,7 +22,7 @@ class PriceMessagingService : FirebaseMessagingService() {
             .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         val pending=PendingIntent.getActivity(this,0,open,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val notification=NotificationCompat.Builder(this,"price_changes")
-            .setSmallIcon(R.drawable.ic_price_notification).setContentTitle(message.notification?.title ?: "Gabo Portfolio")
+            .setSmallIcon(R.drawable.ic_price_notification).setContentTitle(message.notification?.title ?: getString(R.string.app_name))
             .setContentText(message.notification?.body ?: "Open the app to see your price updates.")
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE).setAutoCancel(true).setContentIntent(pending).build()
         runCatching { NotificationManagerCompat.from(this).notify(message.data["notificationId"]?.hashCode() ?: 1,notification) }

@@ -16,8 +16,8 @@ internal class ReportPdf(private val title: String, private val footer: String, 
         pages += StringBuilder()
         rect(0.0, 0.0, 595.0, 4.0, gold)
         logo(36.0, 23.0, 42.0)
-        text("GABO", 91.0, 42.0, 17.0, true)
-        text(title.removePrefix("GABO / "), 91.0, 58.0, 8.0, color = muted)
+        text("STRUCT CAPITAL", 91.0, 42.0, 17.0, true)
+        text(title.removePrefix("STRUCT CAPITAL / "), 91.0, 58.0, 8.0, color = muted)
         rect(36.0, 80.0, 523.0, 0.6, "0.85 0.84 0.77")
         y = 113.0
     }
@@ -206,11 +206,15 @@ internal class ReportPdf(private val title: String, private val footer: String, 
         content.append("${n(x+r)} ${n(b+h)} l ${n(x+r-k)} ${n(b+h)} ${n(x)} ${n(b+h-r+k)} ${n(x)} ${n(b+h-r)} c ")
         content.append("${n(x)} ${n(b+r)} l ${n(x)} ${n(b+r-k)} ${n(x+r-k)} ${n(b)} ${n(x+r)} ${n(b)} c h ")
     }
-    /** Exact mark geometry/colors from composeResources/drawable/gabo_mark.xml. */
+    /** Exact Struct Capital source paths; SVG quadratic curves converted to PDF cubic curves. */
     private fun logo(x: Double, top: Double, size: Double) {
-        content.append("q ${n(size/100)} 0 0 ${n(-size/100)} ${n(x)} ${n(842-top)} cm\n")
-        content.append("1 0.97647 0.93333 rg 24 0 m 76 0 l 89.25483 0 100 10.74517 100 24 c 100 76 l 100 89.25483 89.25483 100 76 100 c 24 100 l 10.74517 100 0 89.25483 0 76 c 0 24 l 0 10.74517 10.74517 0 24 0 c h f\n")
-        content.append("0.42745 0.36863 0.05882 RG 9 w 1 J 1 j 70 28 m 42 28 l 25 50 l 42 72 l 70 72 l S 58 50 m 80 50 l S\nQ\n")
+        content.append("q ${n(size/512)} 0 0 ${n(-size/512)} ${n(x)} ${n(842-top)} cm 1 0 0 1 -248 -183 cm\n")
+        content.append("0.42745 0.36863 0.05882 rg 0.42745 0.36863 0.05882 RG 8 w 1 j\n")
+        content.append("488 222 m 498.00000 216.00000 508.00000 216.00000 518 222 c 684 318 l 694.00000 324.00000 699.00000 332.66667 699 344 c 699 536 l 699.00000 547.33333 694.00000 556.00000 684 562 c 518 658 l 508.00000 664.00000 498.00000 664.00000 488 658 c 324 562 l 314.00000 556.00000 309.00000 547.33333 309 536 c 309 344 l 309.00000 332.66667 314.00000 324.00000 324 318 c h S\n")
+        content.append("565 312 m 425 392 l 548 463 l 558.00000 469.00000 563.00000 477.66667 563 489 c 563 560 l 563.00000 571.33333 558.00000 580.00000 548 586 c 516 598 l 507.33333 602.66667 498.66667 602.66667 490 598 c 375 532 l 365.66667 526.66667 361.00000 518.66667 361 508 c 361 456 l 502 537 l 502 511 l 376 439 l 366.00000 433.66667 361.00000 425.66667 361 415 c 361 373 l 361.00000 363.00000 365.66667 355.33333 375 350 c 489 284 l 497.66667 278.66667 506.33333 278.66667 515 284 c h f\n")
+        content.append("566 326 m 574.66667 320.66667 583.33333 320.66667 592 326 c 635 351 l 644.33333 356.33333 649.00000 364.33333 649 375 c 649 423 l 582 385 l 576.66667 382.33333 571.66667 382.66667 567 386 c 564.33333 388.00000 563.00000 391.00000 563 395 c 563 459 l 502 424 l 502 375 l 502.00000 364.33333 506.66667 356.33333 516 351 c h f\n")
+        content.append("575 500 m 649 458 l 649 508 l 649.00000 518.66667 644.33333 526.66667 635 532 c 575 567 l h f\n")
+        content.append("Q\n")
     }
     private fun rule() {
         content.append("0.87 0.88 0.84 RG 0.4 w 36 ${n(842 - y + 7)} m 559 ${n(842 - y + 7)} l S\n")
