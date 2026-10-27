@@ -26,3 +26,7 @@ Run `swift -module-cache-path /tmp/struct-swift-module-cache scripts/generate-ap
 Exported PDFs draw the same source paths as native PDF vectors (quadratic SVG curves converted to cubic curves). Reports use the Struct Capital title and filename. Legal source copy lives in `docs/legal/content.json`; run `python3 scripts/generate_legal.py` after changing it.
 
 `gabo-icon.svg` and `gabo-logo-full.svg` are retained only as historical source assets.
+
+## Onboarding illustrations
+
+The introduction uses the language-neutral `data-pipeline`, `calendar-notifications` and `document-stack` compositions from the supplied data-processing/calendar asset packs. Six unchanged 2× PNGs (light/dark) are copied into shared Compose drawables as `onboarding_*`; together they add under 1 MB. The welcome screen uses the existing vector monogram. Copy remains native text for translation and accessibility; illustration labels, sample financial amounts, fabricated return figures and live-market promises are not embedded in the flow. Source packs and their generators remain intact in `struct-capital/`.
