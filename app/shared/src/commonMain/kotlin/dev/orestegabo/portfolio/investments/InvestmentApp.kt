@@ -251,7 +251,7 @@ fun InvestmentApp(model: PortfolioModel) {
             }
         ) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).imePadding().portfolioStatusBarFade(portfolioHome)) {
-                InvestmentEngineHost(engine)
+                if (!model.locked) InvestmentEngineHost(engine)
                 if (!portfolioHome) {
                     AppLoadingLine(model.busy)
                     model.error?.let { Notice(it, true) { model.error = null } }
@@ -339,24 +339,6 @@ fun Fact(label: String, value: String) {
     }
 }
 
-
-@Composable
-private fun UnlockScreen(model: PortfolioModel, openLegal: () -> Unit) {
-    Column(Modifier.fillMaxSize().padding(32.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        StructMark(Modifier.size(80.dp))
-        Spacer(Modifier.height(24.dp))
-        AppText("Portfolio locked", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(12.dp))
-        AppText("Your saved sign-in is protected on this device.", style = MaterialTheme.typography.bodyMedium)
-        Spacer(Modifier.height(24.dp))
-        Button(onClick = model::unlock, enabled = !model.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
-            AppIcon(when (model.unlockLabel) { "Face ID" -> Icons.Outlined.Face; "Touch ID" -> Icons.Outlined.Fingerprint; else -> Icons.Outlined.Lock }, null); Spacer(Modifier.width(8.dp))
-            AppText(if (model.busy) "Unlocking…" else "Unlock with ${localized(model.unlockLabel)}")
-        }
-        TextButton(onClick = model::usePassword, enabled = !model.busy) { AppText("Use password instead") }
-        TextButton(onClick = openLegal) { AppText("Legal & privacy") }
-    }
-}
 
 @Composable
 fun Field(label: String, value: String, change: (String) -> Unit, keyboard: KeyboardType = KeyboardType.Text, helper: String? = null, autofill: ContentType? = null, enabled: Boolean = true) {
