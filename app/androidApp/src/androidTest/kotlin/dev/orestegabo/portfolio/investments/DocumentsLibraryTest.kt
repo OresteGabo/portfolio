@@ -25,6 +25,8 @@ class DocumentsLibraryTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val prefs = instrumentation.targetContext.getSharedPreferences("connection", 0)
         val oldOrigin = prefs.getString("origin", null)
+        val oldIntroduction = prefs.getBoolean("onboardingCompleted", false)
+        prefs.edit().putBoolean("onboardingCompleted", true).commit()
         val oldLanguage = AppLanguage.preference
         val server = ServerSocket(0)
         val origin = "http://127.0.0.1:${server.localPort}"
@@ -129,12 +131,14 @@ class DocumentsLibraryTest {
                 assertNull("Category filter excludes bonds", find("October Treasury Bond"))
                 screenshot("document-library-shares.png")
                 scenario.onActivity { AppLanguage.select("fr") }
-                await("Fichiers enregistrés"); await("Logo : Bank of Kigali")
+                await("Documents"); await("Logo : Bank of Kigali")
                 screenshot("document-library-fr.png")
             }
         } finally {
             AppLanguage.select(oldLanguage)
-            prefs.edit().apply { if (oldOrigin == null) remove("origin") else putString("origin", oldOrigin) }.commit()
+            prefs.edit().apply { if (oldOrigin == null) remove("origin") else putString("origin", oldOrigin)
+                putBoolean("onboardingCompleted", oldIntroduction)
+            }.commit()
             server.close(); worker.shutdownNow()
         }
     }
