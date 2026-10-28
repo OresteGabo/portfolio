@@ -50,6 +50,13 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
     var expanded by rememberSaveable { mutableStateOf<String?>(null) }
     var showInfo by rememberSaveable { mutableStateOf(false) }
     val selected = calendarDate(selectedValue) ?: today
+    var historyRequested by remember(model.user?.text("id")) { mutableStateOf(false) }
+    LaunchedEffect(model.busy, model.historyComplete) {
+        if (!model.busy && !model.historyComplete && !historyRequested) {
+            historyRequested = true
+            model.loadInvestmentHistory()
+        }
+    }
     val events = remember(model.calendar, model.portfolio) { investmentCalendarEvents(model.calendar, model.portfolio) }
     val byDate = remember(events) { events.groupBy { it.date } }
     val ranges = remember(model.calendar) { calendarSubscriptionRanges(model.calendar) }
@@ -172,7 +179,8 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
                     color = if (date == selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
             }
             items(entries, key = { it.id }) { event ->
-                CalendarEventTile(event, expanded == event.id, model.purchases) { expanded = if (expanded == event.id) null else event.id }
+                CalendarEventTile(event, expanded == event.id, model.purchases, model.documents, model.historyComplete, model.busy, today,
+                    reloadHistory = { model.loadInvestmentHistory() }, toggle = { expanded = if (expanded == event.id) null else event.id })
             }
         }
     }
@@ -350,7 +358,9 @@ private fun CalendarDay(
 }
 
 @Composable
-private fun CalendarEventTile(event: InvestmentCalendarEvent, expanded: Boolean, purchases: List<JsonRecord>, toggle: () -> Unit) {
+private fun CalendarEventTile(event: InvestmentCalendarEvent, expanded: Boolean, purchases: List<JsonRecord>, documents: List<JsonRecord>,
+    historyComplete: Boolean, busy: Boolean, today: LocalDate, reloadHistory: () -> Unit, toggle: () -> Unit) {
+    val personal = if (event.category == CalendarCategory.ISSUANCE) calendarIssuePurchases(event.record, purchases, documents, historyComplete) else null
     Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
         Column {
             ListItem(
@@ -358,6 +368,10 @@ private fun CalendarEventTile(event: InvestmentCalendarEvent, expanded: Boolean,
                 supportingContent = {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         AppText(event.label, color = event.category.color())
+                        if (personal != null && personal.status != CalendarPurchaseStatus.NONE) {
+                            AppText(personal.status.label, style = MaterialTheme.typography.labelMedium,
+                                color = if (personal.status == CalendarPurchaseStatus.UNAVAILABLE) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary)
+                        }
                         event.amount?.let { FinancialText(money(it, event.record.text("currency")), fontWeight = FontWeight.SemiBold) }
                     }
                 },
@@ -376,16 +390,13 @@ private fun CalendarEventTile(event: InvestmentCalendarEvent, expanded: Boolean,
                         val record = event.record
                         listOf("Announcement" to "announcementDate", "Book opens" to "openBookDate", "Book closes" to "closingBookDate",
                             "Settlement" to "settlementDate", "Maturity" to "maturityDate").forEach { (label, field) -> Fact(label, record.text(field)) }
-                        val recorded = purchases.filter { it.text("settlementDate") == record.text("settlementDate") && it.text("maturityDate") == record.text("maturityDate") }
-
-                        Fact("Recorded applications", recorded.size.toString())
-                        recorded.forEach { Fact(it.text("bondName"), "${it.text("status")} · ${money(it.optDouble("faceValue", 0.0), it.text("currency"))}") }
-                        AppText(when (event.label) {
-                            "Book opens", "Book open" -> "Confirm the terms and submit your bid to your broker before the book closes."
-                            "Book closes" -> "Confirm your bid with the broker before today’s closing deadline."
-                            "Settlement" -> "Check allocation, cash debit, and your purchase record with your broker."
-                            else -> "Review the prospectus and prepare your bid before the book opens."
-                        }, style = MaterialTheme.typography.bodySmall)
+                        val recorded = personal!!.records
+                        if (historyComplete) Fact("Recorded purchases", recorded.size.toString())
+                        recorded.forEach { Fact(it.text("bondName"), "${displayRecordValue(it.text("status"))} · ${money(it.optDouble("faceValue", 0.0), it.text("currency"))}") }
+                        AppText(calendarIssueGuidance(record, personal, today), style = MaterialTheme.typography.bodySmall)
+                        if (personal.status == CalendarPurchaseStatus.UNAVAILABLE) TextButton(enabled = !busy, onClick = reloadHistory) {
+                            AppText("Retry loading purchases")
+                        }
                     } else {
                         Fact("Date", event.date.toString())
                         Fact("Broker", event.record.text("broker").ifBlank { "—" })
