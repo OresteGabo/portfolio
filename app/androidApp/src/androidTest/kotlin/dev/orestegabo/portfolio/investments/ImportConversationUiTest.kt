@@ -11,6 +11,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.orestegabo.portfolio.MainActivity
+import kotlinx.coroutines.CompletableDeferred
 import org.junit.Assert.*
 import org.junit.Test
 import java.io.File
@@ -29,10 +30,13 @@ class ImportConversationUiTest {
         var screenshotWindow: android.view.Window? = null
         val sourcePdf = readerFixturePdf()
         val failRead = AtomicBoolean(true)
+        val firstRead = CompletableDeferred<Unit>()
         val failSave = AtomicBoolean(true)
         val uploaded = AtomicBoolean(false)
         val saved = AtomicBoolean(false)
         val picks = AtomicInteger()
+        val pickerOpens = AtomicInteger()
+        val cancelNextPick = AtomicBoolean(true)
         val uploads = AtomicInteger()
         val writes = AtomicInteger()
         val server = ServerSocket(0)
@@ -94,7 +98,11 @@ class ImportConversationUiTest {
         }
         val actions = object : NativeActions {
             override val pickedPdfName = "receipt.pdf"
-            override suspend fun pickPdf(onSelected: () -> Unit): ByteArray { picks.incrementAndGet(); onSelected(); return sourcePdf }
+            override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? {
+                pickerOpens.incrementAndGet()
+                if (cancelNextPick.getAndSet(false)) return null
+                picks.incrementAndGet(); onSelected(); return sourcePdf
+            }
             override suspend fun savePdf(fileName: String, bytes: ByteArray) = false
             override fun openUrl(url: String) {}
             override fun shareText(text: String) {}
@@ -102,7 +110,7 @@ class ImportConversationUiTest {
         val engine = object : InvestmentEngine {
             override var onProgress: (String) -> Unit = {}
             override suspend fun run(command: String, payload: JsonRecord, pdf: ByteArray?): JsonRecord {
-                if (failRead.get()) throw IllegalArgumentException("Could not read this PDF.")
+                if (failRead.get()) { firstRead.await(); throw IllegalArgumentException("Could not read this PDF.") }
                 return review
             }
             override fun cancel() {}
@@ -170,7 +178,13 @@ class ImportConversationUiTest {
         prefs.edit().putBoolean("importHintDismissed", false).commit()
         try {
             launch("light").use {
-                tap("Documents"); await("Attach PDF")
+                tap("Documents"); await("Search documents"); await("Add document")
+                assertNull(find("Attach PDF"))
+                assertEquals(0, pickerOpens.get())
+                tap("Add document"); await("Search documents")
+                assertEquals(1, pickerOpens.get()); assertEquals(0, picks.get())
+                assertNull(find("Attach PDF"))
+                tap("Chat"); await("Attach PDF")
                 assertFalse(nodes().any { it.isEditable })
                 assertNull(find("Portfolio"))
                 shot("conversation-welcome-light.png")
@@ -180,7 +194,10 @@ class ImportConversationUiTest {
                 tap("Chat"); await("Attach PDF")
                 assertNull(find("Dismiss import information"))
                 assertNull(find("Portfolio"))
-                tap("Attach PDF")
+                tap("Back"); await("Search documents")
+                tap("Add document"); await("Reading your PDF")
+                assertNull(find("Search documents")); assertNull(find("Portfolio"))
+                firstRead.complete(Unit)
                 await("Import needs attention"); await("Could not read this PDF.")
                 shot("conversation-error-light.png")
                 failRead.set(false); reveal("Retry import"); tap("Retry import")
@@ -189,9 +206,9 @@ class ImportConversationUiTest {
                 shot("conversation-review-light.png")
                 tap("Library"); await("Search documents"); tap("Chat")
                 reveal("Save PDF and confirm purchase"); tap("Save PDF and confirm purchase")
-                reveal("Retry save")
+                reveal("Confirm using saved PDF")
                 assertEquals(1, uploads.get()); assertEquals(1, writes.get())
-                failSave.set(false); tap("Retry save")
+                failSave.set(false); tap("Confirm using saved PDF")
                 reveal("Open document")
                 assertEquals(1, uploads.get()); assertEquals(2, writes.get())
                 shot("conversation-complete-light.png")
@@ -205,11 +222,18 @@ class ImportConversationUiTest {
                 tap("Chat"); reveal("View purchase"); tap("View purchase"); await("Bond details")
             }
             launch("dark").use {
-                tap("Documents"); reveal("Open document")
+                tap("Documents"); await("Search documents"); await("Add document")
+                tap("Chat"); reveal("Open document")
                 assertNull(find("Dismiss import information"))
                 assertEquals(1, picks.get())
                 shot("conversation-history-dark.png")
-                tap("Attach PDF"); await("Already in Library"); reveal("Open document")
+                tap("Attach PDF"); await("Already in Library")
+                await("This PDF and its purchase details are already saved. No further action is needed.")
+                reveal("Open document")
+                shot("conversation-duplicate-time.png")
+                assertTrue("Original save time must be shown on the duplicate receipt", nodes(false).any {
+                    it.text?.toString()?.startsWith("First saved on this device") == true
+                })
                 assertEquals(1, uploads.get()); assertEquals(2, writes.get()); assertEquals(2, picks.get())
                 assertNull(find("Save PDF and confirm purchase"))
                 shot("conversation-already-saved-dark.png")
@@ -219,6 +243,9 @@ class ImportConversationUiTest {
                 await("shared-confirmation.pdf"); await("Bond confirmation detected")
                 assertEquals(2, picks.get())
                 reveal("Cancel import"); tap("Cancel import")
+                tap("Back"); await("Search documents"); tap("Portfolio"); await("Add purchase")
+                tap("Add purchase"); await("Already in Library")
+                assertEquals(3, picks.get()); assertNull(find("Choose PDF")); assertNull(find("Portfolio"))
                 instrumentation.runOnMainSync { AppLanguage.select("fr") }
                 Thread.sleep(400)
                 shot("conversation-shared-french.png")

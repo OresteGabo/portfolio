@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.*
+import kotlinx.datetime.toLocalDateTime
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,7 +17,7 @@ import androidx.compose.ui.unit.dp
 
 /** Identity comes from actual saved records. A broker never supplies a share issuer's logo. */
 @Composable
-internal fun ImportCompletionReceipt(entry: ImportReceipt, document: JsonRecord?, investment: JsonRecord?) {
+internal fun ImportCompletionReceipt(entry: ImportReceipt, document: JsonRecord?, investment: JsonRecord?, addedTime: ImportAddedTime? = null) {
     val colours = MaterialTheme.colorScheme
     val type = when (entry.kind) {
         "equity" -> "Share contract"
@@ -62,11 +63,24 @@ internal fun ImportCompletionReceipt(entry: ImportReceipt, document: JsonRecord?
             }
         }
         HorizontalDivider(color = colours.outlineVariant.copy(alpha = .3f))
-        AppText(if (entry.state == ImportState.EXISTS) "This PDF is already saved. No extra copy was created." else when (entry.outcome) {
+        AppText(if (entry.state == ImportState.EXISTS) when (entry.outcome) {
+            ImportOutcome.PURCHASE -> "This PDF and its purchase details are already saved. No further action is needed."
+            ImportOutcome.ISSUANCE -> "This PDF and its bond terms are already saved. No further action is needed."
+            ImportOutcome.STATEMENT -> "This PDF is already saved, and its statement records have been checked. No further action is needed."
+            null -> "This PDF is already in Library. No additional copy is needed."
+        } else when (entry.outcome) {
             ImportOutcome.PURCHASE -> "Your purchase is confirmed."
             ImportOutcome.ISSUANCE -> "Bond terms saved. No personal allocation was assumed."
             ImportOutcome.STATEMENT -> "Statement records checked."
             null -> "Your PDF is available in Library."
         }, style = MaterialTheme.typography.bodySmall, color = colours.onSurfaceVariant)
+        if (entry.state == ImportState.EXISTS && addedTime != null) {
+            val date = runCatching {
+                kotlin.time.Instant.parse(addedTime.at).toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+            }.getOrNull()
+            if (date != null) AppText("${localized(if (addedTime.onThisDevice) "First saved on this device" else "First added")} · " +
+                "${date.date} · ${date.hour.toString().padStart(2, '0')}:${date.minute.toString().padStart(2, '0')}",
+                style = MaterialTheme.typography.labelSmall, color = colours.onSurfaceVariant)
+        }
     }
 }

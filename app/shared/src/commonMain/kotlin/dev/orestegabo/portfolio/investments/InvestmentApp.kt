@@ -71,7 +71,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var notificationScreen by rememberSaveable { mutableStateOf(false) }
     var handledInboxRequest by rememberSaveable { mutableIntStateOf(0) }
     var tab by rememberSaveable { mutableStateOf("Portfolio") }
-    var documentSection by rememberSaveable(model.user?.text("id")) { mutableStateOf("Import") }
+    var documentSection by rememberSaveable(model.user?.text("id")) { mutableStateOf("Library") }
     var calendarFocus by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingIssueId by rememberSaveable { mutableStateOf<String?>(null) }
     var missingDocuments by rememberSaveable { mutableStateOf(false) }
@@ -89,7 +89,6 @@ fun InvestmentApp(model: PortfolioModel) {
     val actions = LocalNativeActions.current
     val engine = LocalImportEngine.current ?: rememberInvestmentEngine()
     DisposableEffect(engine) { onDispose { engine.destroy() } }
-    var newPurchase by rememberSaveable { mutableStateOf(false) }
     val documentUi = rememberSaveableStateHolder()
     val preferences = rememberServerSettings()
     var showImportHint by rememberSaveable { mutableStateOf(!preferences.readImportHintDismissed()) }
@@ -121,7 +120,7 @@ fun InvestmentApp(model: PortfolioModel) {
     LaunchedEffect(NativePushBridge.updateRevision) { if(model.user!=null && !model.locked)model.refreshNotifications() }
     LaunchedEffect(tab,model.user,model.locked) { if(tab=="Stocks" && model.user!=null && !model.locked)model.refreshNotifications() }
     LaunchedEffect(model.user) {
-        if (model.user == null) { notificationPurchase=null;notificationScreen=false; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; newPurchase = false; simulator = false; education = false }
+        if (model.user == null) { notificationPurchase=null;notificationScreen=false; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; simulator = false; education = false }
     }
     LaunchedEffect(model, model.messageRevision) {
         val revision = model.messageRevision
@@ -137,16 +136,25 @@ fun InvestmentApp(model: PortfolioModel) {
             if (model.errorRevision == revision) model.error = null
         }
     }
+    fun showImportConversation() {
+        tab = "Documents"; documentSection = "Import"
+        notificationScreen = false; missingDocuments = false; investmentHistory = false
+        editor = null; equityEditor = null; detail = null; pendingEntry = false
+        simulator = false; education = false
+    }
     fun imported(review: JsonRecord) {
         importReview = review
-        if (tab != "Documents") { tab = "Documents"; documentSection = "Import" }
-        missingDocuments = false
-        editor = null; equityEditor = null; newPurchase = false; pendingEntry = false
+        showImportConversation()
     }
-    LaunchedEffect(model.activeImportId) {
-        if (model.activeImportId != null) {
-            tab = "Documents"; documentSection = "Import"; notificationScreen = false
-            newPurchase = false; detail = null; pendingEntry = false
+    fun beginDocumentImport() {
+        confirmationTarget = null
+        model.importPurchasePdf(actions, engine, completed = ::imported)
+    }
+    var handledImportSelection by remember(model) { mutableIntStateOf(model.importSelectionRevision) }
+    LaunchedEffect(model.importSelectionRevision) {
+        if (model.importSelectionRevision != handledImportSelection) {
+            handledImportSelection = model.importSelectionRevision
+            showImportConversation()
         }
     }
     LaunchedEffect(model.activeImportReceipt()?.state, importReview) {
@@ -189,7 +197,7 @@ fun InvestmentApp(model: PortfolioModel) {
             OnboardingScreen(replayIntroduction, ::finishIntroduction)
             return@MaterialTheme
         }
-        val nested = model.documentPreview != null || notificationScreen || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || editor != null || equityEditor != null || newPurchase || simulator || education
+        val nested = model.documentPreview != null || notificationScreen || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || editor != null || equityEditor != null || simulator || education
         val documentsHome = model.user != null && !model.locked && !nested && tab == "Documents"
         val importChat = documentsHome && documentSection == "Import"
         val back = {
@@ -197,8 +205,8 @@ fun InvestmentApp(model: PortfolioModel) {
                 legalRoute = legalHistory.lastOrNull()
                 legalHistory = legalHistory.dropLast(1)
             } else {
-                if (detail == null && editor == null && equityEditor == null && importReview == null && !pendingEntry && !newPurchase && !simulator && !education) investmentHistory = false
-                missingDocuments = false; detail = null; editor = null; equityEditor = null; newPurchase = false; pendingEntry = false; simulator = false; education = false
+                if (detail == null && editor == null && equityEditor == null && importReview == null && !pendingEntry && !simulator && !education) investmentHistory = false
+                missingDocuments = false; detail = null; editor = null; equityEditor = null; pendingEntry = false; simulator = false; education = false
             }
         }
         val screenTitle = when {
@@ -207,7 +215,6 @@ fun InvestmentApp(model: PortfolioModel) {
             legalRoute != null -> legalTitle(legalRoute!!)
             missingDocuments -> "Missing documents"
             pendingEntry -> "Pending purchase"
-            newPurchase -> "Add purchase"
             editor != null -> if (editor!!.text("id").isBlank()) "Add bond" else "Edit bond"
             equityEditor != null -> "Add shares"
             simulator -> "Simulator"
@@ -242,10 +249,12 @@ fun InvestmentApp(model: PortfolioModel) {
                             val preview = model.documentPreview!!
                             model.action { actions.sharePdf(preview.fileName, preview.bytes!!) }
                         }) { AppIcon(Icons.Outlined.Share, "Share PDF") }
-                        else if (documentsHome) TextButton(onClick = {
-                            documentSection = if (documentSection == "Import") "Library" else "Import"
-                            selectionFeedback()
-                        }) { AppText(if (documentSection == "Import") "Library" else "Chat", style = MaterialTheme.typography.labelLarge) }
+                        else if (documentsHome) {
+                            TextButton(onClick = {
+                                documentSection = if (documentSection == "Import") "Library" else "Import"
+                                selectionFeedback()
+                            }) { AppText(if (documentSection == "Import") "Library" else "Chat", style = MaterialTheme.typography.labelLarge) }
+                        }
                         else if(tab=="Stocks" && !nested && model.user!=null && !model.locked)
                             NotificationBell(model.unreadNotifications) { notificationScreen=true }
                     },
@@ -253,11 +262,22 @@ fun InvestmentApp(model: PortfolioModel) {
                 )
             },
             floatingActionButton = {
-                if (model.user != null && !model.locked && !nested && tab == "Portfolio") ExtendedFloatingActionButton(
+                if (documentsHome && documentSection == "Library") ExtendedFloatingActionButton(
+                    onClick = {
+                        if (importReview != null || model.activeImportReceipt()?.state in listOf(ImportState.READING, ImportState.SAVING)) {
+                            showImportConversation()
+                        } else beginDocumentImport()
+                    },
+                    modifier = Modifier.semantics { contentDescription = localized("Add document") },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    icon = { AppIcon(Icons.Filled.Add, null) }, text = { AppText("Add document") }
+                )
+                else if (model.user != null && !model.locked && !nested && tab == "Portfolio") ExtendedFloatingActionButton(
                     onClick = {
                         if (importReview != null || model.activeImportReceipt()?.state in listOf(ImportState.READING, ImportState.SAVING)) {
                             tab = "Documents"; documentSection = "Import"
-                        } else { confirmationTarget = null; newPurchase = true }
+                        } else beginDocumentImport()
                     },
                     modifier = Modifier.semantics { contentDescription = localized("Add purchase") },
                     icon = { AppIcon(Icons.Filled.Add, null) }, text = { AppText("Add purchase") }
@@ -269,7 +289,11 @@ fun InvestmentApp(model: PortfolioModel) {
                         val selected = tab == destination.title
                         NavigationBarItem(
                             selected = selected,
-                            onClick = { if (!selected) { tab = destination.title; selectionFeedback() } },
+                            onClick = { if (!selected) {
+                                tab = destination.title
+                                if (destination.title == "Documents") documentSection = "Library"
+                                selectionFeedback()
+                            } },
                             icon = { BadgedBox(badge={ if(destination.title=="Stocks" && model.unreadNotifications>0) Badge {
                                 AppText(if(model.unreadNotifications>99) "99+" else model.unreadNotifications.toString())
                             } }) { AppIcon(if (selected) destination.selectedIcon else destination.icon, contentDescription = null, modifier = Modifier.size(24.dp)) } },
@@ -309,7 +333,6 @@ fun InvestmentApp(model: PortfolioModel) {
                     })
                     missingDocuments -> MissingDocumentsScreen(model, ::uploadMissing)
                     pendingEntry -> PendingBondScreen(model, pendingIssueId) { pendingEntry = false; pendingIssueId = null }
-                    newPurchase -> PurchaseEntryScreen(model, engine, ::imported) { legalRoute = "privacy" }
                     tab == "Settings" && !nested -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
                         chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
                         openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { replayIntroduction = true; introductionRequested = true })
@@ -317,7 +340,11 @@ fun InvestmentApp(model: PortfolioModel) {
                     equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null })
                     simulator -> SimulatorScreen(model, engine) { simulator = false }
                     education -> EducationScreen(model) { education = false }
-                    detail != null -> PurchaseDetails(model, detail!!, engine, { confirmationTarget = detail; imported(it) }, { detail = null }, { editor = detail; detail = null })
+                    detail != null -> {
+                        val purchase = detail!!
+                        PurchaseDetails(model, purchase, engine, { confirmationTarget = purchase; imported(it) },
+                            { detail = null }, { editor = purchase; detail = null })
+                    }
                     investmentHistory -> InvestmentHistoryScreen(model, uploadPending = ::uploadPendingPurchase) { detail = it }
                     tab == "Portfolio" -> PortfolioScreen(model, uploadPending = ::uploadPendingPurchase, openMissing = ::uploadMissing, allMissing = { missingDocuments = true }, seeAll = { investmentHistory = true },
                         openCalendar = { date -> calendarFocus = date.toString(); tab = "Calendar" }, detail = { detail = it })
@@ -327,7 +354,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     tab == "Documents" -> documentUi.SaveableStateProvider("documents:${model.origin}|${model.user?.text("id")}") { DocumentsHub(model, engine, importReview, confirmationTarget,
                         section = documentSection, changeSection = { documentSection = it },
                         showHint = showImportHint, dismissHint = { showImportHint = false; preferences.writeImportHintDismissed(true) },
-                        beginImport = { confirmationTarget = null; model.importPurchasePdf(actions, engine, completed = ::imported) },
+                        beginImport = ::beginDocumentImport,
                         reviewed = ::imported, done = { importReview = null; confirmationTarget = null; detail = null },
                         openPurchase = { id -> model.action {
                             require(id.matches(Regex("[A-Za-z0-9_-]{1,120}"))) { "Check the purchase details." }

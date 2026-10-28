@@ -3,6 +3,7 @@ package dev.orestegabo.portfolio.investments
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import kotlin.math.abs
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
@@ -18,18 +19,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.FilterQuality
-import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
@@ -93,13 +91,35 @@ private fun PdfPageList(document: PdfDocumentPages, failed: () -> Unit) {
             (minOf(item.offset + item.size, layout.viewportEndOffset) - maxOf(item.offset, layout.viewportStartOffset)).coerceAtLeast(0)
         }?.index?.coerceIn(0, document.pageCount - 1) ?: 0
     } }
+    fun changeZoom(page: Int, value: Float) {
+        val old = zoom[page] ?: 1f
+        val next = value.coerceIn(1f, 6f)
+        val layout = scroll.layoutInfo
+        val item = layout.visibleItemsInfo.firstOrNull { it.index == page }
+        zoom[page] = next
+        if (item != null && old != next) {
+            // Keep the point under the reader's centre in view as the page grows/shrinks.
+            val centre = (layout.viewportEndOffset + layout.viewportStartOffset) / 2f
+            val anchor = (centre - item.offset).coerceIn(0f, item.size.toFloat())
+            val newOffset = (anchor * (next / old) - centre).roundToInt()
+            scope.launch { scroll.scrollToItem(page, newOffset) }
+        }
+    }
     val reducedMotion = LocalReducedMotion.current
     fun move(index: Int) { scope.launch { if (reducedMotion) scroll.scrollToItem(index) else scroll.animateScrollToItem(index) } }
     Column(Modifier.fillMaxSize()) {
         LazyColumn(Modifier.weight(1f).fillMaxWidth().background(Color(0xFF30332D)), state = scroll,
             contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items((0 until document.pageCount).toList(), key = { it }) { page ->
-                PdfPageImage(document, page, zoom[page] ?: 1f, { zoom[page] = it }, failed)
+                val viewport by remember(scroll, page) { derivedStateOf {
+                    val layout = scroll.layoutInfo
+                    val item = layout.visibleItemsInfo.firstOrNull { it.index == page }
+                    val top = if (item == null) 0 else (layout.viewportStartOffset - item.offset).coerceAtLeast(0)
+                    val bottom = if (item == null) 0 else (layout.viewportEndOffset - item.offset).coerceIn(0, item.size)
+                    top to (bottom - top).coerceAtLeast(0)
+                } }
+                PdfPageImage(document, page, zoom[page] ?: 1f, viewport.first, viewport.second,
+                    { changeZoom(page, it) }, { scroll.dispatchRawDelta(-it) }, failed)
             }
         }
         Surface(tonalElevation = 2.dp) {
@@ -108,16 +128,17 @@ private fun PdfPageList(document: PdfDocumentPages, failed: () -> Unit) {
                 IconButton(enabled = current > 0, onClick = { move(current - 1) }) { AppIcon(Icons.AutoMirrored.Outlined.NavigateBefore, "Previous page") }
                 AppText("${current + 1} / ${document.pageCount}", Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelLarge)
                 IconButton(enabled = current < document.pageCount - 1, onClick = { move(current + 1) }) { AppIcon(Icons.AutoMirrored.Outlined.NavigateNext, "Next page") }
-                IconButton(enabled = (zoom[current] ?: 1f) > 1f, onClick = { zoom[current] = ((zoom[current] ?: 1f) - .5f).coerceAtLeast(1f) }) { AppIcon(Icons.Outlined.ZoomOut, "Zoom out") }
-                IconButton(onClick = { zoom.clear() }) { AppIcon(Icons.Outlined.SwapHoriz, "Fit to width") }
-                IconButton(enabled = (zoom[current] ?: 1f) < 6f, onClick = { zoom[current] = ((zoom[current] ?: 1f) + .5f).coerceAtMost(6f) }) { AppIcon(Icons.Outlined.ZoomIn, "Zoom in") }
+                IconButton(enabled = (zoom[current] ?: 1f) > 1f, onClick = { changeZoom(current, ((zoom[current] ?: 1f) - .5f).coerceAtLeast(1f)) }) { AppIcon(Icons.Outlined.ZoomOut, "Zoom out") }
+                IconButton(onClick = { zoom.clear(); move(current) }) { AppIcon(Icons.Outlined.SwapHoriz, "Fit to width") }
+                IconButton(enabled = (zoom[current] ?: 1f) < 6f, onClick = { changeZoom(current, ((zoom[current] ?: 1f) + .5f).coerceAtMost(6f)) }) { AppIcon(Icons.Outlined.ZoomIn, "Zoom in") }
             }
         }
     }
 }
 
 @Composable
-private fun PdfPageImage(document: PdfDocumentPages, page: Int, zoom: Float, changeZoom: (Float) -> Unit, failed: () -> Unit) {
+private fun PdfPageImage(document: PdfDocumentPages, page: Int, zoom: Float, visibleTop: Int, visibleHeight: Int,
+    changeZoom: (Float) -> Unit, scrollVertically: (Float) -> Unit, failed: () -> Unit) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val width = with(LocalDensity.current) { maxWidth.roundToPx() }
         var image by remember(document, page, width) { mutableStateOf<ImageBitmap?>(null) }
@@ -127,50 +148,46 @@ private fun PdfPageImage(document: PdfDocumentPages, page: Int, zoom: Float, cha
             catch (_: Exception) { failed() }
         }
         val bitmap = image
-        var offset by remember { mutableStateOf(Offset.Zero) }
-        var height by remember { mutableIntStateOf(0) }
-        LaunchedEffect(zoom, width, height) {
-            val limitX = width * (zoom - 1) / 2
-            val limitY = height * (zoom - 1) / 2
-            offset = Offset(offset.x.coerceIn(-limitX, limitX), offset.y.coerceIn(-limitY, limitY))
-        }
+        var offsetX by remember(document, page) { mutableFloatStateOf(0f) }
+        val horizontalLimit = width * (zoom - 1) / 2
+        val panX = offsetX.coerceIn(-horizontalLimit, horizontalLimit)
+        LaunchedEffect(zoom, width) { offsetX = panX }
         val transform = rememberTransformableState { _, zoomChange, pan, _ ->
             val scale = (zoom * zoomChange).coerceIn(1f, 6f)
-            changeZoom(scale)
-            val limitX = width * (scale - 1) / 2
-            val limitY = height * (scale - 1) / 2
-            offset = Offset((offset.x + pan.x).coerceIn(-limitX, limitX), (offset.y + pan.y).coerceIn(-limitY, limitY))
+            if (scale != zoom) changeZoom(scale)
+            val limit = width * (scale - 1) / 2
+            offsetX = (panX + pan.x).coerceIn(-limit, limit)
+            if (pan.y != 0f) scrollVertically(pan.y)
         }
         if (bitmap == null) Box(Modifier.fillMaxWidth().height(300.dp).background(Color.White), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(Modifier.size(24.dp))
         } else {
             val pageHeight = maxWidth * (bitmap.height.toFloat() / bitmap.width)
-            val region = pdfVisibleRegion(zoom, offset.x, offset.y, width, height)
+            val baseHeight = with(LocalDensity.current) { pageHeight.toPx() }
+            val region = if (visibleHeight > 0) pdfViewportRegion(zoom, panX, width, baseHeight, visibleTop, visibleHeight) else null
             var detail by remember(document, page, width) { mutableStateOf<Pair<PdfPageRegion, ImageBitmap>?>(null) }
-            LaunchedEffect(document, page, width, region) {
-                if (zoom <= 1f) { detail = null; return@LaunchedEffect }
-                // Keep gestures immediate, then redraw just the visible region at display resolution.
-                // Never allocate a giant zoomed page or stretch the initial bitmap as the final result.
+            LaunchedEffect(document, page, width, region, zoom) {
+                if (region == null || zoom <= 1f) { detail = null; return@LaunchedEffect }
+                // Render only the portion inside the reader viewport, even for a very tall zoomed page.
                 delay(70)
                 try { detail = region to document.renderPage(page, width, region) }
                 catch (cancelled: CancellationException) { throw cancelled }
                 catch (_: Exception) { failed() }
             }
             val description = "${localized("PDF page")} ${page + 1}"
-            Canvas(Modifier.fillMaxWidth().height(pageHeight).clipToBounds().background(Color.White)
+            Canvas(Modifier.fillMaxWidth().height(pageHeight * zoom).clipToBounds().background(Color.White)
                 .semantics { contentDescription = description }
-                .onSizeChanged { height = it.height }
-                .transformable(transform, canPan = { zoom > 1f })
-                .pointerInput(zoom) { detectTapGestures(onDoubleTap = { changeZoom(if (zoom > 1f) 1f else 2f); offset = Offset.Zero }) }) {
-                val destination = IntSize(size.width.roundToInt(), size.height.roundToInt())
-                withTransform({
-                    translate(offset.x, offset.y)
-                    scale(zoom, zoom, center)
-                }) {
-                    drawImage(bitmap, dstSize = destination, filterQuality = FilterQuality.High)
-                }
+                .transformable(transform, canPan = { zoom > 1f && abs(it.x) > abs(it.y) })
+                .pointerInput(zoom) { detectTapGestures(onDoubleTap = { changeZoom(if (zoom > 1f) 1f else 2f); offsetX = 0f }) }) {
+                // The page's layout height grows with zoom. Vertical motion belongs to the
+                // outer scroll view; horizontal panning stays within the full reader width.
+                val fullWidth = size.width * zoom
+                drawImage(bitmap,
+                    dstOffset = androidx.compose.ui.unit.IntOffset(((size.width - fullWidth) / 2 + panX).roundToInt(), 0),
+                    dstSize = IntSize(fullWidth.roundToInt(), size.height.roundToInt()), filterQuality = FilterQuality.High)
                 detail?.takeIf { it.first == region && zoom > 1f }?.second?.let {
-                    drawImage(it, dstSize = destination, filterQuality = FilterQuality.High)
+                    drawImage(it, dstOffset = androidx.compose.ui.unit.IntOffset(0, visibleTop),
+                        dstSize = IntSize(size.width.roundToInt(), visibleHeight), filterQuality = FilterQuality.High)
                 }
             }
         }

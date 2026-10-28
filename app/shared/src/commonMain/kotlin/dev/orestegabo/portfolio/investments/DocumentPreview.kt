@@ -23,13 +23,16 @@ data class PdfPageRegion(val left: Double = 0.0, val top: Double = 0.0, val widt
     }
 }
 
-internal fun pdfVisibleRegion(zoom: Float, offsetX: Float, offsetY: Float, width: Int, height: Int): PdfPageRegion {
+/** Visible slice of the enlarged, vertically scrollable page. Keeps native redraws viewport-sized. */
+internal fun pdfViewportRegion(zoom: Float, offsetX: Float, width: Int, pageHeight: Float, visibleTop: Int, visibleHeight: Int): PdfPageRegion {
     val scale = zoom.coerceIn(1f, 6f).toDouble()
+    val fullHeight = (pageHeight * scale).coerceAtLeast(1.0)
+    val top = visibleTop.toDouble().coerceIn(0.0, fullHeight - 1.0)
+    val height = visibleHeight.toDouble().coerceIn(1.0, fullHeight - top)
     val fraction = 1.0 / scale
     return PdfPageRegion(
         ((1.0 - fraction) / 2 - offsetX / (width.coerceAtLeast(1) * scale)).coerceIn(0.0, 1.0 - fraction),
-        ((1.0 - fraction) / 2 - offsetY / (height.coerceAtLeast(1) * scale)).coerceIn(0.0, 1.0 - fraction),
-        fraction, fraction)
+        top / fullHeight, fraction, height / fullHeight)
 }
 
 /** Bound native page allocations, including malformed/extreme page dimensions. */

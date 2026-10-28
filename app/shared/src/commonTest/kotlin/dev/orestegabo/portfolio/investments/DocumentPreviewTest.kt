@@ -114,10 +114,12 @@ class DocumentPreviewTest {
             assertNull(m.annualReportYear); assertNull(m.reportProgress)
         } finally { f.store.clear(); Dispatchers.resetMain() }
     }
-    @Test fun zoomRegionsTrackPanAndStayInsideTheOriginalPage() {
-        assertEquals(PdfPageRegion(), pdfVisibleRegion(1f, 100f, -100f, 1000, 1500))
-        assertEquals(PdfPageRegion(.375, .375, .25, .25), pdfVisibleRegion(4f, 0f, 0f, 1000, 1500))
-        assertEquals(PdfPageRegion(0.0, .75, .25, .25), pdfVisibleRegion(4f, 1500f, -2250f, 1000, 1500))
+    @Test fun zoomRegionsUseTheReaderViewportAndExpandedPageHeight() {
+        assertEquals(PdfPageRegion(0.0, .0, 1.0, .5), pdfViewportRegion(1f, 0f, 1000, 1500f, 0, 750))
+        assertEquals(PdfPageRegion(.375, .25, .25, .125), pdfViewportRegion(4f, 0f, 1000, 1500f, 1500, 750))
+        assertEquals(PdfPageRegion(0.0, .875, .25, .125), pdfViewportRegion(4f, 1500f, 1000, 1500f, 5250, 750))
+        // A short landscape page grows into the unused reader area instead of remaining a short box.
+        assertEquals(PdfPageRegion(.25, 0.0, .5, 1.0), pdfViewportRegion(2f, 0f, 1000, 500f, 0, 1500))
         assertFails { PdfPageRegion(.9, .0, .5, 1.0) }
         assertFails { PdfPageRegion(Double.NaN) }
     }

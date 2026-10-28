@@ -23,7 +23,7 @@ internal fun ConversationReview(model: PortfolioModel, review: JsonRecord, targe
             AppText("Statement entries are checked against your investments. Missing contracts become reminders; they do not add unconfirmed amounts to your portfolio.", style = MaterialTheme.typography.bodySmall)
             Button(enabled = !model.busy && review.rows("rows").isNotEmpty(), modifier = Modifier.fillMaxWidth(),
                 onClick = { model.saveImportedStatement(review, done) }) {
-                AppText(if (entry.state == ImportState.FAILED) "Retry save" else if (entry.documentId.isNotBlank()) "Check records using saved PDF" else "Save PDF and check records")
+                AppText(if (entry.documentId.isNotBlank()) "Check records using saved PDF" else if (entry.state == ImportState.FAILED) "Retry save" else "Save PDF and check records")
             }
         }
         else -> AppText("Unsupported purchase document.", color = MaterialTheme.colorScheme.error)
@@ -72,7 +72,7 @@ private fun PurchaseConversationReview(model: PortfolioModel, review: JsonRecord
     Button(enabled = state.ready && !model.busy, modifier = Modifier.fillMaxWidth(), onClick = {
         state.confirmed?.let { model.saveImportedPurchase(review, if (state.bond) it else body, state.selected?.text("id"), done) }
     }) {
-        AppText(if (entry.state == ImportState.FAILED) "Retry save" else if (entry.documentId.isNotBlank()) "Confirm using saved PDF" else if (state.selected != null) "Save PDF and confirm purchase" else "Save purchase and PDF")
+        AppText(if (entry.documentId.isNotBlank()) "Confirm using saved PDF" else if (entry.state == ImportState.FAILED) "Retry save" else if (state.selected != null) "Save PDF and confirm purchase" else "Save purchase and PDF")
     }
 }
 
@@ -100,6 +100,6 @@ private fun IssuanceConversationReview(model: PortfolioModel, review: JsonRecord
     if (confirmation?.isFailure == true) AppText(userErrorMessage(confirmation.exceptionOrNull()), color = MaterialTheme.colorScheme.error)
     Button(enabled = !model.busy && (target == null || confirmation?.isSuccess == true), modifier = Modifier.fillMaxWidth(),
         onClick = { model.saveImportedIssuance(review, target, done) }) {
-        AppText(if (entry.state == ImportState.FAILED) "Retry save" else if (entry.documentId.isNotBlank() && target != null) "Confirm using saved PDF" else if (target != null) "Save PDF and confirm purchase" else if (entry.documentId.isNotBlank()) "Use saved issuance report" else "Save bond issuance")
+        AppText(if (entry.documentId.isNotBlank() && target != null) "Confirm using saved PDF" else if (entry.documentId.isNotBlank()) "Use saved issuance report" else if (entry.state == ImportState.FAILED) "Retry save" else if (target != null) "Save PDF and confirm purchase" else "Save bond issuance")
     }
 }

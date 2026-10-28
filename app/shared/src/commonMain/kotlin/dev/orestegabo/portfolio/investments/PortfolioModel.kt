@@ -68,6 +68,10 @@ class PortfolioModel(
     internal val importHistoryStorageFailed get() = importJournal.persistenceFailed
     internal var activeImportId by mutableStateOf<String?>(null)
         private set
+    // Selection events, rather than receipt IDs, route every upload source into chat.
+    // A dismissed picker emits nothing; retrying an existing receipt emits a new event.
+    internal var importSelectionRevision by mutableStateOf(0)
+        private set
     private var retryPdf: ByteArray? = null
     private var resumingImport = false
     private val savedPdfDigests = mutableMapOf<String, String>()
@@ -644,6 +648,7 @@ class PortfolioModel(
                         selected = true
                         val entry = previous ?: importJournal.begin(actions.pickedPdfName ?: "Investment PDF", targetPurchaseId.orEmpty(), expectedStatement?.text("id").orEmpty())
                         activeImportId = entry.id
+                        importSelectionRevision++
                         pdfUploadId = entry.id
                         uploadedDocument = entry.documentId.takeIf(String::isNotBlank)
                         updateImport { it.copy(state = ImportState.READING, error = "") }
@@ -653,9 +658,9 @@ class PortfolioModel(
                 updateImport { it.copy(kind = review.text("kind")) }
                 pdfImportProgress = PdfImportProgress(PdfImportStage.CHECKING)
                 val existing = findExistingImportPdf(review)
-                if (existing != null && !resumingImport && targetPurchaseId.isNullOrBlank()) {
-                    showExistingImport(existing, review)
-                } else {
+                val alreadySaved = existing != null && showExistingImport(existing, review,
+                    requireComplete = resumingImport || !targetPurchaseId.isNullOrBlank(), targetId = targetPurchaseId)
+                if (!alreadySaved) {
                     if (existing != null) {
                         uploadedDocument = existing.text("id")
                         updateImport { it.copy(documentId = existing.text("id")) }
@@ -692,21 +697,60 @@ class PortfolioModel(
         return null
     }
 
-    private fun showExistingImport(document: JsonRecord, review: JsonRecord) {
+    private suspend fun showExistingImport(document: JsonRecord, review: JsonRecord, requireComplete: Boolean = false, targetId: String? = null): Boolean {
         val id = document.text("id")
-        val purchase = purchases.firstOrNull { it.text("confirmationDocumentId") == id && it.text("status") != "submitted" }
-        updateImport { it.copy(state = ImportState.EXISTS, kind = review.text("kind"), error = "",
-            documentId = id, purchaseId = purchase?.text("id").orEmpty(), outcome = null) }
+        val kind = review.text("kind")
+        val prior = importHistory.firstOrNull { it.documentId == id && it.kind == kind && it.state == ImportState.SAVED }
+        val records = try {
+            when (kind) {
+                "bond", "bond-issuance" -> api.request("/api/bonds/purchases").rows("purchases").also {
+                    portfolio = portfolio.copy(purchases = it)
+                }
+                "equity" -> api.request("/api/bonds/equities").rows("holdings").also {
+                    portfolio = portfolio.copy(holdings = it)
+                }
+                else -> emptyList()
+            }
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (failure: Exception) {
+            if (requireComplete || failure is ApiException && failure.status == 401) throw failure
+            emptyList()
+        }
+        val purchase = completedImportPurchase(document, review, records, targetId)
+        val outcome = when {
+            purchase != null -> ImportOutcome.PURCHASE
+            kind == "bond-issuance" && targetId.isNullOrBlank() && (document.has("issuance") || prior?.outcome == ImportOutcome.ISSUANCE) -> ImportOutcome.ISSUANCE
+            kind == "statement" && prior?.outcome == ImportOutcome.STATEMENT -> ImportOutcome.STATEMENT
+            else -> null
+        }
+        if (requireComplete && outcome == null) return false
+        updateImport { it.copy(state = ImportState.EXISTS, kind = kind, error = "",
+            documentId = id, purchaseId = purchase?.text("id").orEmpty(), outcome = outcome,
+            recorded = if (outcome == ImportOutcome.STATEMENT) prior?.recorded ?: 0 else 0,
+            missing = if (outcome == ImportOutcome.STATEMENT) prior?.missing ?: 0 else 0) }
         importedPdf = null; importedReview = null; uploadedDocument = null; retryPdf = null
+        return true
     }
 
     /** A concurrent import may have saved this file since the review was opened. */
-    private suspend fun checkExistingBeforeSave(review: JsonRecord, continueConfirmation: Boolean, completed: () -> Unit): Boolean {
-        if (uploadedDocument != null) return false
+    private suspend fun checkExistingBeforeSave(review: JsonRecord, continueConfirmation: Boolean, completed: () -> Unit, targetId: String? = null): Boolean {
+        val requestedTarget = targetId ?: activeImportReceipt()?.targetId?.takeIf(String::isNotBlank)
+        if (uploadedDocument != null) {
+            val existing = documents.firstOrNull { it.text("id") == uploadedDocument }
+            if (existing != null && showExistingImport(existing, review, requireComplete = true,
+                    targetId = requestedTarget)) {
+                completed(); return true
+            }
+            return false
+        }
         pdfImportProgress = PdfImportProgress(PdfImportStage.CHECKING)
         try {
             val existing = findExistingImportPdf(review) ?: return false
             if (continueConfirmation || resumingImport) {
+                if (showExistingImport(existing, review, requireComplete = true,
+                        targetId = requestedTarget)) {
+                    completed(); return true
+                }
                 uploadedDocument = existing.text("id")
                 updateImport { it.copy(documentId = existing.text("id")) }
                 return false
@@ -749,7 +793,7 @@ class PortfolioModel(
     fun saveImportedPurchase(review: JsonRecord, purchase: JsonRecord, id: String?, completed: () -> Unit) = action {
         require(importedReview === review && importedPdf != null) { "Choose the PDF again before confirming." }
         startSavingImport()
-        if (checkExistingBeforeSave(review, id != null, completed)) return@action
+        if (checkExistingBeforeSave(review, id != null, completed, targetId = id)) return@action
         val bond = review.text("kind") == "bond"
         val reusingDocument = uploadedDocument != null
         try {
@@ -851,7 +895,7 @@ class PortfolioModel(
         val issuance = importedIssuanceInput(review)
         val expectedConfirmation = confirmationTarget?.let { pendingIssuanceConfirmation(review, it) }
         startSavingImport()
-        if (checkExistingBeforeSave(review, confirmationTarget != null, completed)) return@action
+        if (checkExistingBeforeSave(review, confirmationTarget != null, completed, targetId = confirmationTarget?.text("id"))) return@action
         try {
             val pdf = importedPdf!!
             val chunkSize = 512 * 1024

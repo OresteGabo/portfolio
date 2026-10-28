@@ -140,7 +140,8 @@ private fun ImportConversation(model: PortfolioModel, engine: InvestmentEngine, 
                                     TextButton(onClick = model::cancelPdfImport) { AppText("Cancel") }
                                 } else if (entry.state in listOf(ImportState.SAVED, ImportState.EXISTS)) {
                                     ImportCompletionReceipt(entry, model.documents.firstOrNull { it.text("id") == entry.documentId },
-                                        (if (entry.kind == "equity") model.holdings else model.purchases).firstOrNull { it.text("id") == entry.purchaseId })
+                                        (if (entry.kind == "equity") model.holdings else model.purchases).firstOrNull { it.text("id") == entry.purchaseId },
+                                        firstImportAddedTime(model.documents.firstOrNull { it.text("id") == entry.documentId }, entries))
                                     if (entry.outcome == ImportOutcome.STATEMENT) {
                                         AppText("${entry.recorded} ${localized("recorded")} · ${entry.missing} ${localized("missing PDFs")}", style = MaterialTheme.typography.labelMedium)
                                         if (entry.missing > 0) TextButton(onClick = openMissing) { AppText("View missing documents") }

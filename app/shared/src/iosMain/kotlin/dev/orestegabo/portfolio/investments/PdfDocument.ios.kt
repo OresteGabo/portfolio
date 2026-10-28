@@ -41,7 +41,7 @@ internal class IosPdfDocument(bytes: ByteArray) : PdfDocumentPages {
             val (pageWidth, pageHeight) = bounds.useContents {
                 if (rotated) size.height to size.width else size.width to size.height
             }
-            val (w, h) = pdfPageRenderSize(width, pageWidth, pageHeight)
+            val (w, h) = pdfPageRenderSize(width, pageWidth * region.width, pageHeight * region.height)
             val format = UIGraphicsImageRendererFormat().apply { scale = 1.0; opaque = true }
             val renderer = UIGraphicsImageRenderer(size = CGSizeMake(w.toDouble(), h.toDouble()), format = format)
             val thumbnail = renderer.imageWithActions { output ->

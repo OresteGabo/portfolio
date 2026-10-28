@@ -145,6 +145,70 @@ class ImportDuplicatesTest {
             assertEquals(ImportState.REVIEW, m.importHistory.last().state)
         } finally { f.store.clear(); Dispatchers.resetMain() }
     }
+    @Test fun anAlreadyConfirmedTargetShowsTheSavedResultWithoutAnotherReviewOrWrite() = runTest {
+        val f = Fixture().apply {
+            files["cloud-document"] = bytes
+            purchase = JsonRecord(fields.toString()).put("id", "pending").put("confirmationDocumentId", "cloud-document")
+        }
+        val m = model(f)
+        try {
+            advanceUntilIdle()
+            var reviewed = false
+            m.importPurchasePdf(f.actions(), f.engine, targetPurchaseId = "pending") { reviewed = true }; advanceUntilIdle()
+            assertFalse(reviewed); assertNull(m.currentImportReview())
+            assertEquals(ImportState.EXISTS, m.importHistory.single().state)
+            assertEquals(ImportOutcome.PURCHASE, m.importHistory.single().outcome)
+            assertEquals("pending", m.importHistory.single().purchaseId)
+            assertEquals(0, f.uploads); assertEquals(0, f.writes)
+        } finally { f.store.clear(); Dispatchers.resetMain() }
+    }
+    @Test fun aConfirmedRecordForADifferentTargetDoesNotConfirmTheRequestedPurchase() = runTest {
+        val f = Fixture().apply {
+            files["cloud-document"] = bytes
+            purchase = JsonRecord(fields.toString()).put("id", "other").put("confirmationDocumentId", "cloud-document")
+        }
+        val m = model(f)
+        try {
+            advanceUntilIdle()
+            m.importPurchasePdf(f.actions(), f.engine, targetPurchaseId = "pending") {}; advanceUntilIdle()
+            assertEquals(ImportState.REVIEW, m.importHistory.single().state)
+            assertEquals("cloud-document", m.importHistory.single().documentId)
+            assertEquals(0, f.uploads); assertEquals(0, f.writes)
+        } finally { f.store.clear(); Dispatchers.resetMain() }
+    }
+    @Test fun aLinkedFileDoesNotMakePendingCancelledOrUnknownStatusACompletedPurchase() {
+        val document = JsonRecord().put("id", "doc")
+        val review = JsonRecord().put("kind", "bond")
+        for (status in listOf("submitted", "pending", "cancelled", "rejected", "")) {
+            val record = JsonRecord().put("id", "purchase").put("status", status).put("confirmationDocumentId", "doc")
+            assertNull(completedImportPurchase(document, review, listOf(record), null), status)
+        }
+    }
+    @Test fun aConcurrentFileLinkedToAnotherPurchaseDoesNotSkipTheSelectedPendingConfirmation() = runTest {
+        val f = Fixture(); val m = model(f)
+        try {
+            advanceUntilIdle()
+            m.importPurchasePdf(f.actions(), f.engine) {}; advanceUntilIdle()
+            f.files["concurrent"] = f.bytes
+            f.purchase = JsonRecord(f.fields.toString()).put("id", "other").put("confirmationDocumentId", "concurrent")
+            m.saveImportedPurchase(f.review, f.fields, "pending") {}; advanceUntilIdle()
+            assertEquals(0, f.uploads); assertEquals(1, f.writes)
+            assertEquals("pending", m.importHistory.single().purchaseId)
+            assertEquals(ImportState.SAVED, m.importHistory.single().state)
+        } finally { f.store.clear(); Dispatchers.resetMain() }
+    }
+    @Test fun firstAddedUsesTheOriginalServerOrSuccessfulLocalSaveTimeNeverTheIssueDate() {
+        val doc = JsonRecord().put("id", "doc").put("documentDate", "2020-01-01")
+        val saved = ImportReceipt("first", "a.pdf", "2026-10-20T08:00:00Z", ImportState.SAVED,
+            documentId = "doc", updatedAt = "2026-10-20T08:01:00Z")
+        val repeated = saved.copy(id = "repeat", state = ImportState.EXISTS, updatedAt = "2026-10-28T08:00:00Z")
+        assertNull(firstImportAddedTime(doc, listOf(repeated)))
+        assertEquals(ImportAddedTime("2026-10-20T08:01:00Z", true), firstImportAddedTime(doc, listOf(saved, repeated)))
+        doc.put("createdAt", "2026-10-19T07:00:00Z")
+        assertEquals(ImportAddedTime("2026-10-19T07:00:00Z", false), firstImportAddedTime(doc, listOf(saved, repeated)))
+        doc.put("createdAt", "invalid")
+        assertNull(firstImportAddedTime(doc, emptyList()))
+    }
     @Test fun aPendingConfirmationReusesTheExistingPdfWithoutPretendingItIsAlreadyConfirmed() = runTest {
         val f = Fixture().apply { files["cloud-document"] = bytes }; val m = model(f)
         try {

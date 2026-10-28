@@ -32,6 +32,8 @@ class PdfDocumentRenderingTest {
             val detail = document.renderPage(0, 800, PdfPageRegion(.375, .375, .25, .25))
             assertEquals(800, detail.width); assertEquals(1120, detail.height)
             val pixels = IntArray(detail.width * detail.height).also { detail.readPixels(it) }
+            val viewport = document.renderPage(0, 800, PdfPageRegion(.375, .45, .25, .1))
+            assertEquals(800, viewport.width); assertEquals(448, viewport.height)
             val row = detail.height / 2
             val transitions = (1 until detail.width).count {
                 ((pixels[row * detail.width + it] and 0xffffff) < 0x808080) !=

@@ -2,6 +2,13 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "This PDF and its purchase details are already saved. No further action is needed." to "Ce PDF et les détails de l’achat sont déjà enregistrés. Aucune autre action n’est nécessaire.",
+    "This PDF and its bond terms are already saved. No further action is needed." to "Ce PDF et les conditions de l’obligation sont déjà enregistrés. Aucune autre action n’est nécessaire.",
+    "This PDF is already saved, and its statement records have been checked. No further action is needed." to "Ce PDF est déjà enregistré et les opérations du relevé ont été vérifiées. Aucune autre action n’est nécessaire.",
+    "This PDF is already in Library. No additional copy is needed." to "Ce PDF est déjà dans la Bibliothèque. Aucune copie supplémentaire n’est nécessaire.",
+    "First saved on this device" to "Premier enregistrement sur cet appareil",
+    "First added" to "Premier ajout",
+    "Add document" to "Ajouter un document",
     "Saved to Library" to "Enregistré dans la Bibliothèque",
     "Issuance report" to "Rapport d’émission",
     "Account statement" to "Relevé de compte",

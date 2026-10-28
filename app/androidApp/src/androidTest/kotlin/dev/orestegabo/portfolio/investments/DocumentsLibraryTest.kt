@@ -32,6 +32,7 @@ class DocumentsLibraryTest {
         val origin = "http://127.0.0.1:${server.localPort}"
         val downloads = LinkedBlockingQueue<String>()
         val sourcePdf = readerFixturePdf()
+        val shortPdf = readerFixturePdf(pageHeight = 200, pageCount = 1)
         var screenshotWindow: android.view.Window? = null
         val fixtures = """{"documents":[
             {"id":"october-bond","label":"October Treasury Bond","category":"Bond confirmation","documentDate":"2026-10-14","instrumentName":"15-year Treasury bond","issuer":"National Bank of Rwanda","originalFileName":"bnr-confirmation.pdf","downloadUrl":"/api/bonds/documents/october-bond","details":{"facts":[{"label":"Principal","value":"RWF 1,200,000"}]}},
@@ -46,7 +47,7 @@ class DocumentsLibraryTest {
                     val reader = client.getInputStream().bufferedReader()
                     val path = reader.readLine().orEmpty().split(' ').getOrNull(1).orEmpty()
                     while (!reader.readLine().isNullOrEmpty()) { }
-                    val body = if (path.contains("/documents/")) sourcePdf else when {
+                    val body = if (path.endsWith("/documents/share-contract")) shortPdf else if (path.contains("/documents/")) sourcePdf else when {
                         path.endsWith("/auth/session") -> """{"authenticated":true,"user":{"id":"document-library-test","email":"demo@example.test","isOwner":true}}"""
                         path.endsWith("/documents") -> fixtures
                         path.endsWith("/purchases") -> """{"purchases":[]}"""
@@ -117,7 +118,7 @@ class DocumentsLibraryTest {
                         NativePrivacyCover(false)
                     }
                 }
-                await("Documents"); click("Documents"); await("Library"); click("Library")
+                await("Documents"); click("Documents"); await("Search documents"); await("Add document")
                 await("October Treasury Bond"); await("October 2026"); await("Logo: BNR")
                 assertNull(find("Upload PDF")); assertNull(find("Import")); await("Chat")
                 val readyDeadline = System.currentTimeMillis() + 10_000
@@ -150,7 +151,20 @@ class DocumentsLibraryTest {
                 assertTrue("Details remain available independently of PDF opening", nodes().any { it.stateDescription?.toString() == "Expanded" })
                 click("Share contract")
                 await("Bank of Kigali share purchase"); await("Logo: Bank of Kigali")
-                click("Bank of Kigali share purchase"); await("PDF page 1")
+                click("Bank of Kigali share purchase"); await("PDF page 1"); await("1 / 1")
+                val beforeZoom = Rect().also(await("PDF page 1")::getBoundsInScreen)
+                click("Zoom in")
+                val afterZoom = Rect().also(await("PDF page 1")::getBoundsInScreen)
+                assertTrue("A short page must grow vertically when zoomed: ${beforeZoom.height()} -> ${afterZoom.height()}",
+                    afterZoom.height() > beforeZoom.height() * 1.4f)
+                repeat(5) { click("Zoom in") }
+                val expandedPage = Rect().also(await("PDF page 1")::getBoundsInScreen)
+                val controls = Rect().also(await("Fit to width")::getBoundsInScreen)
+                assertTrue("Zoomed page must reach the bottom of the available reader", expandedPage.bottom >= controls.top - 100)
+                screenshot("document-pdf-expanded-zoom.png")
+                click("Fit to width")
+                val resetPage = Rect().also(await("PDF page 1")::getBoundsInScreen)
+                assertTrue("Fit to width restores the natural page height", kotlin.math.abs(resetPage.height() - beforeZoom.height()) <= 2)
                 click("Back"); await("Bank of Kigali share purchase")
                 assertNull("Returning from PDF preserves the category filter", find("October Treasury Bond"))
                 assertNull("Category filter excludes bonds", find("October Treasury Bond"))

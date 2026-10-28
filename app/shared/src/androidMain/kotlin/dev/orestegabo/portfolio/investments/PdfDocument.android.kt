@@ -49,7 +49,7 @@ class AndroidPdfDocument(bytes: ByteArray, cache: File) : PdfDocumentPages {
         synchronized(lock) {
             check(!closed)
             renderer.openPage(index).use { page ->
-                val (w, h) = pdfPageRenderSize(width, page.width.toDouble(), page.height.toDouble())
+                val (w, h) = pdfPageRenderSize(width, page.width * region.width, page.height * region.height)
                 val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
                 try {
                     bitmap.eraseColor(Color.WHITE)

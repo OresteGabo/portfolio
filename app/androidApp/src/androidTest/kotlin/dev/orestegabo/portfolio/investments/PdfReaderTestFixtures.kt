@@ -5,12 +5,12 @@ import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import java.io.ByteArrayOutputStream
 
-/** Real two-page PDF, deliberately unrelated to any user document or account. */
-internal fun readerFixturePdf(): ByteArray {
+/** Real vector PDF; defaults to two portrait pages and also supports a short landscape fixture. */
+internal fun readerFixturePdf(pageHeight: Int = 560, pageCount: Int = 2): ByteArray {
     val document = PdfDocument()
     try {
-        for (number in 1..2) {
-            val page = document.startPage(PdfDocument.PageInfo.Builder(400, 560, number).create())
+        for (number in 1..pageCount) {
+            val page = document.startPage(PdfDocument.PageInfo.Builder(400, pageHeight, number).create())
             page.canvas.drawColor(Color.WHITE)
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(50, 90, 65); textSize = 22f }
             page.canvas.drawText("Struct Capital PDF fixture", 28f, 56f, paint)

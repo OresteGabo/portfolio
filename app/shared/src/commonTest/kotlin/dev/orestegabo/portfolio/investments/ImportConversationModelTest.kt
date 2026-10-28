@@ -82,6 +82,32 @@ class ImportConversationModelTest {
             }))
         }).also { f.store.put("model", it) }
     }
+    @Test fun selectionSignalsStartOnlyAfterPickingAndFireAgainForTheSameReceiptRetry() = runTest {
+        val f = Fixture().apply { failParse = true }
+        val m = model(f)
+        try {
+            advanceUntilIdle()
+            val cancelledPicker = object : NativeActions {
+                override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? = null
+                override suspend fun savePdf(fileName: String, bytes: ByteArray) = false
+                override fun openUrl(url: String) {}
+                override fun shareText(text: String) {}
+            }
+            m.importPurchasePdf(cancelledPicker, f.engine) {}; advanceUntilIdle()
+            assertEquals(0, m.importSelectionRevision); assertTrue(m.importHistory.isEmpty())
+            m.importPurchasePdf(f.actions(), f.engine, targetPurchaseId = "pending-id") {}; runCurrent()
+            assertEquals(1, m.importSelectionRevision)
+            assertEquals(ImportState.READING, m.activeImportReceipt()?.state)
+            assertEquals("pending-id", m.activeImportReceipt()?.targetId)
+            advanceUntilIdle()
+            val receiptId = m.activeImportId!!
+            f.failParse = false
+            m.retryImport(receiptId, f.actions(), f.engine) {}; runCurrent()
+            assertEquals(2, m.importSelectionRevision); assertEquals(receiptId, m.activeImportId)
+            advanceUntilIdle()
+            assertEquals(ImportState.REVIEW, m.activeImportReceipt()?.state)
+        } finally { f.store.clear(); Dispatchers.resetMain() }
+    }
     @Test fun aLostSaveResponseRetriesTheSameDocumentWithoutCreatingAnotherPurchase() = runTest {
         val f = Fixture().apply { lostResponse = true }
         val m = model(f)
@@ -98,7 +124,8 @@ class ImportConversationModelTest {
             m.saveImportedPurchase(f.review, input, null) {}; advanceUntilIdle()
             assertEquals(1, f.uploads); assertEquals(1, f.writes)
             val receipt = m.importHistory.single()
-            assertEquals(ImportState.SAVED, receipt.state)
+            assertEquals(ImportState.EXISTS, receipt.state)
+            assertEquals(ImportOutcome.PURCHASE, receipt.outcome)
             assertEquals("purchase-id", receipt.purchaseId)
             assertEquals(2, receipt.attempts)
             assertEquals(ImportState.FAILED, receipt.events.single().state)

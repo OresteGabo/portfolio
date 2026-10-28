@@ -97,7 +97,7 @@ fun DocumentsScreen(model: PortfolioModel, initialDocumentId: String? = null) {
             }
         }
     }
-    LazyColumn(Modifier.fillMaxSize(), state = libraryScroll, contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), state = libraryScroll, contentPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 100.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         if (libraryDocuments.isNotEmpty()) {
             item { DocumentLibraryHeader(libraryDocuments.size, model.busy, model.busy && saving == null && model.annualReportYear == null,
                 { historyRequested = false; model.refresh() }) }

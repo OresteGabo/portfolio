@@ -35,6 +35,15 @@ class PdfDocumentRenderingTest {
                 "Vector stripe edges should remain sharp")
         } finally { document.close() }
     }
+    @Test fun rectangularViewportKeepsItsAspectRatio() = runBlocking {
+        val document = IosPdfDocument(pdfRenderFixture())
+        try {
+            val detail = document.renderPage(0, 1200, PdfPageRegion(.375, .45, .25, .1))
+            assertEquals(1200, detail.width); assertEquals(720, detail.height)
+            val pixels = IntArray(detail.width * detail.height).also { detail.readPixels(it) }
+            assertTrue(pixels.count { (it and 0xffffff) < 0x808080 } in (pixels.size * .45).toInt()..(pixels.size * .55).toInt())
+        } finally { document.close() }
+    }
     @Test fun cropOriginAndRotationUseTheVisiblePageDimensions() = runBlocking {
         for (rotation in listOf(0, 90, 180, 270)) {
             val document = IosPdfDocument(pdfRenderFixture(rotation, cropped = true))
