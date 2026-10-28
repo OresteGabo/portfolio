@@ -137,7 +137,7 @@ private class IosSecureSignIn : SecureSignIn {
     override fun lock() { context?.invalidate(); context = null; contextAuthorized = false }
 }
 
-@Composable actual fun NativePrivacyCover(protectCaptures: Boolean) {
+@Composable actual fun NativePrivacyCover(protectCaptures: Boolean, protectDocument: Boolean) {
     DisposableEffect(Unit) {
         val center = NSNotificationCenter.defaultCenter
         var cover: UIView? = null

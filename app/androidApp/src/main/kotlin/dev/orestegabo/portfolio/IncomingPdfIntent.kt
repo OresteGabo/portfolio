@@ -41,7 +41,11 @@ internal fun FragmentActivity.receivePdf(intent: Intent) {
                     output.toByteArray()
                 } ?: error("Could not open the selected PDF.")
             }
-            NativePdfInbox.offer(bytes, delivery)
+            val name = withContext(Dispatchers.IO) { runCatching { contentResolver.query(uri,
+                arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
+                    if (it.moveToFirst()) it.getString(0).take(180) else null
+                } }.getOrNull() }
+            NativePdfInbox.offer(bytes, delivery, name ?: "Shared PDF")
         } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (failure: Exception) {
             NativePdfInbox.reject(when (failure.message) {

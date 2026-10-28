@@ -31,6 +31,8 @@ class DocumentsLibraryTest {
         val server = ServerSocket(0)
         val origin = "http://127.0.0.1:${server.localPort}"
         val downloads = LinkedBlockingQueue<String>()
+        val sourcePdf = readerFixturePdf()
+        var screenshotWindow: android.view.Window? = null
         val fixtures = """{"documents":[
             {"id":"october-bond","label":"October Treasury Bond","category":"Bond confirmation","documentDate":"2026-10-14","instrumentName":"15-year Treasury bond","issuer":"National Bank of Rwanda","originalFileName":"bnr-confirmation.pdf","downloadUrl":"/api/bonds/documents/october-bond","details":{"facts":[{"label":"Principal","value":"RWF 1,200,000"}]}},
             {"id":"share-contract","label":"Bank of Kigali share purchase","category":"Share contract","documentDate":"2026-09-24","issuer":"BK Capital","originalFileName":"share-contract.pdf","downloadUrl":"/api/bonds/documents/share-contract"},
@@ -44,10 +46,9 @@ class DocumentsLibraryTest {
                     val reader = client.getInputStream().bufferedReader()
                     val path = reader.readLine().orEmpty().split(' ').getOrNull(1).orEmpty()
                     while (!reader.readLine().isNullOrEmpty()) { }
-                    val body = when {
+                    val body = if (path.contains("/documents/")) sourcePdf else when {
                         path.endsWith("/auth/session") -> """{"authenticated":true,"user":{"id":"document-library-test","email":"demo@example.test","isOwner":true}}"""
                         path.endsWith("/documents") -> fixtures
-                        path.contains("/documents/") -> "%PDF-1.4\n%%EOF"
                         path.endsWith("/purchases") -> """{"purchases":[]}"""
                         path.endsWith("/equities") -> """{"holdings":[]}"""
                         else -> "{}"
@@ -67,7 +68,7 @@ class DocumentsLibraryTest {
             override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? = null
             override suspend fun savePdf(fileName: String, bytes: ByteArray): Boolean = error("Use native PDF sharing")
             override suspend fun sharePdf(fileName: String, bytes: ByteArray): Boolean {
-                assertTrue(bytes.decodeToString().startsWith("%PDF-")); downloads.add(fileName); return true
+                assertArrayEquals(sourcePdf, bytes); downloads.add(fileName); return true
             }
             override fun openUrl(url: String) = Unit
             override fun shareText(text: String) = Unit
@@ -99,16 +100,14 @@ class DocumentsLibraryTest {
             instrumentation.waitForIdleSync(); Thread.sleep(300)
         }
         fun screenshot(name: String) {
-            instrumentation.uiAutomation.takeScreenshot()?.let { bitmap ->
-                File(instrumentation.targetContext.cacheDir, name).outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-                bitmap.recycle()
-            }
+            screenshotWindow?.let { readerFixtureScreenshot(it, File(instrumentation.targetContext.filesDir, name)) }
         }
         try {
             prefs.edit().putString("origin", origin).commit()
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                 lateinit var model: PortfolioModel
                 scenario.onActivity { activity ->
+                    screenshotWindow = activity.window
                     activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     model = PortfolioModel(settings, assets = { "[]".encodeToByteArray() })
                     activity.viewModelStore.put("document-library-test", model)
@@ -118,8 +117,9 @@ class DocumentsLibraryTest {
                         NativePrivacyCover(false)
                     }
                 }
-                await("Documents"); click("Documents")
+                await("Documents"); click("Documents"); await("Library"); click("Library")
                 await("October Treasury Bond"); await("October 2026"); await("Logo: BNR")
+                assertNull(find("Upload PDF")); assertNull(find("Import")); await("Chat")
                 val readyDeadline = System.currentTimeMillis() + 10_000
                 while (model.busy && System.currentTimeMillis() < readyDeadline) Thread.sleep(50)
                 assertFalse("Wait for document history before sharing", model.busy)
@@ -130,9 +130,29 @@ class DocumentsLibraryTest {
                 assertFalse("Sharing must not expand the card", nodes().any { it.stateDescription?.toString() == "Expanded" })
                 scenario.onActivity { model.message = null }
                 click("October Treasury Bond")
-                assertTrue("Tapping the card expands its details", nodes().any { it.stateDescription?.toString() == "Expanded" })
+                await("PDF page 1"); await("1 / 2")
+                fun assertPageFillsReaderWidth() {
+                    val page = Rect().also(await("PDF page 1")::getBoundsInScreen)
+                    var readerWidth = 0
+                    scenario.onActivity { readerWidth = it.window.decorView.width }
+                    assertTrue("PDF must fill the reader width: ${page.width()} / $readerWidth", kotlin.math.abs(page.width() - readerWidth) <= 2)
+                }
+                assertPageFillsReaderWidth()
+                screenshot("document-pdf-page-one.png")
+                click("Zoom in"); click("Fit to width"); assertPageFillsReaderWidth()
+                click("Next page"); await("2 / 2"); await("PDF page 2")
+                screenshot("document-pdf-page-two.png")
+                click("Previous page"); await("1 / 2")
+                click("Share PDF")
+                assertEquals("bnr-confirmation.pdf", downloads.poll(5, TimeUnit.SECONDS))
+                click("Back"); await("Search documents")
+                click("Details")
+                assertTrue("Details remain available independently of PDF opening", nodes().any { it.stateDescription?.toString() == "Expanded" })
                 click("Share contract")
                 await("Bank of Kigali share purchase"); await("Logo: Bank of Kigali")
+                click("Bank of Kigali share purchase"); await("PDF page 1")
+                click("Back"); await("Bank of Kigali share purchase")
+                assertNull("Returning from PDF preserves the category filter", find("October Treasury Bond"))
                 assertNull("Category filter excludes bonds", find("October Treasury Bond"))
                 screenshot("document-library-shares.png")
                 scenario.onActivity { AppLanguage.select("fr") }

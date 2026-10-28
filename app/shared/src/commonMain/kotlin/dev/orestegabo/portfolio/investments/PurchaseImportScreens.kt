@@ -54,22 +54,21 @@ fun PendingBondScreen(model: PortfolioModel, initialIssueId: String? = null, don
 @Composable
 fun PurchaseImportReview(model: PortfolioModel, review: JsonRecord, target: JsonRecord?, done: () -> Unit) {
     DisposableEffect(review) { onDispose { model.discardImportedPdf(review) } }
-    val effectiveReview = remember(review, model.documents) { purchaseReviewWithPublishedTerms(review, model.documents) }
-    val parsed = remember(effectiveReview) { runCatching { importedPurchaseInput(effectiveReview) } }
-    val body = parsed.getOrNull()
-    val bond = review.text("kind") == "bond"
+    var selection by rememberSaveable(review, target?.text("id")) { mutableStateOf(target?.text("id")) }
+    val state = PurchaseReviewState(review, model.documents, model.purchases, model.historyComplete, target, selection)
+    val effectiveReview = state.effectiveReview
+    val parsed = state.parsed
+    val body = state.body
+    val bond = state.bond
+    val matches = state.matches
+    val selectedId = state.selectedId
+    val selected = state.selected
+    val confirmedBody = state.confirmed
+    val wrongTarget = state.wrongTarget
+    val ready = state.ready
     LaunchedEffect(review, model.busy, model.historyComplete) {
         if (bond && !model.historyComplete && !model.busy && model.error == null) model.loadInvestmentHistory()
     }
-    val matches = if (body == null) emptyList() else model.purchases.filter { pendingMatchesConfirmation(it, body) }
-    var selection by rememberSaveable(review, target?.text("id")) { mutableStateOf(target?.text("id")) }
-    // Resolve the single match after full history arrives, without a transient "new" save.
-    val selectedId = selection ?: matches.singleOrNull()?.text("id")
-    val selected = model.purchases.find { it.text("id") == selectedId }
-    val confirmedBody = if (body == null) null else runCatching { completePendingPurchase(effectiveReview, selected) }.getOrNull()
-    val wrongTarget = target != null && (body == null || !bond || !pendingMatchesConfirmation(target, body))
-    val ready = body != null && !wrongTarget && (!bond || model.historyComplete) &&
-        (selected != null && pendingMatchesConfirmation(selected, body) || target == null && matches.isEmpty()) && confirmedBody != null
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { AppText("Review purchase", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
         if (effectiveReview.has("termsSourceDocumentId")) item { AppText("Coupon details from the shared BNR issuance report", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }

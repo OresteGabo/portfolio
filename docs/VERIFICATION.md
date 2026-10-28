@@ -473,13 +473,39 @@ Validation passed: 104 Android shared tests and 112 iOS shared tests (216 total)
 - The device-unlock screen uses a native, decorative hexagon grid whose opacity fades upward, with the existing full Struct mark inside a semicircular frame. Theme colors adapt the watermark and frame for light/dark mode. Content scrolls on shorter screens and at larger text sizes; decorative drawing has no accessibility announcements or touch handlers.
 - Both themes were visually checked on an Android emulator at 360 × 640dp using a temporary synthetic saved-sign-in preview. Unlock, password fallback and legal controls remained visible. Android assembly and iOS Simulator shared-source compilation pass. The preview fixture was removed; biometric authorization and the email/password form retain their existing flow. The unused native engine host is omitted while locked so it cannot paint a white strip behind this artwork.
 
-## Independent notification switches — 28 October 2026
+## Document import conversation — 27 October 2026
 
-Notification preferences no longer use one saving flag to disable every switch or insert a global progress bar that shifts the dialog. Each touched switch has its own pending value, disabled state and fixed-space progress indicator. Unrelated switches keep their existing checked/enabled state. Pending display values revert only for the failed preference.
+Documents now separates the account’s Import conversation from Library. See [flow and persistence details](DOCUMENT_IMPORT_CONVERSATION.md).
 
-Preference writes are serialized with preference reads so rapid category updates build the API-required complete category map after preceding acknowledgements. Auto-confirm requests still contain only autoCoupon. Save responses apply only the acknowledged preference, preventing partial or stale responses (including monthly-target saves) from replacing other switch values. Account-generation guards discard late results and queued writes after logout. The existing local Spring source was inspected read-only and confirms that autoCoupon updates preserve categories; no backend change or deployment was made.
+- 167 shared Android host tests and 176 shared/native iOS simulator tests pass. New coverage exercises journal recovery/account isolation, exact SHA-256 values, retrying the same PDF, refusing a different resumed file, avoiding duplicate uploads/purchases after failed or lost save responses, and statement reconciliation.
+- Android debug app and instrumentation APK assemble; shared iOS simulator sources compile; the full unsigned Xcode simulator application builds.
+- The synthetic Android conversation journey passes on the normal phone viewport and at 360 × 640 with 115% font scale: parse failure/retry without reopening the picker, matching a pending bond, preserving review across Library/Import tabs, failed save/retry with only one upload, opening the actual document and purchase, and reopening account history in dark mode. The compact run also verifies a shared PDF enters the same conversation without opening a picker, then displays its cancelled state in French. Library’s existing category/expansion test also passes with the new tabs.
+- UI checks use a localhost fixture, fabricated records and synthetic PDF bytes with an injected parser. The shared native parser tests run separately on iOS. No real account or production document was uploaded; no backend deployment was performed.
+- Import receipts are device-local metadata, not a server-synced chat. Incomplete work after process death requires the original PDF again. Saved documents continue to use the existing backend.
 
-All 202 shared Android host tests pass, including nine new regressions for both directions of auto-confirm, queued category/auto changes, targeted rollback, partial replies, older reads, duplicate taps, logout and monthly-target response isolation. Android assembly and shared iOS simulator compilation pass. No production account or automatic coupon receipt was changed by these tests.
+### Conversation layout follow-up
+
+Import now hides the bottom navigation, merges account identity into the top bar and provides Back to Library without discarding the review. The neutral PDF-import notice sits outside message history and its × dismissal is stored on-device. Message borders/padding and the attachment bar are lighter and more compact. The iOS preferences adapter also stores the import journal alongside the new dismissal preference.
+
+Android app/instrumentation assembly and shared iOS simulator compilation pass. The import journey passes at 360 × 640 with 115% text, including hidden navigation, Back, notice removal and dismissal after relaunch. Both the import journey and Library regression pass at the normal viewport; light/dark/French previews were inspected. Fixtures explicitly include the normal foreground privacy lifecycle to allow synthetic screenshots. The first fresh-emulator run was blocked by a System UI startup ANR; reruns after dismissing that OS dialog pass.
+
+## Existing-PDF detection — 28 October 2026
+
+- 176 Android host tests pass, including nine new duplicate-import tests: repeat selection, renamed older/cloud documents, contracts/statements/issuance reports, different bytes with matching metadata, deleted source files, explicit pending-confirmation reuse, a document appearing during review, account isolation and failure before writes when the Library check is unavailable.
+- Android app/instrumentation assembly and shared iOS simulator compilation pass. No backend code or deployment is changed; detection uses the account-authorized document list and existing PDF download endpoint.
+- The synthetic chat UI journey passes at 360 × 640 with 115% text. Repeating the saved PDF displays Already in Library and Open document with no save-confirm button; upload and purchase-write counts stay unchanged. A subsequently shared PDF with different bytes still reaches review. The existing retry, Library/purchase navigation and dark-mode relaunch checks also pass. No production PDF or account is used.
+- The disposable emulator initially lacked installation space; clearing its caches allowed installation and the test to pass. Only this task’s emulator was modified.
+- Client preflight checks cover the normal import/save flow, including a second check before upload. Global atomic protection against simultaneous writes from multiple clients requires a backend constraint, as documented in the import flow notes.
+
+## In-app PDF reader — 28 October 2026
+
+Library no longer has an upload action. Its Chat shortcut leads to Import; document-card taps and receipt Open document actions open the original PDF in a full-screen reader. Metadata remains behind Details. Generated annual reports use the same reader and do not create database documents. See [PDF viewing](PDF_VIEWING.md).
+
+- 183 Android host tests and 194 shared/native iPhone simulator tests pass. New shared coverage verifies authenticated original bytes, safe URL bounds, expired-session cleanup, cancellation on Back, retry after failure, generated annual PDFs without writes, and bounded page-image allocations. A retry identity bug was caught and fixed with request tokens.
+- Two Android native renderer tests pass: a real two-page PDF produces nonwhite page pixels at the expected dimensions, and normal/malformed-file paths clean up their private temporary files. iPhone native tests render a generated report using PDFKit/CoreGraphics and reject damaged files.
+- Final Library and chat UI journeys pass: no Library upload/import control, file taps render PDF pages, previous/next/zoom/reset/share work, sharing preserves exact original bytes, separate metadata expansion still works, filters survive preview return, and receipt links return to Library before switching back to Chat. A stale import-navigation event that reopened Chat on Back was removed. Screenshots use synthetic PDF contents copied from the fixture Activity window.
+- Android’s capture regression passes with the new original-document mode: the foreground PDF window is secure when capture protection is enabled, follows the allowed-capture preference, and returns to normal foreground/background behavior when closed.
+- Android app/instrumentation assembly and iOS compilation pass; the complete unsigned Xcode simulator app builds. Real accounts, production downloads/uploads and physical-device PDFs were not used. Fresh disposable-emulator launcher/System UI startup warnings were dismissed; its low-storage installation threshold was adjusted only for the disposable test run. Test devices are removed afterwards.
 
 ## Purchase-aware calendar guidance — 28 October 2026
 
@@ -488,3 +514,23 @@ Calendar issuance tiles now show personal purchase status and replace generic bi
 The Calendar requests complete purchase history when the dashboard supplied only a compact overview. Unknown/incomplete history does not imply zero purchases or prompt a new bid, and failed loading exposes Retry. Matching requires a real settlement date and compatible security codes, falling back to a real matching maturity only when a code is unavailable. Known currency/instrument conflicts and different reopening dates are rejected. Public guidance uses today in Rwanda rather than the selected milestone date, so past book-open events no longer suggest submitting a bid after closing.
 
 All 193 Android host tests pass, including ten new calendar status/matching/guidance regressions. Android assembly and shared iOS simulator compilation pass. These are read-only presentation/history-loading changes; no financial record or backend deployment is changed.
+
+### PDF fit-to-width follow-up — 28 October 2026
+
+PDF page display dimensions now derive explicitly from reader width and the page aspect ratio; page height extends into the vertical list instead of fitting the screen height or bitmap intrinsic dimensions. Horizontal list gutters are removed, and the reset control is labelled Fit to width. Both Android assembly and iOS simulator compilation pass. The real-PDF Library UI regression passes and asserts that the page occupies the Activity reader width within two pixels, initially and after zoom/reset; previous/next scrolling, sharing and Library return still pass.
+
+## Independent notification switches — 28 October 2026
+
+Notification preferences no longer use one saving flag to disable every switch or insert a global progress bar that shifts the dialog. Each touched switch has its own pending value, disabled state and fixed-space progress indicator. Unrelated switches keep their existing checked/enabled state. Pending display values revert only for the failed preference.
+
+Preference writes are serialized with preference reads so rapid category updates build the API-required complete category map after preceding acknowledgements. Auto-confirm requests still contain only autoCoupon. Save responses apply only the acknowledged preference, preventing partial or stale responses (including monthly-target saves) from replacing other switch values. Account-generation guards discard late results and queued writes after logout. The existing local Spring source was inspected read-only and confirms that autoCoupon updates preserve categories; no backend change or deployment was made.
+
+All 202 shared Android host tests pass, including nine new regressions for both directions of auto-confirm, queued category/auto changes, targeted rollback, partial replies, older reads, duplicate taps, logout and monthly-target response isolation. Android assembly and shared iOS simulator compilation pass. No production account or automatic coupon receipt was changed by these tests.
+
+## PDF point scaling and sharp zoom — 28 October 2026
+
+Reproduced the reported iPhone shrink using the matching October 21 bond results PDF. Its MediaBox and CropBox are both 612 × 792 points, so document whitespace was not the cause. At a 1200-pixel output width, the previous CoreGraphics drawing transform retained unit scale and centered the point-sized page: visible content spanned x=360–866. Explicit conversion from page points to output pixels produces the correct x=130–1123 extent. The final full-page and 4× region renderings were visually inspected against a Poppler rendering of the original. Temporary diagnostics and local document paths were removed from the source; no user PDF was added to the repository.
+
+Both platforms now redraw the visible region from the original PDF after zoom/pan instead of permanently magnifying the initial page bitmap. Gestures keep an immediate base-image preview; settled detail replaces it only when the region matches. Canvas drawing explicitly fills the page frame. Zoom supports up to 6× while retaining the existing per-render allocation caps. iPhone also respects CropBox and right-angle rotation.
+
+Final checks: 217 iOS simulator tests and 203 Android host tests pass; Android app/test APK assembly passes. New iOS regressions check actual content extents when upscaling, nonzero crop origins, 0/90/180/270-degree rotations, and sharp vector stripes at 4×. Android native rendering/zoom tests and the full Library UI regression pass (4 instrumentation tests total), including reader width, zoom/reset, pagination, original-byte sharing and back navigation. The Android reader was visually inspected in an isolated emulator. Existing capture protection remains around the Compose page content. Disposable test devices were removed; no physical device was used.

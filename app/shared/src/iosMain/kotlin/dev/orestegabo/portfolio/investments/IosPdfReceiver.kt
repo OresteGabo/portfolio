@@ -12,7 +12,7 @@ object IosPdfReceiver {
         val file = NSURL.URLWithString(url)
         if (file == null || !file.fileURL) { NativePdfInbox.reject("Could not open the selected PDF."); return }
         scope.launch {
-            try { NativePdfInbox.offer(readIosSharedPdf(file), NSUUID().UUIDString) }
+            try { NativePdfInbox.offer(readIosSharedPdf(file), NSUUID().UUIDString, file.lastPathComponent ?: "Shared PDF") }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) { NativePdfInbox.reject(userErrorMessage(failure, "Could not open the selected PDF.")) }
         }

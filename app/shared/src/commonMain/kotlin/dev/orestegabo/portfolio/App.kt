@@ -28,7 +28,7 @@ fun App() {
     val vault = rememberSecureSignIn()
     val model = viewModel { PortfolioModel(settings, vault = vault, initialOrigin = developmentApiOrigin()) }
     val haptics = LocalHapticFeedback.current
-    NativePrivacyCover(protectCaptures = model.captureProtectionEnabled)
+    NativePrivacyCover(protectCaptures = model.captureProtectionEnabled, protectDocument = model.documentPreview != null)
     var privacyCover by remember { mutableStateOf(false) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { privacyCover = false; model.foreground() }
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { privacyCover = true }

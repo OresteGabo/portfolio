@@ -22,6 +22,7 @@ suspend fun readPurchasePdf(
     bondOnly: Boolean = false,
     expectedStatement: JsonRecord? = null,
     selectedPdf: (ByteArray) -> Unit = {},
+    openedPdf: suspend (ByteArray) -> Unit = {},
     progress: (PdfImportProgress?) -> Unit = {},
 ): JsonRecord? {
     var selectedAt: TimeMark? = null
@@ -34,6 +35,7 @@ suspend fun readPurchasePdf(
         // Give the UI a frame before parsing can occupy the main thread.
         delay(remaining(PDF_PROGRESS_RENDER_MILLIS))
         require(bytes.size in 1..MAX_PDF_BYTES) { "Choose a PDF of up to 10 MB." }
+        openedPdf(bytes)
         progress(PdfImportProgress(PdfImportStage.EXTRACTING))
         engine.onProgress = { progress(PdfImportProgress(PdfImportStage.EXTRACTING, it)) }
         val review = engine.run("pdf", pdf = bytes)

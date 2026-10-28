@@ -14,9 +14,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun PdfImportButton(model: PortfolioModel, engine: InvestmentEngine, imported: (JsonRecord) -> Unit, bondOnly: Boolean = false, expectedStatement: JsonRecord? = null) {
+fun PdfImportButton(model: PortfolioModel, engine: InvestmentEngine, imported: (JsonRecord) -> Unit, bondOnly: Boolean = false, expectedStatement: JsonRecord? = null, targetPurchaseId: String? = null) {
     val actions = LocalNativeActions.current
-    fun choosePdf() = model.importPurchasePdf(actions, engine, bondOnly, expectedStatement, imported)
+    fun choosePdf() = model.importPurchasePdf(actions, engine, bondOnly, expectedStatement, targetPurchaseId = targetPurchaseId, completed = imported)
     Panel {
         AppText(if (bondOnly) "Confirm purchase" else "Import investment PDF", fontWeight = FontWeight.Bold)
         if (bondOnly) AppText("BNR confirmation or issuance results PDF", style = MaterialTheme.typography.bodySmall)

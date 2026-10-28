@@ -26,7 +26,7 @@ class DocumentUploadTest {
         val model = PortfolioModel(object : ServerSettings {
             override fun readOrigin() = "https://synthetic.example.test"
             override fun writeOrigin(origin: String) {}
-        }, assets = { "[]".encodeToByteArray() }, apiFactory = { origin ->
+        }, importWorkDispatcher = dispatcher, assets = { "[]".encodeToByteArray() }, apiFactory = { origin ->
             PortfolioApi(origin, MockEngine(MockEngineConfig().apply {
                 this.dispatcher = dispatcher
                 addHandler { request -> when (request.url.encodedPath) {

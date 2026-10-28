@@ -34,17 +34,23 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun DocumentsScreen(model: PortfolioModel, upload: () -> Unit = {}) {
+fun DocumentsScreen(model: PortfolioModel, initialDocumentId: String? = null) {
     var search by rememberSaveable { mutableStateOf("") }
     var category by rememberSaveable { mutableStateOf("all") }
     var expanded by rememberSaveable { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf<String?>(null) }
     var annualToExport by rememberSaveable { mutableStateOf<Int?>(null) }
+    var previewAnnual by rememberSaveable { mutableStateOf(false) }
     val actions = LocalNativeActions.current
     val focus = LocalFocusManager.current
     val feedback = LocalSelectionFeedback.current
     val reducedMotion = LocalReducedMotion.current
     val filters = rememberLazyListState()
+    val libraryScroll = rememberLazyListState()
+    var focusConsumed by rememberSaveable(initialDocumentId) { mutableStateOf(false) }
+    LaunchedEffect(initialDocumentId) {
+        if (initialDocumentId != null && !focusConsumed) { search = ""; category = "all"; expanded = initialDocumentId }
+    }
     val colours = MaterialTheme.colorScheme
     fun save(document: JsonRecord) = model.action {
         saving = document.text("id")
@@ -80,10 +86,18 @@ fun DocumentsScreen(model: PortfolioModel, upload: () -> Unit = {}) {
     val groups = filtered.groupBy { document ->
         calendarDate(document.text("documentDate"))?.let { "${it.year}-${it.month}" }.orEmpty()
     }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { OutlinedButton(onClick = upload, enabled = !model.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
-            AppIcon(Icons.Outlined.UploadFile, null); Spacer(Modifier.width(8.dp)); AppText("Upload PDF")
-        } }
+    LaunchedEffect(initialDocumentId, groups, category) {
+        if (initialDocumentId != null && !focusConsumed && category == "all") {
+            var index = if (libraryDocuments.isNotEmpty()) 2 + if (categories.size > 1) 1 else 0 else 0
+            for ((_, rows) in groups) {
+                index++
+                val at = rows.indexOfFirst { it.text("id") == initialDocumentId }
+                if (at >= 0) { libraryScroll.scrollToItem(index + at); focusConsumed = true; break }
+                index += rows.size
+            }
+        }
+    }
+    LazyColumn(Modifier.fillMaxSize(), state = libraryScroll, contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         if (libraryDocuments.isNotEmpty()) {
             item { DocumentLibraryHeader(libraryDocuments.size, model.busy, model.busy && saving == null && model.annualReportYear == null,
                 { historyRequested = false; model.refresh() }) }
@@ -119,6 +133,9 @@ fun DocumentsScreen(model: PortfolioModel, upload: () -> Unit = {}) {
                 }
             }
         }
+        if (initialDocumentId != null && !model.busy && libraryDocuments.none { it.text("id") == initialDocumentId }) item {
+            AppText("This document is not available in Library. Refresh to check whether it was removed.", color = colours.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+        }
         if (filtered.isEmpty()) item {
             when {
                 model.busy -> LoadingState()
@@ -137,15 +154,18 @@ fun DocumentsScreen(model: PortfolioModel, upload: () -> Unit = {}) {
             }
             items(documents, key = { "document:${it.text("id")}" }) { document ->
                 DocumentCard(document, expanded == document.text("id"), saving == document.text("id") || model.annualReportYear == document.optInt("annualReportYear", -1), !model.busy,
+                    open = { if (document.optInt("annualReportYear") > 0) { previewAnnual = true; annualToExport = document.optInt("annualReportYear") } else model.openDocumentPreview(document) },
                     toggle = { expanded = if (expanded == document.text("id")) null else document.text("id") },
-                    download = { if (document.optInt("annualReportYear") > 0) annualToExport = document.optInt("annualReportYear") else save(document) })
+                    download = { if (document.optInt("annualReportYear") > 0) { previewAnnual = false; annualToExport = document.optInt("annualReportYear") } else save(document) })
             }
         }
     }
     annualToExport?.let { year ->
         AlertDialog(onDismissRequest = { annualToExport = null }, title = { AppText("${localized("Annual report")} · $year") },
             text = { AppText("Generate a calendar-year PDF with your financial figures, even when Hide numbers is on. The current year is limited to today. Original documents are not included.") },
-            confirmButton = { TextButton(enabled = !model.busy, onClick = { annualToExport = null; model.exportAnnualReport(year, actions) }) { AppText("Generate PDF") } },
+            confirmButton = { TextButton(enabled = !model.busy, onClick = { annualToExport = null
+                if (previewAnnual) libraryDocuments.firstOrNull { it.optInt("annualReportYear") == year }?.let(model::openDocumentPreview)
+                else model.exportAnnualReport(year, actions) }) { AppText("Generate PDF") } },
             dismissButton = { TextButton(onClick = { annualToExport = null }) { AppText("Cancel") } })
     }
     if (model.annualReportYear != null) model.reportProgress?.let { progress ->
@@ -200,7 +220,7 @@ private fun DocumentStack(modifier: Modifier, ink: Color, paper: Color) {
 }
 
 @Composable
-private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolean, canDownload: Boolean, toggle: () -> Unit, download: () -> Unit) {
+private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolean, canDownload: Boolean, open: () -> Unit, toggle: () -> Unit, download: () -> Unit) {
     val colours = MaterialTheme.colorScheme
     val category = document.text("category")
     val annualYear = document.optInt("annualReportYear")
@@ -215,8 +235,7 @@ private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolea
         border = BorderStroke(1.dp, if (expanded) accent.copy(alpha = .4f) else colours.outlineVariant.copy(alpha = .5f))) {
         Column {
             Row(Modifier.fillMaxWidth().clickable(role = Role.Button,
-                onClickLabel = localized(if (expanded) "Collapse details" else "Expand details"), onClick = toggle)
-                .semantics { stateDescription = localized(if (expanded) "Expanded" else "Collapsed") }
+                enabled = canDownload, onClickLabel = localized("Open PDF"), onClick = open)
                 .padding(start = 16.dp, top = 18.dp, end = 10.dp, bottom = 18.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(width = 58.dp, height = 72.dp)) {
@@ -242,7 +261,6 @@ private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolea
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         AppText(date?.let { "${it.day} ${it.monthLabel().take(3)} ${it.year}" } ?: document.text("documentDate"),
                             Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = colours.onSurfaceVariant)
-                        AppIcon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null, Modifier.size(18.dp), tint = colours.onSurfaceVariant)
                     }
                 }
                 FilledTonalIconButton(onClick = download, enabled = canDownload, modifier = Modifier.size(48.dp),
@@ -251,6 +269,11 @@ private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolea
                     if (saving) CircularProgressIndicator(Modifier.size(20.dp).semantics { contentDescription = localized("Downloading document") }, strokeWidth = 2.dp)
                     else AppIcon(Icons.Outlined.Share, "${localized("Share PDF")}: ${privateFinancialValue(title)}", Modifier.size(22.dp))
                 }
+            }
+            TextButton(onClick = toggle, modifier = Modifier.align(Alignment.End).padding(end = 8.dp)
+                .semantics { stateDescription = localized(if (expanded) "Expanded" else "Collapsed") }) {
+                AppText(if (expanded) "Hide details" else "Details", style = MaterialTheme.typography.labelMedium)
+                AppIcon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null, Modifier.size(16.dp))
             }
             AppAnimatedVisibility(expanded) {
                 Column(Modifier.padding(start = 18.dp, end = 18.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -276,7 +299,7 @@ private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolea
 }
 
 @Composable
-private fun PdfCover(accent: Color) {
+internal fun PdfCover(accent: Color) {
     val paper = MaterialTheme.colorScheme.surface
     Box(Modifier.size(width = 46.dp, height = 60.dp).clearAndSetSemantics {}, contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {

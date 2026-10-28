@@ -29,6 +29,10 @@ internal fun presentingController(): UIViewController {
 }
 @Composable
 actual fun rememberServerSettings(): ServerSettings = remember { object : ServerSettings {
+    override fun readImportHintDismissed() = NSUserDefaults.standardUserDefaults.boolForKey("portfolio.importHintDismissed")
+    override fun writeImportHintDismissed(dismissed: Boolean) { NSUserDefaults.standardUserDefaults.setBool(dismissed, forKey = "portfolio.importHintDismissed") }
+    override fun readImportHistory(account: String) = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.importHistory:$account")
+    override fun writeImportHistory(account: String, history: String) { NSUserDefaults.standardUserDefaults.setObject(history, forKey = "portfolio.importHistory:$account") }
     override fun readOnboardingCompleted() = NSUserDefaults.standardUserDefaults.boolForKey("portfolio.onboardingCompleted")
     override fun writeOnboardingCompleted(completed: Boolean) { NSUserDefaults.standardUserDefaults.setBool(completed, forKey = "portfolio.onboardingCompleted") }
     override fun readScreenCaptureAllowed() = NSUserDefaults.standardUserDefaults.boolForKey("portfolio.screenCaptureAllowed")
@@ -50,6 +54,8 @@ actual fun rememberServerSettings(): ServerSettings = remember { object : Server
     override fun writeOrigin(origin: String) { NSUserDefaults.standardUserDefaults.setObject(origin, forKey = "portfolio.serverOrigin") }
 } }
 private class IosActions : NativeActions {
+    override var pickedPdfName: String? = null
+        private set
     private var savingPassword = false
     override val interactingWithSystem get() = picker != null || savingPassword || sharing != null
     override suspend fun offerPasswordSave(origin: String, email: String, password: String) = withContext(Dispatchers.Main) {
@@ -85,6 +91,7 @@ private class IosActions : NativeActions {
     }
     override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? = withContext(Dispatchers.Main) {
         val url = select(UIDocumentPickerViewController(forOpeningContentTypes = listOf(UTTypePDF), asCopy = true)) ?: return@withContext null
+        pickedPdfName = url.lastPathComponent?.take(180)
         onSelected()
         val access = url.startAccessingSecurityScopedResource()
         try {

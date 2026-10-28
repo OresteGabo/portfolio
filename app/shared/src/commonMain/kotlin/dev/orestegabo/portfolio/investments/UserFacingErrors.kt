@@ -6,6 +6,14 @@ internal const val CONNECTION_ERROR_MESSAGE = "Could not connect. Check your con
 /** Exact, app-authored messages only. Never trust free-form exception or server response text. */
 private val approvedErrorMessages = setOf(
     PDF_READ_ERROR,
+    "This PDF could not be displayed.",
+    "Statement PDF saved and records checked. Could not refresh the portfolio. Pull down on Portfolio to update; do not submit it again.",
+    "Finish or cancel the current import first.",
+    "The saved purchase differs from this PDF. Review your portfolio before importing again.",
+    "This import is already complete.",
+    "This is a different PDF. Start a new import for this file.",
+    "This import may already be saved. Check your portfolio before trying again.",
+    "Statement results could not be verified. Try again.",
     "Finish the waiting PDF before sharing another one.",
     "The selected file is not a PDF.",
     "A share sheet is already open.",

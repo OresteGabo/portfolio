@@ -6,6 +6,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 @Composable expect fun PlatformSystemBarAppearance(darkTheme: Boolean)
 
 interface ServerSettings {
+    fun readImportHintDismissed(): Boolean = false
+    fun writeImportHintDismissed(dismissed: Boolean) {}
     fun readOnboardingCompleted(): Boolean = false
     fun writeOnboardingCompleted(completed: Boolean) {}
     fun readLanguage(): String? = null
@@ -19,6 +21,8 @@ interface ServerSettings {
     fun forgetMonthlyTarget(account: String) {}
     fun readMonthlyTarget(account: String): Long? = null
     fun writeMonthlyTarget(account: String, amount: Long) {}
+    fun readImportHistory(account: String): String? = null
+    fun writeImportHistory(account: String, history: String) {}
     fun readOrigin(): String?
     fun writeOrigin(origin: String)
     fun readChartStyle(): String? = null
@@ -28,6 +32,7 @@ interface ServerSettings {
 }
 interface NativeActions {
     val interactingWithSystem: Boolean get() = false
+    val pickedPdfName: String? get() = null
     suspend fun offerPasswordSave(origin: String, email: String, password: String) {}
     suspend fun pickPdf(onSelected: () -> Unit = {}): ByteArray?
     suspend fun savePdf(fileName: String, bytes: ByteArray): Boolean
@@ -49,4 +54,6 @@ interface InvestmentEngine {
 @Composable expect fun rememberInvestmentEngine(): InvestmentEngine
 @Composable expect fun InvestmentEngineHost(engine: InvestmentEngine)
 @Composable expect fun PlatformBackHandler(enabled: Boolean, back: () -> Unit)
+val LocalImportEngine = staticCompositionLocalOf<InvestmentEngine?> { null }
+
 val LocalNativeActions = staticCompositionLocalOf<NativeActions> { error("Missing native actions") }

@@ -28,6 +28,8 @@ actual fun rememberServerSettings(): ServerSettings {
     val context = LocalContext.current.applicationContext
     return remember(context) { object : ServerSettings {
         private val prefs = context.getSharedPreferences("connection", Context.MODE_PRIVATE)
+        override fun readImportHintDismissed() = prefs.getBoolean("importHintDismissed", false)
+        override fun writeImportHintDismissed(dismissed: Boolean) { prefs.edit().putBoolean("importHintDismissed", dismissed).apply() }
         override fun readOnboardingCompleted() = prefs.getBoolean("onboardingCompleted", false)
         override fun writeOnboardingCompleted(completed: Boolean) { prefs.edit().putBoolean("onboardingCompleted", completed).apply() }
         override fun readScreenCaptureAllowed() = prefs.getBoolean(SCREEN_CAPTURE_ALLOWED_KEY, false)
@@ -45,12 +47,16 @@ actual fun rememberServerSettings(): ServerSettings {
         override fun writeLanguage(language: String) { prefs.edit().putString("language", language).apply() }
         override fun readTheme(): String? = prefs.getString("theme", null)
         override fun writeTheme(theme: String) { prefs.edit().putString("theme", theme).apply() }
+        override fun readImportHistory(account: String) = prefs.getString("importHistory:$account", null)
+        override fun writeImportHistory(account: String, history: String) { prefs.edit().putString("importHistory:$account", history).apply() }
         override fun readOrigin(): String? = prefs.getString("origin", null)
         override fun writeOrigin(origin: String) { prefs.edit().putString("origin", origin).apply() }
     } }
 }
 private class AndroidActions(private val context: Context) : NativeActions {
     override val interactingWithSystem get() = picked != null || saved != null || shared != null
+    override var pickedPdfName: String? = null
+        private set
     var pickLauncher: () -> Unit = {}
     var saveLauncher: (String) -> Unit = {}
     var shareLauncher: (Intent) -> Unit = {}
@@ -61,11 +67,15 @@ private class AndroidActions(private val context: Context) : NativeActions {
         val request = CompletableDeferred<Uri?>()
         check(picked == null) { "A file picker is already open." }
         picked = request
+        pickedPdfName = null
         try {
             pickLauncher()
             val uri = request.await() ?: return null
             onSelected()
             return withContext(Dispatchers.IO) {
+                pickedPdfName = runCatching { context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
+                    if (it.moveToFirst()) it.getString(0).take(180) else null
+                } }.getOrNull()
                 context.contentResolver.openInputStream(uri)?.use { input ->
                     val output = java.io.ByteArrayOutputStream()
                     val buffer = ByteArray(8192)
@@ -146,7 +156,7 @@ actual fun rememberInvestmentEngine(): InvestmentEngine {
 }
 @Composable
 actual fun InvestmentEngineHost(engine: InvestmentEngine) {
-    AndroidView(factory = { (engine as LocalInvestmentEngine).view }, modifier = Modifier.size(1.dp))
+    if (engine is LocalInvestmentEngine) AndroidView(factory = { engine.view }, modifier = Modifier.size(1.dp))
 }
 @Composable
 actual fun PlatformBackHandler(enabled: Boolean, back: () -> Unit) { BackHandler(enabled, back) }

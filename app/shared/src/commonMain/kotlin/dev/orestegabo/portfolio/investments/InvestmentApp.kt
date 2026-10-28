@@ -27,6 +27,7 @@ import androidx.compose.material3.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.Alignment
@@ -70,6 +71,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var notificationScreen by rememberSaveable { mutableStateOf(false) }
     var handledInboxRequest by rememberSaveable { mutableIntStateOf(0) }
     var tab by rememberSaveable { mutableStateOf("Portfolio") }
+    var documentSection by rememberSaveable(model.user?.text("id")) { mutableStateOf("Import") }
     var calendarFocus by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingIssueId by rememberSaveable { mutableStateOf<String?>(null) }
     var missingDocuments by rememberSaveable { mutableStateOf(false) }
@@ -83,12 +85,14 @@ fun InvestmentApp(model: PortfolioModel) {
     var legalRoute by rememberSaveable { mutableStateOf<String?>(null) }
     var legalHistory by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
     var education by rememberSaveable { mutableStateOf(false) }
-    var importReview by remember { mutableStateOf<JsonRecord?>(null) }
+    var importReview by remember(model) { mutableStateOf(model.currentImportReview()) }
     val actions = LocalNativeActions.current
-    val engine = rememberInvestmentEngine()
+    val engine = LocalImportEngine.current ?: rememberInvestmentEngine()
     DisposableEffect(engine) { onDispose { engine.destroy() } }
     var newPurchase by rememberSaveable { mutableStateOf(false) }
+    val documentUi = rememberSaveableStateHolder()
     val preferences = rememberServerSettings()
+    var showImportHint by rememberSaveable { mutableStateOf(!preferences.readImportHintDismissed()) }
     var introductionRequested by rememberSaveable { mutableStateOf(!preferences.readOnboardingCompleted() && !model.locked) }
     var replayIntroduction by rememberSaveable { mutableStateOf(false) }
     fun finishIntroduction() {
@@ -135,21 +139,33 @@ fun InvestmentApp(model: PortfolioModel) {
     }
     fun imported(review: JsonRecord) {
         importReview = review
+        if (tab != "Documents") { tab = "Documents"; documentSection = "Import" }
         missingDocuments = false
         editor = null; equityEditor = null; newPurchase = false; pendingEntry = false
     }
-    fun uploadPendingPurchase(purchase: JsonRecord) = model.importPurchasePdf(actions, engine, bondOnly = true) { review ->
+    LaunchedEffect(model.activeImportId) {
+        if (model.activeImportId != null) {
+            tab = "Documents"; documentSection = "Import"; notificationScreen = false
+            newPurchase = false; detail = null; pendingEntry = false
+        }
+    }
+    LaunchedEffect(model.activeImportReceipt()?.state, importReview) {
+        if (model.activeImportReceipt()?.state in listOf(ImportState.SAVED, ImportState.EXISTS) && importReview != null) {
+            model.discardImportedPdf(importReview!!); importReview = null; confirmationTarget = null
+        }
+    }
+    fun uploadPendingPurchase(purchase: JsonRecord) = model.importPurchasePdf(actions, engine, bondOnly = true, targetPurchaseId = purchase.text("id")) { review ->
         confirmationTarget = purchase
         imported(review)
     }
     val incomingPdf = NativePdfInbox.pending
     LaunchedEffect(incomingPdf?.id, model.user?.text("id"), model.locked, model.busy,
-        introductionRequested, importReview, editor, equityEditor, pendingEntry, legalRoute) {
+        introductionRequested, importReview, editor, equityEditor, pendingEntry, legalRoute, model.documentPreview) {
         if (incomingPdf != null && model.user != null && !model.locked && !model.busy &&
-            !introductionRequested && importReview == null && editor == null && equityEditor == null && !pendingEntry && legalRoute == null) {
+            !introductionRequested && model.documentPreview == null && importReview == null && editor == null && equityEditor == null && !pendingEntry && legalRoute == null) {
             NativePdfInbox.take(incomingPdf.id)?.let { received ->
                 confirmationTarget = null
-                model.importPurchasePdf(ReceivedPdfActions(actions, received.bytes), engine) { review ->
+                model.importPurchasePdf(ReceivedPdfActions(actions, received.bytes, received.fileName), engine) { review ->
                     notificationScreen = false
                     imported(review)
                 }
@@ -173,27 +189,27 @@ fun InvestmentApp(model: PortfolioModel) {
             OnboardingScreen(replayIntroduction, ::finishIntroduction)
             return@MaterialTheme
         }
-        val nested = notificationScreen || legalRoute != null || missingDocuments || pendingEntry || importReview != null || investmentHistory || detail != null || editor != null || equityEditor != null || newPurchase || simulator || education
+        val nested = model.documentPreview != null || notificationScreen || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || editor != null || equityEditor != null || newPurchase || simulator || education
+        val documentsHome = model.user != null && !model.locked && !nested && tab == "Documents"
+        val importChat = documentsHome && documentSection == "Import"
         val back = {
-            if (notificationScreen) { notificationScreen=false } else if (legalRoute != null) {
+            if (model.documentPreview != null) { model.closeDocumentPreview() } else if (importChat) { documentSection = "Library" } else if (notificationScreen) { notificationScreen=false } else if (legalRoute != null) {
                 legalRoute = legalHistory.lastOrNull()
                 legalHistory = legalHistory.dropLast(1)
             } else {
                 if (detail == null && editor == null && equityEditor == null && importReview == null && !pendingEntry && !newPurchase && !simulator && !education) investmentHistory = false
-                missingDocuments = false; detail = null; editor = null; equityEditor = null; newPurchase = false; pendingEntry = false; confirmationTarget = null; importReview = null; simulator = false; education = false
+                missingDocuments = false; detail = null; editor = null; equityEditor = null; newPurchase = false; pendingEntry = false; simulator = false; education = false
             }
         }
         val screenTitle = when {
+            model.documentPreview != null -> model.documentPreview!!.title
             notificationScreen -> "Notifications"
             legalRoute != null -> legalTitle(legalRoute!!)
             missingDocuments -> "Missing documents"
-            importReview?.text("kind") == "bond-issuance" -> "Review issuance"
-            importReview?.text("kind") == "statement" -> "Statement review"
             pendingEntry -> "Pending purchase"
-            importReview != null -> "Review purchase"
             newPurchase -> "Add purchase"
-            editor != null -> if (importReview != null) "Review bond" else if (editor!!.text("id").isBlank()) "Add bond" else "Edit bond"
-            equityEditor != null -> if (importReview != null) "Review shares" else "Add shares"
+            editor != null -> if (editor!!.text("id").isBlank()) "Add bond" else "Edit bond"
+            equityEditor != null -> "Add shares"
             simulator -> "Simulator"
             education -> "Learn"
             detail != null -> "Bond details"
@@ -203,38 +219,52 @@ fun InvestmentApp(model: PortfolioModel) {
             else -> tab
         }
         val portfolioHome = model.user != null && !model.locked && !nested && tab == "Portfolio"
-        model.pdfImportProgress?.takeIf { model.user != null && !model.locked }?.let { progress ->
+        model.pdfImportProgress?.takeIf { model.user != null && !model.locked && model.activeImportId == null }?.let { progress ->
             PdfImportProgressDialog(progress, model::cancelPdfImport)
         }
         PlatformSystemBarAppearance(dark)
-        PlatformBackHandler(nested, back)
+        PlatformBackHandler(nested || importChat, back)
         Scaffold(
             contentWindowInsets = if (portfolioHome) WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal) else ScaffoldDefaults.contentWindowInsets,
             topBar = {
                 if (!portfolioHome && (model.user != null || model.locked || nested)) TopAppBar(
                     title = {
-                        Column {
-                            AppText(screenTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                        }
+                        if (documentsHome) DocumentHeader(documentSection, model.user?.text("email").orEmpty())
+                        else if (model.documentPreview != null) FinancialText(screenTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        else AppText(screenTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                     },
                     navigationIcon = {
-                        if (nested) IconButton(onClick = back) { AppIcon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                        if (nested || importChat) IconButton(onClick = back) { AppIcon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                         else StructMark(Modifier.padding(start = 16.dp, end = 4.dp).size(40.dp))
                     },
-                    actions = { if(tab=="Stocks" && !nested && model.user!=null && !model.locked)
-                        NotificationBell(model.unreadNotifications) { notificationScreen=true } },
+                    actions = {
+                        if (model.documentPreview?.bytes != null) IconButton(enabled = !model.busy, onClick = {
+                            val preview = model.documentPreview!!
+                            model.action { actions.sharePdf(preview.fileName, preview.bytes!!) }
+                        }) { AppIcon(Icons.Outlined.Share, "Share PDF") }
+                        else if (documentsHome) TextButton(onClick = {
+                            documentSection = if (documentSection == "Import") "Library" else "Import"
+                            selectionFeedback()
+                        }) { AppText(if (documentSection == "Import") "Library" else "Chat", style = MaterialTheme.typography.labelLarge) }
+                        else if(tab=="Stocks" && !nested && model.user!=null && !model.locked)
+                            NotificationBell(model.unreadNotifications) { notificationScreen=true }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
                 )
             },
             floatingActionButton = {
                 if (model.user != null && !model.locked && !nested && tab == "Portfolio") ExtendedFloatingActionButton(
-                    onClick = { importReview = null; confirmationTarget = null; newPurchase = true },
+                    onClick = {
+                        if (importReview != null || model.activeImportReceipt()?.state in listOf(ImportState.READING, ImportState.SAVING)) {
+                            tab = "Documents"; documentSection = "Import"
+                        } else { confirmationTarget = null; newPurchase = true }
+                    },
                     modifier = Modifier.semantics { contentDescription = localized("Add purchase") },
                     icon = { AppIcon(Icons.Filled.Add, null) }, text = { AppText("Add purchase") }
                 )
             },
             bottomBar = {
-                if (model.user != null && !model.locked && !nested) NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
+                if (model.user != null && !model.locked && !nested && !importChat) NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
                     destinations.forEach { destination ->
                         val selected = tab == destination.title
                         NavigationBarItem(
@@ -254,7 +284,7 @@ fun InvestmentApp(model: PortfolioModel) {
                 if (!model.locked) InvestmentEngineHost(engine)
                 if (!portfolioHome) {
                     AppLoadingLine(model.busy)
-                    model.error?.let { Notice(it, true) { model.error = null } }
+                    if (model.documentPreview == null || model.documentPreview?.bytes != null) model.error?.let { Notice(it, true) { model.error = null } }
                     model.message?.let { Notice(it, false) { model.message = null } }
                 }
                 NativePdfInbox.error?.let { Notice(it, true, NativePdfInbox::dismissError) }
@@ -262,6 +292,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     if (model.user == null || model.locked) "PDF received. Sign in or unlock to review and import it."
                     else "PDF received. Finish your current action to review and import it.", false, NativePdfInbox::dismiss)
                 when {
+                    model.documentPreview != null && model.user != null && !model.locked -> PdfViewerScreen(model, model.documentPreview!!)
                     legalRoute != null -> LegalScreen(legalRoute!!) { next ->
                         legalHistory = legalHistory + legalRoute!!
                         legalRoute = next
@@ -276,27 +307,34 @@ fun InvestmentApp(model: PortfolioModel) {
                             else -> { notificationScreen=false;tab="Settings" }
                         }
                     })
-                    missingDocuments && importReview == null -> MissingDocumentsScreen(model, ::uploadMissing)
+                    missingDocuments -> MissingDocumentsScreen(model, ::uploadMissing)
                     pendingEntry -> PendingBondScreen(model, pendingIssueId) { pendingEntry = false; pendingIssueId = null }
-                    importReview?.text("kind") == "statement" -> StatementReviewScreen(model, importReview!!, ::uploadMissing)
-                    importReview?.text("kind") == "bond-issuance" -> BondIssuanceReview(model, importReview!!, confirmationTarget) { importReview = null; confirmationTarget = null; detail = null }
-                    importReview != null -> PurchaseImportReview(model, importReview!!, confirmationTarget) { importReview = null; confirmationTarget = null; detail = null }
                     newPurchase -> PurchaseEntryScreen(model, engine, ::imported) { legalRoute = "privacy" }
                     tab == "Settings" && !nested -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
                         chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
                         openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { replayIntroduction = true; introductionRequested = true })
-                    editor != null -> PurchaseEditor(model, editor!!, { editor = null; importReview = null }, importReview)
-                    equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null; importReview = null }, importReview)
+                    editor != null -> PurchaseEditor(model, editor!!, { editor = null })
+                    equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null })
                     simulator -> SimulatorScreen(model, engine) { simulator = false }
                     education -> EducationScreen(model) { education = false }
                     detail != null -> PurchaseDetails(model, detail!!, engine, { confirmationTarget = detail; imported(it) }, { detail = null }, { editor = detail; detail = null })
                     investmentHistory -> InvestmentHistoryScreen(model, uploadPending = ::uploadPendingPurchase) { detail = it }
                     tab == "Portfolio" -> PortfolioScreen(model, uploadPending = ::uploadPendingPurchase, openMissing = ::uploadMissing, allMissing = { missingDocuments = true }, seeAll = { investmentHistory = true },
-                        openCalendar = { date -> calendarFocus = date.toString(); tab = "Calendar" }, detail = { importReview = null; detail = it })
+                        openCalendar = { date -> calendarFocus = date.toString(); tab = "Calendar" }, detail = { detail = it })
                     tab == "Calendar" -> CalendarScreen(model, initialDate = calendarFocus?.let(::calendarDate), addPending = { issue, date ->
                         pendingIssueId = issue.text("id"); calendarFocus = date.toString(); confirmationTarget = null; pendingEntry = true
                     })
-                    tab == "Documents" -> DocumentsScreen(model) { model.importPurchasePdf(actions, engine, completed = ::imported) }
+                    tab == "Documents" -> documentUi.SaveableStateProvider("documents:${model.origin}|${model.user?.text("id")}") { DocumentsHub(model, engine, importReview, confirmationTarget,
+                        section = documentSection, changeSection = { documentSection = it },
+                        showHint = showImportHint, dismissHint = { showImportHint = false; preferences.writeImportHintDismissed(true) },
+                        beginImport = { confirmationTarget = null; model.importPurchasePdf(actions, engine, completed = ::imported) },
+                        reviewed = ::imported, done = { importReview = null; confirmationTarget = null; detail = null },
+                        openPurchase = { id -> model.action {
+                            require(id.matches(Regex("[A-Za-z0-9_-]{1,120}"))) { "Check the purchase details." }
+                            val row = model.purchases.firstOrNull { it.text("id") == id }
+                                ?: model.api.request("/api/bonds/purchases/$id").optJSONObject("purchase")
+                            require(row != null) { "Check the purchase details." }; detail = row
+                        } }, openMissing = { missingDocuments = true }) }
                     tab == "Stocks" -> StocksScreen(model)
                 }
             }
@@ -381,7 +419,7 @@ private fun PurchaseDetails(model: PortfolioModel, purchase: JsonRecord, engine:
         } }
         if (needsPersonalConfirmation(purchase)) item {
             PendingConfirmationAction(purchase,!model.busy) { model.confirmPendingPurchase(purchase,back) }
-            PdfImportButton(model, engine, imported, bondOnly = true)
+            PdfImportButton(model, engine, imported, bondOnly = true, targetPurchaseId = purchase.text("id"))
         }
         if (purchase.text("status") != "submitted") purchase.terms()?.let { terms ->
             val tracking = trackBond(terms, Today)

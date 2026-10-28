@@ -59,10 +59,11 @@ class CaptureProtectionTest {
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                 awaitFlag(scenario, false)
                 val protect = mutableStateOf(true)
+                val document = mutableStateOf(false)
                 scenario.onActivity { activity ->
                     activity.window.decorView.setBackgroundColor(Color.MAGENTA)
                     activity.findViewById<android.view.View>(android.R.id.content).setBackgroundColor(Color.MAGENTA)
-                    activity.setContent { NativePrivacyCover(protectCaptures = protect.value) }
+                    activity.setContent { NativePrivacyCover(protectCaptures = protect.value, protectDocument = document.value) }
                 }
                 awaitFlag(scenario, false)
                 awaitScreenshotColor(Color.MAGENTA)
@@ -76,6 +77,15 @@ class CaptureProtectionTest {
                 scenario.onActivity { protect.value = true }
                 awaitFlag(scenario, false)
                 awaitScreenshotColor(Color.MAGENTA)
+                scenario.onActivity { document.value = true }
+                awaitFlag(scenario, true)
+                scenario.onActivity { protect.value = false }
+                awaitFlag(scenario, false)
+                awaitScreenshotColor(Color.MAGENTA)
+                scenario.onActivity { protect.value = true }
+                awaitFlag(scenario, true)
+                scenario.onActivity { document.value = false }
+                awaitFlag(scenario, false)
             }
             // A saved Settings override applies on a new Activity, rather than requiring another toggle.
             assertTrue(prefs.edit().putBoolean("screenCaptureAllowed", true).commit())

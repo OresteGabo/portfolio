@@ -15,4 +15,8 @@ fun applyInitialCaptureProtection(activity: Activity) {
     // Guard startup until Compose has applied the persisted masking preference.
     // NativePrivacyCover clears this for the foreground after composition.
     activity.window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+    // Discard native-renderer scratch copies left by an interrupted process.
+    java.io.File(activity.cacheDir, "pdf-preview").listFiles()?.filter {
+        it.name.startsWith("document-") && it.extension == "pdf"
+    }?.forEach { it.delete() }
 }
