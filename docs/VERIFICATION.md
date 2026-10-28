@@ -472,3 +472,11 @@ Validation passed: 104 Android shared tests and 112 iOS shared tests (216 total)
 
 - The device-unlock screen uses a native, decorative hexagon grid whose opacity fades upward, with the existing full Struct mark inside a semicircular frame. Theme colors adapt the watermark and frame for light/dark mode. Content scrolls on shorter screens and at larger text sizes; decorative drawing has no accessibility announcements or touch handlers.
 - Both themes were visually checked on an Android emulator at 360 × 640dp using a temporary synthetic saved-sign-in preview. Unlock, password fallback and legal controls remained visible. Android assembly and iOS Simulator shared-source compilation pass. The preview fixture was removed; biometric authorization and the email/password form retain their existing flow. The unused native engine host is omitted while locked so it cannot paint a white strip behind this artwork.
+
+## Independent notification switches — 28 October 2026
+
+Notification preferences no longer use one saving flag to disable every switch or insert a global progress bar that shifts the dialog. Each touched switch has its own pending value, disabled state and fixed-space progress indicator. Unrelated switches keep their existing checked/enabled state. Pending display values revert only for the failed preference.
+
+Preference writes are serialized with preference reads so rapid category updates build the API-required complete category map after preceding acknowledgements. Auto-confirm requests still contain only autoCoupon. Save responses apply only the acknowledged preference, preventing partial or stale responses (including monthly-target saves) from replacing other switch values. Account-generation guards discard late results and queued writes after logout. The existing local Spring source was inspected read-only and confirms that autoCoupon updates preserve categories; no backend change or deployment was made.
+
+All 202 shared Android host tests pass, including nine new regressions for both directions of auto-confirm, queued category/auto changes, targeted rollback, partial replies, older reads, duplicate taps, logout and monthly-target response isolation. Android assembly and shared iOS simulator compilation pass. No production account or automatic coupon receipt was changed by these tests.

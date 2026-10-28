@@ -8,6 +8,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 @Composable
 fun NotificationPreferencesDialog(model: PortfolioModel,close: () -> Unit) {
@@ -17,23 +19,31 @@ fun NotificationPreferencesDialog(model: PortfolioModel,close: () -> Unit) {
                 AppText("Notification settings need the updated server.")
                 TextButton(onClick=model::refreshNotifications) { AppText("Retry") }
             }
-            val categories=model.notificationPreferences.optJSONObject("categories")
             listOf("prices" to "Share price changes","coupons" to "Coupon reminders","maturities" to "Bond maturities",
                 "subscriptions" to "Subscription windows","pending" to "Pending purchases","documents" to "Missing documents",
                 "targets" to "Investment targets","reports" to "Report updates","security" to "Security alerts").forEach { (key,label) ->
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                     AppText(label,modifier=Modifier.weight(1f))
-                    Switch(checked=categories?.optBoolean(key,true) ?: true,enabled=model.notificationSettingsAvailable && !model.notificationSettingsSaving,
-                        onCheckedChange={ model.updateNotificationPreference(key,it) })
+                    NotificationPreferenceSwitch(model, key, label)
                 }
             }
             HorizontalDivider(Modifier.padding(vertical=8.dp))
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                 AppText("Auto-confirm coupons",modifier=Modifier.weight(1f))
-                Switch(checked=model.notificationPreferences.optBoolean("autoCoupon"),enabled=model.notificationSettingsAvailable && !model.notificationSettingsSaving,
-                    onCheckedChange={ model.updateNotificationPreference(enabled=it) })
+                NotificationPreferenceSwitch(model, null, "Auto-confirm coupons")
             }
             AppText("Mark received on the due date, from today onward. You can undo any receipt.",style=MaterialTheme.typography.bodySmall)
-            if(model.notificationSettingsSaving) LinearProgressIndicator(Modifier.fillMaxWidth())
         } },confirmButton={ TextButton(onClick=close) { AppText("Done") } })
+}
+
+@Composable
+private fun NotificationPreferenceSwitch(model: PortfolioModel, category: String?, label: String) {
+    val saving = model.notificationPreferenceSaving(category)
+    Box(Modifier.size(16.dp), contentAlignment = Alignment.Center) {
+        if (saving) CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5.dp)
+    }
+    Switch(checked = model.notificationPreferenceEnabled(category),
+        enabled = model.notificationSettingsAvailable && !saving,
+        modifier = Modifier.semantics { contentDescription = localized(label) },
+        onCheckedChange = { model.updateNotificationPreference(category, it) })
 }

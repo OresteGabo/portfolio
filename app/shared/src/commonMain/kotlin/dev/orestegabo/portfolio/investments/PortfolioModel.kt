@@ -13,6 +13,8 @@ import kotlin.random.Random
 import kotlin.time.TimeSource
 import kotlin.time.TimeMark
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.LocalDate
 
 class PortfolioModel(
@@ -102,19 +104,24 @@ class PortfolioModel(
         private set
     var notificationSettingsAvailable by mutableStateOf(false)
         private set
-    var notificationSettingsSaving by mutableStateOf(false)
-        private set
+    private var pendingNotificationPreferences by mutableStateOf<Map<String, Boolean>>(emptyMap())
+    val notificationSettingsSaving get() = pendingNotificationPreferences.isNotEmpty()
+    private val notificationSettingsMutex = Mutex()
+    fun notificationPreferenceSaving(category: String? = null) = pendingNotificationPreferences.containsKey(category ?: "autoCoupon")
+    fun notificationPreferenceEnabled(category: String? = null): Boolean = pendingNotificationPreferences[category ?: "autoCoupon"]
+        ?: if (category == null) notificationPreferences.optBoolean("autoCoupon")
+        else notificationPreferences.optJSONObject("categories")?.optBoolean(category, true) ?: true
     var notificationDate by mutableStateOf(Today)
         private set
     var couponReceipts by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
     var couponTrackingAvailable by mutableStateOf(false)
         private set
-    private suspend fun fetchNotificationSettings() {
+    private suspend fun fetchNotificationSettings() = notificationSettingsMutex.withLock {
         val revision=notificationGeneration;val account=user?.text("id")
         try {
             var value=api.request("/api/bonds/notifications/preferences")
-            if(revision!=notificationGeneration || account!=user?.text("id") || !value.has("categories"))return
+            if(revision!=notificationGeneration || account!=user?.text("id") || !value.has("categories"))return@withLock
             if(!value.optBoolean("configured")) value=api.request("/api/bonds/notifications/preferences","PUT",JsonRecord().put("monthlyTarget",monthlyInvestmentTarget))
             if(revision!=notificationGeneration || account!=user?.text("id"))return
             notificationPreferences=value;notificationSettingsAvailable=true
@@ -124,23 +131,46 @@ class PortfolioModel(
         } catch(cancelled: CancellationException) { throw cancelled }
         catch(_: Exception) { /* Older APIs still support their existing inbox and portfolio. */ }
     }
-    fun updateNotificationPreference(category: String? = null,enabled: Boolean) {
-        if(!notificationSettingsAvailable || notificationSettingsSaving || user==null || locked)return
-        val revision=notificationGeneration
+    fun updateNotificationPreference(category: String? = null, enabled: Boolean) {
+        if (!notificationSettingsAvailable || notificationPreferenceSaving(category) || user == null || locked) return
+        val revision = notificationGeneration
+        val account = user?.text("id")
+        val key = category ?: "autoCoupon"
+        // Pending values are presentation-only; unrelated switches retain their acknowledged values.
+        pendingNotificationPreferences = pendingNotificationPreferences + (key to enabled)
         viewModelScope.launch {
-            notificationSettingsSaving=true
+            var updated = false
             try {
-                val change=JsonRecord()
-                if(category==null)change.put("autoCoupon",enabled)
-                else {
-                    val categories=JsonRecord(notificationPreferences.optJSONObject("categories")?.toString() ?: "{}")
-                    categories.put(category,enabled);change.put("categories",categories)
+                notificationSettingsMutex.withLock {
+                    if (revision != notificationGeneration || account != user?.text("id") || locked) return@withLock
+                    val change = JsonRecord()
+                    if (category == null) change.put("autoCoupon", enabled)
+                    else {
+                        // Build inside the serialized write, after preceding changes were acknowledged.
+                        val categories = JsonRecord(notificationPreferences.optJSONObject("categories")?.toString() ?: "{}")
+                        categories.put(category, enabled); change.put("categories", categories)
+                    }
+                    val saved = api.request("/api/bonds/notifications/preferences", "PUT", change)
+                    if (revision != notificationGeneration || account != user?.text("id")) return@withLock
+                    val next = JsonRecord(notificationPreferences.toString())
+                    if (category == null) {
+                        check(saved.has("autoCoupon") && saved.optBoolean("autoCoupon", !enabled) == enabled)
+                        next.put("autoCoupon", enabled)
+                    } else {
+                        val acknowledged = saved.optJSONObject("categories")
+                        check(acknowledged?.has(category) == true && acknowledged.optBoolean(category, !enabled) == enabled)
+                        val categories = JsonRecord(notificationPreferences.optJSONObject("categories")?.toString() ?: "{}")
+                        categories.put(category, enabled); next.put("categories", categories)
+                    }
+                    notificationPreferences = next
+                    updated = true
                 }
-                val saved=api.request("/api/bonds/notifications/preferences","PUT",change)
-                if(revision==notificationGeneration) { notificationPreferences=saved;fetchNotifications() }
-            } catch(cancelled: CancellationException) { throw cancelled }
-            catch(_: Exception) { if(revision==notificationGeneration)error="Notification settings could not be saved." }
-            finally { if(revision==notificationGeneration)notificationSettingsSaving=false }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { if (revision == notificationGeneration) error = "Notification settings could not be saved." }
+            finally {
+                if (revision == notificationGeneration) pendingNotificationPreferences = pendingNotificationPreferences - key
+            }
+            if (updated && revision == notificationGeneration && account == user?.text("id")) fetchNotifications()
         }
     }
     fun confirmCoupon(purchaseId: String,dueDate: String,received: Boolean=true) = action {
@@ -168,7 +198,7 @@ class PortfolioModel(
         try {
             if(!more)fetchNotificationSettings()
             val response=api.request("/api/bonds/notifications"+(if(more) "?before=${notificationNextBefore ?: return}" else ""))
-            if(revision!=notificationGeneration || account!=user?.text("id"))return
+            if(revision!=notificationGeneration || account!=user?.text("id"))return@withLock
             notificationDate=calendarDate(response.text("serverDate")) ?: Today
             try {
                 val receipts=api.request("/api/bonds/notifications/coupons")
@@ -238,7 +268,9 @@ class PortfolioModel(
         viewModelScope.launch {
             try {
                 val saved=api.request("/api/bonds/notifications/preferences","PUT",JsonRecord().put("monthlyTarget",amount))
-                if(revision==notificationGeneration)notificationPreferences=saved
+                if(revision==notificationGeneration) saved.text("monthlyTarget").toLongOrNull()?.let { target ->
+                    notificationPreferences=JsonRecord(notificationPreferences.toString()).put("monthlyTarget",target)
+                }
             }
             catch(cancelled: CancellationException) { throw cancelled }
             catch(_: Exception) { if(revision==notificationGeneration)error="Target saved on this device. Server sync failed." }
@@ -792,7 +824,7 @@ class PortfolioModel(
     override fun onCleared() { backgroundLockJob?.cancel(); importedPdf = null; importedReview = null; vault?.lock(); api.close() }
 
     private fun clearPrivateData() {
-        notificationPreferences=JsonRecord();notificationSettingsAvailable=false;notificationSettingsSaving=false
+        notificationPreferences=JsonRecord();notificationSettingsAvailable=false;pendingNotificationPreferences=emptyMap()
         couponReceipts=emptyList();couponTrackingAvailable=false;notificationDate=Today
         notificationGeneration++;notifications=emptyList();unreadNotifications=0;notificationNextBefore=null
         notificationsError=null;notificationsLoading=false;notificationLoadedAt=null
