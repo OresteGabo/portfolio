@@ -102,6 +102,12 @@ fun InvestmentApp(model: PortfolioModel) {
     var chartStyle by rememberSaveable { mutableStateOf(preferences.readChartStyle()?.takeIf { it in listOf("area", "line", "bars") } ?: "area") }
     RefreshCapturedUi(tab, AppLanguage.code, theme, chartStyle, legalRoute)
     val dark = when (theme) { "light" -> false; "dark" -> true; else -> systemDark }
+    LaunchedEffect(model.user, model.locked) {
+        if (model.user != null && !model.locked) {
+            withFrameNanos { }
+            model.dashboardPresented()
+        }
+    }
     LaunchedEffect(model.user, model.locked, NativePushBridge.registration, NativePushBridge.allowed, AppLanguage.code) {
         model.syncPushDevice()
     }

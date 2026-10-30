@@ -18,6 +18,7 @@ import dev.orestegabo.portfolio.investments.*
 
 @Composable
 fun App() {
+    remember { if (allowsDevelopmentHttp) UnlockPerformance.enabled = true; true }
     val settings = rememberServerSettings()
     remember(settings) { AppLanguage.initialize(settings) }
     val systemLanguage = platformSystemLanguage()
@@ -26,7 +27,10 @@ fun App() {
     val selectionFeedback = rememberSelectionFeedback()
     val actions = rememberNativeActions()
     val vault = rememberSecureSignIn()
-    val model = viewModel { PortfolioModel(settings, vault = vault, initialOrigin = developmentApiOrigin()) }
+    val model = viewModel {
+        val timing = UnlockPerformance.begin("viewmodel_initialization")
+        PortfolioModel(settings, vault = vault, initialOrigin = developmentApiOrigin()).also { timing?.end() }
+    }
     val haptics = LocalHapticFeedback.current
     NativePrivacyCover(protectCaptures = model.captureProtectionEnabled, protectDocument = model.documentPreview != null)
     var privacyCover by remember { mutableStateOf(false) }

@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.io.encoding.Base64
@@ -63,6 +66,8 @@ class PortfolioModel(
         private set
     var locked by mutableStateOf(secureSignInEnabled)
         private set
+    var verifyingSession by mutableStateOf(false)
+        private set
     private val importJournal = ImportJournal(settings)
     internal val importHistory get() = importJournal.entries
     internal val importHistoryStorageFailed get() = importJournal.persistenceFailed
@@ -108,6 +113,25 @@ class PortfolioModel(
     private var backgroundLockJob: Job? = null
     private var privateDataLoadedAt: TimeMark? = null
     private var privateDataAvailable by mutableStateOf(false)
+    val portfolioReady get() = privateDataAvailable
+    var portfolioSyncing by mutableStateOf(false)
+        private set
+    var portfolioSyncError by mutableStateOf<String?>(null)
+        private set
+    var documentsLoading by mutableStateOf(false)
+        private set
+    var documentsSyncError by mutableStateOf<String?>(null)
+        private set
+    private var startupSyncJob: Job? = null
+    private var startupSyncRevision = 0
+    private val portfolioSyncMutex = Mutex()
+    private var unlockToUi: UnlockPerformance.Span? = null
+    private var deviceToUi: UnlockPerformance.Span? = null
+
+    fun dashboardPresented() {
+        unlockToUi?.end(); unlockToUi = null
+        deviceToUi?.end(); deviceToUi = null
+    }
     private var marketLoadedAt: TimeMark? = null
     private var automaticUnlockAttempted = false
     private var automaticUnlockPending = false
@@ -165,7 +189,7 @@ class PortfolioModel(
                 monthlyInvestmentTarget=it;targetAccount()?.let { account -> settings.writeMonthlyTarget(account,it) }
             }
         } catch(cancelled: CancellationException) { throw cancelled }
-        catch(_: Exception) { /* Older APIs still support their existing inbox and portfolio. */ }
+        catch(failure: Exception) { invalidateRejectedSession(failure) }
     }
     fun updateNotificationPreference(category: String? = null, enabled: Boolean) {
         if (!notificationSettingsAvailable || notificationPreferenceSaving(category) || user == null || locked) return
@@ -233,6 +257,7 @@ class PortfolioModel(
         notificationsLoading=true
         try {
             if(!more)fetchNotificationSettings()
+            if (user == null || locked) return
             val response=api.request("/api/bonds/notifications"+(if(more) "?before=${notificationNextBefore ?: return}" else ""))
             if(revision!=notificationGeneration || account!=user?.text("id"))return
             notificationDate=calendarDate(response.text("serverDate")) ?: Today
@@ -249,9 +274,16 @@ class PortfolioModel(
             notificationsError=null;notificationLoadedAt=clock.markNow()
         } catch(cancelled: CancellationException) { throw cancelled }
         catch(failure: Exception) {
+            if (invalidateRejectedSession(failure)) return
             if(revision==notificationGeneration) notificationsError=if(failure is ApiException && failure.status==404)
                 "Notifications need the updated server." else "Notifications could not be loaded. Try again."
         } finally { if(revision==notificationGeneration)notificationsLoading=false }
+    }
+    private suspend fun invalidateRejectedSession(failure: Exception): Boolean {
+        if (failure !is ApiException || failure.status != 401) return false
+        api.clearSession()
+        if (secureSignInEnabled) lock() else { ++generation; clearPrivateData() }
+        return true
     }
     fun refreshNotifications() { if(user!=null && !locked)viewModelScope.launch { fetchNotifications() } }
     fun moreNotifications() { if(user!=null && !locked)viewModelScope.launch { fetchNotifications(true) } }
@@ -345,7 +377,7 @@ class PortfolioModel(
         private set
 
     init { runAction(allowLocked = true, failureMessage = CONNECTION_ERROR_MESSAGE) {
-        loadPublicData()
+        UnlockPerformance.measure("public_assets") { loadPublicData() }
         if (!locked) checkSession()
     } }
 
@@ -379,7 +411,7 @@ class PortfolioModel(
                     if (locked) { vault?.lock(); api.close(); api = apiFactory(origin); clearPrivateData() }
                     error = userErrorMessage(failure, failureMessage)
                 }
-            } finally { if (token == generation) { busy = false; activeJob = null; tryAutomaticUnlock() } }
+            } finally { if (token == generation) { busy = false; verifyingSession = false; activeJob = null; tryAutomaticUnlock() } }
         }
     }
     fun foreground() {
@@ -428,11 +460,17 @@ class PortfolioModel(
         locked = true
         error = null; message = null
     }
-    fun usePassword() = runAction(allowLocked = true) {
-        vault?.delete(origin)
-        secureSignInEnabled = false; locked = false
-        api.close(); api = apiFactory(origin)
-        clearPrivateData(); error = null; message = null
+    fun usePassword() {
+        // Leaving a slow verification cancels its response before changing authentication mode.
+        if (locked && verifyingSession) {
+            ++generation; activeJob?.cancel(); activeJob = null; busy = false; verifyingSession = false
+        }
+        runAction(allowLocked = true) {
+            vault?.delete(origin)
+            secureSignInEnabled = false; locked = false
+            api.close(); api = apiFactory(origin)
+            clearPrivateData(); error = null; message = null
+        }
     }
     fun disableSecureSignIn() = action {
         vault?.delete(origin)
@@ -466,7 +504,10 @@ class PortfolioModel(
         automaticUnlockAttempted = true
         runAction(allowLocked = true) {
             val storage = requireNotNull(vault)
-            val raw = storage.read(origin) ?: return@runAction
+            unlockToUi = UnlockPerformance.begin("unlock_to_first_frame")
+            val raw = UnlockPerformance.measure("protected_storage_read_including_prompt") { storage.read(origin) } ?: return@runAction
+            verifyingSession = true
+            deviceToUi = UnlockPerformance.begin("device_success_to_first_frame")
             require(raw.length <= 48_000) { "Saved sign-in is invalid." }
             val saved = runCatching { JsonRecord(raw) }.getOrElse { error("Saved sign-in is invalid. Use your password to sign in again.") }
             require(saved.text("origin") == origin) { "Saved sign-in belongs to another server." }
@@ -474,14 +515,19 @@ class PortfolioModel(
             val password = saved.text("password")
             require(email.isNotBlank() && password.length in 1..128) { "Saved sign-in is invalid." }
             if (!foreground && backgroundGraceExpired()) { lock(); return@runAction }
-            try { api.restoreSession(saved.text("session")) }
+            try { UnlockPerformance.measure("cookie_restore") { api.restoreSession(saved.text("session")) } }
             catch (failure: CancellationException) { throw failure }
             catch (_: Exception) { api.clearSession() }
-            val session = try { api.request("/api/bonds/auth/session") }
+            val session = try {
+                if (JsonRecord(api.sessionSnapshot()).rows("cookies").isEmpty()) JsonRecord().put("authenticated", false)
+                else api.request("/api/bonds/auth/session")
+            }
             catch (failure: ApiException) { if (failure.status == 401) JsonRecord().put("authenticated", false) else throw failure }
+            var renewed = false
             var account = session.optJSONObject("user").takeIf { session.optBoolean("authenticated") && it?.text("email").equals(email, ignoreCase = true) }
             if (account == null) {
                 api.clearSession()
+                renewed = true
                 try {
                     account = api.request("/api/bonds/auth/login", "POST", JsonRecord().put("email", email).put("password", password).withDeviceIdentity()).getJSONObject("user")
                 } catch (failure: ApiException) {
@@ -494,13 +540,15 @@ class PortfolioModel(
             }
             require(account.text("email").equals(email, ignoreCase = true)) { "Sign-in account did not match." }
             if (calendar.isEmpty() && education.isEmpty()) loadPublicData()
-            loadPrivateData()
-            storage.save(origin, JsonRecord().put("origin", origin).put("email", email).put("password", password).put("session", api.sessionSnapshot()).toString())
+            // An unchanged opaque cookie does not need a Keychain/Keystore rewrite on every visit.
+            if (renewed) UnlockPerformance.measure("protected_storage_rotation") {
+                storage.save(origin, JsonRecord().put("origin", origin).put("email", email).put("password", password).put("session", api.sessionSnapshot()).toString())
+            }
             if (!foreground && backgroundGraceExpired()) { lock(); return@runAction }
             user = account
             loadInvestmentTarget()
             locked = false
-            fetchNotifications()
+            startPortfolioSync()
             if (!foreground) scheduleBackgroundLock()
         }
     }
@@ -544,7 +592,11 @@ class PortfolioModel(
         if (savePassword) saveSignIn(email, password)
     }
 
-    suspend fun loadPrivateData(force: Boolean = false) {
+    suspend fun loadPrivateData(force: Boolean = false) = portfolioSyncMutex.withLock {
+        loadPrivateSnapshot(force, deferSupplementary = false)
+    }
+
+    private suspend fun loadPrivateSnapshot(force: Boolean, deferSupplementary: Boolean) {
         if (!force && privateDataLoadedAt?.elapsedNow()?.inWholeMilliseconds?.let { it < DATA_CACHE_MILLIS } == true) return
         privateDataLoadedAt = null
         val overview = if (compactOverviewSupported == false) null else try {
@@ -556,9 +608,13 @@ class PortfolioModel(
         } catch (failure: ApiException) {
             if (failure.status == 404 || failure.status == 405) { compactOverviewSupported = false; null } else throw failure
         }
-        val purchases = overview?.rows("purchases") ?: api.request("/api/bonds/purchases").rows("purchases")
-        val holdings = overview?.rows("holdings") ?: api.request("/api/bonds/equities").rows("holdings")
-        val documents = api.request("/api/bonds/documents").rows("documents")
+        val (purchases, holdings) = if (overview != null) overview.rows("purchases") to overview.rows("holdings")
+        else coroutineScope {
+            val bonds = async { api.request("/api/bonds/purchases").rows("purchases") }
+            val shares = async { api.request("/api/bonds/equities").rows("holdings") }
+            bonds.await() to shares.await()
+        }
+        val documents = if (deferSupplementary) portfolio.documents else api.request("/api/bonds/documents").rows("documents")
         val monthlyTotals = overview?.optJSONArray("monthlyInvestmentTotals")?.objects()
             ?: if (overview != null) try {
                 // Old compact responses omit contribution totals. Fetch their source records once
@@ -571,19 +627,82 @@ class PortfolioModel(
                 null // An unavailable secondary summary must not hide the rest of the portfolio.
             } else null
         fun ids(key: String): Set<String>? = overview?.optJSONArray(key)?.let { rows -> (0 until rows.length()).map { rows.getString(it) }.toSet() }
-        portfolio = PortfolioSnapshot(purchases, holdings, documents, ids("recentPurchaseIds"), ids("recentHoldingIds"),
+        portfolio = PortfolioSnapshot(purchases, holdings, if (deferSupplementary) portfolio.documents else documents, ids("recentPurchaseIds"), ids("recentHoldingIds"),
             monthlyTotals)
         privateDataAvailable = true
         reconcileImportHistory()
+        historyComplete = overview == null
+        if (!deferSupplementary) {
+            loadStatementItems()
+            if (portfolio.activeShares(Today).isNotEmpty()) refreshEquityQuotes()
+            fetchNotifications()
+        }
+        privateDataLoadedAt = clock.markNow()
+    }
+
+    private suspend fun loadStatementItems() {
         statementItems = try { api.request("/api/bonds/statement-items").rows("items") }
         catch (failure: ApiException) {
             if (failure.status == 401) throw failure
             if (failure.status == 404 || failure.status == 405) emptyList() else statementItems
         }
-        historyComplete = overview == null
-        if (portfolio.activeShares(Today).isNotEmpty()) refreshEquityQuotes()
-        fetchNotifications()
-        privateDataLoadedAt = clock.markNow()
+    }
+
+    fun retryPortfolioSync() {
+        if (locked || user == null) return
+        startupSyncJob?.cancel(); startupSyncJob = null
+        privateDataLoadedAt = null
+        startPortfolioSync()
+    }
+
+    /** Only the server-validated identity gates navigation; enrichment never owns the action lock. */
+    fun startPortfolioSync() {
+        if (locked || user == null || startupSyncJob?.isActive == true) return
+        val revision = notificationGeneration
+        val syncRevision = ++startupSyncRevision
+        fun currentSync() = revision == notificationGeneration && syncRevision == startupSyncRevision
+        portfolioSyncing = true; portfolioSyncError = null
+        documentsLoading = true; documentsSyncError = null
+        startupSyncJob = viewModelScope.launch {
+            suspend fun section(failureMessage: String, block: suspend () -> Unit) {
+                try { block() }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (failure: Exception) {
+                    if (!currentSync()) return
+                    if (failure is ApiException && failure.status == 401) {
+                        // A local biometric result is never accepted as server authorization.
+                        api.clearSession(); lock()
+                        if (!secureSignInEnabled) clearPrivateData()
+                    } else if (failureMessage == "documents") documentsSyncError = "Documents could not be loaded. Try again."
+                    else if (failureMessage == "portfolio") portfolioSyncError = "Investments could not be loaded. Check your connection and try again."
+                }
+            }
+            try {
+                supervisorScope {
+                    launch {
+                        section("portfolio") {
+                            UnlockPerformance.measure("portfolio_snapshot") {
+                                portfolioSyncMutex.withLock { loadPrivateSnapshot(force = false, deferSupplementary = true) }
+                            }
+                        }
+                        if (currentSync()) portfolioSyncing = false
+                        if (currentSync() && portfolioReady && portfolio.activeShares(Today).isNotEmpty())
+                            section("quotes") { refreshEquityQuotes() }
+                    }
+                    launch {
+                        section("documents") {
+                            val rows = api.request("/api/bonds/documents").rows("documents")
+                            if (currentSync()) { portfolio = portfolio.copy(documents = rows); reconcileImportHistory() }
+                        }
+                        if (currentSync()) documentsLoading = false
+                    }
+                    launch { section("statements") { loadStatementItems() } }
+                    launch { section("notifications") { fetchNotifications() } }
+                }
+            } finally {
+                if (currentSync()) { portfolioSyncing = false; documentsLoading = false }
+            }
+        }
     }
 
     fun loadInvestmentHistory(force: Boolean = false) {
@@ -609,7 +728,10 @@ class PortfolioModel(
                 quoteRefreshFailed = true
             }
         } catch (failure: CancellationException) { throw failure }
-        catch (_: Exception) { quoteRefreshFailed = true }
+        catch (failure: Exception) {
+            if (failure is ApiException && failure.status == 401) throw failure
+            quoteRefreshFailed = true
+        }
     }
 
     fun refresh() = refreshWithFeedback(showMessage = true)
@@ -1125,6 +1247,12 @@ class PortfolioModel(
     override fun onCleared() { backgroundLockJob?.cancel(); documentPreview = null; importedPdf = null; importedReview = null; retryPdf = null; vault?.lock(); api.close() }
 
     private fun clearPrivateData() {
+        ++startupSyncRevision
+        startupSyncJob?.cancel(); startupSyncJob = null
+        verifyingSession = false
+        portfolioSyncing = false; documentsLoading = false
+        portfolioSyncError = null; documentsSyncError = null
+        unlockToUi = null; deviceToUi = null
         notificationPreferences=JsonRecord();notificationSettingsAvailable=false;pendingNotificationPreferences=emptyMap()
         couponReceipts=emptyList();couponTrackingAvailable=false;notificationDate=Today
         notificationGeneration++;notifications=emptyList();unreadNotifications=0;notificationNextBefore=null

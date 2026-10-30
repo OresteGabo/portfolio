@@ -152,7 +152,7 @@ actual fun rememberNativeActions(): NativeActions {
 @Composable
 actual fun rememberInvestmentEngine(): InvestmentEngine {
     val context = LocalContext.current
-    return remember(context) { LocalInvestmentEngine(context) }
+    return remember(context) { UnlockPerformance.measureSync("local_engine_initialization") { LocalInvestmentEngine(context) } }
 }
 @Composable
 actual fun InvestmentEngineHost(engine: InvestmentEngine) {

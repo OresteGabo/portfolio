@@ -80,10 +80,10 @@ private class IosSecureSignIn : SecureSignIn {
         context = auth
         authenticating = true
         return try {
-            if (!authorize(auth)) { lock(); null }
+            if (!UnlockPerformance.measure("native_auth_prompt") { authorize(auth) }) { lock(); null }
             else {
                 contextAuthorized = true
-                withContext(Dispatchers.Default) { readItem(origin, auth) }.also { if (it == null) lock() }
+                UnlockPerformance.measure("keychain_read") { withContext(Dispatchers.Default) { readItem(origin, auth) } }.also { if (it == null) lock() }
             }
         } finally { authenticating = false }
     }
@@ -95,7 +95,7 @@ private class IosSecureSignIn : SecureSignIn {
         authenticating = true
         try {
             if (!contextAuthorized) {
-                if (!authorize(auth)) { lock(); return false }
+                if (!UnlockPerformance.measure("native_auth_prompt") { authorize(auth) }) { lock(); return false }
                 contextAuthorized = true
             }
             withContext(Dispatchers.Default) {

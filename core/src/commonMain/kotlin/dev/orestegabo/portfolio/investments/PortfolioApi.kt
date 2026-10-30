@@ -10,6 +10,7 @@ import io.ktor.http.*
 import io.ktor.utils.io.*
 import io.ktor.util.date.GMTDate
 import kotlin.time.Clock
+import kotlin.random.Random
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -82,43 +83,53 @@ class PortfolioApi(
         }
     }
     suspend fun request(path: String, method: String = "GET", body: JsonRecord? = null): JsonRecord {
-        val raw = bytes(path, method, body).decodeToString()
-        return if (raw.isBlank()) JsonRecord() else JsonRecord(raw)
+        val raw = bytes(path, method, body)
+        return UnlockPerformance.measure("json_decode") {
+            val text = raw.decodeToString()
+            if (text.isBlank()) JsonRecord() else JsonRecord(text)
+        }
     }
     suspend fun bytes(path: String, method: String = "GET", body: JsonRecord? = null): ByteArray {
         val decoded = path.substringBefore('?').decodeURLPart()
         require(path.startsWith("/api/bonds/") && !decoded.contains("..") && !path.contains('\\') && !path.contains('#') && !path.contains('\r') && !path.contains('\n')) { "Invalid API path." }
-        return client.prepareRequest(origin + path) {
-            this.method = HttpMethod.parse(method)
-            header(HttpHeaders.Accept, "application/json, application/pdf")
-            header(HttpHeaders.Origin, origin)
-            if (body != null) { contentType(ContentType.Application.Json); setBody(body.toString()) }
-        }.execute { response ->
-            val limit = 24 * 1024 * 1024
-            require((response.contentLength() ?: 0) <= limit) { "Response is too large." }
-            val chunks = mutableListOf<ByteArray>()
-            var total = 0
-            val channel = response.bodyAsChannel()
-            val buffer = ByteArray(8192)
-            try {
-                while (true) {
-                    val count = channel.readAvailable(buffer)
-                    if (count < 0) break
-                    if (count == 0) continue
-                    total += count
-                    require(total <= limit) { "Response is too large." }
-                    chunks += buffer.copyOf(count)
+        val requestId = if (UnlockPerformance.enabled) Random.nextBytes(16).joinToString("") { (it.toInt() and 255).toString(16).padStart(2, '0') } else ""
+        val timing = UnlockPerformance.begin("http_$method", requestId, UnlockPerformance.route(path))
+        var outcome = "failed"
+        try {
+            return client.prepareRequest(origin + path) {
+                if (requestId.isNotEmpty()) header("X-Request-ID", requestId)
+                this.method = HttpMethod.parse(method)
+                header(HttpHeaders.Accept, "application/json, application/pdf")
+                header(HttpHeaders.Origin, origin)
+                if (body != null) { contentType(ContentType.Application.Json); setBody(UnlockPerformance.measureSync("json_encode") { body.toString() }) }
+            }.execute { response ->
+                outcome = response.status.value.toString()
+                val limit = 24 * 1024 * 1024
+                require((response.contentLength() ?: 0) <= limit) { "Response is too large." }
+                val chunks = mutableListOf<ByteArray>()
+                var total = 0
+                val channel = response.bodyAsChannel()
+                val buffer = ByteArray(8192)
+                try {
+                    while (true) {
+                        val count = channel.readAvailable(buffer)
+                        if (count < 0) break
+                        if (count == 0) continue
+                        total += count
+                        require(total <= limit) { "Response is too large." }
+                        chunks += buffer.copyOf(count)
+                    }
+                } finally { channel.cancel() }
+                val bytes = ByteArray(total)
+                var offset = 0
+                chunks.forEach { it.copyInto(bytes, offset); offset += it.size }
+                if (response.status.value !in 200..299) {
+                    val message = runCatching { JsonRecord(bytes.decodeToString()).text("error") }.getOrNull()
+                    throw ApiException(response.status.value, message?.takeIf { it.isNotBlank() } ?: "Server returned HTTP ${response.status.value}. Please try again.")
                 }
-            } finally { channel.cancel() }
-            val bytes = ByteArray(total)
-            var offset = 0
-            chunks.forEach { it.copyInto(bytes, offset); offset += it.size }
-            if (response.status.value !in 200..299) {
-                val message = runCatching { JsonRecord(bytes.decodeToString()).text("error") }.getOrNull()
-                throw ApiException(response.status.value, message?.takeIf { it.isNotBlank() } ?: "Server returned HTTP ${response.status.value}. Please try again.")
+                bytes
             }
-            bytes
-        }
+        } finally { timing?.end(outcome) }
     }
     suspend fun sessionSnapshot(): String = cookies.snapshot(origin)
     suspend fun restoreSession(snapshot: String) = cookies.restore(origin, snapshot)

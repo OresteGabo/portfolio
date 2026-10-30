@@ -55,8 +55,20 @@ internal fun DocumentsHub(model: PortfolioModel, engine: InvestmentEngine, revie
         }
     }
     Column(Modifier.fillMaxSize()) {
+        if (model.documentsLoading) {
+            LinearProgressIndicator(Modifier.fillMaxWidth())
+            AppText("Loading your documents…", Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+        }
+        model.documentsSyncError?.let { message ->
+            Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+                AppText(message, Modifier.weight(1f))
+                TextButton(onClick = model::retryPortfolioSync) { AppText("Try again") }
+            }
+        }
         holder.SaveableStateProvider(section) {
-            if (section == "Library") DocumentsScreen(model, initialDocumentId = focusDocument)
+            if (section == "Library") {
+                if (!model.documentsLoading || model.documents.isNotEmpty()) DocumentsScreen(model, initialDocumentId = focusDocument)
+            }
             else ImportConversation(model, engine, review, target, beginImport, reviewed, done,
                 showHint = showHint, dismissHint = dismissHint,
                 openDocument = { id ->

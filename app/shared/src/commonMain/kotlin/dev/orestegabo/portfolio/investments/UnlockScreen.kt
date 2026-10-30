@@ -39,10 +39,10 @@ internal fun UnlockScreen(model: PortfolioModel, openLegal: () -> Unit) {
             verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             UnlockLogo(Modifier.fillMaxWidth().height(if (compact) 152.dp else 204.dp), compact)
             Spacer(Modifier.height(if (compact) 18.dp else 28.dp))
-            AppText("Portfolio locked", Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium,
+            AppText(if (model.verifyingSession) "Device unlocked" else "Portfolio locked", Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
             Spacer(Modifier.height(12.dp))
-            AppText("Your saved sign-in is protected on this device.", Modifier.widthIn(max = 300.dp),
+            AppText(if (model.verifyingSession) "Checking your server session. Your investments stay protected." else "Your saved sign-in is protected on this device.", Modifier.widthIn(max = 300.dp),
                 style = MaterialTheme.typography.bodyMedium, color = colours.onSurfaceVariant, textAlign = TextAlign.Center)
             Spacer(Modifier.height(if (compact) 24.dp else 32.dp))
             Button(onClick = model::unlock, enabled = !model.busy,
@@ -56,7 +56,7 @@ internal fun UnlockScreen(model: PortfolioModel, openLegal: () -> Unit) {
                 AppText(if (model.busy) "Unlocking…" else "Unlock with ${localized(model.unlockLabel)}", textAlign = TextAlign.Center)
             }
             Spacer(Modifier.height(8.dp))
-            TextButton(onClick = model::usePassword, enabled = !model.busy, modifier = Modifier.heightIn(min = 48.dp)) { AppText("Use password instead") }
+            TextButton(onClick = model::usePassword, enabled = !model.busy || model.verifyingSession, modifier = Modifier.heightIn(min = 48.dp)) { AppText("Use password instead") }
             TextButton(onClick = openLegal, modifier = Modifier.heightIn(min = 48.dp)) { AppText("Legal & privacy") }
         }
     }

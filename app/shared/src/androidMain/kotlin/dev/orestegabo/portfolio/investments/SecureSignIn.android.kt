@@ -40,7 +40,7 @@ private var applicationVault: AndroidSecureSignIn? = null
     val context = LocalContext.current
     val activity = context.host()
     val vault = remember(context.applicationContext) {
-        applicationVault ?: AndroidSecureSignIn(context.applicationContext).also { applicationVault = it }
+        applicationVault ?: UnlockPerformance.measureSync("vault_initialization") { AndroidSecureSignIn(context.applicationContext) }.also { applicationVault = it }
     }
     val credential = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         vault.credentialResult?.complete(it.resultCode == Activity.RESULT_OK)
@@ -104,6 +104,7 @@ private class AndroidSecureSignIn(private val application: Context) : SecureSign
         val activity = requireNotNull(host.get()) { "Device authentication is unavailable." }
         check(!authenticating) { "Device authentication is already open." }
         authenticating = true
+        val timing = UnlockPerformance.begin("native_auth_prompt")
         try {
             if (Build.VERSION.SDK_INT < 30 && !legacyBiometric) {
                 // These Android versions cannot combine a CryptoObject with device credentials.
@@ -134,7 +135,7 @@ private class AndroidSecureSignIn(private val application: Context) : SecureSign
                 continuation.invokeOnCancellation { prompt.cancelAuthentication() }
                 prompt.authenticate(builder.build(), BiometricPrompt.CryptoObject(cipher))
             }
-        } finally { authenticating = false; pendingAuth = null; currentPrompt = null }
+        } finally { timing?.end(); authenticating = false; pendingAuth = null; currentPrompt = null }
     }
     override suspend fun read(origin: String): String? {
         lock()
@@ -143,17 +144,19 @@ private class AndroidSecureSignIn(private val application: Context) : SecureSign
             require(raw.length <= 100_000)
             val record = JsonRecord(raw)
             val legacy = Build.VERSION.SDK_INT < 30 && record.text("keyPolicy") != "device-v2"
-            val wrapping = wrappingKey(origin, legacy)
+            val wrapping = UnlockPerformance.measure("keystore_key_read") { wrappingKey(origin, legacy) }
             val authenticated = authorize(legacy) {
                 Cipher.getInstance("AES/GCM/NoPadding").apply {
                     init(Cipher.DECRYPT_MODE, wrapping, GCMParameterSpec(128, decode(record.text("keyIv"))))
                 }
             } ?: return null
+            val timing = UnlockPerformance.begin("keystore_decrypt")
             val secret = authenticated.doFinal(decode(record.text("wrappedKey")))
             require(secret.size == 32)
             val value = dataCipher(Cipher.DECRYPT_MODE, secret, decode(record.text("dataIv"))).doFinal(decode(record.text("data")))
             dataKey = secret
             unlockedOrigin = origin
+            timing?.end()
             return value.decodeToString().also { value.fill(0) }
         } catch (failure: CancellationException) { lock(); throw failure }
         catch (_: Exception) { lock(); error("Saved sign-in is unavailable. Use your password to sign in again.") }

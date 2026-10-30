@@ -1378,4 +1378,12 @@ internal val frenchStrings: Map<String, String> = mapOf(
     "Confirmation PDF uploaded" to "PDF de confirmation importé",
     "Match an existing purchase" to "Associer un achat existant",
     "Adds your confirmation PDF" to "Ajoute votre PDF de confirmation",
+    "Device unlocked" to "Appareil déverrouillé",
+    "Checking your server session. Your investments stay protected." to "Vérification de votre session sur le serveur. Vos investissements restent protégés.",
+    "Your portfolio" to "Votre portefeuille",
+    "Loading your saved investments…" to "Chargement de vos investissements enregistrés…",
+    "Your investments have not loaded yet." to "Vos investissements ne sont pas encore chargés.",
+    "Investments could not be loaded. Check your connection and try again." to "Impossible de charger vos investissements. Vérifiez votre connexion et réessayez.",
+    "Loading your documents…" to "Chargement de vos documents…",
+    "Documents could not be loaded. Try again." to "Impossible de charger vos documents. Réessayez.",
 )

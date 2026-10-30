@@ -20,10 +20,12 @@ class SecureSessionTest {
         var cancel = false
         var locks = 0
         var reads = 0
+        var saves = 0
+        var readDelay = 0L
         override var authenticating = false
         override fun hasSaved(origin: String) = value != null
-        override suspend fun read(origin: String): String? { reads++; return if (cancel) null else value }
-        override suspend fun save(origin: String, value: String): Boolean { this.value = value; return true }
+        override suspend fun read(origin: String): String? { reads++; delay(readDelay); return if (cancel) null else value }
+        override suspend fun save(origin: String, value: String): Boolean { saves++; this.value = value; return true }
         override fun delete(origin: String) { value = null }
         override fun lock() { locks++ }
     }
@@ -36,6 +38,11 @@ class SecureSessionTest {
         var failLogout = false
         var requests = 0
         var logins = 0
+        var requestDelay: (String) -> Long = { 0 }
+        var shares = "[]"
+        val paths = mutableListOf<String>()
+        val failures = mutableMapOf<String, HttpStatusCode>()
+        var offline = false
     }
     private fun seed(scenario: Scenario) {
         val cookie = JsonRecord().put("name", "__Host-bonds_session").put("value", "test-token").put("domain", "secure.example.test").put("path", "/").put("secure", true).put("httpOnly", true).put("encoding", "RAW")
@@ -53,6 +60,10 @@ class SecureSessionTest {
                 this.dispatcher = dispatcher
                 addHandler { request ->
                     scenario.requests++
+                    scenario.paths += request.url.encodedPath
+                    delay(scenario.requestDelay(request.url.encodedPath))
+                    if (scenario.offline) throw IllegalStateException("Synthetic offline transport")
+                    scenario.failures[request.url.encodedPath]?.let { status -> return@addHandler respond("{}", status) }
                     when (request.url.encodedPath) {
                         "/api/bonds/auth/session" -> respond(if (scenario.sessionValid && request.headers[HttpHeaders.Cookie].orEmpty().contains("test-token")) """{"authenticated":true,"user":{"id":"saved","email":"saved@example.test"}}""" else """{"authenticated":false}""")
                         "/api/bonds/auth/login" -> {
@@ -62,7 +73,7 @@ class SecureSessionTest {
                         }
                         "/api/bonds/auth/logout" -> if (scenario.failLogout) respond("{}", HttpStatusCode.ServiceUnavailable) else respond("{}")
                         "/api/bonds/purchases" -> respond("""{"purchases":[{"id":"private"}]}""")
-                        "/api/bonds/equities" -> respond("""{"holdings":[]}""")
+                        "/api/bonds/equities" -> respond("""{"holdings":${scenario.shares}}""")
                         "/api/bonds/documents" -> respond("""{"documents":[]}""")
                         else -> respond("{}")
                     }
@@ -70,6 +81,201 @@ class SecureSessionTest {
             }))
         }).also { scenario.store.put("model", it) }
     }
+
+    @Test fun controlledColdUnlockTiming() = runTest {
+        val scenario = Scenario().also(::seed).apply {
+            shares = """[{"id":"share","status":"active","tradeDate":"2020-01-01","shares":1,"ticker":"TEST"}]"""
+            requestDelay = { path -> when (path) {
+                "/api/bonds/auth/session", "/api/bonds/mobile-overview" -> 200
+                "/api/bonds/purchases", "/api/bonds/equities" -> 300
+                "/api/bonds/documents" -> 1000
+                "/api/bonds/statement-items" -> 2000
+                "/api/bonds/rse/quotes" -> 16000
+                else -> 0
+            } }
+        }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle()
+            val start = testScheduler.currentTime
+            model.unlock()
+            while (model.locked && testScheduler.currentTime - start < 25000) {
+                advanceTimeBy(100); runCurrent()
+            }
+            println("CONTROLLED_UNLOCK_UI_MS=${testScheduler.currentTime - start}")
+            assertEquals(200, testScheduler.currentTime - start)
+            assertFalse(model.busy)
+            assertTrue(model.portfolioSyncing)
+            assertFalse(model.portfolioReady)
+            assertNotNull(model.user)
+            advanceUntilIdle()
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun coldThenWarmUnlockHaveSeparateWorkAndNoUnnecessaryVaultWrites() = runTest {
+        val scenario = Scenario().also(::seed).apply { requestDelay = { 200 } }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.foreground(); advanceUntilIdle()
+            val requests = scenario.requests
+            val time = testScheduler.currentTime
+            model.background(); advanceTimeBy(1000); scenario.clock += 1.seconds
+            model.foreground(); runCurrent()
+            assertFalse(model.locked); assertFalse(model.busy)
+            assertEquals(requests, scenario.requests)
+            assertEquals(1, scenario.vault.reads)
+            assertEquals(0, scenario.vault.saves)
+            println("CONTROLLED_WARM_RESUME_WAIT_MS=${testScheduler.currentTime - time - 1000}")
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun delayedPortfolioDoesNotOwnActionLockAndDuplicateUnlockDoesNotRevalidate() = runTest {
+        val scenario = Scenario().also(::seed).apply { requestDelay = { if (it.contains("/auth/")) 100 else 20000 } }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); model.unlock(); model.foreground()
+            advanceTimeBy(101); runCurrent()
+            assertFalse(model.locked); assertFalse(model.busy); assertTrue(model.portfolioSyncing)
+            var usable = false
+            model.action { usable = true }; runCurrent()
+            assertTrue(usable)
+            model.startPortfolioSync(); model.unlock(); runCurrent()
+            assertEquals(1, scenario.paths.count { it == "/api/bonds/auth/session" })
+            assertEquals(1, scenario.vault.reads)
+            advanceUntilIdle()
+            assertTrue(model.portfolioReady); assertFalse(model.portfolioSyncing); assertFalse(model.documentsLoading)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun missingInternetAndUnavailableSessionNeverRevealProtectedDataOrRetryPassword() = runTest {
+        for (offline in listOf(true, false)) {
+            val scenario = Scenario().also(::seed).apply {
+                this.offline = offline
+                failures["/api/bonds/auth/session"] = HttpStatusCode.ServiceUnavailable
+            }
+            val model = model(scenario)
+            try {
+                advanceUntilIdle(); model.unlock(); advanceUntilIdle()
+                assertTrue(model.locked); assertNull(model.user); assertTrue(model.purchases.isEmpty())
+                assertEquals(0, scenario.logins); assertEquals(1, scenario.requests)
+                assertFalse(model.busy); assertNotNull(model.error)
+            } finally { scenario.store.clear(); Dispatchers.resetMain() }
+        }
+    }
+
+    @Test fun failedPortfolioKeepsAuthorizedShellUsableAndCanBeRetried() = runTest {
+        val scenario = Scenario().also(::seed).apply { failures["/api/bonds/mobile-overview"] = HttpStatusCode.ServiceUnavailable }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); advanceUntilIdle()
+            assertFalse(model.locked); assertNotNull(model.user); assertFalse(model.busy)
+            assertFalse(model.portfolioReady); assertNotNull(model.portfolioSyncError)
+            scenario.failures.clear(); model.retryPortfolioSync(); advanceUntilIdle()
+            assertTrue(model.portfolioReady); assertNull(model.portfolioSyncError)
+            assertEquals(0, scenario.logins)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun slowDocumentsAndStatementsDoNotDelaySavedInvestments() = runTest {
+        val scenario = Scenario().also(::seed).apply { requestDelay = { if (it.endsWith("documents") || it.endsWith("statement-items")) 20000 else 0 } }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); runCurrent()
+            assertFalse(model.locked); assertTrue(model.portfolioReady); assertFalse(model.busy)
+            assertTrue(model.documentsLoading); assertEquals(1, model.purchases.size)
+            advanceUntilIdle(); assertFalse(model.documentsLoading)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun unauthorizedConcurrentDataRequestsLockAndNeverLaunchParallelCredentialRenewals() = runTest {
+        val scenario = Scenario().also(::seed).apply {
+            failures["/api/bonds/mobile-overview"] = HttpStatusCode.Unauthorized
+            failures["/api/bonds/documents"] = HttpStatusCode.Unauthorized
+            failures["/api/bonds/statement-items"] = HttpStatusCode.Unauthorized
+        }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); advanceUntilIdle()
+            assertTrue(model.locked); assertNull(model.user); assertTrue(model.purchases.isEmpty())
+            assertEquals(0, scenario.logins); assertFalse(model.busy)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun lockCancelsLateSynchronizationResponses() = runTest {
+        val scenario = Scenario().also(::seed).apply { requestDelay = { if (it.contains("/auth/")) 0 else 20000 } }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); runCurrent()
+            assertFalse(model.locked); assertTrue(model.portfolioSyncing)
+            model.lock(); advanceUntilIdle()
+            assertTrue(model.locked); assertNull(model.user); assertTrue(model.purchases.isEmpty())
+            assertTrue(model.documents.isEmpty()); assertFalse(model.portfolioSyncing); assertFalse(model.documentsLoading)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun passwordFallbackCancelsSlowServerVerification() = runTest {
+        val scenario = Scenario().also(::seed).apply { requestDelay = { 20000 } }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); runCurrent()
+            assertTrue(model.verifyingSession); assertTrue(model.locked)
+            model.usePassword(); advanceUntilIdle()
+            assertFalse(model.locked); assertNull(model.user); assertFalse(model.secureSignInEnabled)
+            assertFalse(model.busy); assertFalse(model.verifyingSession)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun expiredCookieSkipsRedundantSessionRequestAndRenewsExactlyOnce() = runTest {
+        val scenario = Scenario().also(::seed)
+        val saved = JsonRecord(scenario.vault.value!!)
+        val snapshot = JsonRecord(saved.text("session"))
+        // JsonRecord wrappers are copies: build the changed serialized record explicitly.
+        snapshot.put("cookies", JsonList(listOf(snapshot.rows("cookies").single().put("expiresAt", 1))))
+        scenario.vault.value = saved.put("session", snapshot.toString()).toString()
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); model.unlock(); advanceUntilIdle()
+            assertFalse(model.locked); assertNotNull(model.user)
+            assertEquals(0, scenario.paths.count { it == "/api/bonds/auth/session" })
+            assertEquals(1, scenario.logins); assertEquals(1, scenario.vault.saves)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun retryDoesNotLetCancelledSectionClearNewLoadingState() = runTest {
+        val scenario = Scenario().also(::seed).apply {
+            failures["/api/bonds/mobile-overview"] = HttpStatusCode.ServiceUnavailable
+            requestDelay = { if (it.endsWith("documents")) 20000 else 0 }
+        }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); runCurrent()
+            assertNotNull(model.portfolioSyncError); assertTrue(model.documentsLoading)
+            scenario.failures.clear(); model.retryPortfolioSync(); runCurrent()
+            assertTrue(model.portfolioReady); assertTrue(model.documentsLoading)
+            advanceUntilIdle(); assertFalse(model.documentsLoading)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun promptMustCompleteBeforeAnyServerRequestOrDataAppears() = runTest {
+        val scenario = Scenario().also(::seed).apply { vault.readDelay = 1500 }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); advanceTimeBy(1000); runCurrent()
+            assertTrue(model.locked); assertNull(model.user); assertEquals(0, scenario.requests)
+            advanceUntilIdle(); assertFalse(model.locked); assertNotNull(model.user)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun rejectedNotificationAuthorizationAlsoClearsTheSnapshot() = runTest {
+        val scenario = Scenario().also(::seed).apply { failures["/api/bonds/notifications/preferences"] = HttpStatusCode.Unauthorized }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); advanceUntilIdle()
+            assertTrue(model.locked); assertNull(model.user); assertTrue(model.purchases.isEmpty())
+            assertFalse(model.busy); assertEquals(0, scenario.logins)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
     @Test fun coldStartCannotReadPrivateDataBeforeDeviceUnlock() = runTest {
         val scenario = Scenario().also(::seed)
         val model = model(scenario)
