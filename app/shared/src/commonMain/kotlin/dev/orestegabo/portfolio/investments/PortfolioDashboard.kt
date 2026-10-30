@@ -140,13 +140,14 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
                 } }
                 items(bonds, key = { "bond:${it.text("id")}" }) { purchase -> AppMovingItem { Inset {
                     BondPurchaseTile(purchase, uploadConfirmation = { uploadPending(purchase) },
-                        manualConfirmation = { model.confirmPendingPurchase(purchase) }, confirming = model.busy) { detail(purchase) }
+                        manualConfirmation = { model.confirmPendingPurchase(purchase) }, confirming = model.busy,
+                        evidence = { InvestmentEvidenceActions(model, purchase) }) { detail(purchase) }
                 } } }
             }
             if (kind != "bonds") {
                 if (kind == "all") item { SectionLabel("Shares") }
                 if (recentShares.isEmpty()) item { Inset { EmptyState("No shares in the past year", EmptyArtwork.SHARES, compact = true) } }
-                items(recentShares, key = { "share:${it.text("id")}" }) { holding -> AppMovingItem { Inset { SharePurchaseTile(holding) } } }
+                items(recentShares, key = { "share:${it.text("id")}" }) { holding -> AppMovingItem { Inset { SharePurchaseTile(holding) { InvestmentEvidenceActions(model, holding) } } } }
             }
         }
     }

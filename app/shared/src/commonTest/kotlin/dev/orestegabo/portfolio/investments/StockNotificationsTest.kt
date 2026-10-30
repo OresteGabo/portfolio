@@ -9,6 +9,42 @@ import kotlinx.coroutines.test.*
 import kotlin.test.*
 
 class StockNotificationsTest {
+    @Test fun automaticReceiptCanBeExplicitlyConfirmedWithoutTogglingItOff() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler); Dispatchers.setMain(dispatcher)
+        val store = ViewModelStore(); var method = "automatic"; var confirmed: Boolean? = null
+        fun receipts() = JsonRecord().put("receipts", JsonList(listOf(JsonRecord().put("purchaseId", "bond-1")
+            .put("dueDate", "2026-04-23").put("amount", 54321.15).put("currency", "RWF").put("received", true).put("method", method)))).toString()
+        val model = PortfolioModel(object : ServerSettings {
+            override fun readOrigin() = "https://synthetic.example.test"
+            override fun writeOrigin(origin: String) {}
+        }, assets = { "[]".encodeToByteArray() }, apiFactory = { origin -> PortfolioApi(origin, MockEngine(MockEngineConfig().apply {
+            this.dispatcher = dispatcher
+            addHandler { request -> when (request.url.encodedPath) {
+                "/api/bonds/auth/session" -> respond("""{"authenticated":true,"user":{"id":"synthetic"}}""")
+                "/api/bonds/mobile-overview" -> respond("""{"version":1,"recentPurchaseIds":[],"recentHoldingIds":[],"purchases":[],"holdings":[],"monthlyInvestmentTotals":[]}""")
+                "/api/bonds/notifications" -> respond("""{"notifications":[],"serverDate":"2026-10-30"}""")
+                "/api/bonds/notifications/coupons" -> {
+                    if (request.method == HttpMethod.Post) {
+                        val body = JsonRecord((request.body as io.ktor.http.content.OutgoingContent.ByteArrayContent).bytes().decodeToString())
+                        assertEquals("bond-1", body.text("purchaseId")); assertEquals("2026-04-23", body.text("dueDate"))
+                        confirmed = body.optBoolean("received"); method = "manual"
+                    }
+                    respond(receipts())
+                }
+                else -> respond("{}")
+            } }
+        })) })
+        store.put("model", model)
+        try {
+            advanceUntilIdle(); assertEquals("automatic", model.couponReceipt("bond-1", "2026-04-23")?.text("method"))
+            model.confirmCoupon("bond-1", "2026-04-23", true); advanceUntilIdle()
+            assertEquals(true, confirmed)
+            val saved = model.couponReceipt("bond-1", "2026-04-23")
+            assertEquals("manual", saved?.text("method")); assertEquals(54321.15, saved?.optDouble("amount"))
+            assertEquals(true, saved?.optBoolean("received"))
+        } finally { store.clear(); Dispatchers.resetMain() }
+    }
+
     @Test fun unreadStateChangesOnlyAfterServerAcknowledgementAndClearsAtLogout() = runTest {
         val dispatcher=StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(dispatcher)

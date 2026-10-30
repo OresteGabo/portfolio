@@ -52,13 +52,14 @@ private fun PurchaseTile(
 }
 
 @Composable
-fun BondPurchaseTile(purchase: JsonRecord, uploadConfirmation: () -> Unit, manualConfirmation: (() -> Unit)? = null, confirming: Boolean = false, manage: () -> Unit) {
+fun BondPurchaseTile(purchase: JsonRecord, uploadConfirmation: () -> Unit, manualConfirmation: (() -> Unit)? = null, confirming: Boolean = false, evidence: @Composable () -> Unit = {}, manage: () -> Unit) {
     var expanded by rememberSaveable(purchase.text("id")) { mutableStateOf(false) }
     val currency = purchase.text("currency")
     val pending = purchase.text("status") == "submitted"
     PurchaseTile(purchase.text("bondName"),
         "${money(purchase.optDouble("faceValue", 0.0), currency)} · ${if (pending) "Pending" else localized(purchase.text("status"))}",
         expanded, { expanded = !expanded }, pending = pending, logo = { InvestmentLogo(bond = true) }) {
+        evidence()
         if (pending) PendingPurchaseFacts(purchase) else BondPurchaseFacts(purchase)
         if (!pending) purchase.terms()?.let { terms ->
             val tracking = trackBond(terms, Today)
@@ -102,12 +103,13 @@ fun BondPurchaseFacts(purchase: JsonRecord) {
 }
 
 @Composable
-fun SharePurchaseTile(holding: JsonRecord) {
+fun SharePurchaseTile(holding: JsonRecord, evidence: @Composable () -> Unit = {}) {
     var expanded by rememberSaveable(holding.text("id")) { mutableStateOf(false) }
     val currency = holding.text("currency")
     PurchaseTile(listOf(holding.text("securityName"), holding.text("ticker")).filter { it.isNotBlank() }.joinToString(" · "),
         "${holding.text("shares")} shares · Cost ${money(holding.optDouble("netAmountPayable", 0.0), currency)}",
         expanded, { expanded = !expanded }, logo = { InvestmentLogo(ticker = holding.text("ticker")) }) {
+        evidence()
         listOf("ticker" to "Ticker", "isin" to "ISIN", "exchange" to "Exchange", "currency" to "Currency",
             "status" to "Status", "tradeDate" to "Trade date", "settlementDate" to "Settlement", "shares" to "Shares",
             "broker" to "Broker", "contractNote" to "Contract note", "cdsAccountNo" to "CDS account",

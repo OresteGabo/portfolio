@@ -160,7 +160,7 @@ private fun ImportConversation(model: PortfolioModel, engine: InvestmentEngine, 
                                         (if (entry.kind == "equity") model.holdings else model.purchases).firstOrNull { it.text("id") == entry.purchaseId },
                                         firstImportAddedTime(model.documents.firstOrNull { it.text("id") == entry.documentId }, entries))
                                     if (entry.outcome == ImportOutcome.STATEMENT) {
-                                        AppText("${entry.recorded} ${localized("recorded")} · ${entry.missing} ${localized("missing PDFs")}", style = MaterialTheme.typography.labelMedium)
+                                        AppText(localized("{0} matched · {1} need attention").replace("{0}", entry.recorded.toString()).replace("{1}", entry.missing.toString()), style = MaterialTheme.typography.labelMedium)
                                         TextButton(onClick = { model.showStatementDocumentReview(entry.documentId) }) { AppText("Review statement records") }
                                         if (entry.missing > 0) TextButton(onClick = openMissing) { AppText("View missing documents") }
                                     }

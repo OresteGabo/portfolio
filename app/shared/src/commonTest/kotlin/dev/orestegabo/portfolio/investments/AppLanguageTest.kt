@@ -63,6 +63,12 @@ class AppLanguageTest {
         assertNull("1,234.5".toInputNumberOrNull())
         assertNull("12,3,4".toInputNumberOrNull())
     }
+    @Test fun receiptEvidenceAndReconciliationCopyStayLocalized() {
+        assertEquals("Voir le contrat d’achat d’actions", localized("View share contract", "fr"))
+        assertEquals("Coupon marqué automatiquement", localized("Coupon marked automatically", "fr"))
+        assertEquals("{0} rapprochés · {1} à vérifier", localized("{0} matched · {1} need attention", "fr"))
+        assertNotEquals(localized("Confirmed by you", "fr"), localized("Marked automatically", "fr"))
+    }
     @Test fun everyTemplateRetainsItsArgumentsAndCatalogValuesAreNonempty() {
         val placeholder = Regex("\\{\\d+\\}")
         frenchStrings.forEach { (source, translation) ->

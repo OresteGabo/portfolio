@@ -139,7 +139,7 @@ private fun GeneralNotificationCard(model: PortfolioModel,item: JsonRecord,open:
     val received=if(kind=="coupons") model.couponReceipt(item.text("purchaseId"),item.text("dueDate"))?.optBoolean("received") ?: item.optBoolean("received") else false
     val automatic=(model.couponReceipt(item.text("purchaseId"),item.text("dueDate"))?.text("method") ?: item.text("receiptMethod"))=="automatic"
     val title=when(kind) {
-        "coupons" -> if(received) "Coupon received" else if(item.text("stage")=="soon") "Upcoming coupon" else "Coupon due"
+        "coupons" -> if(received && automatic) "Coupon marked automatically" else if(received) "Coupon received" else if(item.text("stage")=="soon") "Upcoming coupon" else "Coupon due"
         "maturities" -> "Bond maturity"
         "subscriptions" -> if(item.text("stage")=="closing") "Subscriptions closing" else "Subscriptions open"
         "pending" -> "Purchase awaiting confirmation"
@@ -178,6 +178,10 @@ private fun GeneralNotificationCard(model: PortfolioModel,item: JsonRecord,open:
             else if(kind=="coupons" && item.text("dueDate")<=model.notificationDate.toString()) {
                 if(received) {
                     AppText(if(automatic) "Marked automatically" else "Confirmed by you",style=MaterialTheme.typography.labelMedium)
+                    if (automatic) {
+                        AppText("Automatic markings follow your settings; they do not verify payment into your account.", style = MaterialTheme.typography.bodySmall)
+                        TextButton(enabled = !model.busy, onClick = { model.confirmCoupon(item.text("purchaseId"), item.text("dueDate"), true) }) { AppText("Confirm received") }
+                    }
                     TextButton(enabled=!model.busy,onClick={ model.confirmCoupon(item.text("purchaseId"),item.text("dueDate"),false) }) { AppText("Mark not received") }
                 } else Button(enabled=!model.busy,onClick={ model.confirmCoupon(item.text("purchaseId"),item.text("dueDate")) }) { AppText("Confirm received") }
             } else TextButton(onClick={ model.readNotification(item.text("id"));open(item) }) {

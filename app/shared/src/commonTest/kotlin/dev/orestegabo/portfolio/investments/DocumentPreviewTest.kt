@@ -61,6 +61,17 @@ class DocumentPreviewTest {
             assertTrue(f.history.isEmpty())
         } finally { f.store.clear(); Dispatchers.resetMain() }
     }
+    @Test fun explicitInvestmentProofUsesTheExistingPrivateViewerWithoutLibraryMetadata() = runTest {
+        val f = Fixture(); val model = model(f)
+        try {
+            advanceUntilIdle()
+            val evidence = investmentEvidence(JsonRecord().put("contractDocumentId", "private-pdf"), emptyList()).single()
+            model.openDocumentPreview(evidence.document); advanceUntilIdle()
+            assertContentEquals(f.pdf, model.documentPreview?.bytes)
+            assertEquals(1, f.reads); assertEquals(0, f.writes)
+            model.closeDocumentPreview(); assertNull(model.documentPreview)
+        } finally { f.store.clear(); Dispatchers.resetMain() }
+    }
     @Test fun remoteOrTraversalUrlsNeverLeaveTheAuthenticatedApi() = runTest {
         val f = Fixture(); val m = model(f)
         try {

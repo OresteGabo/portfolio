@@ -180,6 +180,7 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
             }
             items(entries, key = { it.id }) { event ->
                 CalendarEventTile(event, expanded == event.id, model.purchases, model.documents, model.historyComplete, model.busy, today,
+                    receipt = model.couponReceipt(event.record.text("id"), event.date.toString()), receiptsAvailable = model.couponTrackingAvailable,
                     reloadHistory = { model.loadInvestmentHistory() }, toggle = { expanded = if (expanded == event.id) null else event.id })
             }
         }
@@ -359,7 +360,7 @@ private fun CalendarDay(
 
 @Composable
 private fun CalendarEventTile(event: InvestmentCalendarEvent, expanded: Boolean, purchases: List<JsonRecord>, documents: List<JsonRecord>,
-    historyComplete: Boolean, busy: Boolean, today: LocalDate, reloadHistory: () -> Unit, toggle: () -> Unit) {
+    historyComplete: Boolean, busy: Boolean, today: LocalDate, receipt: JsonRecord?, receiptsAvailable: Boolean, reloadHistory: () -> Unit, toggle: () -> Unit) {
     val personal = if (event.category == CalendarCategory.ISSUANCE) calendarIssuePurchases(event.record, purchases, documents, historyComplete) else null
     Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
         Column {
@@ -367,12 +368,17 @@ private fun CalendarEventTile(event: InvestmentCalendarEvent, expanded: Boolean,
                 headlineContent = { AppText(event.title, fontWeight = FontWeight.SemiBold) },
                 supportingContent = {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        AppText(event.label, color = event.category.color())
+                        AppText(if (event.category == CalendarCategory.COUPON && event.date <= today)
+                            couponReceiptState(event.date, today, receiptsAvailable, receipt).label else event.label,
+                            color = event.category.color())
                         if (personal != null && personal.status != CalendarPurchaseStatus.NONE) {
                             AppText(personal.status.label, style = MaterialTheme.typography.labelMedium,
                                 color = if (personal.status == CalendarPurchaseStatus.UNAVAILABLE) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary)
                         }
-                        event.amount?.let { FinancialText(money(it, event.record.text("currency")), fontWeight = FontWeight.SemiBold) }
+                        event.amount?.let { amount ->
+                            val value = money(amount, event.record.text("currency"))
+                            FinancialText(if (event.category == CalendarCategory.COUPON) "${localized("Expected net coupon")} · $value" else value, fontWeight = FontWeight.SemiBold)
+                        }
                     }
                 },
                 leadingContent = { AppIcon(when (event.category) {
@@ -400,6 +406,12 @@ private fun CalendarEventTile(event: InvestmentCalendarEvent, expanded: Boolean,
                     } else {
                         Fact("Date", event.date.toString())
                         Fact("Broker", event.record.text("broker").ifBlank { "—" })
+                        if (event.category == CalendarCategory.COUPON && couponReceiptState(event.date, today, receiptsAvailable, receipt) in listOf(CouponReceiptState.CONFIRMED, CouponReceiptState.AUTOMATIC))
+                            recordedCouponAmount(receipt, event.record.text("currency"))?.let { amount ->
+                                Fact("Recorded receipt amount", money(amount, event.record.text("currency")))
+                            }
+                        if (event.category == CalendarCategory.COUPON && couponReceiptState(event.date, today, receiptsAvailable, receipt) == CouponReceiptState.AUTOMATIC)
+                            AppText("Automatic markings follow your settings; they do not verify payment into your account.", style = MaterialTheme.typography.bodySmall)
                         AppText(if (event.category == CalendarCategory.COUPON) "${localized(event.record.text("scheduleConfidence").ifBlank { "Estimated" })} schedule · Expected net coupon; confirm receipt with your broker."
                             else "Expected principal repayment; confirm receipt with your broker.", style = MaterialTheme.typography.bodySmall)
                     }

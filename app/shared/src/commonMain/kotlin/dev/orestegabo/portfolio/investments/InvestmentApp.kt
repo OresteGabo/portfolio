@@ -445,6 +445,7 @@ private fun PurchaseDetails(model: PortfolioModel, purchase: JsonRecord, engine:
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
         item { TextButton(onClick = back) { AppText("← Back") }; PageTitle("Purchase details", purchase.text("bondName"), purchase.text("isin")) }
         item { Panel {
+            InvestmentEvidenceActions(model, purchase)
             if (purchase.text("status") == "submitted") PendingPurchaseFacts(purchase) else BondPurchaseFacts(purchase)
         } }
         if (needsPersonalConfirmation(purchase)) item {
@@ -457,7 +458,14 @@ private fun PurchaseDetails(model: PortfolioModel, purchase: JsonRecord, engine:
                 AppText("Coupon tracking", fontWeight = FontWeight.Bold)
                 Fact("Net per payment", money(tracking.netPerPayment, purchase.text("currency")))
                 Fact("Scheduled to date", money(tracking.scheduledCouponsToDate, purchase.text("currency")))
-                Fact("Confirmed received",if(model.couponTrackingAvailable)money(model.couponReceipts.filter { it.text("purchaseId")==purchase.text("id") && it.optBoolean("received") }.sumOf { it.optDouble("amount") },purchase.text("currency")) else "—")
+                val receipts = couponReceiptTotals(purchase, model.couponReceipts, model.notificationDate)
+                Fact("Confirmed by you", if (model.couponTrackingAvailable) money(receipts.confirmedByUser, purchase.text("currency")) else "—")
+                Fact("Marked automatically", if (model.couponTrackingAvailable) money(receipts.markedAutomatically, purchase.text("currency")) else "—")
+                AppText("Automatic markings follow your settings; they do not verify payment into your account.", style = MaterialTheme.typography.bodySmall)
+                if (!model.couponTrackingAvailable) {
+                    AppText(if (model.notificationsLoading) "Loading receipt status…" else "Receipt status unavailable", style = MaterialTheme.typography.bodySmall)
+                    TextButton(enabled = !model.notificationsLoading, onClick = model::refreshNotifications) { AppText("Refresh receipts") }
+                }
                 Fact("Accrued", money(tracking.accruedCoupon, purchase.text("currency")))
                 Fact("Remaining coupons", money(tracking.remainingCoupons, purchase.text("currency")))
                 AppText("${purchase.text("scheduleConfidence")} schedule · as of $Today", style = MaterialTheme.typography.bodySmall)
@@ -466,11 +474,19 @@ private fun PurchaseDetails(model: PortfolioModel, purchase: JsonRecord, engine:
                 val receipt=model.couponReceipt(purchase.text("id"),date.toString())
                 val received=receipt?.optBoolean("received")==true
                 Fact(date.toString(),money(tracking.netPerPayment,purchase.text("currency")))
-                AppText(if(received) { if(receipt?.text("method")=="automatic") "Marked automatically" else "Confirmed by you" }
-                    else if(date<=model.notificationDate) "Not confirmed received" else "Upcoming",style=MaterialTheme.typography.bodySmall)
+                AppText("Expected net coupon", style = MaterialTheme.typography.labelSmall)
+                val receiptState = couponReceiptState(date, model.notificationDate, model.couponTrackingAvailable, receipt)
+                AppText(receiptState.label, style = MaterialTheme.typography.bodySmall)
+                if (receiptState in listOf(CouponReceiptState.CONFIRMED, CouponReceiptState.AUTOMATIC))
+                    recordedCouponAmount(receipt, purchase.text("currency"))?.let { amount ->
+                        Fact("Recorded receipt amount", money(amount, purchase.text("currency")))
+                    }
                 if(date<=model.notificationDate && model.couponTrackingAvailable) TextButton(enabled=!model.busy,onClick={ model.confirmCoupon(purchase.text("id"),date.toString(),!received) }) {
                     AppText(if(received) "Mark not received" else "Confirm received")
                 }
+                if (receiptState == CouponReceiptState.AUTOMATIC) TextButton(enabled = !model.busy, onClick = {
+                    model.confirmCoupon(purchase.text("id"), date.toString(), true)
+                }) { AppText("Confirm received") }
             } }
         }
         item { Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
