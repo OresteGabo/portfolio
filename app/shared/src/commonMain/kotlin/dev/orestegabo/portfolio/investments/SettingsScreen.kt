@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -> Unit,
     chartStyle: String, changeChartStyle: (String) -> Unit,
-    openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit, openLegal: () -> Unit = {}, openAbout: () -> Unit = {}, openIntroduction: () -> Unit = {}) {
+    openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit, openLegal: () -> Unit = {}, openAbout: () -> Unit = {}, openIntroduction: () -> Unit = {}, openInvestmentTools: () -> Unit = {}) {
     val actions = LocalNativeActions.current
     var setupSecure by remember { mutableStateOf(false) }
     var targetExpanded by remember { mutableStateOf(false) }
@@ -159,6 +159,8 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
             item { SettingsSection("Tools") {
                 SettingsRow(Icons.Outlined.PictureAsPdf, "Portfolio report", "All years · PDF export", enabled = !model.busy,
                     onClick = { dialog = "report" })
+                SettingsDivider()
+                SettingsRow(Icons.Outlined.Payments, "Investment outlook", "Scheduled cash flows & recorded buying fees", onClick = openInvestmentTools)
                 SettingsDivider()
                 SettingsRow(Icons.Outlined.Calculate, "Investment simulator", onClick = openSimulator)
                 SettingsDivider()

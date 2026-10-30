@@ -63,3 +63,8 @@ Advanced bond pricing/YTM solvers, institutional valuation, portfolio optimizati
 ## Verification
 
 See [VERIFICATION.md](VERIFICATION.md) for actual run counts and environment limits. Core regressions ran on JVM and a disposable iPhone simulator, including decimal ties, gross/net tax, official-date precedence and month-end anchors. Shared tests cover reports, French/English privacy and simulator reuse. Backend tests exercise BigDecimal validation and schedule/amount functions without a live account; the PostgreSQL integration suite still requires its isolated database runtime.
+
+
+### Standalone read-only analysis
+
+[Investment outlook](INVESTMENT_TOOLS.md) extends `PortfolioSnapshot` with monthly scheduled coupon/redemption aggregation and complete-history purchase-fee analysis. It reuses the existing schedule, gross/net coupon, cash-cost and decimal primitives. Rates/taxes come from saved records, principal is separate from income, currencies are never summed across an assumed exchange rate, and incomplete values are flagged. No new coupon engine, market-price forecast or persisted investment records. The linked document specifies inclusive/exclusive cutoffs, history scope, fee denominator and regression cases.

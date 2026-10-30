@@ -74,6 +74,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var detail by remember { mutableStateOf<JsonRecord?>(null) }
     var editor by remember { mutableStateOf<JsonRecord?>(null) }
     var equityEditor by remember { mutableStateOf<JsonRecord?>(null) }
+    var investmentTools by rememberSaveable { mutableStateOf(false) }
     var simulator by rememberSaveable { mutableStateOf(false) }
     var legalRoute by rememberSaveable { mutableStateOf<String?>(null) }
     var legalHistory by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
@@ -119,7 +120,7 @@ fun InvestmentApp(model: PortfolioModel) {
     LaunchedEffect(NativePushBridge.updateRevision) { if(model.user!=null && !model.locked)model.refreshNotifications() }
     LaunchedEffect(tab,model.user,model.locked) { if(tab=="Stocks" && model.user!=null && !model.locked)model.refreshNotifications() }
     LaunchedEffect(model.user) {
-        if (model.user == null) { notificationPurchase=null;notificationScreen=false; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; simulator = false; education = false }
+        if (model.user == null) { notificationPurchase=null;notificationScreen=false; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; simulator = false; investmentTools = false; education = false }
     }
     LaunchedEffect(model, model.messageRevision) {
         val revision = model.messageRevision
@@ -196,7 +197,7 @@ fun InvestmentApp(model: PortfolioModel) {
             OnboardingScreen(replayIntroduction, ::finishIntroduction)
             return@MaterialTheme
         }
-        val nested = model.documentPreview != null || notificationScreen || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || editor != null || equityEditor != null || simulator || education
+        val nested = model.documentPreview != null || notificationScreen || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || editor != null || equityEditor != null || simulator || investmentTools || education
         val documentsHome = model.user != null && !model.locked && !nested && tab == "Documents"
         val importChat = documentsHome && documentSection == "Import"
         val back = {
@@ -204,8 +205,8 @@ fun InvestmentApp(model: PortfolioModel) {
                 legalRoute = legalHistory.lastOrNull()
                 legalHistory = legalHistory.dropLast(1)
             } else {
-                if (detail == null && editor == null && equityEditor == null && importReview == null && !pendingEntry && !simulator && !education) investmentHistory = false
-                missingDocuments = false; detail = null; editor = null; equityEditor = null; pendingEntry = false; simulator = false; education = false
+                if (detail == null && editor == null && equityEditor == null && importReview == null && !pendingEntry && !simulator && !investmentTools && !education) investmentHistory = false
+                missingDocuments = false; detail = null; editor = null; equityEditor = null; pendingEntry = false; simulator = false; investmentTools = false; education = false
             }
         }
         if (model.user != null && !model.locked) StatementReconciliationDialog(model, ::uploadMissing)
@@ -217,6 +218,7 @@ fun InvestmentApp(model: PortfolioModel) {
             pendingEntry -> "Pending purchase"
             editor != null -> if (editor!!.text("id").isBlank()) "Add bond" else "Edit bond"
             equityEditor != null -> "Add shares"
+            investmentTools -> "Investment outlook"
             simulator -> "Simulator"
             education -> "Learn"
             detail != null -> "Bond details"
@@ -338,9 +340,11 @@ fun InvestmentApp(model: PortfolioModel) {
                     pendingEntry -> PendingBondScreen(model, pendingIssueId) { pendingEntry = false; pendingIssueId = null }
                     tab == "Settings" && !nested -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
                         chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
-                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { replayIntroduction = true; introductionRequested = true })
+                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { replayIntroduction = true; introductionRequested = true }, openInvestmentTools = { investmentTools = true })
                     editor != null -> PurchaseEditor(model, editor!!, { editor = null })
                     equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null })
+                    investmentTools -> InvestmentToolsScreen(model, openCalendar = { date -> investmentTools = false; calendarFocus = date.toString(); tab = "Calendar" },
+                        openHistory = { investmentTools = false; investmentHistory = true })
                     simulator -> SimulatorScreen(model, engine) { simulator = false }
                     education -> EducationScreen(model) { education = false }
                     detail != null -> {
