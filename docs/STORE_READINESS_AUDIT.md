@@ -1,5 +1,11 @@
 # Store readiness audit — 27 October 2026
 
+## Follow-up — 30 October 2026
+
+This remains a historical audit below. Use [the current release checklist](RELEASE_CHECKLIST.md) for the latest gates and commands. Release preparation now includes a bundled iOS privacy manifest, shared version configuration, optional environment-based Android upload signing with a required-signing beta command, and mobile CI checks. Notification permission/API-level fixes already present now pass full Android release lint (zero errors, 56 warnings). Private contract price history has since been scoped by account in the backend source; the shared-history recommendation below is superseded by the security audit, not a request to introduce contribution consent. Deployment of these source fixes has not been verified.
+
+Public URL recheck: the legacy origin's `/privacy` and `/delete-account` still return 404. `https://structcapital.net/privacy` returns 200 but explicitly identifies itself as a **website privacy draft**, not the app policy. Its `/delete-account` returns 404. A valid app policy and deletion-request path remain release gates. Store declarations, provider facts, distribution credentials, release-device tests and the undocumented iOS capture workaround remain unresolved. This preparation does not make the app submission-ready.
+
 ## Verdict
 
 **Do not submit the current build unchanged.** Google Play looks achievable after release preparation. Apple has an additional material risk from the screenshot workaround and financial-app classification. This is a source/configuration audit plus release builds and tests, not an approval guarantee or a legal compliance certification.
