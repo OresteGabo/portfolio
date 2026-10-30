@@ -50,6 +50,8 @@ This is a small transactional audit/import mechanism, not a requirement for even
 
 ## Future tenant boundary without implementing enterprise tenancy now
 
+[Broker integration contracts](BROKER_INTEGRATION.md) specify conceptual adapter, authorization and consent requirements; [pilot gates](../BROKER_SOFTWARE.md) distinguish verified current reuse from commercial/workflow assumptions. They do not authorize creating tenant infrastructure now.
+
 Today `owner_id` means an individual authenticated account. Do not overload it with a club name or accept an organization ID from a client as authorization.
 
 When a real paid team pilot justifies it:

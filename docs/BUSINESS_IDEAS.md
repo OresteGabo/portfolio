@@ -3,6 +3,8 @@
 Saved: 30 October 2026  
 Based on our earlier business discussion. These are ideas to validate, not committed features or revenue forecasts. Built by GABO.
 
+The [five-year roadmap](PRODUCT_ROADMAP.md) is the current planning framework, based on implemented progress. It defines flexible phases, proposed learning targets, actual-metric definitions, spending/stop gates and the conditional RWF 2–5 million monthly net-profit ambition. Ideas and illustrative arithmetic below are not validated demand or current revenue.
+
 ## Core opportunity
 
 Help people and organizations turn investment paperwork into reliable records and useful reports.
@@ -45,6 +47,8 @@ Possible paid features:
 Keep original documents accessible and portable. Trust and easy access to a person's own records should remain central to the product.
 
 ## Broker business offering
+
+The source-backed [broker readiness assessment and pilot gates](BROKER_SOFTWARE.md) now develop this hypothesis, including reusable components, access/consent limits and unvalidated B2B pricing models. [Conceptual integration contracts](architecture/BROKER_INTEGRATION.md) describe future adapters without adding broker functionality. No partnership or willingness to pay is established.
 
 Explore a focused pilot around document collection, missing confirmations and reporting. Ask a broker to demonstrate the current workflow and identify repetitive work before proposing a large integration.
 

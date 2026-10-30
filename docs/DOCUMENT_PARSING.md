@@ -64,6 +64,8 @@ Executed results and limitations are in [VERIFICATION.md](VERIFICATION.md). The 
 
 ## Adding another broker or format
 
+For future broker-account identity, integration scope, durable provenance and authorization contracts, see [broker adapter onboarding gates](architecture/BROKER_INTEGRATION.md#broker-specific-parser-onboarding). The checklist below remains the canonical parser implementation process; adding a parser alone does not broaden Spring's current BK-specific statement reconciliation or grant institution access to investor data.
+
 1. **Collect samples with permission.** Obtain multiple versions, securities, dates, fee variants and multi-page examples, plus text and scanned copies where applicable. Record the issuing institution and actual format date/version. Keep raw private samples out of Git, logs and diagnostics. Recreate identifying fields with synthetic data and remove hidden PDF metadata/signatures before committing fixtures.
 2. **Define recognition.** Require institution plus document-type/layout markers; test near matches, unrelated PDFs, sales, contradictory currencies and concatenated documents. Do not broaden BK recognition to another broker merely because labels look similar. Recognition must be independent of dispatch order.
 3. **Map to normalized proposals.** Reuse the existing financial fields and statement rows. Document units, percent/fraction conversion, currency, price basis, settlement/trade dates, gross/net amounts, fees, optional fields and missing-value behaviour. An adapter extracts proposals; domain validators check relationships; Spring owns persistence/authorization. A missing required amount never defaults to zero.

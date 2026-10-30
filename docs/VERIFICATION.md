@@ -625,3 +625,47 @@ Docker was unavailable. PostgreSQL 18.3 was already installed, so tests used a n
 Logs: `/tmp/struct-finance-ios.log`, `/tmp/struct-reconcile-kmp-final.log`, `/tmp/struct-reconcile-node.log`, `/private/tmp/struct-reconcile-integration-final.log`. Existing compiler/deprecation warnings and a CoreGraphics PDF diagnostic remain; all listed tests pass. Disposable database/simulator resources were removed after validation. These results validate source behavior, not a production rollout or a manual visual review of every new dialog state.
 
 Final tax-confirmation check: `/tmp/struct-tax-confirmation-final.log`; Android host tests/build and shared iPhone compilation validate the saved-rate preservation fix.
+
+
+### 30 October 2026 — Biometric unlock latency
+
+Separated server-validated navigation from optional portfolio/document/statement/quote/notification synchronization. The same controlled delay fixture asserted a 20,000 ms model unlock wait before the fix and 200 ms afterward (virtual coroutine time, not a hardware frame benchmark). Added monotonic, redacted client/server/JDBC diagnostics and removed the session endpoint's duplicate validation. No authentication shortcuts, schema changes or deployment changes. See [investigation, measurements and remaining production evidence](UNLOCK_PERFORMANCE.md).
+
+Validation: 215 shared Android host tests, 230 shared iOS simulator tests, 41 core JVM tests and 42 Spring tests passed; Android debug assembly, iOS simulator compilation and backend bootJar passed. Native biometric latency/physical first-frame measurements remain unverified.
+
+
+### 30 October 2026 — Focused investor UI improvements
+
+Reviewed existing shared screens/navigation/coordinator, core financial helpers, native ports and Spring API support before selecting changes. Reused the original private PDF viewer and persisted document IDs for direct purchase evidence actions in bond details and expanded bond/share rows. Kept existing fee breakdowns, charts, upcoming-payment cards, search and report flows.
+
+Separated manual coupon confirmations from automatic markings in the existing bond summary, calendar and notification text. Scheduled net estimates remain separate from recorded receipt amounts. Unavailable receipt data is shown as unavailable with refresh; automatic markings can be explicitly confirmed through the existing endpoint. The import conversation now labels combined unmatched/review-required counts as “need attention.” New copy is localized in English/French and amounts continue through masked financial text.
+
+Presentation regressions cover manual/automatic/unconfirmed/unavailable/future states, amount/currency/bond/date scoping, invalid amount handling, explicit provenance rather than ticker guessing, malformed path suppression and exact authenticated original-PDF bytes without writes. Added a client regression for converting an automatic marking to explicit received=true without losing its stored amount, plus localization checks. No production account/database or new backend behavior was used. Existing unlock-performance work remains in the working tree. Future analytics/planning/institutional/broker-interface work is documented in PRODUCT_ROADMAP.md, not implemented here.
+
+Executed validation: **226 shared Android host tests and 241 shared iOS simulator tests passed**, with zero failures. Android debug APK assembly and shared iOS simulator compilation passed. The temporary iPhone simulator was shut down/deleted after testing. `git diff --check` passed. Tests used synthetic records/documents; physical-device screen-reader/layout review was not performed in this pass. The backend was inspected and reused without changes for these UI improvements.
+
+
+### 30 October 2026 — Standalone investment outlook
+
+Reviewed the fourteen proposed tool categories against existing code before selecting monthly saved-bond cash-flow aggregation and complete-history buying-fee analysis. Added Settings → Tools → Investment outlook with existing calendar/history links. Calculations extend `PortfolioSnapshot` and reuse core schedules, gross/net coupons, cash-cost and decimal arithmetic. They separate currencies, scheduled coupons, principal redemption and recorded historical fees. Incomplete records are listed before totals rather than silently defaulted. No broker integration, new future rates/prices/dividends, backend/schema change, subscriptions or paywalls.
+
+All 17 new `InvestmentInsightsTest` regressions passed on JVM and iOS, covering the provided reference values, horizon cutoffs, explicit/estimated schedules, month ends/leap days, maturity principal versus income, configurable withholding, malformed/incomplete records, scope, complete-history requirements, acquisition-fee totals/denominator, fractional amounts and non-mutation. Complete executed suites: **58 core JVM, 58 core iOS simulator, 226 shared Android host and 241 shared iOS simulator tests**, zero failures. Android debug assembly and iOS shared compilation passed. The temporary simulator was removed after tests. Physical-device UI verification and production writes were not performed. Assumptions, candidate inventory and deferred tools are in [INVESTMENT_TOOLS.md](INVESTMENT_TOOLS.md).
+
+
+### 30 October 2026 — Security audit and essential fixes
+
+Three initial new PostgreSQL regressions failed against the original source for public cross-account private-derived prices, unauthorized shared issuance publication and daily-job partial commits. The fixes retain the existing auth, ownership, upload and transaction systems. A further synthetic-upstream test reproduced anonymous forced-refresh cache bypass before the cache-policy fix. Added PDF envelope/truncation/size tests and aligned privacy/permission copy. Public dependency inventory/OSV queries found nine advisories on four backend coordinates; targeted patches were resolved and rescanned (493 unique coordinates, zero returned matches, not a security certification).
+
+Shared Android **226 tests**, iOS **241 tests** and Node/parser **74 tests** passed, along with Android debug assembly and iOS compilation. The final **48-test Spring/PostgreSQL suite and bootJar passed**, including the synthetic market-cache test. Both repositories passed `git diff --check`. No live market upstream, production account/database, real push delivery, regulator filing, deployment or restore drill was used. Full evidence and limits are in [security audit](security/SECURITY_AUDIT.md), [dependencies](security/DEPENDENCIES.md), [operations](security/OPERATIONS.md) and [Rwanda questions](security/RWANDA_DATA_PROTECTION.md).
+
+### 30 October 2026 — Release preparation
+
+Current local release builds, packaged privacy/version checks, signing guard and test evidence are recorded in [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md#verification-recorded-for-this-preparation). Both platform release builds pass unsigned; Android full release lint has zero errors/56 warnings. Core JVM/shared Android host results remain 58/226 passing (up-to-date outputs permitted), Node 74 fresh tests and release-package validator 3 fresh tests pass. Hosted CI, distribution signing, production migration state, real-device upgrade/accessibility, policy approval and store publication are not claimed.
+
+### 30 October 2026 — Broker architectural readiness
+
+Documentation-only inspection of existing KMP financial/parser/report boundaries and Spring controllers, security, portfolio/document/statement services, coupon lifecycle and migrations. [Broker opportunities](BROKER_SOFTWARE.md) and [conceptual integration contracts](architecture/BROKER_INTEGRATION.md) distinguish source-backed capabilities from unvalidated institutional workflows, pricing and pilot assumptions. No runtime, financial calculation, schema, authorization or UI behavior changed; no customer records, broker APIs or credentials accessed. Validated all 21 local links/anchors in the two new documents and ran `git diff --check` successfully. Runtime tests were not rerun for documentation-only changes; earlier test results are not claimed as new institutional validation.
+
+### 30 October 2026 — Five-year product and business roadmap
+
+Updated PRODUCT_ROADMAP.md against current KMP tools/import/navigation sources, core financial tests, Node parser regressions, Spring APIs/matching/coupon services and financial tests, release/security findings and broker-readiness documents. Replaced stale implementation priorities with source-completed versus deployment-unverified distinctions. Proposed user/import/retention/payment/pilot targets are learning milestones, not observed metrics; current business baselines remain unknown. The RWF 2–5m monthly net-profit ambition is conditional, with decimal-checked revenue arithmetic at illustrative margins and explicit cost/time/stop gates. Verified all 15 local roadmap links/anchors and `git diff --check`; no runtime tests rerun for documentation-only changes. No code, infrastructure, data collection, billing, marketing campaign, integration, deployment or brokerage functionality added.

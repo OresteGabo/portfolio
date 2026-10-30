@@ -2,6 +2,10 @@
 
 > Updated audit (30 October 2026): [current feature inventory](CURRENT_STATE.md), [technical debt](TECHNICAL_DEBT.md), [product roadmap](PRODUCT_ROADMAP.md), [architecture assessment](architecture/ASSESSMENT.md), [target modular architecture](architecture/TARGET_ARCHITECTURE.md), [implemented decisions](architecture/DECISIONS.md), and [source inventory](architecture/SOURCE_INVENTORY.md). The actual Spring API is in the companion checkout; this repository's Ktor `server` is a sample. Pure portfolio aggregation, valuation, goals and date/terms helpers now live in `core`; older sections below describe the system's evolution.
 
+For the current authentication gate and asynchronous synchronization sequence, see [biometric unlock performance](UNLOCK_PERFORMANCE.md).
+
+Future institutional reuse is assessed in [broker software opportunities](BROKER_SOFTWARE.md) and [conceptual broker integration contracts](architecture/BROKER_INTEGRATION.md). These are documentation-only designs; the individual account boundary, existing parsers and current APIs remain unchanged.
+
 Android and iOS call the same `App()` in `app/shared/src/commonMain`. There is no second portfolio UI in either application host.
 
 ```mermaid

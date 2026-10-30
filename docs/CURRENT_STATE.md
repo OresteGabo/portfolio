@@ -2,6 +2,8 @@
 
 Reviewed: 30 October 2026. This is the canonical feature inventory. Read [TECHNICAL_DEBT.md](TECHNICAL_DEBT.md) for prioritized gaps and [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md) for sequencing. [Architecture assessment](architecture/ASSESSMENT.md) owns the stack/API description; [source inventory](architecture/SOURCE_INVENTORY.md) records the repository-wide inspection.
 
+The roadmap now covers five flexible years with proposed validation milestones, business economics and stop criteria. Current usage, retention, import accuracy in the field, paying customers and financial results are not measured by this source inventory. Its historical test counts are technical verification records, not business metrics; consult later entries in VERIFICATION.md for subsequent engineering work.
+
 ## Scope and status meanings
 
 The KMP checkout is `portfolio` (HEAD `5952c80`); the actual Spring backend is the sibling `gabo-portfolio-api` (HEAD `348ed14`). This inventory includes the current working tree, including the prior audit's **uncommitted** core/parser separation and Android fixes. It does not mean these changes are committed, deployed or installed on a phone. The Ktor `:server` here is a sample, not the financial backend.
@@ -114,3 +116,47 @@ The later [document parsing changes](DOCUMENT_PARSING.md) improve the existing p
 ## Subsequent calculation and reconciliation changes
 
 [Financial calculations](FINANCIAL_CALCULATIONS.md) documents configurable tax, decimal monetary boundaries, preserved official dates, anchored inferred schedules and corrected RWF presentation. [Reconciliation](RECONCILIATION.md) documents strengthened identity matching, manual review, separate nonpurchase evidence, source links and correction history. Spring now includes additive Flyway V8 in its working tree; both prior V1–V7 inspection statements and inventory-only no-code statements describe the earlier phase. Dividend/sales/cash accounting and full financial mutation audit remain missing; reconciliation evidence does not implement them.
+
+
+## Investor UI review — 30 October 2026
+
+This follow-up inspected shared navigation (`InvestmentApp`), its direct lifecycle ViewModel (`PortfolioModel`), the core API/domain helpers, screen/component families, native ports and the companion Spring controller/service routes. There is no separate repository/use-case/DI layer to recreate. The older inventory above is a dated architectural snapshot; current source and the later verification entries take precedence over its baseline/test counts.
+
+| Area | Current user-facing status and evidence |
+|---|---|
+| Portfolio dashboard | Implemented: per-currency valuation, buying-cost-aware unrealized share gains, allocation, upcoming payment/maturity cards, contribution targets and recent purchases (`PortfolioDashboard`, `PortfolioValuation`). The preceding unlock change supplies initial loading/retry states; this pass retains them |
+| Bond details | Implemented terms/costs, dates, schedules, confirmation, edit/delete and receipt acknowledgements (`PurchaseDetails`, `BondPurchaseFacts`). This pass adds direct access to explicitly attached personal allocation and issuance PDFs, and separates manual receipt totals from automatic markings |
+| Equity details | Implemented inline purchase-lot disclosure (`SharePurchaseTile`) and aggregate holding cards/charts. Itemized buying fees and total payable already exist. This pass adds direct access to the saved contract from purchase rows. General equity edit/delete and sale/realized-gain workflows still lack end-to-end backend support; no decorative replacement detail page was added |
+| Coupon calendar | Implemented published windows, personal coupon/maturity dates and purchase-aware issuance guidance (`CalendarScreen`, `CalendarEvents`, `CalendarPurchaseStatus`). Past coupon entries now show existing receipt evidence rather than remaining labeled only as expected. Future coupons remain expected; maturity remains an expected principal repayment, not receipt evidence |
+| Dividend tracking | No dividend accounting/receipt API or durable ledger found. Existing screens/reports disclose exclusion. A client-only dividend total would be misleading, so none was introduced |
+| Investment history | Implemented full-history loading, asset/year/text filters and original lots (`InvestmentHistoryScreen`). New evidence actions reuse the existing original-PDF viewer; no additional navigation destination |
+| PDF import | Implemented picker/shared-file routing, parsing/OCR, editable bond correction, review, target matching, duplicate handling, progress, retry and saved receipts (`ConversationReview`, `PurchaseReviewState`, `PurchaseForms`, `ImportJournal`, model). Current import receipts now label combined unmatched/review-required counts as “need attention,” not all “missing PDFs” |
+| Document management | Implemented searchable/filterable library, generated annual cards, authenticated PDF viewing and native sharing (`DocumentsHub`, `DocumentsScreen`, `PdfViewerScreen`). Investment evidence follows persisted document IDs, with canonical authenticated download paths even while library metadata is still loading; no guessed match by ticker/date |
+| Financial analytics | Implemented fee-aware unrealized equity returns and explicitly limited portfolio estimates. Complete total return, dividends, realized proceeds, TWR/MWR/XIRR remain missing pending authoritative cash-flow history. Existing value-scope disclosures preserved |
+| Charts | Implemented selectable area/line/bar charts, month/year/all periods, dated observed/contract-derived prices, stale/error/retry states and existing simulator projections (`InvestmentChart`, `StockPriceHistory`, `LibraryScreens`, `PlanningScreens`). Not recreated |
+| Search/filtering | Implemented in history, document library, bond market and education; dashboard asset/status filters exist. No new global search was justified by this review |
+| Reports | Implemented portfolio and calendar-year/YTD PDFs with original scope limits (`PortfolioReport`, `AnnualReport`). They already distinguish manual/automatic coupon receipt methods. Historical/tax-grade performance remains limited by available data; no new reporting promises |
+| Notifications | Implemented inbox, read state, preferences, price alerts, coupon acknowledgements and backend push adapters. Automatic coupon notifications now say “marked automatically” and permit explicit manual confirmation through the existing receipt endpoint. Runtime push delivery still requires provider/device validation |
+| Settings and localization | Implemented themes, privacy/capture/number controls, language, goals, biometric settings, account controls, about/version/legal links. New evidence/receipt/reconciliation copy is localized in English/French; existing money/date conventions and number masking are retained |
+| Offline functionality | Partial: packaged lessons/parsers, already loaded content and within-grace in-memory session reuse exist. Cold unlock, current authoritative records and financial writes require connectivity; no new offline authorization or financial database |
+
+### Selected usability changes and boundaries
+
+- Document access was missing directly beside saved investment facts although provenance and the private reader already existed. Explicit ID links now make the existing evidence reachable without searching the library. Public issuance terms remain clearly separate from personal allocation confirmation.
+- The bond summary previously called every `received=true` row “Confirmed received,” including automatic acknowledgements. It now shows separate “Confirmed by you” / “Marked automatically” amounts from recorded receipt rows. Future dates, another bond/currency, invalid amounts and unreceived entries cannot inflate these display totals. An unavailable receipt service is displayed as unavailable, not a zero or an unreceived payment. Automatic rows can be manually confirmed using the existing backend behavior; no accounting engine or new receipt endpoint.
+- Calendar and automatic notification text now describe the same existing receipt distinction. Coupon rows label the scheduled net estimate separately from the stored receipt amount, so later changes to bond terms do not disguise what was acknowledged previously. No bank verification is claimed. Existing schedules, coupon calculations, tax assumptions and maturity formulas are unchanged.
+- The active chat's `missing` count includes both unmatched and review-required entries; “need attention” is accurate for both. Its existing Review statement records action already exposes the individual statuses. The older standalone `StatementReviewScreen` has no current navigation call site; it was not used to justify a new product flow.
+
+These changes preserve the existing layout, Struct Capital branding, native privacy controls and preceding performance work. They introduce no backend/schema changes, dependencies, decorative animations, persisted financial records or new institutional products. Relevant shared tests cover presentation boundaries, evidence-path safety, exact private PDF bytes and localization. See VERIFICATION.md for executed commands/results.
+
+
+## Standalone tools follow-up — 30 October 2026
+
+Added **Investment outlook** under Settings → Tools after reviewing all fourteen candidate capabilities. Its Cash flows section aggregates existing saved bond schedules into twelve calendar-month buckets, separating gross/net coupons, withholding and face-value principal repayments per currency. Its Buying fees section summarizes completed purchase charges over complete acquisition history, with explicit cost/denominator definitions and visible incomplete-record exclusions. Both reuse core financial helpers and existing account-scoped history APIs; no writes or broker integrations.
+
+These extend existing individual coupon/maturity dates and fee disclosures, rather than duplicate the simulator, contribution planner, annual summaries or PDF exports. Scheduled cash flows are not receipt evidence or guaranteed returns, and purchase fees are historical acquisition costs rather than current valuations. See [candidate inventory, assumptions, scope and tests](INVESTMENT_TOOLS.md). New tool calculations run off the UI thread, with existing loading/retry states, original calendar/history navigation, financial-number protection and English/French copy.
+
+
+## Security follow-up — 30 October 2026
+
+The [source audit and verified regressions](security/SECURITY_AUDIT.md) distinguish existing account-scoped purchases/private documents from three reproduced high-risk paths: public cross-account derived contract prices, unprivileged shared issuance publication, and non-atomic daily coupon/reminder work. These are fixed locally, along with completed-PDF envelope checks, anonymous forced-refresh cache bypass and targeted dependency patches. Notices now describe own-account contract charts and owner-published shared public reports. No auth replacement or schema migration. Production rollout, historical shared-source review, backups, retention and legal compliance remain separately unverified.
