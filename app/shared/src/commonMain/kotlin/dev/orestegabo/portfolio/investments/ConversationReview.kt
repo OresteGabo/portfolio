@@ -85,7 +85,9 @@ private fun IssuanceConversationReview(model: PortfolioModel, review: JsonRecord
     if (fields == null) { AppText(userErrorMessage(parsed.exceptionOrNull(), "Could not read this PDF."), color = MaterialTheme.colorScheme.error); return }
     val confirmation = target?.let { runCatching { pendingIssuanceConfirmation(review, it) } }
     FinancialText(fields.text("bondName"), fontWeight = FontWeight.Bold)
-    AppText("This public report and its bond details will be available to all invited users.", style = MaterialTheme.typography.bodySmall)
+    val mayPublish = model.user?.optBoolean("isOwner") == true || entry.documentId.isNotBlank()
+    AppText(if (mayPublish) "This public report and its bond details will be available to all invited users." else
+        "Only the owner can publish shared issuance results. Ask for this public report to be reviewed, or upload your personal allocation confirmation.", style = MaterialTheme.typography.bodySmall)
     if (target != null) {
         AppText("Confirm that your full applied amount was allocated and these figures are correct.", style = MaterialTheme.typography.bodyMedium)
         Fact("Amount applied", money(target.optDouble("faceValue"), target.text("currency")))
@@ -100,7 +102,7 @@ private fun IssuanceConversationReview(model: PortfolioModel, review: JsonRecord
     if (showSchedule) fields.optJSONArray("couponDates")?.let { dates -> for (i in 0 until dates.length()) Fact("${i + 1}", dates.getString(i)) }
     review.optJSONArray("warnings")?.let { warnings -> for (i in 0 until warnings.length()) AppText(warnings.getString(i), style = MaterialTheme.typography.bodySmall) }
     if (confirmation?.isFailure == true) AppText(userErrorMessage(confirmation.exceptionOrNull()), color = MaterialTheme.colorScheme.error)
-    Button(enabled = !model.busy && (target == null || confirmation?.isSuccess == true), modifier = Modifier.fillMaxWidth(),
+    Button(enabled = mayPublish && !model.busy && (target == null || confirmation?.isSuccess == true), modifier = Modifier.fillMaxWidth(),
         onClick = { model.saveImportedIssuance(review, target, done) }) {
         AppText(if (entry.documentId.isNotBlank() && target != null) "Confirm using saved PDF" else if (entry.documentId.isNotBlank()) "Use saved issuance report" else if (entry.state == ImportState.FAILED) "Retry save" else if (target != null) "Save PDF and confirm purchase" else "Save bond issuance")
     }

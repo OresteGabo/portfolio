@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-27",
+  "version": "2026-10-30",
   "documents": [
     {
       "id": "terms",
@@ -64,8 +64,8 @@
             "fr": "Vos données et votre départ"
           },
           "body": {
-            "en": "Your use of the app does not transfer ownership of your investment documents to us. How we process them is explained in the Privacy Policy, including the limited trade-price information used for shared charts.\n\nYou can export your records. Eligible invited accounts can also be deleted in Settings. See Export & Account Deletion for the steps and limits.",
-            "fr": "L’utilisation de l’application ne nous transfère pas la propriété de vos documents d’investissement. La politique de confidentialité explique leur traitement, y compris les informations limitées de prix utilisées pour les graphiques partagés.\n\nVous pouvez exporter vos données. Les comptes invités éligibles peuvent également être supprimés dans Réglages. Consultez Export et suppression du compte pour les étapes et limites."
+            "en": "Your use of the app does not transfer ownership of your investment documents to us. How we process them is explained in the Privacy Policy, including contract-price information used in your own account’s charts.\n\nYou can export your records. Eligible invited accounts can also be deleted in Settings. See Export & Account Deletion for the steps and limits.",
+            "fr": "L’utilisation de l’application ne nous transfère pas la propriété de vos documents d’investissement. La politique de confidentialité explique leur traitement, y compris les prix de vos contrats utilisés dans les graphiques de votre compte.\n\nVous pouvez exporter vos données. Les comptes invités éligibles peuvent également être supprimés dans Réglages. Consultez Export et suppression du compte pour les étapes et limites."
           }
         },
         {
@@ -123,12 +123,12 @@
         },
         {
           "title": {
-            "en": "Prices shared with other invited users",
-            "fr": "Cours partagés avec les autres utilisateurs invités"
+            "en": "Contract prices and shared public reports",
+            "fr": "Prix des contrats et rapports publics partagés"
           },
           "body": {
-            "en": "Confirmed RSE share purchases can contribute the company’s ticker, trade date and unit price to historical charts for other invited users. Same-day observations are combined into a price range and a middle value (median).\n\nThis chart feed excludes your name, email, PDF, contract identifier, quantity and total investment. A rare trade may still be inferred from its date and price; this is not a guarantee of anonymity.\n\nThere is currently no in-app opt-out for this contribution. Contact {{privacy}} about objections or restrictions before importing if this concerns you.",
-            "fr": "Les achats confirmés d’actions RSE peuvent contribuer le symbole de la société, la date et le prix unitaire aux graphiques historiques des autres utilisateurs invités. Les observations d’un même jour sont regroupées en une fourchette et une valeur centrale (médiane).\n\nCe flux exclut vos nom, e-mail, PDF, identifiant de contrat, quantité et montant total investi. Une opération rare peut toutefois être déduite de sa date et de son prix ; l’anonymat n’est pas garanti.\n\nAucun refus de cette contribution n’est actuellement proposé dans l’application. Contactez {{privacy}} au sujet d’une opposition ou limitation avant l’import si cela vous préoccupe."
+            "en": "Contract-derived tickers, trade dates and unit prices are returned only to the authenticated account that saved those purchases. Public price history uses exchange observations, not other users’ private contracts.\n\nPublic bond issuance reports published by the owner are shared with signed-in users. Only public issuance reports belong in that shared category. Personal allocation confirmations, broker contracts and account statements remain scoped to the account that saved them.\n\nThese access rules do not remove copies you deliberately export or share, and do not guarantee anonymity of information you disclose elsewhere.",
+            "fr": "Les codes, dates de négociation et prix unitaires issus des contrats sont accessibles uniquement au compte authentifié qui a enregistré les achats. L’historique public des cours utilise les observations de la bourse, et non les contrats privés des autres utilisateurs.\n\nLes rapports publics d’émission obligataire publiés par le propriétaire sont partagés avec les utilisateurs connectés. Seuls des rapports publics doivent figurer dans cette catégorie partagée. Les confirmations personnelles d’allocation, contrats de courtier et relevés de compte restent limités au compte qui les a enregistrés.\n\nCes règles d’accès ne suppriment pas les copies que vous exportez ou partagez volontairement et ne garantissent pas l’anonymat des informations divulguées ailleurs."
           }
         },
         {

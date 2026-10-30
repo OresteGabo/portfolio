@@ -1433,4 +1433,6 @@ internal val frenchStrings: Map<String, String> = mapOf(
     "Coupon rate, tax or frequency is missing or invalid" to "Le taux de coupon, la retenue ou la fréquence est manquant ou invalide",
     "Coupon dates unavailable" to "Dates de coupon indisponibles",
     "Purchase costs are incomplete or inconsistent" to "Les coûts d’achat sont incomplets ou incohérents",
+    "Only the owner can publish shared issuance results. Ask for this public report to be reviewed, or upload your personal allocation confirmation." to "Seul le propriétaire peut publier les résultats d’émission partagés. Demandez la vérification de ce rapport public ou importez votre confirmation personnelle d’allocation.",
+    "Contract prices appear only in your account’s charts. Public price history uses exchange observations, not private purchase contracts." to "Les prix des contrats apparaissent uniquement dans les graphiques de votre compte. L’historique public utilise les observations de la bourse, pas les contrats d’achat privés.",
 )

@@ -81,3 +81,10 @@ The preceding audit's executed results are in [VERIFICATION.md](VERIFICATION.md)
 - **TD-11:** coupon/dividend statement labels are retained as evidence only, not automatically verified/posted income.
 
 See [FINANCIAL_CALCULATIONS.md](FINANCIAL_CALCULATIONS.md), [RECONCILIATION.md](RECONCILIATION.md) and the executed [verification log](VERIFICATION.md). These updates supersede the corresponding original-source findings above without claiming deployment or broader accounting completeness.
+
+
+## Security follow-up — 30 October 2026
+
+[Verified security audit](security/SECURITY_AUDIT.md): TD-05's cross-account contract-price projection is now account scoped, with public responses limited to exchange observations; generated notices were aligned. TD-06's daily self-invocation now runs inside a real transaction per account, with a failing-before PostgreSQL rollback regression. Shared issuance publication now requires owner authority, PDF envelopes are checked on completed uploads, and anonymous refresh cannot bypass market caching. Four advisory-matched dependency families were patched and the resolved graph rescanned.
+
+These are local tested changes, not evidence of deployment or retroactive cleanup. Review older shared issuance provenance/affected terms and any actual prior exposure. General financial audit/version control, storage budgets, scheduled staging purge, backup/restore/deletion-on-restore evidence, provider/log retention, release-device checks and legal registration/transfer questions remain open. See [operations](security/OPERATIONS.md), [dependency evidence](security/DEPENDENCIES.md) and [Rwanda legal-verification questions](security/RWANDA_DATA_PROTECTION.md).

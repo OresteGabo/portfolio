@@ -116,7 +116,8 @@ fun BondIssuanceReview(model: PortfolioModel, review: JsonRecord, target: JsonRe
     val confirmation = remember(review, target) { target?.let { runCatching { pendingIssuanceConfirmation(review, it) } } }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { AppText(if (target == null) "Review bond issuance" else "Review purchase", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
-        item { AppText("This public report and its bond details will be available to all invited users.", style = MaterialTheme.typography.bodySmall) }
+        item { AppText(if (model.user?.optBoolean("isOwner") == true) "This public report and its bond details will be available to all invited users." else
+            "Only the owner can publish shared issuance results. Ask for this public report to be reviewed, or upload your personal allocation confirmation.", style = MaterialTheme.typography.bodySmall) }
         if (target == null) item { AppText("Matching pending purchases receive these terms. Your allocation stays unconfirmed.") }
         else item { Panel {
             AppText("Confirm purchase", fontWeight = FontWeight.Bold)
@@ -147,7 +148,7 @@ fun BondIssuanceReview(model: PortfolioModel, review: JsonRecord, target: JsonRe
         if (parsed.isFailure) item { AppText(parsed.exceptionOrNull()?.message.orEmpty(), color = MaterialTheme.colorScheme.error) }
         item { AppText("Repeated uploads reuse the saved issuance. Different figures require review.", style = MaterialTheme.typography.bodySmall) }
         if (confirmation?.isFailure == true) item { AppText(confirmation.exceptionOrNull()?.message.orEmpty(), color = MaterialTheme.colorScheme.error) }
-        item { Button(enabled = parsed.isSuccess && (target == null || confirmation?.isSuccess == true) && !model.busy,
+        item { Button(enabled = model.user?.optBoolean("isOwner") == true && parsed.isSuccess && (target == null || confirmation?.isSuccess == true) && !model.busy,
             onClick = { model.saveImportedIssuance(review, target, done) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
             AppText(if (target == null) "Save bond issuance" else "Save PDF and confirm purchase")
         } }

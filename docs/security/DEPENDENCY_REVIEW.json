@@ -1,0 +1,168 @@
+{
+  "review_date": "2026-10-30",
+  "service": "https://api.osv.dev/v1/querybatch",
+  "scope": [
+    "selected Android runtime Maven modules",
+    "selected Spring runtime Maven modules",
+    "backend locked npm tooling",
+    "identified vendored PDF/OCR modules"
+  ],
+  "before_queries": 488,
+  "before_matches": [
+    {
+      "query": {
+        "package": {
+          "ecosystem": "Maven",
+          "name": "com.google.guava:guava"
+        },
+        "version": "33.6.0-jre"
+      },
+      "result": {
+        "vulns": [
+          {
+            "id": "GHSA-xxph-c9ww-hj94",
+            "modified": "2026-10-27T14:45:04.803511Z"
+          }
+        ]
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "ecosystem": "Maven",
+          "name": "io.opentelemetry:opentelemetry-api"
+        },
+        "version": "1.62.0"
+      },
+      "result": {
+        "vulns": [
+          {
+            "id": "GHSA-ccrj-gw8r-854m",
+            "modified": "2026-10-28T21:15:04.329194Z"
+          }
+        ]
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "ecosystem": "Maven",
+          "name": "org.bouncycastle:bcprov-jdk18on"
+        },
+        "version": "1.83"
+      },
+      "result": {
+        "vulns": [
+          {
+            "id": "GHSA-574f-3g2m-x479",
+            "modified": "2026-09-24T15:30:06.452617Z"
+          },
+          {
+            "id": "GHSA-9pwp-9qqc-pr26",
+            "modified": "2026-09-18T17:45:06.105254Z"
+          },
+          {
+            "id": "GHSA-c3fc-8qff-9hwx",
+            "modified": "2026-09-10T03:51:01.534612Z"
+          },
+          {
+            "id": "GHSA-p93r-85wp-75v3",
+            "modified": "2026-09-10T03:50:44.836711Z"
+          },
+          {
+            "id": "GHSA-qp49-qgx5-5m26",
+            "modified": "2026-09-18T17:45:06.096277Z"
+          }
+        ]
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "ecosystem": "Maven",
+          "name": "org.jsoup:jsoup"
+        },
+        "version": "1.21.2"
+      },
+      "result": {
+        "vulns": [
+          {
+            "id": "GHSA-65r4-943x-97jj",
+            "modified": "2026-10-05T22:45:05.710363Z"
+          },
+          {
+            "id": "GHSA-pmhh-3w7g-xqp8",
+            "modified": "2026-09-10T03:50:53.809983Z"
+          }
+        ]
+      }
+    }
+  ],
+  "after_queries": 493,
+  "after_matched_coordinates": 0,
+  "after_query_errors": 0,
+  "updated_backend_modules": [
+    {
+      "package": "com.google.guava:guava",
+      "before": "33.6.0-jre",
+      "after": "33.7.2-jre"
+    },
+    {
+      "package": "io.opentelemetry:opentelemetry-api",
+      "before": "1.62.0",
+      "after": "1.67.0"
+    },
+    {
+      "package": "io.opentelemetry:opentelemetry-common",
+      "before": "1.62.0",
+      "after": "1.67.0"
+    },
+    {
+      "package": "io.opentelemetry:opentelemetry-context",
+      "before": "1.62.0",
+      "after": "1.67.0"
+    },
+    {
+      "package": "io.opentelemetry:opentelemetry-sdk",
+      "before": "1.62.0",
+      "after": "1.67.0"
+    },
+    {
+      "package": "io.opentelemetry:opentelemetry-sdk-common",
+      "before": "1.62.0",
+      "after": "1.67.0"
+    },
+    {
+      "package": "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure-spi",
+      "before": "1.62.0",
+      "after": "1.67.0"
+    },
+    {
+      "package": "io.opentelemetry:opentelemetry-sdk-logs",
+      "before": "1.62.0",
+      "after": "1.67.0"
+    },
+    {
+      "package": "io.opentelemetry:opentelemetry-sdk-metrics",
+      "before": "1.62.0",
+      "after": "1.67.0"
+    },
+    {
+      "package": "io.opentelemetry:opentelemetry-sdk-trace",
+      "before": "1.62.0",
+      "after": "1.67.0"
+    },
+    {
+      "package": "org.bouncycastle:bcprov-jdk18on",
+      "before": "1.83",
+      "after": "1.85.2"
+    },
+    {
+      "package": "org.jsoup:jsoup",
+      "before": "1.21.2",
+      "after": "1.23.2"
+    }
+  ],
+  "query_manifest_sha256": "6d85631c1e0ea57fb5f36a8d314b537dc51346d858c571d2884d3724e20acf2f",
+  "limitations": "Version-based public advisory snapshot; not proof of exploitability or absence of vulnerabilities. No customer data submitted."
+}

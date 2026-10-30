@@ -36,7 +36,7 @@ fun PurchaseEntryScreen(model: PortfolioModel, engine: InvestmentEngine, importe
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         item { PdfImportButton(model, engine, imported) }
         item {
-            AppText("Confirmed share trade dates and unit prices may contribute to charts for other invited users. Names, PDFs and quantities are excluded.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            AppText("Contract prices appear only in your account’s charts. Public price history uses exchange observations, not private purchase contracts.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             TextButton(onClick = openPrivacy) { AppText("Privacy Policy") }
         }
     }

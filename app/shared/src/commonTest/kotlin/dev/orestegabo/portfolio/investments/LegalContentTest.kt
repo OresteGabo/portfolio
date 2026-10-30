@@ -3,16 +3,17 @@ package dev.orestegabo.portfolio.investments
 import kotlin.test.*
 
 class LegalContentTest {
-    @Test fun bothLanguagesExplainSharedTradeDataAndDoNotPromiseAnonymity() {
+    @Test fun bothLanguagesDescribePrivateContractHistoryAndOwnerPublishedPublicReports() {
         val privacy = legalDocuments.single { it.id == "privacy" }
         val en = privacy.sections.joinToString(" ") { it.body.en }
         val fr = privacy.sections.joinToString(" ") { it.body.fr }
-        assertTrue(en.contains("other invited users"))
-        assertTrue(en.contains("not a guarantee of anonymity"))
-        assertTrue(en.contains("no in-app opt-out"))
-        assertTrue(fr.contains("autres utilisateurs invités"))
-        assertTrue(fr.contains("l’anonymat n’est pas garanti"))
-        assertTrue(fr.contains("aucun refus", ignoreCase = true))
+        assertTrue(en.contains("authenticated account that saved"))
+        assertTrue(en.contains("not other users’ private contracts"))
+        assertTrue(en.contains("published by the owner"))
+        assertFalse(en.contains("no in-app opt-out"))
+        assertTrue(fr.contains("compte authentifié"))
+        assertTrue(fr.contains("contrats privés des autres utilisateurs"))
+        assertTrue(fr.contains("publiés par le propriétaire"))
     }
     @Test fun deletionAndExportsDescribeTheirActualLimits() {
         val data = legalDocuments.single { it.id == "data" }.sections.joinToString(" ") { it.body.en }
