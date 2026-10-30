@@ -5,7 +5,7 @@ import kotlinx.datetime.LocalDate
 /** RSE equity quotes are denominated in RWF; other currencies must not be priced with them. */
 fun PortfolioSnapshot.valuedShares(today: LocalDate, quotes: JsonRecord?): List<ValuedSharePosition> {
     val date = calendarDate(quotes?.optJSONObject("source")?.text("publishedAt").orEmpty().take(10))
-    val rows = if (date != null && date > today) emptyList() else quotes?.rows("quotes").orEmpty()
+    val rows = if (date == null || date > today) emptyList() else quotes?.rows("quotes").orEmpty()
     return sharePositions(today).map { position ->
         val quote = if (position.currency == "RWF") rows.firstOrNull {
             it.text("ticker").trim().uppercase() == position.ticker.trim().uppercase() &&
@@ -16,16 +16,16 @@ fun PortfolioSnapshot.valuedShares(today: LocalDate, quotes: JsonRecord?): List<
 }
 
 data class ValuedSharePosition(val position: SharePosition, val closingPrice: Double?) {
-    val estimatedValue get() = closingPrice?.let { position.shares * it } ?: position.cashCost
-    val gainLoss get() = closingPrice?.let { estimatedValue - position.cashCost }
+    val estimatedValue get() = closingPrice?.let { decimalAmount(listOf(position.shares, it)) } ?: position.cashCost
+    val gainLoss get() = closingPrice?.let { decimalAmount(emptyList(), addends = listOf(estimatedValue, -position.cashCost)) }
     /** Return on the combined cost of all lots, including purchase fees. */
     val gainLossRate get() = gainLoss?.takeIf { it.isFinite() && position.cashCost.isFinite() && position.cashCost > 0 }
         ?.let { it / position.cashCost }
 }
 
 data class CurrencyValuation(val cost: CurrencyInvestment, val shares: List<ValuedSharePosition>) {
-    val shareValue get() = shares.sumOf { it.estimatedValue }
-    val estimatedNetWorth get() = cost.bondFaceValue + shareValue
+    val shareValue get() = decimalAmount(emptyList(), addends = shares.map { it.estimatedValue })
+    val estimatedNetWorth get() = decimalAmount(emptyList(), addends = listOf(cost.bondFaceValue, shareValue))
     val unpricedShares get() = shares.count { it.closingPrice == null }
     val pricedShares get() = shares.count { it.closingPrice != null }
 }

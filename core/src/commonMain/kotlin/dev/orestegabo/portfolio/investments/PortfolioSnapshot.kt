@@ -21,7 +21,7 @@ data class PortfolioSnapshot(
     fun sharePositions(today: LocalDate): List<SharePosition> = activeShares(today)
         .groupBy { it.text("ticker") to it.text("currency") }
         .map { (key, lots) -> SharePosition(key.first, key.second,
-            lots.sumOf { it.optDouble("shares", 0.0) }, lots.sumOf { it.optDouble("netAmountPayable", 0.0) }) }
+            lots.sumOf { it.optDouble("shares", 0.0) }, decimalAmount(emptyList(), addends = lots.map { it.optDouble("netAmountPayable", 0.0) })) }
 
     fun summary(today: LocalDate): List<CurrencyInvestment> {
         val bonds = purchases.filter { it.text("status") == "active" && onOrBefore(it.text("purchaseDate"), today) }
@@ -30,11 +30,11 @@ data class PortfolioSnapshot(
             val currencyBonds = bonds.filter { it.text("currency") == currency }
             val currencyShares = shares.filter { it.text("currency") == currency }
             CurrencyInvestment(currency,
-                currencyBonds.sumOf { it.optDouble("faceValue", 0.0) },
-                currencyBonds.sumOf { it.bondCashCost() },
-                currencyShares.sumOf { it.optDouble("netAmountPayable", 0.0) }, currencyBonds.size, currencyShares.sumOf { it.optInt("lotCount", 1) },
+                decimalAmount(emptyList(), addends = currencyBonds.map { it.optDouble("faceValue", 0.0) }),
+                decimalAmount(emptyList(), addends = currencyBonds.map { it.bondCashCost() }),
+                decimalAmount(emptyList(), addends = currencyShares.map { it.optDouble("netAmountPayable", 0.0) }), currencyBonds.size, currencyShares.sumOf { it.optInt("lotCount", 1) },
                 currencyBonds.filter { calendarDate(it.text("maturityDate"))?.let { maturity -> maturity > today } == true }
-                    .sumOf { it.netAnnualBondCoupon() })
+                    .map { it.netAnnualBondCoupon() }.let { decimalAmount(emptyList(), addends = it) })
         }
     }
 }
@@ -42,17 +42,17 @@ data class PortfolioSnapshot(
 data class SharePosition(val ticker: String, val currency: String, val shares: Double, val cashCost: Double)
 data class CurrencyInvestment(val currency: String, val bondFaceValue: Double, val bondCashCost: Double,
     val shareCashCost: Double, val bondCount: Int, val shareCount: Int, val netAnnualCoupon: Double = 0.0) {
-    val investedCash get() = bondCashCost + shareCashCost
+    val investedCash get() = decimalAmount(emptyList(), addends = listOf(bondCashCost, shareCashCost))
 }
 
 private fun onOrBefore(value: String, today: LocalDate) =
     runCatching { LocalDate.parse(value) <= today }.getOrDefault(false)
 
-internal fun JsonRecord.bondCashCost() = optDouble("faceValue", 0.0) * optDouble("pricePercent", 100.0) / 100 +
-    optDouble("accruedInterestPaid", 0.0) + optDouble("feesPaid", 0.0)
+fun JsonRecord.bondCashCost() = decimalAmount(listOf(optDouble("faceValue", 0.0), optDouble("pricePercent", 100.0)), 100,
+    addends = listOf(optDouble("accruedInterestPaid", 0.0), optDouble("feesPaid", 0.0)))
 
-internal fun JsonRecord.netAnnualBondCoupon() = optDouble("faceValue", 0.0) * optDouble("couponRate", 0.0) *
-    (1 - optDouble("withholdingTaxRate", 0.0))
+fun JsonRecord.netAnnualBondCoupon() = decimalAmount(listOf(optDouble("faceValue", 0.0), optDouble("couponRate", 0.0)),
+    taxRate = optDouble("withholdingTaxRate", 0.0))
 
 private fun recentRows(rows: List<JsonRecord>, dateKey: String, today: LocalDate, ids: Set<String>?): List<JsonRecord> {
     val start = today.minus(DatePeriod(years = 1))

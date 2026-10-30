@@ -52,7 +52,7 @@ fun PurchaseEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit
         bondFields.forEach { field -> item {
             Field(field.label, values[field.key].orEmpty(), { values[field.key] = it }, if (field.numeric) KeyboardType.Decimal else KeyboardType.Text,
                 when (field.key) { "faceValue" -> if (instrument == "treasury") "Treasury minimum: 100,000, in multiples of 100,000." else null
-                    "withholdingTaxRate" -> if (instrument == "treasury") "The server applies 5% for Treasury bonds." else null
+                    "withholdingTaxRate" -> if (instrument == "treasury") "Use the withholding rate applicable to your investment; the default is 5%." else null
                     "couponDates" -> "Required for confirmed schedules. Leave empty for an estimated schedule."; else -> null })
         } }
         item { AppText("Schedule", fontWeight = FontWeight.Bold); ChoiceRow(listOf("estimated", "confirmed"), confidence) { confidence = it } }

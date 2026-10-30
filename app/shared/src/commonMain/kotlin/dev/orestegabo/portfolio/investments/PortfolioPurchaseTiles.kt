@@ -65,7 +65,7 @@ fun BondPurchaseTile(purchase: JsonRecord, uploadConfirmation: () -> Unit, manua
             HorizontalDivider()
             Fact("Next coupon", tracking.nextCoupon?.toString() ?: "No remaining coupons")
             Fact("Net per payment", money(tracking.netPerPayment, currency))
-            Fact("Scheduled to date", money(tracking.couponsPaid, currency))
+            Fact("Scheduled to date", money(tracking.scheduledCouponsToDate, currency))
             Fact("Accrued coupon", money(tracking.accruedCoupon, currency))
             Fact("Remaining coupons", money(tracking.remainingCoupons, currency))
             AppText("Coupon schedule · ${localized(purchase.text("scheduleConfidence").ifBlank { "Estimated" })}",

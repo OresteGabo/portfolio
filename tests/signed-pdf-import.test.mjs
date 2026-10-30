@@ -12,8 +12,8 @@ const source = fs.readFileSync(new URL('pdf-import.js', android), 'utf8')
   .replace('`/bond-import/pdf.worker.legacy.min.mjs?v=${encodeURIComponent(pdfjs.version)}`', JSON.stringify(new URL('bond-import/pdf.worker.legacy.min.mjs', android).href));
 const { importBondPdf } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 const text = fs.readFileSync(new URL('fixtures/bnr-market-results-2026.txt', import.meta.url), 'utf8');
-function pdf(widget = '/FT /Sig', action = '') {
-  const stream = 'BT /F1 9 Tf 12 1100 Td ' + text.split('\n').map(line => `(${line.replace(/[\\()]/g, '\\$&')}) Tj 0 -14 Td`).join('\n') + ' ET';
+function pdf(widget = '/FT /Sig', action = '', documentText = text) {
+  const stream = 'BT /F1 9 Tf 12 1100 Td ' + documentText.split('\n').map(line => `(${line.replace(/[\\()]/g, '\\$&')}) Tj 0 -14 Td`).join('\n') + ' ET';
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [5 0 R 6 0 R] /SigFlags 3 >> >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
@@ -53,3 +53,14 @@ if (process.env.GABO_TEST_ISSUANCE_PDF) test('supplied original signed BNR PDF p
   assert.deepEqual(result.missingFields, []);
   assert.equal(result.fields.couponDates.length, 40);
 });
+
+for (const [fixture, kind] of [['equity-purchase', 'equity'], ['bk-statement', 'statement'], ['bnr-investor-results-synthetic', 'bond']]) {
+  test(`shipped PDF.js reader extracts the supported ${kind} fixture through the same dispatcher`, async () => {
+    const documentText = fs.readFileSync(new URL(`fixtures/${fixture}.txt`, import.meta.url), 'utf8');
+    const result = await read(pdf('/FT /Sig', '', documentText));
+    assert.equal(result.kind, kind);
+    assert.equal(result.usedOcr, false);
+    if (kind === 'statement') assert.equal(result.rows.length, 4);
+    else assert.deepEqual(result.missingFields, []);
+  });
+}

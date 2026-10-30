@@ -66,7 +66,7 @@ internal fun ImportCompletionReceipt(entry: ImportReceipt, document: JsonRecord?
         AppText(if (entry.state == ImportState.EXISTS) when (entry.outcome) {
             ImportOutcome.PURCHASE -> "This PDF and its purchase details are already saved. No further action is needed."
             ImportOutcome.ISSUANCE -> "This PDF and its bond terms are already saved. No further action is needed."
-            ImportOutcome.STATEMENT -> "This PDF is already saved, and its statement records have been checked. No further action is needed."
+            ImportOutcome.STATEMENT -> "This PDF is already saved. Review its reconciliation results for any records that need attention."
             null -> "This PDF is already in Library. No additional copy is needed."
         } else when (entry.outcome) {
             ImportOutcome.PURCHASE -> "Your purchase is confirmed."

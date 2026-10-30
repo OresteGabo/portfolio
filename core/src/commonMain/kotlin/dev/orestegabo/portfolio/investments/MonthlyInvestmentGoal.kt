@@ -6,7 +6,7 @@ const val DEFAULT_MONTHLY_INVESTMENT_TARGET = 100_000L
 fun validInvestmentTarget(amount: Long) = amount in 1..1_000_000_000_000L
 
 data class MonthlyInvestmentProgress(val month: LocalDate, val target: Long, val confirmed: Double, val pending: Double) {
-    val remaining get() = (target - confirmed).coerceAtLeast(0.0)
+    val remaining get() = decimalAmount(emptyList(), addends = listOf(target.toDouble(), -confirmed)).coerceAtLeast(0.0)
     val fraction get() = (confirmed / target).coerceIn(0.0, 1.0).toFloat()
     val achieved get() = confirmed >= target
 }
@@ -26,14 +26,15 @@ fun monthlyInvestmentProgress(snapshot: PortfolioSnapshot, month: LocalDate, tar
     fun Double.amount() = takeIf { it.isFinite() && it >= 0.0 } ?: 0.0
     val bonds = snapshot.purchases.filter { relevant(it, "purchaseDate") }
     val shares = snapshot.holdings.filter { relevant(it, "tradeDate") }
-    val confirmed = bonds.filter { it.text("status") in listOf("active", "sold", "matured") }.sumOf { it.bondCashCost().amount() } +
-        shares.filter { it.text("status") in listOf("active", "sold") }.sumOf { it.optDouble("netAmountPayable", 0.0).amount() }
-    val pending = bonds.filter { it.text("status") == "submitted" }.sumOf { it.bondCashCost().amount() }
+    val confirmed = decimalAmount(emptyList(), addends =
+        bonds.filter { it.text("status") in listOf("active", "sold", "matured") }.map { it.bondCashCost().amount() } +
+        shares.filter { it.text("status") in listOf("active", "sold") }.map { it.optDouble("netAmountPayable", 0.0).amount() })
+    val pending = decimalAmount(emptyList(), addends = bonds.filter { it.text("status") == "submitted" }.map { it.bondCashCost().amount() })
     return MonthlyInvestmentProgress(first, target, confirmed, pending)
 }
 
 /** Compatibility for older compact APIs: retain monthly sums, not a second full-history store. */
-internal fun monthlyGoalTotalsFromHistory(purchases: List<JsonRecord>, holdings: List<JsonRecord>, today: LocalDate): List<JsonRecord> {
+fun monthlyGoalTotalsFromHistory(purchases: List<JsonRecord>, holdings: List<JsonRecord>, today: LocalDate): List<JsonRecord> {
     val full = PortfolioSnapshot(purchases, holdings)
     val first = LocalDate(today.year, today.month, 1)
     return (0..11).map { offset ->

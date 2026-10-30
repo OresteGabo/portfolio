@@ -50,7 +50,9 @@ fun importedPurchaseInput(review: JsonRecord): JsonRecord {
             body.optDouble("pricePercent", 0.0).let { it.isFinite() && it > 0 && it <= 1000 } &&
             body.has("couponRate") && body.optDouble("couponRate").let { it.isFinite() && it in 0.0..1.0 } &&
             body.optDouble("tenorYears", 0.0).let { it.isFinite() && it > 0 && it <= 100 }) { "Some figures could not be read. Try a clearer PDF." }
-        body.put("instrumentType", "treasury").put("currency", "RWF").put("market", "primary").put("withholdingTaxRate", .05)
+        body.put("instrumentType", "treasury").put("currency", "RWF").put("market", "primary")
+        if (!body.has("withholdingTaxRate")) body.put("withholdingTaxRate", .05)
+        require(body.optDouble("withholdingTaxRate").let { it.isFinite() && it in 0.0..1.0 }) { "Check the withholding rate." }
         listOf("accruedInterestPaid", "feesPaid").forEach { if (!body.has(it)) body.put(it, 0) }
         body.put("notes", "").put("sourceUrl", "").put("accountReference", "")
     } else {
@@ -65,6 +67,12 @@ fun completePendingPurchase(review: JsonRecord, pending: JsonRecord?): JsonRecor
     if (pending != null) {
         require(pendingMatchesConfirmation(pending, confirmed)) { "This PDF does not match the pending purchase." }
         confirmed.put("feesPaid", pending.optDouble("feesPaid", 0.0))
+        // Confirmation PDFs do not currently state investor-specific tax. Keep the saved choice.
+        if (pending.has("withholdingTaxRate") && review.optJSONObject("fields")?.has("withholdingTaxRate") != true) {
+            val tax = pending.optDouble("withholdingTaxRate")
+            require(tax.isFinite() && tax in 0.0..1.0) { "Check the withholding rate." }
+            confirmed.put("withholdingTaxRate", tax)
+        }
     }
     return confirmed
 }

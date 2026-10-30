@@ -76,8 +76,13 @@ private fun ImportConversation(model: PortfolioModel, engine: InvestmentEngine, 
     val actions = LocalNativeActions.current
     val colours = MaterialTheme.colorScheme
     val active = model.activeImportId
-    LaunchedEffect(entries.size, active) {
-        if (entries.isNotEmpty()) scroll.animateScrollToItem(entries.lastIndex)
+    val activeEntry = entries.firstOrNull { it.id == active }
+    LaunchedEffect(entries.size, active, activeEntry?.state) {
+        if (entries.isNotEmpty()) {
+            val index = entries.indexOfFirst { it.id == active }.takeIf { it >= 0 } ?: entries.lastIndex
+            // The reading card is short. Scroll again when it grows into review or a final receipt.
+            scroll.animateScrollToItem(index)
+        }
     }
     Box(Modifier.fillMaxSize().clipToBounds()) {
         ImportWallpaper(Modifier.matchParentSize())
@@ -144,6 +149,7 @@ private fun ImportConversation(model: PortfolioModel, engine: InvestmentEngine, 
                                         firstImportAddedTime(model.documents.firstOrNull { it.text("id") == entry.documentId }, entries))
                                     if (entry.outcome == ImportOutcome.STATEMENT) {
                                         AppText("${entry.recorded} ${localized("recorded")} · ${entry.missing} ${localized("missing PDFs")}", style = MaterialTheme.typography.labelMedium)
+                                        TextButton(onClick = { model.showStatementDocumentReview(entry.documentId) }) { AppText("Review statement records") }
                                         if (entry.missing > 0) TextButton(onClick = openMissing) { AppText("View missing documents") }
                                     }
                                 } else {

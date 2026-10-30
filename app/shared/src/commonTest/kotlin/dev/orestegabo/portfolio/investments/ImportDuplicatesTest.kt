@@ -118,7 +118,8 @@ class ImportDuplicatesTest {
             try {
                 advanceUntilIdle()
                 m.importPurchasePdf(f.actions(name = "renamed.pdf"), f.engine) {}; advanceUntilIdle()
-                assertEquals(ImportState.EXISTS, m.importHistory.single().state, kind)
+                assertEquals(if (kind == "statement") ImportState.REVIEW else ImportState.EXISTS, m.importHistory.single().state, kind)
+                if (kind == "statement") assertEquals("cloud-document", m.importHistory.single().documentId) // File exists, but completion is not yet proved.
                 assertEquals(0, f.uploads); assertEquals(0, f.writes)
             } finally { f.store.clear(); Dispatchers.resetMain() }
         }

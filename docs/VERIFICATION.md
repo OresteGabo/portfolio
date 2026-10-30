@@ -552,3 +552,76 @@ Validation: all 204 Android host tests pass, including a new regression for canc
 ### Floating Add document action
 
 Library's add action is now an extended floating action button labelled “Add document,” with a + icon and contrasting primary colours, above the bottom navigation. The app-bar + has been removed. Extra bottom list padding keeps the final document reachable above the floating button. Direct picking, chat routing and active-review continuation remain shared with the existing import flow. Android assembly and shared iPhone simulator compilation pass.
+
+## Completed duplicate receipts and saved business notes — 30 October 2026
+
+Finished the interrupted duplicate-import work. Confirmed records linked to an existing PDF show an Already in Library receipt with no save action and an explicit message that its purchase details are already saved. Genuinely pending confirmations reuse the existing file. Receipt dates use a server creation/upload timestamp when available, or the earliest successful local save labelled First saved on this device; issue dates and repeat attempts are excluded. The current API does not expose original upload timestamps, so older cloud files without local history omit the time.
+
+The final UI check had been inspecting an older Open document action while the new receipt extended below the viewport. Chat now scrolls to the active import when its state changes, including when a short reading card becomes a larger result. The timestamp assertion also explicitly scrolls the new date into view. The full synthetic import journey now passes in 44 seconds, verifies the saved-details message and original local save time, and confirms no additional upload or financial write. Its duplicate receipt screenshot was visually inspected. All 209 Android host tests, Android app/instrumentation assembly and shared iPhone simulator compilation pass. The disposable emulator was removed after verification; no physical phone or production account was used.
+
+The original business discussion was recovered and saved in [BUSINESS_IDEAS.md](BUSINESS_IDEAS.md): investor, investment-club and broker opportunities, possible subscriptions/pilots, team features, payment-verification distinctions, interview steps, an explicitly illustrative revenue example and the three-paying-customers milestone. This preserves the earlier proposal rather than claiming newly validated market research.
+
+## Architecture audit and foundational separation — 30 October 2026
+
+See [codebase assessment](architecture/ASSESSMENT.md), [target architecture](architecture/TARGET_ARCHITECTURE.md), [implemented decisions](architecture/DECISIONS.md), [risks/deferred work](architecture/RISKS_AND_DEFERRED.md) and [source inventory](architecture/SOURCE_INVENTORY.md). The KMP tree and the companion Spring checkout were inventoried; critical finance, persistence, authentication, document and report paths were inspected. The separate Spring backend's tracked source remains unchanged; no live database, user account, migration or deployment was touched. Prior working-tree changes were preserved.
+
+Implemented: moved existing portfolio aggregation/valuation/monthly-goal code and its tests into `core`; extracted date/JSON-to-terms helpers from UI files; added `InvestmentDocumentParser` plus a compatibility adapter around current native engines; bounded malformed/non-advancing bond schedules and first-coupon anchors; clarified the scheduled-coupon API name while preserving its existing value; fixed Android notification permission handling and the API-24 settings fallback. No new dependencies/modules or persistence/schema changes were introduced.
+
+Executed checks:
+
+| Check | Result |
+|---|---|
+| `:core:jvmTest` | 33 tests pass |
+| `:app:shared:testAndroidHostTest` | 197 tests pass; moved tests now run in core rather than being removed |
+| `:server:test` | 1 sample-server test passes; this is not the financial backend |
+| `node --test tests/*.test.mjs` | 29 shipped parser/calculation/bundle tests pass |
+| Companion Spring `test --tests '*MarketParserTests' --tests '*WebCompatibilityTests'` | 6 pure parser/compatibility tests pass; no database connection required |
+| `:app:androidApp:assembleDebug` / `assembleDebugAndroidTest` | Pass |
+| `:app:shared:compileKotlinIosSimulatorArm64` | Pass |
+| `:core:compileTestKotlinIosSimulatorArm64` / `:app:shared:compileTestKotlinIosSimulatorArm64` | Pass; native test sources compile, but no iPhone runtime test execution claimed for this audit |
+| `:app:androidApp:lintRelease` | Initially reproduced notification MissingPermission error and API-24 settings warnings. After fixes: 0 errors, 54 remaining warnings |
+| Markdown local links / `git diff --check` | Pass |
+
+Full Spring PostgreSQL/Testcontainers integration, physical notification delivery, signed releases, a dependency vulnerability scan, production configuration, backup restore and live data isolation were not executed/verified. These boundaries and the source-confirmed backend contract/financial consistency gaps are documented rather than treated as passing tests. Existing TypeScript financial formulas and parser bundles were not regenerated or replaced.
+
+## Existing financial parser hardening — 30 October 2026
+
+Reused the BNR personal/public result parsers, BK purchase/statement parsers, native extraction/OCR, parser adapter and import review/duplicate paths. Added whole-token amount validation, parser identity metadata, shared classification/ambiguity guards, date/identifier handling and statement-boundary checks. Regenerated common ESM/portable assets from source. Existing synthetic private and public BNR extraction fixtures remain; one synthetic BNR personal fixture and fixture-provenance notes were added.
+
+Reproduced against the pre-change HEAD bundle: a negative BK fee was accepted as positive with no warnings/missing fields; fractional shares were shortened to an integer with no warning; a concatenated statement/contract selected the statement. New regressions prevent these outcomes. The shipped PDF.js reader now also exercises synthetic personal BNR, BK contract and BK statement PDFs.
+
+Executed successfully:
+
+- `node scripts/bundle-shared-logic.mjs` using the existing sibling TypeScript installation; no new toolchain/dependency installed.
+- Strict TypeScript `--noEmit --target ES2022 --module esnext --moduleResolution bundler --skipLibCheck` for the three parser entry modules and their dependencies.
+- `node --test tests/*.test.mjs`: **66 passed**, including ESM/portable output equivalence, supported formats, malformed/ambiguous rejection and shipped-reader tests. Log: `/tmp/struct-parser-regressions.log`.
+- `./gradlew :app:shared:testAndroidHostTest :app:androidApp:assembleDebug`: **197 shared host tests passed**, Android debug APK assembled with regenerated assets. Log: `/tmp/struct-parser-gradle.log`.
+- Companion Spring `./gradlew test --tests '*MarketParserTests' --tests '*WebCompatibilityTests'`: **6 passed**, all test sources compiled, including the new statement-upload integration regression. Log: `/tmp/struct-parser-backend.log`.
+
+The companion `gabo-portfolio-api` working tree now accepts the existing `Statement` upload category with `broker-statement.pdf`. Its added PostgreSQL/Testcontainers regression checks owner-private bytes/metadata, exact duplicate reuse, reconciliation without investment creation and unsupported categories. **That integration test was not executed:** Docker is installed but its daemon is unavailable. No production database/environment was used as a substitute. Source changes are not a backend deployment.
+
+Native extraction/OCR implementations were unchanged. Existing native OCR/device tests were inspected but not rerun, and Node PDF.js text extraction does not establish image recognition quality or real iPhone runtime behaviour. PDF.js prints Node canvas/polyfill warnings; these text/policy tests do not rasterize OCR pages. No cloud OCR/AI/broker API, new schema or parallel ingestion system was introduced. See [DOCUMENT_PARSING.md](DOCUMENT_PARSING.md) for supported formats, remaining limitations and the broker-extension process.
+
+## Financial calculations and reconciliation — 30 October 2026
+
+Completed the calculation work in progress, then extended the existing reconciliation service/screens. Details, assumptions and examples are in [FINANCIAL_CALCULATIONS.md](FINANCIAL_CALCULATIONS.md) and [RECONCILIATION.md](RECONCILIATION.md).
+
+Financial regressions use only synthetic fixtures for the supplied two bonds and two equities. Verified gross semiannual coupons of RWF 126,500 / 60,000; at the configurable illustrative 5% rate, net RWF 120,175 / 57,000. Verified acquisition costs of RWF 36,615.60 / 340,728.50 with fees counted once. Fixed explicit-tax override, whole-franc truncation, month-anchor drift, unsupported inferred frequency, decimal money boundaries, missing-date quotes and simulation schedule/payment handling. Existing records/receipts were not rewritten.
+
+Reconciliation keeps the existing statement table/service and purchase endpoints. Added source evidence and append-only reconciliation decisions (V8), explicit review for unidentified/ambiguous bonds, evidence-only nonpurchase movements, original equity contract links, revision/idempotency safeguards and source review in the existing document flow. No parallel ledger, financial execution, dividend/cash accounting or brokerage integration was added.
+
+Final executed checks:
+
+- **39 core JVM tests passed** and **39 core iPhone simulator tests passed**, including native NSDecimalNumber decimal ties and the reference calculations/schedules.
+- **202 shared Android-host tests passed**; Android debug APK assembled successfully, including the final custom-tax-preservation regression.
+- **216 shared iPhone simulator tests passed**, including existing native PDFKit/Vision fixtures, reports/privacy, imports and the new reconciliation model tests. The subsequent tax-preservation branch was checked on the Android host and compiled for iPhone; that extra test was not rerun in the removed simulator. Used only disposable simulator `Struct-Financial-Audit` (iPhone 16 Pro / iOS 18.6); no physical device.
+- **74 Node tests passed**, covering the shipped PDF reader, parsers, statement movement separation, calculation references, duplicate dates, same-month payments and principal redemption.
+- Strict TypeScript no-emit checks passed for calculations and parser modules/dependencies (`ES2022`, `ES2023,DOM,ESNext.Intl`, bundler resolution).
+- **39 Spring tests passed**, including the complete HTTP/security/database integration class, pure matching/financial tests and compatibility/parser tests. Flyway V1–V8 applied successfully to a fresh synthetic database.
+- `git diff --check` passes in both checkouts; documentation links checked locally.
+
+Docker was unavailable. PostgreSQL 18.3 was already installed, so tests used a newly initialized disposable cluster listening only on 127.0.0.1. A test-only opt-in datasource rejects URLs outside loopback or without the `struct_test_` database prefix; the usual Testcontainers path remains default. The runner excluded application DB/import environment variables and explicitly targeted the disposable database. No live/production database, account, broker document, credentials or deployment was accessed.
+
+Logs: `/tmp/struct-finance-ios.log`, `/tmp/struct-reconcile-kmp-final.log`, `/tmp/struct-reconcile-node.log`, `/private/tmp/struct-reconcile-integration-final.log`. Existing compiler/deprecation warnings and a CoreGraphics PDF diagnostic remain; all listed tests pass. Disposable database/simulator resources were removed after validation. These results validate source behavior, not a production rollout or a manual visual review of every new dialog state.
+
+Final tax-confirmation check: `/tmp/struct-tax-confirmation-final.log`; Android host tests/build and shared iPhone compilation validate the saved-rate preservation fix.

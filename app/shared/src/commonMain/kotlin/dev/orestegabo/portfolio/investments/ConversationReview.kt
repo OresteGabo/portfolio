@@ -19,9 +19,11 @@ internal fun ConversationReview(model: PortfolioModel, review: JsonRecord, targe
         "statement" -> {
             AppText("BK Capital statement", fontWeight = FontWeight.SemiBold)
             AppText("${review.text("fromDate")} – ${review.text("toDate")}", style = MaterialTheme.typography.bodyMedium)
-            Fact("Records", review.rows("rows").size.toString())
+            Fact("Purchases", review.rows("rows").size.toString())
+            Fact("Other movements", review.rows("movements").size.toString())
+            if (review.optBoolean("usedOcr")) AppText("Text recognition used. Check every amount against the PDF.", style = MaterialTheme.typography.bodySmall)
             AppText("Statement entries are checked against your investments. Missing contracts become reminders; they do not add unconfirmed amounts to your portfolio.", style = MaterialTheme.typography.bodySmall)
-            Button(enabled = !model.busy && review.rows("rows").isNotEmpty(), modifier = Modifier.fillMaxWidth(),
+            Button(enabled = !model.busy && (review.rows("rows").isNotEmpty() || review.rows("movements").isNotEmpty()), modifier = Modifier.fillMaxWidth(),
                 onClick = { model.saveImportedStatement(review, done) }) {
                 AppText(if (entry.documentId.isNotBlank()) "Check records using saved PDF" else if (entry.state == ImportState.FAILED) "Retry save" else "Save PDF and check records")
             }

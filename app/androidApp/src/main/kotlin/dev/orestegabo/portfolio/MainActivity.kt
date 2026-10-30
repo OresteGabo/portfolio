@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.os.Build
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.net.Uri
 import android.content.Intent
 import android.provider.Settings
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,7 +28,11 @@ class MainActivity : FragmentActivity() {
             if(Build.VERSION.SDK_INT>=33 && !getSharedPreferences("portfolio.push",MODE_PRIVATE).getBoolean("asked",false)) {
                 getSharedPreferences("portfolio.push",MODE_PRIVATE).edit().putBoolean("asked",true).apply()
                 pushPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-            } else startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,packageName))
+            } else if (Build.VERSION.SDK_INT >= 26) {
+                startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
+            } else {
+                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+            }
         }
         val prefs=getSharedPreferences("portfolio.push",MODE_PRIVATE)
         val id=prefs.getString("deviceId",null) ?: UUID.randomUUID().toString().also { prefs.edit().putString("deviceId",it).apply() }

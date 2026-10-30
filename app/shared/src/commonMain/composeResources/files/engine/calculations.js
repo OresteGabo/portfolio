@@ -46,7 +46,7 @@ function monthIndexFromIsoDate(assumptions, isoDate) {
 export function purchaseToStartingLot(purchase, assumptions) {
     if (purchase.status !== "active" ||
         purchase.faceValue <= 0 ||
-        purchase.couponRate <= 0) {
+        purchase.couponRate < 0) {
         return null;
     }
     const maturityMonth = monthIndexFromIsoDate(assumptions, purchase.maturityDate);
@@ -64,9 +64,10 @@ export function purchaseToStartingLot(purchase, assumptions) {
     }))
         .filter((payment) => Boolean(payment.month && payment.month >= 1))
         .filter((payment) => payment.month <= maturityMonth);
-    const grossCouponAmount = purchase.faceValue * purchase.couponRate /
-        Math.max(1, purchase.couponFrequency || 2);
-    const netCouponAmount = grossCouponAmount * (1 - purchase.withholdingTaxRate);
+    const grossCouponAmount = purchase.grossCouponAmount ?? Math.round(purchase.faceValue * purchase.couponRate /
+        Math.max(1, purchase.couponFrequency || 2) * 100) / 100;
+    const netCouponAmount = purchase.netCouponAmount ?? Math.round(purchase.faceValue * purchase.couponRate *
+        (1 - purchase.withholdingTaxRate) / Math.max(1, purchase.couponFrequency || 2) * 100) / 100;
     return {
         id: `actual-${purchase.id}`,
         purchaseMonth,
@@ -195,20 +196,16 @@ export function calculateProjection(assumptions, cashInjections = [], startingLo
         const monthlyInjections = cashInjections.filter((injection) => injection.month === month);
         const cashInjection = monthlyInjections.reduce((total, injection) => total + injection.amount, 0);
         const couponPayments = activeLots
-            .map((lot) => {
-            const scheduledCoupon = lot.couponSchedule?.find((payment) => payment.month === month);
+            .flatMap((lot) => {
             if (lot.couponSchedule) {
-                return scheduledCoupon && month <= lot.maturityMonth
-                    ? { lot, scheduledCoupon }
-                    : null;
+                const seen = new Set();
+                return lot.couponSchedule.filter(payment => payment.month === month && month <= lot.maturityMonth &&
+                    !seen.has(payment.date) && Boolean(seen.add(payment.date))).map(scheduledCoupon => ({ lot, scheduledCoupon }));
             }
-            const modeledCouponDue = Number.isInteger(paymentInterval) &&
-                month > lot.purchaseMonth &&
-                month <= lot.maturityMonth &&
-                (month - lot.purchaseMonth) % paymentInterval === 0;
-            return modeledCouponDue ? { lot, scheduledCoupon: null } : null;
+            const modeledCouponDue = Number.isInteger(paymentInterval) && month > lot.purchaseMonth &&
+                month <= lot.maturityMonth && (month - lot.purchaseMonth) % paymentInterval === 0;
+            return modeledCouponDue ? [{ lot, scheduledCoupon: null }] : [];
         })
-            .filter((payment) => Boolean(payment))
             .map(({ lot, scheduledCoupon }) => {
             const grossCouponAmount = lot.grossCouponAmount ??
                 lot.amount * (lot.annualCouponRate / lot.couponFrequency);

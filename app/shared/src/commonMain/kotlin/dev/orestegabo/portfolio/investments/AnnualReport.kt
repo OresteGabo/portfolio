@@ -59,8 +59,9 @@ internal fun generateAnnualReport(data: PortfolioReportData, year: Int, historie
     fun t(en: String, french: String) = if (fr) french else en
     fun cash(value: Double, currency: String): String {
         if (!value.isFinite()) return t("Unavailable", "Indisponible")
-        val decimals = currency != "RWF"
-        val units = (abs(value) * if (decimals) 100 else 1).roundToLong()
+        val rounded = roundedMoney(value)
+        val decimals = currency != "RWF" || rounded % 1.0 != 0.0
+        val units = (abs(rounded) * if (decimals) 100 else 1).roundToLong()
         val whole = (if (decimals) units / 100 else units).toString().reversed().chunked(3).joinToString(if (fr) " " else ",").reversed()
         return "$currency ${if (value < 0) "-" else ""}$whole" +
             if (decimals) (if (fr) "," else ".") + (units % 100).toString().padStart(2, '0') else ""

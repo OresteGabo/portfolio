@@ -58,7 +58,7 @@ function monthIndexFromIsoDate(assumptions, isoDate) {
 function purchaseToStartingLot(purchase, assumptions) {
     if (purchase.status !== "active" ||
         purchase.faceValue <= 0 ||
-        purchase.couponRate <= 0) {
+        purchase.couponRate < 0) {
         return null;
     }
     const maturityMonth = monthIndexFromIsoDate(assumptions, purchase.maturityDate);
@@ -76,9 +76,10 @@ function purchaseToStartingLot(purchase, assumptions) {
     }))
         .filter((payment) => Boolean(payment.month && payment.month >= 1))
         .filter((payment) => payment.month <= maturityMonth);
-    const grossCouponAmount = purchase.faceValue * purchase.couponRate /
-        Math.max(1, purchase.couponFrequency || 2);
-    const netCouponAmount = grossCouponAmount * (1 - purchase.withholdingTaxRate);
+    const grossCouponAmount = purchase.grossCouponAmount ?? Math.round(purchase.faceValue * purchase.couponRate /
+        Math.max(1, purchase.couponFrequency || 2) * 100) / 100;
+    const netCouponAmount = purchase.netCouponAmount ?? Math.round(purchase.faceValue * purchase.couponRate *
+        (1 - purchase.withholdingTaxRate) / Math.max(1, purchase.couponFrequency || 2) * 100) / 100;
     return {
         id: `actual-${purchase.id}`,
         purchaseMonth,
@@ -207,20 +208,16 @@ function calculateProjection(assumptions, cashInjections = [], startingLots) {
         const monthlyInjections = cashInjections.filter((injection) => injection.month === month);
         const cashInjection = monthlyInjections.reduce((total, injection) => total + injection.amount, 0);
         const couponPayments = activeLots
-            .map((lot) => {
-            const scheduledCoupon = lot.couponSchedule?.find((payment) => payment.month === month);
+            .flatMap((lot) => {
             if (lot.couponSchedule) {
-                return scheduledCoupon && month <= lot.maturityMonth
-                    ? { lot, scheduledCoupon }
-                    : null;
+                const seen = new Set();
+                return lot.couponSchedule.filter(payment => payment.month === month && month <= lot.maturityMonth &&
+                    !seen.has(payment.date) && Boolean(seen.add(payment.date))).map(scheduledCoupon => ({ lot, scheduledCoupon }));
             }
-            const modeledCouponDue = Number.isInteger(paymentInterval) &&
-                month > lot.purchaseMonth &&
-                month <= lot.maturityMonth &&
-                (month - lot.purchaseMonth) % paymentInterval === 0;
-            return modeledCouponDue ? { lot, scheduledCoupon: null } : null;
+            const modeledCouponDue = Number.isInteger(paymentInterval) && month > lot.purchaseMonth &&
+                month <= lot.maturityMonth && (month - lot.purchaseMonth) % paymentInterval === 0;
+            return modeledCouponDue ? [{ lot, scheduledCoupon: null }] : [];
         })
-            .filter((payment) => Boolean(payment))
             .map(({ lot, scheduledCoupon }) => {
             const grossCouponAmount = lot.grossCouponAmount ??
                 lot.amount * (lot.annualCouponRate / lot.couponFrequency);
@@ -361,6 +358,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.isRecognizedBondResult = isRecognizedBondResult;
 exports.parseBondPdfText = parseBondPdfText;
 exports.parseBondIssuancePdfText = parseBondIssuancePdfText;
+const document_parser_support_1 = require("./document-parser-support");
 const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 const DATE_PATTERN = /([\dIlioO]{1,2})\s*[-/.]?\s*(Jan|Feb|Mar|Apr|May|Jun|Ju[lI]|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*[-/.]?\s*([\dIlioO]{2,4})(?!\d)/gi;
 const digits = (value) => value.replace(/[Ili]/g, "1").replace(/[oO]/g, "0");
@@ -380,11 +378,12 @@ function isoDate(year, month, day) {
         : null;
 }
 function readDate(value) {
-    const numeric = value.match(/\b(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})\b/);
+    value = value.trim();
+    const numeric = value.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})(?=\s|$)/);
     if (numeric)
         return isoDate(+numeric[3], +numeric[2], +numeric[1]);
     const match = [...value.matchAll(DATE_PATTERN)][0];
-    if (!match)
+    if (!match || match.index !== 0)
         return null;
     const year = +digits(match[3]);
     return isoDate(year < 100 ? 2000 + year : year, MONTHS.indexOf(match[2].toLowerCase().slice(0, 3).replace(/^jui$/, "jul")) + 1, +digits(match[1]));
@@ -392,15 +391,17 @@ function readDate(value) {
 function number(value) {
     if (!value)
         return undefined;
-    const result = Number(value.replace(/[,\s]/g, ""));
-    return Number.isFinite(result) ? result : undefined;
+    const token = value.replace(/\s/g, "");
+    const decimals = Math.max(2, (token.split(".")[1] ?? "").length);
+    return decimals <= 6 ? (0, document_parser_support_1.pdfNumber)(token, decimals) : undefined;
 }
 /** BNR result keywords only. Text is data; nothing in a document is executed. */
 function parseBondPdfText(raw, usedOcr = false) {
+    (0, document_parser_support_1.assertSingleDocumentFamily)(raw);
     const text = raw.replace(/\r/g, "").replace(/[|_]/g, " ");
     const fields = {};
     const warnings = [];
-    const capture = (pattern) => text.match(pattern)?.[1]?.trim();
+    const capture = (pattern) => (0, document_parser_support_1.uniqueCapture)(text, pattern) || undefined;
     const name = capture(/(?:ISSUANCE\s+NUMBER|ISSUE\s+NUMBER)\s*[:\s]*([A-Z]+\d+\s*\/\s*\d{4}\s*\/\s*\d+\s*(?:YR|Y))/i);
     if (name)
         fields.bondName = name.replace(/\s/g, "").toUpperCase();
@@ -413,18 +414,18 @@ function parseBondPdfText(raw, usedOcr = false) {
         fields.currency = "RWF";
         fields.market = "primary";
     }
-    const tenor = number(capture(/TENOR\s*[:\s]*(\d+)\s*Y/i) ?? capture(/RESULTS\s+OF\s+(\d+)\s+YEAR/i));
-    if (tenor && tenor <= 100)
+    const tenor = number(capture(/TENOR\s*[:\s]*(\S+?)\s*Y(?:ears)?(?=\s|$)/i) ?? capture(/RESULTS\s+OF\s+(\d+)\s+YEAR/i));
+    if (tenor && Number.isInteger(tenor) && tenor <= 100)
         fields.tenorYears = tenor;
-    const price = number(capture(/(?:^|\n)\s*(?:EXECUTED\s+)?PRICE\s*[:\s]*(\d+(?:\.\d+)?)/i));
+    const price = number(capture(/(?:^|\n)\s*(?:EXECUTED\s+)?PRICE\s*[:\s]*(\S+)/i));
     if (price && price <= 1000)
         fields.pricePercent = price;
-    const rate = number(capture(/C[ao]upon\s+(?:Interest\s+)?rate\s*[:\s]*(\d+(?:\.\d+)?)\s*%/i));
+    const rate = number(capture(/C[ao]upon\s+(?:Interest\s+)?rate\s*[:\s]*([^\s%]+)\s*%(?=\s|$)/i));
     if (rate !== undefined && rate <= 100)
         fields.couponRate = rate / 100;
-    const settlement = capture(/SETTLEMENT\s+DATE\s*[:\s]*([^\n]+(?:\n[^\n]+)?)/i);
-    const maturity = capture(/REDEMP?E?TION\s+DATE\s*[:\s]*([^\n]+(?:\n[^\n]+)?)/i)
-        ?? capture(/MATURITY\s+DATE\s*[:\s]*([^\n]+(?:\n[^\n]+)?)/i);
+    const settlement = capture(/SETTLEMENT\s+DATE[ \t:]*\n?[ \t]*([\dIlioO][^\n]*)/i);
+    const maturity = capture(/REDEMP?E?TION\s+DATE[ \t:]*\n?[ \t]*([\dIlioO][^\n]*)/i)
+        ?? capture(/MATURITY\s+DATE[ \t:]*\n?[ \t]*([\dIlioO][^\n]*)/i);
     if (settlement) {
         const date = readDate(settlement);
         if (date) {
@@ -442,8 +443,8 @@ function parseBondPdfText(raw, usedOcr = false) {
     // In the BNR investor table the columns are applied, allocated, settlement, coupon.
     const investorSection = text.split(/INVESTOR\s+RESULTS/i)[1]?.split(/Digitally\s+signed/i)[0];
     if (investorSection && /Allocation/i.test(investorSection) && /Coupon\s+Am[o0]unt/i.test(investorSection)) {
-        const amounts = [...investorSection.matchAll(/\b\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?\b/g)].map((match) => number(match[0]));
-        if (amounts.length === 4 && amounts[1] > 0) {
+        const amounts = investorSection.split(/\s+/).filter(token => /^[+-]?\d/.test(token)).map(token => (0, document_parser_support_1.pdfNumber)(token));
+        if (!/[+-]\s+\d/.test(investorSection) && amounts.length === 4 && amounts.every(value => value !== undefined) && amounts[1] > 0) {
             fields.faceValue = amounts[1];
             if (fields.pricePercent) {
                 const expected = Math.round(amounts[1] * fields.pricePercent) / 100;
@@ -494,10 +495,11 @@ function parseBondPdfText(raw, usedOcr = false) {
         ["maturityDate", "Maturity date"], ["firstCouponDate", "Coupon schedule"],
     ];
     const missingFields = required.filter(([key]) => fields[key] === undefined || fields[key] === "").map(([, label]) => label);
-    return { fields, warnings, missingFields, usedOcr };
+    return { parser: document_parser_support_1.BNR_INVESTOR, fields, warnings, missingFields, usedOcr };
 }
 /** Public auction results have no investor allocation and must never become a purchase. */
 function parseBondIssuancePdfText(raw, usedOcr = false) {
+    (0, document_parser_support_1.assertSingleDocumentFamily)(raw);
     if (!/SUMMARY\s+MARKET\s+RESULTS/i.test(raw) || /INVESTOR\s+RESULTS/i.test(raw))
         return null;
     // PDF glyph runs sometimes insert spaces inside identifiers and years. Restrict repairs to labels.
@@ -514,19 +516,19 @@ function parseBondIssuancePdfText(raw, usedOcr = false) {
     const issueDate = summary.match(/\b(\d(?:\s*\d)?)\s*[-/]\s*(\d(?:\s*\d)?)\s*[-/]\s*(\d(?:\s*\d){3})\b/);
     if (issueDate)
         fields.issuanceDate = isoDate(number(issueDate[3]), number(issueDate[2]), number(issueDate[1])) ?? undefined;
-    const amountMatches = [...summary.matchAll(/\b\d(?:\s*\d){0,2}(?:\s*,\s*\d\s*\d\s*\d){2,}(?:\s*\.\s*\d+)?\b/g)];
-    const totals = amountMatches.map(m => number(m[0]));
-    if (totals.length === 3)
+    const amountMatches = [...summary.matchAll(/(?<![\d,.\-])\b\d(?:\s*\d){0,2}(?:\s*,\s*\d\s*\d\s*\d){2,}(?:\s*\.\s*\d+)?\b(?![\d,.])/g)];
+    const totals = amountMatches.map(m => (0, document_parser_support_1.pdfNumber)(m[0].replace(/\s/g, "")));
+    if (!/[+-]\s+\d[\d\s]*,/.test(summary) && totals.length === 3 && totals.every(value => value !== undefined))
         [fields.amountOffered, fields.appliedAmount, fields.amountSold] = totals;
     const lastAmount = amountMatches.at(-1);
     const bids = lastAmount && summary.slice(lastAmount.index + lastAmount[0].length).match(/^\s+(\d+)\s+[\d\s.]+%/);
     if (bids)
         fields.bidCount = +bids[1];
-    const yieldMatch = text.match(/Y\s*ield\s+rate\s*[:\s]*(\d+(?:\.\d+)?)\s*%/i);
-    if (yieldMatch)
-        fields.yieldRate = +yieldMatch[1] / 100;
+    const yieldRate = number((0, document_parser_support_1.uniqueCapture)(text, /Y\s*ield\s+rate\s*[:\s]*([^\s%]+)\s*%(?=\s|$)/i));
+    if (yieldRate !== undefined && yieldRate <= 100)
+        fields.yieldRate = yieldRate / 100;
     const required = ["bondName", "isin", "tenorYears", "pricePercent", "couponRate", "settlementDate", "maturityDate", "firstCouponDate", "issuanceDate", "amountOffered", "appliedAmount", "amountSold", "bidCount", "yieldRate"];
-    return { kind: "bond-issuance", fields, usedOcr,
+    return { kind: "bond-issuance", parser: document_parser_support_1.BNR_ISSUANCE, fields, usedOcr,
         warnings: base.warnings.filter(w => !w.startsWith("Trade date defaults")),
         missingFields: required.filter(k => fields[k] === undefined || fields[k] === "") };
 }
@@ -541,13 +543,15 @@ exports.parsePurchasePdfText = parsePurchasePdfText;
 const equity_validation_1 = require("./equity-validation");
 const pdf_import_parser_1 = require("./pdf-import-parser");
 const pdf_import_errors_1 = require("./pdf-import-errors");
+const document_parser_support_1 = require("./document-parser-support");
+const bk_statement_parser_1 = require("./bk-statement-parser");
 exports.EMPTY_EQUITY = {
     instrumentType: "equity", exchange: "RSE", securityName: "", ticker: "", isin: "", tradeDate: "", settlementDate: "",
     shares: 0, pricePerShare: 0, grossConsideration: 0, brokerageCommission: 0, rseTransactionFee: 0, csdTransactionLevy: 0,
     cmaTransactionFee: 0, totalCharges: 0, netAmountPayable: 0, broker: "", contractNote: "", cdsAccountNo: "", cdsReference: "", tradeReportId: "", currency: "RWF", status: "active", notes: "",
 };
 function date(text) {
-    const match = text.match(/(\d{1,2})[-/\s](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[-/\s](\d{4})/i);
+    const match = text.match(/^(\d{1,2})[-/\s](Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)[-/\s](\d{4})(?=\s|$)/i);
     if (!match)
         return "";
     const month = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].indexOf(match[2].toLowerCase().slice(0, 3)) + 1;
@@ -555,21 +559,24 @@ function date(text) {
     return (0, equity_validation_1.validEquityDate)(value) ? value : "";
 }
 function parseEquityPdfText(raw, usedOcr = false) {
+    (0, document_parser_support_1.assertSingleDocumentFamily)(raw);
     const text = raw.replace(/\r/g, "");
+    if (!/\bBK\s+CAPITAL\b/i.test(text))
+        return null;
     if ([...text.matchAll(/EQUITY\s+PURCHASE\s+CONTRACT\s+NOTE\s*:/gi)].length !== 1)
         return null;
     // Sale notes and unrelated PDFs must never become a purchase.
     if (!/EQUITY\s+PURCHASE\s+CONTRACT\s+NOTE\s*:/i.test(text) || /EQUITY\s+SALE\s+CONTRACT/i.test(text))
         return null;
-    const capture = (pattern) => text.match(pattern)?.[1]?.trim() ?? "";
+    const capture = (pattern) => (0, document_parser_support_1.uniqueCapture)(text, pattern);
     const fields = { ...exports.EMPTY_EQUITY };
-    fields.contractNote = capture(/EQUITY\s+PURCHASE\s+CONTRACT\s+NOTE\s*:\s*([A-Z0-9#/-]+)/i);
+    fields.contractNote = capture(/EQUITY\s+PURCHASE\s+CONTRACT\s+NOTE\s*:[ \t]*(\S+)/i);
     fields.securityName = capture(/Security\s+Name\s*:\s*([^\n]+?)(?=\s+(?:Trade|Settlement|ISIN)\s|\n|$)/i);
-    fields.isin = capture(/ISIN\s+Code\s*:\s*([A-Z0-9]{8,32})/i).toUpperCase();
+    fields.isin = capture(/ISIN\s+Code\s*:[ \t]*(\S+)/i).toUpperCase();
     fields.tradeDate = date(capture(/Trade\s+Date\s*:\s*([^\n]+)/i));
     fields.settlementDate = date(capture(/Settlement\s+Date\s*:\s*([^\n]+)/i));
-    fields.shares = Number(capture(/No\.?(?:\s+of)\s+Shares\s*:\s*([\d,]+)/i).replace(/,/g, ""));
-    fields.pricePerShare = Number(capture(/\bPrice\s*:\s*([\d,]+(?:\.\d+)?)/i).replace(/,/g, ""));
+    fields.shares = (0, document_parser_support_1.pdfNumber)(capture(/No\.?(?:\s+of)\s+Shares\s*:[ \t]*(\S+)/i)) ?? 0;
+    fields.pricePerShare = (0, document_parser_support_1.pdfNumber)(capture(/\bPrice\s*:[ \t]*(\S+)/i)) ?? 0;
     fields.broker = /BK\s+CAPITAL/i.test(text) ? "BK Capital" : "";
     fields.cdsAccountNo = capture(/CDS\s+Account\s+No\.\s*:\s*([A-Z0-9]+)/i);
     fields.cdsReference = capture(/CDS\s+Ref\.\s+No\.\s*:\s*([A-Z0-9]+)/i);
@@ -578,11 +585,11 @@ function parseEquityPdfText(raw, usedOcr = false) {
     fields.ticker = tickers[fields.isin] ?? "";
     // Each fee row may contain a percentage and an amount: take its final amount.
     const amount = (label) => {
-        const row = text.match(new RegExp(`${label}\\s+([^\\n]+)`, "i"))?.[1];
-        if (!row)
+        const row = capture(new RegExp(`${label}[ \t]+([^\\n]+)`, "i"));
+        // The amount is the final whole token, never a substring of a negative/malformed amount.
+        if (/[+-]\s+\d/.test(row))
             return undefined;
-        const values = [...row.matchAll(/\d[\d,]*\.\d{2}(?!\d|%)/g)];
-        return values.length ? Number(values.at(-1)[0].replace(/,/g, "")) : undefined;
+        return (0, document_parser_support_1.pdfNumber)(row.trim().split(/\s+/).at(-1));
     };
     const labels = { grossConsideration: "Gross\\s+Consideration", brokerageCommission: "Brokerage\\s+Commission", rseTransactionFee: "RSE\\s+Transaction\\s+Fee", csdTransactionLevy: "CSD\\s+Transaction\\s+Levy", cmaTransactionFee: "CMA\\s+Transaction\\s+Fee", totalCharges: "Total\\s+Charges", netAmountPayable: "NET\\s+AMOUNT\\s+PAYABLE" };
     const missingFields = [];
@@ -602,9 +609,13 @@ function parseEquityPdfText(raw, usedOcr = false) {
     const warnings = usedOcr ? ["Text recognition was used. Check every number against your PDF."] : [];
     if (!missingFields.length && !(0, equity_validation_1.parseEquityPurchase)(fields))
         warnings.push("The extracted totals or dates do not agree. Correct them before saving.");
-    return { kind: "equity", fields, missingFields, warnings, usedOcr };
+    return { kind: "equity", parser: document_parser_support_1.BK_PURCHASE, fields, missingFields, warnings, usedOcr };
 }
 function parsePurchasePdfText(text, usedOcr = false) {
+    (0, document_parser_support_1.assertSingleDocumentFamily)(text);
+    const statement = (0, bk_statement_parser_1.parseBkStatement)(text, usedOcr);
+    if (statement)
+        return statement;
     const issuance = (0, pdf_import_parser_1.parseBondIssuancePdfText)(text, usedOcr);
     if (issuance)
         return issuance;
@@ -731,7 +742,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseBkStatement = parseBkStatement;
 const equity_validation_1 = require("./equity-validation");
 const pdf_import_errors_1 = require("./pdf-import-errors");
-const value = (text) => Number(text.replace(/,/g, ""));
+const document_parser_support_1 = require("./document-parser-support");
 function date(raw) {
     const match = raw.match(/^(\d{1,2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{4})$/i);
     if (!match)
@@ -742,20 +753,26 @@ function date(raw) {
 }
 /** A statement is a ledger for reconciliation, not evidence of missing execution terms. */
 function parseBkStatement(raw, usedOcr = false) {
+    (0, document_parser_support_1.assertSingleDocumentFamily)(raw);
     if (!/\bBK\s+CAPITAL\b/i.test(raw) || !/\bCLIENT\s+STATEMENT\b/i.test(raw))
         return null;
     const fail = () => { throw new pdf_import_errors_1.BondPdfImportError("not_bond_result"); };
     if (!/Balance\s*\(RWF\)/i.test(raw) || /\b(?:USD|EUR|GBP)\b/.test(raw))
         return fail();
-    const period = (label) => date(raw.match(new RegExp(`${label}\\s+Date\\s*:\\s*(\\d{1,2}-[a-z]{3}-\\d{4})`, "i"))?.[1] ?? "");
+    const period = (label) => date((0, document_parser_support_1.uniqueCapture)(raw, new RegExp(`${label}\\s+Date\\s*:[ \\t]*(\\S+)`, "i")));
     const fromDate = period("From"), toDate = period("To");
     if (!fromDate || !toDate || toDate < fromDate)
+        return fail();
+    if ([...raw.matchAll(/Opening\s+Balance\s+As\s+On/gi)].length !== 1 ||
+        [...raw.matchAll(/Closing\s+Balance\s+As\s+On/gi)].length !== 1 ||
+        raw.search(/Closing\s+Balance\s+As\s+On/i) < raw.search(/Opening\s+Balance\s+As\s+On/i))
         return fail();
     const ledger = raw.split(/Opening\s+Balance\s+As\s+On/i)[1]?.split(/Closing\s+Balance\s+As\s+On/i)[0];
     if (!ledger)
         return fail();
-    const starts = [...ledger.matchAll(/^\s*(\d{1,2}-[a-z]{3}-\d{4})\s+(Receipt|Journal|Purchase|Sale|Payment)\b/gim)];
+    const starts = [...ledger.matchAll(/^\s*(\S+-\S+)\s+([A-Za-z][A-Za-z-]*)\b/gim)];
     const rows = [];
+    const movements = [];
     for (let i = 0; i < starts.length; i++) {
         const match = starts[i];
         const block = ledger.slice(match.index, starts[i + 1]?.index);
@@ -763,33 +780,95 @@ function parseBkStatement(raw, usedOcr = false) {
         const day = date(match[1]);
         if (!day || day < fromDate || day > toDate)
             return fail();
-        // Receipts, fees, sales and transfers never become investment purchases.
-        if (match[2].toLowerCase() !== "purchase" && !(match[2].toLowerCase() === "journal" && /\bBond\s+Cost\b/i.test(text)))
-            continue;
-        const amounts = [...text.matchAll(/-?\b\d[\d,]*\.\d{2}\b/g)].map(item => value(item[0]));
-        if (amounts.length < 2)
+        if (/[+-]\s+\d/.test(text))
             return fail();
-        const amount = amounts[amounts.length - 2], credit = amounts[amounts.length - 1];
+        const tokens = text.split(/\s+/);
+        const amount = (0, document_parser_support_1.pdfNumber)(tokens.at(-2)), credit = (0, document_parser_support_1.pdfNumber)(tokens.at(-1));
+        if (amount === undefined || credit === undefined)
+            return fail();
+        const purchase = match[2].toLowerCase() === "purchase" || match[2].toLowerCase() === "journal" && /\bBond\s+Cost\b/i.test(text);
+        if (!purchase) {
+            if (amount > 0 && credit > 0)
+                return fail();
+            if (amount === 0 && credit === 0)
+                continue;
+            const kind = /\bdividend\b/i.test(text) ? "dividend" : /\bcoupon\b/i.test(text) ? "coupon" :
+                /\b(?:fee|fees|charge|charges|custody|brokerage|commission|levy)\b/i.test(text) ? "fee" : match[2].toLowerCase() === "receipt" ? "cash-receipt" : "other";
+            movements.push({ kind, date: day, amount: amount || credit, direction: amount ? "debit" : "credit", rowNumber: i + 1,
+                title: kind === "cash-receipt" ? "Cash receipt" : kind === "fee" ? "Statement fee" : kind === "coupon" ? "Coupon movement" : kind === "dividend" ? "Dividend movement" : "Other statement movement" });
+            continue;
+        }
         if (!Number.isFinite(amount) || amount <= 0 || amount > 1e13 || credit !== 0)
             return fail();
         if (match[2].toLowerCase() === "purchase") {
-            const trade = text.match(/Purchase\s+of\s+([A-Z][A-Z0-9]{1,9})\s+([\d,]+)\s*@\s*([\d,]+\.\d{2})\s+on\s+(\d{2})-(\d{2})-(\d{4})/i);
+            const trade = text.match(/Purchase\s+of\s+([A-Z][A-Z0-9]{1,9})\s+(\S+)\s*@\s*(\S+)\s+on\s+(\d{2})-(\d{2})-(\d{4})/i);
             const contract = block.match(/\bPurchase\s+(\d+#)(?:[ \t]*(\d+)\b|[^\n]*\n\s*(\d+)\b)/i);
             if (!trade || !contract)
                 return fail();
-            const shares = value(trade[2]), pricePerShare = value(trade[3]);
+            const shares = (0, document_parser_support_1.pdfNumber)(trade[2]), pricePerShare = (0, document_parser_support_1.pdfNumber)(trade[3]);
+            if (shares === undefined || pricePerShare === undefined)
+                return fail();
             if (!Number.isSafeInteger(shares) || shares <= 0 || pricePerShare <= 0 || `${trade[6]}-${trade[5]}-${trade[4]}` !== day || amount < shares * pricePerShare)
                 return fail();
-            rows.push({ kind: "equity", date: day, amount, title: trade[1].toUpperCase(), ticker: trade[1].toUpperCase(), shares, pricePerShare, contractNote: contract[1] + (contract[2] ?? contract[3]) });
+            rows.push({ kind: "equity", rowNumber: i + 1, date: day, amount, title: trade[1].toUpperCase(), ticker: trade[1].toUpperCase(), shares, pricePerShare, contractNote: contract[1] + (contract[2] ?? contract[3]) });
         }
         else {
             const title = text.match(/\b([A-Za-z]+\s+Bond\s+Cost)\b/i)?.[1] ?? "Bond purchase";
-            rows.push({ kind: "bond", date: day, amount, title });
+            rows.push({ kind: "bond", rowNumber: i + 1, date: day, amount, title });
         }
     }
-    if (!rows.length || rows.length > 500)
+    if (!rows.length && !movements.length || rows.length + movements.length > 500)
         return fail();
-    return { kind: "statement", broker: "BK Capital", currency: "RWF", fromDate, toDate, rows, usedOcr };
+    return { kind: "statement", parser: document_parser_support_1.BK_STATEMENT, broker: "BK Capital", currency: "RWF", fromDate, toDate, rows, movements, usedOcr };
+}
+
+},
+"./document-parser-support": function(require,module,exports) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BK_STATEMENT = exports.BK_PURCHASE = exports.BNR_ISSUANCE = exports.BNR_INVESTOR = void 0;
+exports.pdfNumber = pdfNumber;
+exports.assertSingleDocumentFamily = assertSingleDocumentFamily;
+exports.uniqueCapture = uniqueCapture;
+const pdf_import_errors_1 = require("./pdf-import-errors");
+exports.BNR_INVESTOR = { institution: "BNR", documentType: "bond-confirmation", format: "investor-results", version: 1 };
+exports.BNR_ISSUANCE = { institution: "BNR", documentType: "bond-issuance", format: "summary-market-results", version: 1 };
+exports.BK_PURCHASE = { institution: "BK Capital", documentType: "equity-purchase", format: "rse-purchase-contract-note", version: 1 };
+exports.BK_STATEMENT = { institution: "BK Capital", documentType: "statement", format: "rwf-client-statement", version: 1 };
+/** Whole tokens only: never turn -100, 1,00,000, 1e6 or 12.345 into another amount.
+ * Two decimal places remain exact minor units before crossing the existing numeric DTO boundary.
+ */
+function pdfNumber(token, decimals = 2) {
+    if (!Number.isInteger(decimals) || decimals < 1 || decimals > 6)
+        return undefined;
+    if (!token || !new RegExp(`^(?:\\d+|\\d{1,3}(?:,\\d{3})+)(?:\\.\\d{1,${decimals}})?$`).test(token))
+        return undefined;
+    const plain = token.replace(/,/g, "");
+    const [whole, fraction = ""] = plain.split(".");
+    const units = Number(whole) * 10 ** decimals + Number(fraction.padEnd(decimals, "0"));
+    const value = Number(plain);
+    return Number.isSafeInteger(units) && Number.isFinite(value) && value <= 1e13 ? value : undefined;
+}
+/** Classification must not depend on which parser happens to be called first. */
+function assertSingleDocumentFamily(text) {
+    const families = [
+        /\bCLIENT\s+STATEMENT\b/i.test(text),
+        /\bEQUITY\s+(?:PURCHASE|SALE)\s+CONTRACT\s+NOTE\b/i.test(text),
+        /\b(?:INVESTOR\s+RESULTS|SUMMARY\s+MARKET\s+RESULTS)\b/i.test(text),
+    ];
+    if (families.filter(Boolean).length > 1 ||
+        [...text.matchAll(/INVESTOR\s+RESULTS/gi)].length > 1 ||
+        [...text.matchAll(/SUMMARY\s+MARKET\s+RESULTS/gi)].length > 1 ||
+        /INVESTOR\s+RESULTS/i.test(text) && /SUMMARY\s+MARKET\s+RESULTS/i.test(text)) {
+        throw new pdf_import_errors_1.BondPdfImportError("not_bond_result");
+    }
+}
+/** Conflicting repeated labels are ambiguous; identical page-header repeats are harmless. */
+function uniqueCapture(text, pattern) {
+    const values = [...text.matchAll(new RegExp(pattern.source, "gi"))].map(match => match[1].trim());
+    if (new Set(values.map(value => value.toUpperCase())).size > 1)
+        throw new pdf_import_errors_1.BondPdfImportError("not_bond_result");
+    return values[0] ?? "";
 }
 
 }}, cache={};
@@ -797,6 +876,6 @@ function require(name){if(cache[name])return cache[name].exports;var module={exp
 var calc=require('./calculations'), pdf=require('./equity-pdf-parser');
 global.PortfolioLogic={
 project:function(input){var assumptions=Object.assign({},calc.DEFAULT_ASSUMPTIONS,input.assumptions);var lots=input.includeHoldings?input.purchases.map(function(p){return calc.purchaseToStartingLot(p,assumptions)}).filter(Boolean):undefined;var rows=calc.calculateProjection(assumptions,input.injections||[],lots);return {rows:rows,summary:calc.summarizeProjection(rows,assumptions)};},
-parse:function(text,usedOcr){return require('./bk-statement-parser').parseBkStatement(text,usedOcr)||pdf.parsePurchasePdfText(text,usedOcr);}
+parse:function(text,usedOcr){return pdf.parsePurchasePdfText(text,usedOcr);}
 };
 })(globalThis);

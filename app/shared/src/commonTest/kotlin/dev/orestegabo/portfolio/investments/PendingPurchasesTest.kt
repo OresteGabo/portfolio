@@ -115,4 +115,14 @@ class PendingPurchasesTest {
             assertEquals(924500.0, model.portfolio.summary(today).single().investedCash)
         } finally { store.clear(); Dispatchers.resetMain() }
     }
+    @Test fun aPersonalConfirmationPreservesTheConfiguredWithholdingRate() {
+        for (tax in listOf(0.0, .10)) {
+            val pending = pendingBondInput(issue(), 1_000_000.0, today).put("withholdingTaxRate", tax)
+            assertEquals(tax, completePendingPurchase(confirmation(), pending).optDouble("withholdingTaxRate"))
+        }
+        val review = confirmation()
+        review.put("fields", review.getJSONObject("fields").put("withholdingTaxRate", .10))
+        assertEquals(.10, importedPurchaseInput(review).optDouble("withholdingTaxRate"))
+    }
+
 }

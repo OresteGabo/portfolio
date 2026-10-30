@@ -46,9 +46,9 @@ class AppLanguageTest {
             assertEquals(it, localized(it, "fr"))
         }
     }
-    @Test fun frenchAmountsAndCalendarWorkWithPrivacyAndKeepWholeFrancRounding() {
+    @Test fun frenchAmountsAndCalendarWorkWithPrivacyAndPreserveRecordedFractions() {
         AppLanguage.initialize(Preferences("fr"))
-        assertEquals("RWF 1\u202f234\u202f567", money(1234567.99))
+        assertEquals("RWF 1\u202f234\u202f567,99", money(1234567.99))
         assertEquals("1\u202f234,5", formatNumber(1234.5))
         assertEquals("12,35\u00a0%", percent(.1235))
         assertEquals("RWF ••••", maskFinancialNumbers(money(1234567.99)))

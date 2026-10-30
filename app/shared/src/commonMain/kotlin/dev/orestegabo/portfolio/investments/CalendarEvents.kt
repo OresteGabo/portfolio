@@ -28,7 +28,6 @@ fun calendarMonthDays(month: LocalDate): List<LocalDate> {
     return (0 until 42).map { start.plus(DatePeriod(days = it)) }
 }
 
-fun shiftCalendarMonth(date: LocalDate, months: Int): LocalDate = date.plus(DatePeriod(months = months))
 
 fun investmentCalendarEvents(issuances: List<JsonRecord>, portfolio: PortfolioSnapshot): List<InvestmentCalendarEvent> {
     val events = mutableListOf<InvestmentCalendarEvent>()
@@ -64,7 +63,6 @@ fun investmentCalendarEvents(issuances: List<JsonRecord>, portfolio: PortfolioSn
     return events.sortedWith(compareBy({ it.date }, { it.category.ordinal }, { it.title }, { it.id }))
 }
 
-internal fun calendarDate(value: String): LocalDate? = runCatching { LocalDate.parse(value) }.getOrNull()
 internal fun LocalDate.monthLabel() = localized(month.name.lowercase().replaceFirstChar { it.uppercase() })
 internal fun LocalDate.dayLabel() = localized(dayOfWeek.name.lowercase().replaceFirstChar { it.uppercase() })
 internal fun LocalDate.calendarLabel() = "${dayLabel()}, $day ${monthLabel()} $year"

@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 
 val LocalNumbersHidden = staticCompositionLocalOf { false }
-private val privacyNumbers = Regex("""\b\d{4}-\d{2}-\d{2}\b|[+−-]?\d+(?:[,.]\d+)*(?:[\s\u00a0\u202f]\d{3})*(?:%|[kKmMbB])?""")
+private val privacyNumbers = Regex("""\b\d{4}-\d{2}-\d{2}\b|[+−-]?\d+(?:[,.]\d+)*(?:[\s\u00a0\u202f]\d{3})*(?:[,.]\d+)?(?:%|[kKmMbB])?""")
 private val financialValueOnly = Regex("""^(?:[A-Z]{3} )?[+−-]?[\d\s\u00a0\u202f,.%]+$""")
 private val privacyDate = Regex("""\d{4}-\d{2}-\d{2}""")
 

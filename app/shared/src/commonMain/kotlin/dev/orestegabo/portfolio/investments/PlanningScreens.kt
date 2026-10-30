@@ -120,7 +120,7 @@ fun SimulatorScreen(model: PortfolioModel, engine: InvestmentEngine, back: () ->
                         require(month in 1..years.toInt() * 12) { "Cash injections must fit the horizon." }
                         JsonRecord().put("id", "injection-$index").put("label", injection["label"]).put("amount", amount).put("month", month)
                     })
-                    result = engine.run("projection", JsonRecord().put("assumptions", assumptions).put("injections", injectionJson).put("includeHoldings", include).put("purchases", JsonList(model.purchases.filter { it.text("currency") == "RWF" })))
+                    result = engine.run("projection", JsonRecord().put("assumptions", assumptions).put("injections", injectionJson).put("includeHoldings", include).put("purchases", JsonList(model.purchases.filter { it.text("currency") == "RWF" }.map(::purchaseWithProjectionDates))))
                     resultsOnly = true
                 }
             }) { AppText("Calculate projection") } }
@@ -178,4 +178,11 @@ fun EducationScreen(model: PortfolioModel, back: () -> Unit) {
             }) { AppText("Open source ↗") }
         }
     }
+}
+
+/** Simulation reuses the core schedule; published dates are copied unchanged. */
+internal fun purchaseWithProjectionDates(purchase: JsonRecord): JsonRecord {
+    val terms = purchase.terms() ?: return purchase
+    return JsonRecord(purchase.toString()).put("couponDates", JsonList(couponSchedule(terms).map { it.toString() }))
+        .put("grossCouponAmount", terms.grossCouponPayment()).put("netCouponAmount", terms.netCouponPayment())
 }

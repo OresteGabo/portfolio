@@ -230,6 +230,9 @@ class ImportConversationUiTest {
                 tap("Attach PDF"); await("Already in Library")
                 await("This PDF and its purchase details are already saved. No further action is needed.")
                 reveal("Open document")
+                repeat(12) {
+                    if (nodes().none { it.text?.toString()?.startsWith("First saved on this device") == true }) swipe()
+                }
                 shot("conversation-duplicate-time.png")
                 assertTrue("Original save time must be shown on the duplicate receipt", nodes(false).any {
                     it.text?.toString()?.startsWith("First saved on this device") == true

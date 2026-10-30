@@ -283,6 +283,23 @@ class PortfolioModel(
     }
     var statementItems by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
+    var statementReviewRows by mutableStateOf<List<JsonRecord>?>(null)
+        private set
+    fun closeStatementReview() { statementReviewRows = null }
+    fun showStatementRecordReview(row: JsonRecord) { statementReviewRows = listOf(row) }
+    fun showStatementDocumentReview(id: String) = action {
+        require(id.matches(Regex("[A-Za-z0-9_-]{1,120}"))) { "Invalid statement document." }
+        statementReviewRows = api.request("/api/bonds/statement-items?documentId=$id").rows("items")
+    }
+    fun resolveStatementRecord(item: JsonRecord, purchaseId: String?, reason: String, completed: () -> Unit = {}) = action {
+        val id = item.text("id")
+        require(id.matches(Regex("[A-Za-z0-9_-]{1,120}")) && reason.trim().length in 3..500) { "Explain the reconciliation correction." }
+        val updated = api.request("/api/bonds/statement-items/$id/resolve", "POST", JsonRecord()
+            .put("action", if (purchaseId == null) "clear" else "link").put("purchaseId", purchaseId.orEmpty()).put("reason", reason.trim()).put("expectedDecisionAt", item.rows("decisions").lastOrNull()?.text("at").orEmpty())).rows("rows").single()
+        statementReviewRows = statementReviewRows?.map { if (it.text("id") == id) updated else it }
+        statementItems = api.request("/api/bonds/statement-items").rows("items")
+        completed()
+    }
     var historyComplete by mutableStateOf(false)
         private set
     private var compactOverviewSupported: Boolean? = null
@@ -717,17 +734,22 @@ class PortfolioModel(
             emptyList()
         }
         val purchase = completedImportPurchase(document, review, records, targetId)
+        val statementRows = if (kind == "statement") try {
+            api.request("/api/bonds/statement-items?documentId=$id").rows("items").filter { row -> row.rows("sources").any { it.text("documentId") == id } }
+        } catch (cancelled: CancellationException) { throw cancelled } catch (failure: ApiException) {
+            if (failure.status in listOf(404, 405)) emptyList() else throw failure
+        } else emptyList()
         val outcome = when {
             purchase != null -> ImportOutcome.PURCHASE
             kind == "bond-issuance" && targetId.isNullOrBlank() && (document.has("issuance") || prior?.outcome == ImportOutcome.ISSUANCE) -> ImportOutcome.ISSUANCE
-            kind == "statement" && prior?.outcome == ImportOutcome.STATEMENT -> ImportOutcome.STATEMENT
+            kind == "statement" && (statementRows.isNotEmpty() || prior?.outcome == ImportOutcome.STATEMENT) -> ImportOutcome.STATEMENT
             else -> null
         }
-        if (requireComplete && outcome == null) return false
+        if ((requireComplete || kind == "statement") && outcome == null) return false
         updateImport { it.copy(state = ImportState.EXISTS, kind = kind, error = "",
             documentId = id, purchaseId = purchase?.text("id").orEmpty(), outcome = outcome,
-            recorded = if (outcome == ImportOutcome.STATEMENT) prior?.recorded ?: 0 else 0,
-            missing = if (outcome == ImportOutcome.STATEMENT) prior?.missing ?: 0 else 0) }
+            recorded = if (outcome == ImportOutcome.STATEMENT) if (statementRows.isEmpty()) prior?.recorded ?: 0 else statementRows.count { it.text("state") == "recorded" } else 0,
+            missing = if (outcome == ImportOutcome.STATEMENT) if (statementRows.isEmpty()) prior?.missing ?: 0 else statementRows.count { it.text("state") in listOf("missing", "review-required") } else 0) }
         importedPdf = null; importedReview = null; uploadedDocument = null; retryPdf = null
         return true
     }
@@ -784,8 +806,9 @@ class PortfolioModel(
 
     fun checkStatement(review: JsonRecord, completed: (List<JsonRecord>) -> Unit) = action {
         val rows = review.rows("rows").map { JsonRecord(it.toString()).put("currency", "RWF").put("broker", "BK Capital") }
-        require(rows.isNotEmpty() && rows.size <= 500) { "No purchases were found in this statement." }
-        val response = api.request("/api/bonds/statement-items", "POST", JsonRecord().put("items", JsonList(rows)))
+        val movements = review.rows("movements").map { JsonRecord(it.toString()).put("currency", "RWF").put("broker", "BK Capital") }
+        require(rows.size + movements.size in 1..500) { "No records were found in this statement." }
+        val response = api.request("/api/bonds/statement-items", "POST", JsonRecord().put("items", JsonList(rows)).put("movements", JsonList(movements)))
         statementItems = api.request("/api/bonds/statement-items").rows("items")
         completed(response.rows("rows"))
     }
@@ -837,7 +860,7 @@ class PortfolioModel(
                 "The saved purchase differs from this PDF. Review your portfolio before importing again."
             }
             val response = if (existing != null) JsonRecord().put("id", existing.text("id")) else api.request(if (bond) "/api/bonds/purchases" + (id?.let { "/$it" } ?: "") else "/api/bonds/equities",
-                if (bond && id != null) "PUT" else "POST", JsonRecord(purchase.toString()).apply { if(bond)put("confirmationDocumentId",uploadedDocument) })
+                if (bond && id != null) "PUT" else "POST", JsonRecord(purchase.toString()).apply { if(bond)put("confirmationDocumentId",uploadedDocument) else put("contractDocumentId",uploadedDocument) })
             val purchaseId = id ?: response.optJSONObject(if (bond) "purchase" else "holding")?.text("id")
                 ?: response.text("id")
             finishImport(ImportOutcome.PURCHASE, purchaseId)
@@ -850,7 +873,8 @@ class PortfolioModel(
     internal fun saveImportedStatement(review: JsonRecord, completed: () -> Unit) = action {
         require(importedReview === review && importedPdf != null && review.text("kind") == "statement") { "Choose the PDF again before saving." }
         val rows = review.rows("rows").map { JsonRecord(it.toString()).put("currency", "RWF").put("broker", "BK Capital") }
-        require(rows.isNotEmpty() && rows.size <= 500) { "No purchases were found in this statement." }
+        val movements = review.rows("movements").map { JsonRecord(it.toString()).put("currency", "RWF").put("broker", "BK Capital") }
+        require(rows.size + movements.size in 1..500) { "No records were found in this statement." }
         startSavingImport()
         if (checkExistingBeforeSave(review, false, completed)) return@action
         try {
@@ -873,10 +897,10 @@ class PortfolioModel(
                 require(uploadedDocument != null) { "The PDF could not be saved. Try again." }
             }
             pdfImportProgress = PdfImportProgress(PdfImportStage.SAVING)
-            val result = api.request("/api/bonds/statement-items", "POST", JsonRecord().put("items", JsonList(rows)))
+            val result = api.request("/api/bonds/statement-items", "POST", JsonRecord().put("items", JsonList(rows)).put("movements", JsonList(movements)).put("documentId", uploadedDocument))
             val checked = result.rows("rows")
             require(checked.isNotEmpty()) { "Statement results could not be verified. Try again." }
-            finishImport(ImportOutcome.STATEMENT, recorded = checked.count { it.text("state") == "recorded" }, missing = checked.count { it.text("state") == "missing" })
+            finishImport(ImportOutcome.STATEMENT, recorded = checked.count { it.text("state") == "recorded" }, missing = checked.count { it.text("state") in listOf("missing", "review-required") })
             discardImportedPdf(review)
             completed()
             refreshAfterWrite("Statement PDF saved and records checked.")
@@ -1116,6 +1140,7 @@ class PortfolioModel(
         user = null
         portfolio = PortfolioSnapshot()
         statementItems = emptyList()
+        statementReviewRows = null
         pdfImportProgress = null
         reportProgress = null
         historyComplete = false

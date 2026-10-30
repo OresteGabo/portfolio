@@ -3,6 +3,7 @@ package dev.orestegabo.portfolio.investments
 import kotlinx.datetime.LocalDate
 import kotlin.math.floor
 import kotlin.math.abs
+import kotlin.math.roundToLong
 
 internal data class PortfolioReportData(
     val snapshot: PortfolioSnapshot,
@@ -27,10 +28,13 @@ internal fun generatePortfolioReport(data: PortfolioReportData): ByteArray {
         return (if (value < 0) "-" else "") + whole
     }
     fun cash(value: Double, currency: String = "RWF"): String {
-        if (!value.isFinite() || currency == "RWF") return "$currency ${number(value)}"
-        val cents = kotlin.math.round(abs(value) * 100).toLong()
+        if (!value.isFinite()) return "$currency ${number(value)}"
+        val rounded = roundedMoney(value)
+        val cents = (abs(rounded) * 100).roundToLong()
         val whole = (cents / 100).toString().reversed().chunked(3).joinToString(if (french) " " else ",").reversed()
-        return "$currency " + (if (value < 0) "-" else "") + whole + (if (french) "," else ".") + (cents % 100).toString().padStart(2, '0')
+        val fraction = if (currency == "RWF" && cents % 100 == 0L) "" else
+            (if (french) "," else ".") + (cents % 100).toString().padStart(2, '0')
+        return "$currency " + (if (rounded < 0) "-" else "") + whole + fraction
     }
     fun rate(value: Double?) = value?.takeIf { it.isFinite() }?.let { ((it * 1000).toLong() / 10.0).toString().let { value -> if (french) value.replace('.', ',') + " %" else "$value%" } } ?: t("Unavailable", "Indisponible")
     fun status(value: String) = if (!french) value else when (value) {

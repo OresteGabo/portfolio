@@ -56,13 +56,6 @@ private val destinations = listOf(
     Destination("Settings", Icons.Outlined.Settings, Icons.Filled.Settings)
 )
 
-fun JsonRecord.terms(): BondTerms? = runCatching {
-    BondTerms(LocalDate.parse(text("purchaseDate")), LocalDate.parse(text("maturityDate")), optDouble("faceValue", 0.0),
-        optDouble("couponRate", 0.0), optDouble("withholdingTaxRate", 0.0), optInt("couponFrequency", 2),
-        text("firstCouponDate").takeIf { it.isNotBlank() }?.let(LocalDate::parse),
-        optJSONArray("couponDates")?.let { dates -> (0 until dates.length()).map { LocalDate.parse(dates.getString(it)) } }.orEmpty())
-}.getOrNull()
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InvestmentApp(model: PortfolioModel) {
@@ -209,6 +202,7 @@ fun InvestmentApp(model: PortfolioModel) {
                 missingDocuments = false; detail = null; editor = null; equityEditor = null; pendingEntry = false; simulator = false; education = false
             }
         }
+        if (model.user != null && !model.locked) StatementReconciliationDialog(model, ::uploadMissing)
         val screenTitle = when {
             model.documentPreview != null -> model.documentPreview!!.title
             notificationScreen -> "Notifications"
@@ -245,6 +239,9 @@ fun InvestmentApp(model: PortfolioModel) {
                         else StructMark(Modifier.padding(start = 16.dp, end = 4.dp).size(40.dp))
                     },
                     actions = {
+                        if (model.documentPreview?.source?.text("category") == "Statement" && !model.locked) IconButton(enabled = !model.busy, onClick = {
+                            model.showStatementDocumentReview(model.documentPreview!!.source.text("id"))
+                        }) { AppIcon(Icons.Outlined.FactCheck, "Review statement records") }
                         if (model.documentPreview?.bytes != null) IconButton(enabled = !model.busy, onClick = {
                             val preview = model.documentPreview!!
                             model.action { actions.sharePdf(preview.fileName, preview.bytes!!) }
@@ -453,7 +450,7 @@ private fun PurchaseDetails(model: PortfolioModel, purchase: JsonRecord, engine:
             item { Panel {
                 AppText("Coupon tracking", fontWeight = FontWeight.Bold)
                 Fact("Net per payment", money(tracking.netPerPayment, purchase.text("currency")))
-                Fact("Scheduled to date", money(tracking.couponsPaid, purchase.text("currency")))
+                Fact("Scheduled to date", money(tracking.scheduledCouponsToDate, purchase.text("currency")))
                 Fact("Confirmed received",if(model.couponTrackingAvailable)money(model.couponReceipts.filter { it.text("purchaseId")==purchase.text("id") && it.optBoolean("received") }.sumOf { it.optDouble("amount") },purchase.text("currency")) else "—")
                 Fact("Accrued", money(tracking.accruedCoupon, purchase.text("currency")))
                 Fact("Remaining coupons", money(tracking.remainingCoupons, purchase.text("currency")))

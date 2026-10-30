@@ -25,6 +25,19 @@ suspend fun readPurchasePdf(
     openedPdf: suspend (ByteArray) -> Unit = {},
     progress: (PdfImportProgress?) -> Unit = {},
 ): JsonRecord? {
+    return readPurchasePdf(actions, EngineDocumentParser(engine), bondOnly, expectedStatement, selectedPdf, openedPdf, progress)
+}
+
+/** Parser-specific entry point: native or broker adapters can be supplied without a simulation engine. */
+suspend fun readPurchasePdf(
+    actions: NativeActions,
+    parser: InvestmentDocumentParser,
+    bondOnly: Boolean = false,
+    expectedStatement: JsonRecord? = null,
+    selectedPdf: (ByteArray) -> Unit = {},
+    openedPdf: suspend (ByteArray) -> Unit = {},
+    progress: (PdfImportProgress?) -> Unit = {},
+): JsonRecord? {
     var selectedAt: TimeMark? = null
     fun remaining(minimum: Long) = (minimum - (selectedAt?.elapsedNow()?.inWholeMilliseconds ?: minimum)).coerceAtLeast(0L)
     try {
@@ -37,8 +50,8 @@ suspend fun readPurchasePdf(
         require(bytes.size in 1..MAX_PDF_BYTES) { "Choose a PDF of up to 10 MB." }
         openedPdf(bytes)
         progress(PdfImportProgress(PdfImportStage.EXTRACTING))
-        engine.onProgress = { progress(PdfImportProgress(PdfImportStage.EXTRACTING, it)) }
-        val review = engine.run("pdf", pdf = bytes)
+        parser.onProgress = { progress(PdfImportProgress(PdfImportStage.EXTRACTING, it)) }
+        val review = parser.parse(bytes)
         progress(PdfImportProgress(PdfImportStage.CHECKING))
         val publicIssuance = review.text("kind") == "bond-issuance"
         require(!bondOnly || review.text("kind") == "bond" || publicIssuance) { "Use a BNR bond confirmation PDF." }
@@ -48,10 +61,10 @@ suspend fun readPurchasePdf(
         selectedPdf(bytes)
         return review
     } catch (cancelled: CancellationException) {
-        engine.cancel()
+        parser.cancel()
         throw cancelled
     } finally {
-        engine.onProgress = {}
+        parser.onProgress = {}
         try {
             // Fast results and errors must not dismiss feedback before it is visible.
             // Slow imports incur no additional hold; cancellation stays immediate.

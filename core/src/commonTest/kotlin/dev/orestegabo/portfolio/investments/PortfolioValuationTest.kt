@@ -72,4 +72,12 @@ class PortfolioValuationTest {
         assertEquals(-150.0 / 9150.0, feesIncluded.gainLossRate)
     }
 
+    @Test fun missingQuoteDatesAreUnavailableButExplicitlyStalePricesRemainDatedEstimates() {
+        val snapshot = PortfolioSnapshot(holdings = listOf(lot()))
+        assertEquals(1, snapshot.valuation(today, quotes(400.0, "unknown")).single().unpricedShares)
+        val stale = quotes(400.0, "2026-01-01")
+        stale.put("source", stale.getJSONObject("source").put("stale", true))
+        assertEquals(40000.0, snapshot.valuation(today, stale).single().shareValue)
+    }
+
 }

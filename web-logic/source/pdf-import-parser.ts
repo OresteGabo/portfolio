@@ -1,6 +1,8 @@
 import type { BondPurchaseInput } from "./types";
+import { assertSingleDocumentFamily, BNR_INVESTOR, BNR_ISSUANCE, pdfNumber, uniqueCapture, type ParserIdentity } from "./document-parser-support";
 
 export type BondPdfImport = {
+  parser: ParserIdentity;
   fields: Partial<BondPurchaseInput>;
   warnings: string[];
   missingFields: string[];
@@ -28,26 +30,29 @@ function isoDate(year: number, month: number, day: number) {
 }
 
 function readDate(value: string) {
-  const numeric = value.match(/\b(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})\b/);
+  value = value.trim();
+  const numeric = value.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})(?=\s|$)/);
   if (numeric) return isoDate(+numeric[3], +numeric[2], +numeric[1]);
   const match = [...value.matchAll(DATE_PATTERN)][0];
-  if (!match) return null;
+  if (!match || match.index !== 0) return null;
   const year = +digits(match[3]);
   return isoDate(year < 100 ? 2000 + year : year, MONTHS.indexOf(match[2].toLowerCase().slice(0, 3).replace(/^jui$/, "jul")) + 1, +digits(match[1]));
 }
 
 function number(value: string | undefined) {
   if (!value) return undefined;
-  const result = Number(value.replace(/[,\s]/g, ""));
-  return Number.isFinite(result) ? result : undefined;
+  const token = value.replace(/\s/g, "");
+  const decimals = Math.max(2, (token.split(".")[1] ?? "").length);
+  return decimals <= 6 ? pdfNumber(token, decimals) : undefined;
 }
 
 /** BNR result keywords only. Text is data; nothing in a document is executed. */
 export function parseBondPdfText(raw: string, usedOcr = false): BondPdfImport {
+  assertSingleDocumentFamily(raw);
   const text = raw.replace(/\r/g, "").replace(/[|_]/g, " ");
   const fields: Partial<BondPurchaseInput> = {};
   const warnings: string[] = [];
-  const capture = (pattern: RegExp) => text.match(pattern)?.[1]?.trim();
+  const capture = (pattern: RegExp) => uniqueCapture(text, pattern) || undefined;
   const name = capture(/(?:ISSUANCE\s+NUMBER|ISSUE\s+NUMBER)\s*[:\s]*([A-Z]+\d+\s*\/\s*\d{4}\s*\/\s*\d+\s*(?:YR|Y))/i);
   if (name) fields.bondName = name.replace(/\s/g, "").toUpperCase();
   const code = capture(/(?:BOND\s+CODE|ISIN(?:\s*\/\s*SECURITY\s+CODE)?)\s*[:\s]*([A-Z]{2}[A-Z0-9/.-]{8,30})/i);
@@ -58,16 +63,16 @@ export function parseBondPdfText(raw: string, usedOcr = false): BondPdfImport {
     fields.currency = "RWF";
     fields.market = "primary";
   }
-  const tenor = number(capture(/TENOR\s*[:\s]*(\d+)\s*Y/i) ?? capture(/RESULTS\s+OF\s+(\d+)\s+YEAR/i));
-  if (tenor && tenor <= 100) fields.tenorYears = tenor;
-  const price = number(capture(/(?:^|\n)\s*(?:EXECUTED\s+)?PRICE\s*[:\s]*(\d+(?:\.\d+)?)/i));
+  const tenor = number(capture(/TENOR\s*[:\s]*(\S+?)\s*Y(?:ears)?(?=\s|$)/i) ?? capture(/RESULTS\s+OF\s+(\d+)\s+YEAR/i));
+  if (tenor && Number.isInteger(tenor) && tenor <= 100) fields.tenorYears = tenor;
+  const price = number(capture(/(?:^|\n)\s*(?:EXECUTED\s+)?PRICE\s*[:\s]*(\S+)/i));
   if (price && price <= 1000) fields.pricePercent = price;
-  const rate = number(capture(/C[ao]upon\s+(?:Interest\s+)?rate\s*[:\s]*(\d+(?:\.\d+)?)\s*%/i));
+  const rate = number(capture(/C[ao]upon\s+(?:Interest\s+)?rate\s*[:\s]*([^\s%]+)\s*%(?=\s|$)/i));
   if (rate !== undefined && rate <= 100) fields.couponRate = rate / 100;
 
-  const settlement = capture(/SETTLEMENT\s+DATE\s*[:\s]*([^\n]+(?:\n[^\n]+)?)/i);
-  const maturity = capture(/REDEMP?E?TION\s+DATE\s*[:\s]*([^\n]+(?:\n[^\n]+)?)/i)
-    ?? capture(/MATURITY\s+DATE\s*[:\s]*([^\n]+(?:\n[^\n]+)?)/i);
+  const settlement = capture(/SETTLEMENT\s+DATE[ \t:]*\n?[ \t]*([\dIlioO][^\n]*)/i);
+  const maturity = capture(/REDEMP?E?TION\s+DATE[ \t:]*\n?[ \t]*([\dIlioO][^\n]*)/i)
+    ?? capture(/MATURITY\s+DATE[ \t:]*\n?[ \t]*([\dIlioO][^\n]*)/i);
   if (settlement) {
     const date = readDate(settlement);
     if (date) {
@@ -85,12 +90,12 @@ export function parseBondPdfText(raw: string, usedOcr = false): BondPdfImport {
   // In the BNR investor table the columns are applied, allocated, settlement, coupon.
   const investorSection = text.split(/INVESTOR\s+RESULTS/i)[1]?.split(/Digitally\s+signed/i)[0];
   if (investorSection && /Allocation/i.test(investorSection) && /Coupon\s+Am[o0]unt/i.test(investorSection)) {
-    const amounts = [...investorSection.matchAll(/\b\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?\b/g)].map((match) => number(match[0])!);
-    if (amounts.length === 4 && amounts[1] > 0) {
+    const amounts = investorSection.split(/\s+/).filter(token => /^[+-]?\d/.test(token)).map(token => pdfNumber(token));
+    if (!/[+-]\s+\d/.test(investorSection) && amounts.length === 4 && amounts.every(value => value !== undefined) && amounts[1]! > 0) {
       fields.faceValue = amounts[1];
       if (fields.pricePercent) {
-        const expected = Math.round(amounts[1] * fields.pricePercent) / 100;
-        if (Math.abs(expected - amounts[2]) > 1) {
+        const expected = Math.round(amounts[1]! * fields.pricePercent) / 100;
+        if (Math.abs(expected - amounts[2]!) > 1) {
           warnings.push("Settlement amount differs from principal × price. Enter any accrued interest and fees before saving.");
         }
       }
@@ -133,18 +138,20 @@ export function parseBondPdfText(raw: string, usedOcr = false): BondPdfImport {
     ["maturityDate", "Maturity date"], ["firstCouponDate", "Coupon schedule"],
   ] as const;
   const missingFields = required.filter(([key]) => fields[key] === undefined || fields[key] === "").map(([, label]) => label);
-  return { fields, warnings, missingFields, usedOcr };
+  return { parser: BNR_INVESTOR, fields, warnings, missingFields, usedOcr };
 }
 
 
 export type BondIssuanceImport = {
   kind: "bond-issuance";
+  parser: ParserIdentity;
   fields: Partial<BondPurchaseInput> & { issuanceDate?: string; amountOffered?: number; appliedAmount?: number; amountSold?: number; bidCount?: number; yieldRate?: number };
   warnings: string[]; missingFields: string[]; usedOcr: boolean;
 };
 
 /** Public auction results have no investor allocation and must never become a purchase. */
 export function parseBondIssuancePdfText(raw: string, usedOcr = false): BondIssuanceImport | null {
+  assertSingleDocumentFamily(raw);
   if (!/SUMMARY\s+MARKET\s+RESULTS/i.test(raw) || /INVESTOR\s+RESULTS/i.test(raw)) return null;
   // PDF glyph runs sometimes insert spaces inside identifiers and years. Restrict repairs to labels.
   const text = raw.replace(/((?:ISSUANCE|ISSUE)\s+NUMBER|BOND\s+CODE|SETTLEMENT\s+DATE|REDEMP?E?TION\s+DATE|MATURITY\s+DATE|Coupon\s+(?:Interest\s+)?rate|Y\s*ield\s+rate)([^\n]+)/gi,
@@ -157,16 +164,16 @@ export function parseBondIssuancePdfText(raw: string, usedOcr = false): BondIssu
   const summary = text.split(/SUMMARY\s+MARKET\s+RESULTS/i)[1] ?? "";
   const issueDate = summary.match(/\b(\d(?:\s*\d)?)\s*[-/]\s*(\d(?:\s*\d)?)\s*[-/]\s*(\d(?:\s*\d){3})\b/);
   if (issueDate) fields.issuanceDate = isoDate(number(issueDate[3])!, number(issueDate[2])!, number(issueDate[1])!) ?? undefined;
-  const amountMatches = [...summary.matchAll(/\b\d(?:\s*\d){0,2}(?:\s*,\s*\d\s*\d\s*\d){2,}(?:\s*\.\s*\d+)?\b/g)];
-  const totals = amountMatches.map(m => number(m[0])!);
-  if (totals.length === 3) [fields.amountOffered, fields.appliedAmount, fields.amountSold] = totals;
+  const amountMatches = [...summary.matchAll(/(?<![\d,.\-])\b\d(?:\s*\d){0,2}(?:\s*,\s*\d\s*\d\s*\d){2,}(?:\s*\.\s*\d+)?\b(?![\d,.])/g)];
+  const totals = amountMatches.map(m => pdfNumber(m[0].replace(/\s/g, "")));
+  if (!/[+-]\s+\d[\d\s]*,/.test(summary) && totals.length === 3 && totals.every(value => value !== undefined)) [fields.amountOffered, fields.appliedAmount, fields.amountSold] = totals;
   const lastAmount = amountMatches.at(-1);
   const bids = lastAmount && summary.slice(lastAmount.index! + lastAmount[0].length).match(/^\s+(\d+)\s+[\d\s.]+%/);
   if (bids) fields.bidCount = +bids[1];
-  const yieldMatch = text.match(/Y\s*ield\s+rate\s*[:\s]*(\d+(?:\.\d+)?)\s*%/i);
-  if (yieldMatch) fields.yieldRate = +yieldMatch[1] / 100;
+  const yieldRate = number(uniqueCapture(text, /Y\s*ield\s+rate\s*[:\s]*([^\s%]+)\s*%(?=\s|$)/i));
+  if (yieldRate !== undefined && yieldRate <= 100) fields.yieldRate = yieldRate / 100;
   const required = ["bondName", "isin", "tenorYears", "pricePercent", "couponRate", "settlementDate", "maturityDate", "firstCouponDate", "issuanceDate", "amountOffered", "appliedAmount", "amountSold", "bidCount", "yieldRate"] as const;
-  return { kind: "bond-issuance", fields, usedOcr,
+  return { kind: "bond-issuance", parser: BNR_ISSUANCE, fields, usedOcr,
     warnings: base.warnings.filter(w => !w.startsWith("Trade date defaults")),
     missingFields: required.filter(k => fields[k] === undefined || fields[k] === "") };
 }

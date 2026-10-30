@@ -1,0 +1,11 @@
+{
+  "note": "Synthetic calculation specifications only; no customer data or persisted investments. Maturity months are supplied references, not exact official dates.",
+  "bonds": [
+    {"id":"synthetic-7y","principal":2200000,"couponRate":0.115,"frequency":2,"grossCoupon":126500,"taxRate":0.05,"netCoupon":120175,"maturityMonth":"2033-07"},
+    {"id":"synthetic-10y","principal":1000000,"couponRate":0.12,"frequency":2,"grossCoupon":60000,"taxRate":0.05,"netCoupon":57000,"maturityMonth":"2036-08"}
+  ],
+  "equities": [
+    {"ticker":"IMR","shares":400,"price":90,"gross":36000,"fees":[540,50.4,18,7.2],"totalFees":615.6,"payable":36615.6},
+    {"ticker":"BOK","shares":500,"price":670,"gross":335000,"fees":[5025,469,167.5,67],"totalFees":5728.5,"payable":340728.5}
+  ]
+}

@@ -1,5 +1,7 @@
 # Shared portfolio architecture
 
+> Updated audit (30 October 2026): [current feature inventory](CURRENT_STATE.md), [technical debt](TECHNICAL_DEBT.md), [product roadmap](PRODUCT_ROADMAP.md), [architecture assessment](architecture/ASSESSMENT.md), [target modular architecture](architecture/TARGET_ARCHITECTURE.md), [implemented decisions](architecture/DECISIONS.md), and [source inventory](architecture/SOURCE_INVENTORY.md). The actual Spring API is in the companion checkout; this repository's Ktor `server` is a sample. Pure portfolio aggregation, valuation, goals and date/terms helpers now live in `core`; older sections below describe the system's evolution.
+
 Android and iOS call the same `App()` in `app/shared/src/commonMain`. There is no second portfolio UI in either application host.
 
 ```mermaid
@@ -7,7 +9,7 @@ flowchart TD
     Android[Android MainActivity] --> App[Shared Compose App]
     iOS[SwiftUI / MainViewController] --> App
     App --> Presentation[Shared navigation, screens and PortfolioModel]
-    Presentation --> Core[Shared API, JSON contracts, coupon math and dates]
+    Presentation --> Core[Shared API, financial projections, parser port and dates]
     Presentation --> Resources[Shared calendar, lessons and investment rules]
     Presentation --> Ports[NativeActions and InvestmentEngine interfaces]
     Core --> AndroidHTTP[Android Ktor engine]
@@ -18,7 +20,7 @@ flowchart TD
 
 | Location | Responsibility |
 | --- | --- |
-| `core/src/commonMain` | Lossless API records, request/error contracts, origin validation, redirect policy, bounded streaming responses, in-memory cookie sessions, origin-bound expiry-preserving snapshots, dates and coupon calculations. No Compose or OS dependencies. |
+| `core/src/commonMain` | Lossless API records, request/error contracts, origin validation, redirect policy, bounded streaming responses, in-memory cookie sessions, origin-bound expiry-preserving snapshots, dates, coupon calculations, portfolio aggregation/valuation, monthly goals and the document-parser port. No Compose or OS dependencies in commonMain. |
 | `core/src/androidMain`, `iosMain`, `jvmMain` | Ktor transport creation and build-specific development-HTTP policy. iOS disables native cookie persistence and HTTP caching. |
 | `app/shared/src/commonMain` | All Compose screens and navigation, shared lifecycle ViewModel, validation, formatting, import review, download workflow, calendar and lessons. |
 | `app/shared/src/commonMain/composeResources/files` | One calendar and education snapshot, portable numerical/purchase-parsing modules, and a generated DOM-free investment engine bundle. |
