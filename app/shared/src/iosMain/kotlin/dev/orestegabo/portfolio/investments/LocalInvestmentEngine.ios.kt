@@ -68,6 +68,23 @@ class IosInvestmentEngine : InvestmentEngine {
             }) { PDF_READ_ERROR }
             page.pageRef?.let { pageRef -> require(!hasKey(CGPDFPageGetDictionary(pageRef), "AA")) { PDF_READ_ERROR } }
             var text = page.string.orEmpty()
+            // iOS 18 PDFKit can return an entire statement's date/type columns
+            // before its opening balance. Rebuild this recognized table layout
+            // from word selections, without OCR or changes to financial parsing.
+            if (Regex("\\bBK\\s+CAPITAL\\b", RegexOption.IGNORE_CASE).containsMatchIn(text) &&
+                Regex("\\bCLIENT\\s+STATEMENT\\b", RegexOption.IGNORE_CASE).containsMatchIn(text)) {
+                require(text.length <= MAX_PDF_TEXT && page.numberOfCharacters <= MAX_PDF_TEXT.toULong()) { PDF_READ_ERROR }
+                require(page.numberOfCharacters.toInt() == text.length) { PDF_READ_ERROR }
+                val blocks = Regex("\\S+").findAll(text).map { word ->
+                    val selection = page.selectionForRange(NSMakeRange(word.range.first.toULong(), word.value.length.toULong()))
+                        ?: error(PDF_READ_ERROR)
+                    selection.boundsForPage(page).useContents {
+                        require(origin.x.isFinite() && origin.y.isFinite() && size.height.isFinite() && size.height > 0) { PDF_READ_ERROR }
+                        OcrTextBlock(word.value, origin.x, origin.y, size.height)
+                    }
+                }.toList()
+                text = layoutOcrText(blocks)
+            }
             if (text.count { !it.isWhitespace() } < 80) {
                 require(++scans <= MAX_OCR_PAGES) { PDF_READ_ERROR }
                 usedOcr = true

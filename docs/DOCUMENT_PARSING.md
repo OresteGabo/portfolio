@@ -96,3 +96,12 @@ None of these future services/APIs was implemented. No new parser framework, OCR
 ## Follow-up reconciliation
 
 The [existing reconciliation extension](RECONCILIATION.md) retains purchase `rows` and adds separate nonpurchase `movements` (cash receipts, fees, coupon/dividend/other labels). They are evidence only, never inferred holdings or verified income. Backend statement upload and reconciliation integration tests subsequently passed on disposable PostgreSQL; the earlier Docker-only execution limit above describes the parser phase. Native test results and financial changes are recorded in VERIFICATION.md.
+
+
+### iOS 18 reading-order correction (31 October follow-up)
+
+The original passed Mac/iOS 26 PDFKit extraction but failed with the exact recognition error under iOS 18.6. The connected phone runs iOS 18.7.1; the inspected Android Studio iPhone product already contained the current shared parser. This isolates an OS-specific extraction-order defect rather than establishing stale resources or backend failure. iOS 18 placed all 12 row dates before the opening-balance heading, outside the parser's ledger slice.
+
+For recognized BK client statements only, `IosInvestmentEngine` now maps each original non-whitespace token to `PDFPage.selectionForRange` / `boundsForPage`, then reuses the existing positional `layoutOcrText` helper to restore physical rows. This preserves signs, decimals and references as original text, without interpreting glyph shapes or adding OCR. Bounds/index/text limits remain checked; invalid selections fail. All other supported native documents and sparse-page Vision fallback retain their existing extraction path. The existing shared financial parser and review/validation remain authoritative after extraction.
+
+`IosInvestmentEngineTest` has an explicit local `STRUCT_TEST_STATEMENT_PDF` opt-in for the supplied private original, passing through the full picker/native engine wrapper. Optional `STRUCT_TEST_EXPECTED_STATEMENT` compares normalized output without printing financial fields. No customer PDF/text/geometry or expected private values are committed. The synthetic native test exercises wrapped descriptions/references and funding classification; shared row-layout tests cover offset cells, suffixes and unchanged signed money. See VERIFICATION.md for actual runs and rollout limits.

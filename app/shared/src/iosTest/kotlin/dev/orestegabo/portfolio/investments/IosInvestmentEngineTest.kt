@@ -11,6 +11,33 @@ import platform.PDFKit.*
 import kotlin.test.*
 
 class IosInvestmentEngineTest {
+    /** Explicit local opt-in: no customer's PDF is copied into the source/resources. */
+    @Test fun suppliedStatementUsesTheFullNativePickerParserFlowWhenConfigured() = runTest {
+        val path = NSProcessInfo.processInfo.environment["STRUCT_TEST_STATEMENT_PDF"] as? String
+            ?: return@runTest
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val engine = IosInvestmentEngine()
+        try {
+            val bytes = assertNotNull(NSData.dataWithContentsOfFile(path)).toBytes()
+            val actions = object : NativeActions {
+                override val pickedPdfName = "statement.pdf"
+                override suspend fun pickPdf(onSelected: () -> Unit): ByteArray { onSelected(); return bytes }
+                override suspend fun savePdf(fileName: String, bytes: ByteArray) = false
+                override fun openUrl(url: String) {}
+                override fun shareText(text: String) {}
+            }
+            val result = assertNotNull(withContext(Dispatchers.Default) { readPurchasePdf(actions, engine) })
+            assertEquals("statement", result.text("kind"))
+            assertEquals(4, result.rows("rows").size)
+            assertEquals(8, result.rows("movements").size)
+            (NSProcessInfo.processInfo.environment["STRUCT_TEST_EXPECTED_STATEMENT"] as? String)?.let { expectedPath ->
+                val expected = assertNotNull(NSData.dataWithContentsOfFile(expectedPath)).toBytes().decodeToString()
+                assertTrue(JsonRecord(expected).toString() == result.toString(), "Normalized statement must agree with independently checked extraction")
+            }
+            println("Original statement full native import verified (no content logged)")
+        } finally { engine.destroy(); Dispatchers.resetMain() }
+    }
+
     @Test fun originalProjectionRunsInJavaScriptCore() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val engine = IosInvestmentEngine()
@@ -87,15 +114,20 @@ class IosInvestmentEngineTest {
                 Account Summary Balance (RWF)
                 Opening Balance As On 01-07-2026 0.00 0.00
                 14-Jul-2026 Receipt DEMO 0.00 1,511,000.00
+                BK Capital Brokerage Collection
                 17-Jul-2026 Journal 1 July Bond Cost 1,500,000.00 0.00
                 17-Jul-2026 Journal 1 Bond Fee 5,000.00 0.00
+                22-Jul-2026 Purchase 10000000001# Purchase of IMR 200 @ 90.00 on 22-07-2026 by 200 90.00 18,400.00 0.00
+                01 BR9 - 12SYNTHETIC; Ref. No : DEMO;
                 Closing Balance As On 30-Sep-2026 : 100.00 Cr
             """.trimIndent()
             val result = withContext(Dispatchers.Default) { engine.run("pdf", pdf = bondPdf(false, text)) }
             assertEquals("statement", result.text("kind"))
-            assertEquals(1, result.rows("rows").size)
-            assertEquals("bond", result.rows("rows").single().text("kind"))
-            assertFalse(result.rows("rows").single().has("faceValue"))
+            assertEquals(2, result.rows("rows").size)
+            assertEquals("bond", result.rows("rows").first().text("kind"))
+            assertFalse(result.rows("rows").first().has("faceValue"))
+            assertEquals("10000000001#01", result.rows("rows").last().text("contractNote"))
+            assertEquals("cash-receipt", result.rows("movements").first().text("kind"))
         } finally { engine.destroy(); Dispatchers.resetMain() }
     }
 
