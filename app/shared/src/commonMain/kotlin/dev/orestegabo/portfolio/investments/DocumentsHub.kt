@@ -122,11 +122,14 @@ private fun ImportConversation(model: PortfolioModel, engine: InvestmentEngine, 
                     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Surface(Modifier.align(Alignment.End).widthIn(max = 360.dp).fillMaxWidth(.84f), shape = RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp),
                             color = colours.primaryContainer.copy(alpha = .75f)) {
-                            Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                AppIcon(Icons.Outlined.PictureAsPdf, "PDF attachment", Modifier.size(24.dp), tint = colours.primary)
-                                Column(Modifier.weight(1f)) {
-                                    FinancialText(entry.fileName, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                    AppText(importTime(entry.createdAt), Modifier.align(Alignment.End), style = MaterialTheme.typography.labelSmall, color = colours.onSurfaceVariant)
+                            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                AppText("Please upload this PDF.", style = MaterialTheme.typography.bodyMedium)
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    AppIcon(Icons.Outlined.PictureAsPdf, "PDF attachment", Modifier.size(24.dp), tint = colours.primary)
+                                    Column(Modifier.weight(1f)) {
+                                        FinancialText(entry.fileName, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        AppText(importTime(entry.createdAt), Modifier.align(Alignment.End), style = MaterialTheme.typography.labelSmall, color = colours.onSurfaceVariant)
+                                    }
                                 }
                             }
                         }

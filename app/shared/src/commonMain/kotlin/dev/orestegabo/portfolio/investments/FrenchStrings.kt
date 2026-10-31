@@ -98,6 +98,7 @@ internal val frenchStrings: Map<String, String> = mapOf(
     "Open document" to "Ouvrir le document",
     "View purchase" to "Voir l’achat",
     "Attach PDF" to "Joindre un PDF",
+    "Please upload this PDF." to "Veuillez importer ce PDF.",
     "Finish or cancel this review before attaching another PDF." to "Terminez ou annulez cette vérification avant de joindre un autre PDF.",
     "Import activity could not be saved on this device. Saved documents remain in Library." to "L’activité n’a pas pu être enregistrée sur cet appareil. Les documents enregistrés restent dans la Bibliothèque.",
     "Showing the latest 1,000 imports on this device." to "Les 1 000 dernières importations sur cet appareil sont affichées.",
