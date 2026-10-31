@@ -1,6 +1,8 @@
 # Biometric unlock investigation — 30 October 2026
 
-The verified defect was a mobile navigation gate waiting for portfolio synchronization and optional enrichment. The exact cause of the reported physical-device 20-second request latency is **not yet established**. No production account, cookie, database, Cloud Run logs or hosting configuration was available to trace that occurrence. This change removes the verified dependency and adds diagnostics for the remaining attribution.
+**31 October production follow-up:** the remaining post-idle server-session delay is now attributed to Cloud Run scaling to zero and starting Spring on the first request. Read-only production request/startup logs reproduced 17.44 and 20.73 second session waits coinciding with new instances. With the user's explicit recurring-cost approval, service-level minimum instances was changed from 0 to 1; the revision, container configuration and authentication were preserved. See [production evidence, cost and verification limits](UNLOCK_COLD_START.md).
+
+The original 30 October investigation verified a separate mobile navigation gate waiting for portfolio synchronization and optional enrichment. At that time, the physical-device request latency was not attributed: production Cloud Run logs/configuration were not inspected. The implementation below removed the mobile dependency and added diagnostics; the follow-up above supersedes that earlier attribution limit without turning its virtual-time tests into physical-device benchmarks.
 
 ## Actual architecture and execution path
 
