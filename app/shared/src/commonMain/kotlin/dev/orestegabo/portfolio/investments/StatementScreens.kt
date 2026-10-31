@@ -1,6 +1,9 @@
 package dev.orestegabo.portfolio.investments
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import kotlin.math.abs
 
@@ -85,6 +89,11 @@ internal fun StatementReconciliationDialog(model: PortfolioModel, upload: (JsonR
     val rows = model.statementReviewRows ?: return
     var deciding by remember { mutableStateOf<Pair<JsonRecord, String?>?>(null) }
     var reason by remember { mutableStateOf("") }
+    var addingBond by remember { mutableStateOf<JsonRecord?>(null) }
+    addingBond?.let { row ->
+        StatementBondDialog(model, row, dismiss = { addingBond = null })
+        return
+    }
     deciding?.let { (row, purchaseId) ->
         AlertDialog(onDismissRequest = { if (!model.busy) deciding = null }, title = { AppText(if (purchaseId == null) "Clear manual decision?" else "Confirm this match?") },
             text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -127,6 +136,9 @@ internal fun StatementReconciliationDialog(model: PortfolioModel, upload: (JsonR
                             FinancialText("Link ${purchase.text("bondName").ifBlank { purchase.text("securityName").ifBlank { purchase.text("ticker") } }} · ${purchase.text("settlementDate").ifBlank { purchase.text("tradeDate") }}")
                         }
                     }
+                    if (statementReconciliationStatus(row) == "unmatched" && row.rows("bondOptions").isNotEmpty()) {
+                        TextButton(enabled = !model.busy, onClick = { addingBond = row }) { AppText("Add bond from saved terms") }
+                    }
                     if (row.text("matchMethod") == "manual" || row.rows("decisions").lastOrNull()?.text("action") == "link") TextButton(enabled = !model.busy, onClick = { reason = ""; deciding = row to null }) { AppText("Correct / clear this link") }
                     if (row.text("kind") in listOf("bond", "equity") && statementReconciliationStatus(row) != "matched") TextButton(enabled = !model.busy, onClick = {
                         model.closeStatementReview(); upload(row)
@@ -144,6 +156,70 @@ internal fun StatementReconciliationDialog(model: PortfolioModel, upload: (JsonR
                 }
             }
         } }, confirmButton = { TextButton(onClick = model::closeStatementReview) { AppText("Close") } })
+}
+
+@Composable
+private fun StatementBondDialog(model: PortfolioModel, row: JsonRecord, dismiss: () -> Unit) {
+    var selected by remember(row.text("id")) { mutableStateOf<JsonRecord?>(null) }
+    var principal by remember { mutableStateOf("") }
+    var price by remember { mutableStateOf("") }
+    var fees by remember { mutableStateOf("") }
+    var accrued by remember { mutableStateOf("0") }
+    var tax by remember { mutableStateOf("5") }
+    var confirmed by remember { mutableStateOf(false) }
+    val figures = statementBondFigures(principal, price, fees, accrued, tax)
+    AlertDialog(onDismissRequest = { if (!model.busy) dismiss() }, title = { AppText("Add bond from saved terms") },
+        text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            AppText("Choose the bond you purchased. Its coupon and payment dates come from saved public terms. Verify your own principal and execution figures against the statement.")
+            Fact("Statement bond cost", money(row.optDouble("amount"), "RWF"))
+            row.rows("bondOptions").forEach { instrument ->
+                Row(Modifier.fillMaxWidth().clickable(enabled = !model.busy) {
+                    selected = instrument; price = instrument.text("pricePercent"); confirmed = false
+                }) {
+                    RadioButton(selected?.text("id") == instrument.text("id"), null)
+                    Column {
+                        FinancialText(instrument.text("bondName"), fontWeight = FontWeight.SemiBold)
+                        FinancialText("${instrument.text("isin")} · ${percent(instrument.optDouble("couponRate"))}", style = MaterialTheme.typography.bodySmall)
+                        FinancialText("${instrument.text("settlementDate")} – ${instrument.text("maturityDate")}", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+            selected?.let { instrument ->
+                Fact("Settlement", instrument.text("settlementDate"))
+                AppText("Purchase is recorded at settlement; the statement posting date remains attached as evidence.", style = MaterialTheme.typography.bodySmall)
+                Fact("First coupon", instrument.text("firstCouponDate"))
+                Fact("Coupon payment dates", (instrument.optJSONArray("couponDates")?.length() ?: 0).toString())
+                @Composable fun number(label: String, value: String, update: (String) -> Unit) {
+                    OutlinedTextField(value, { update(it); confirmed = false }, label = { AppText(label) }, enabled = !model.busy,
+                        singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
+                }
+                number("Principal purchased (RWF)", principal) { principal = it }
+                number("Executed price (%)", price) { price = it }
+                number("Separately charged fees (RWF)", fees) { fees = it }
+                number("Accrued interest paid (RWF)", accrued) { accrued = it }
+                number("Withholding tax (%)", tax) { tax = it }
+                AppText("Fees are additional to the statement bond cost. Enter 0 only when no fees were charged.", style = MaterialTheme.typography.bodySmall)
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Checkbox(confirmed, { confirmed = it }, enabled = !model.busy)
+                    AppText("I verified the bond and my purchase figures.", style = MaterialTheme.typography.bodySmall)
+                }
+                model.error?.let { AppText(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            }
+        } }, confirmButton = { TextButton(enabled = !model.busy && selected != null && figures != null && confirmed, onClick = {
+            model.createStatementBond(row, selected!!, figures!!, dismiss)
+        }) { AppText("Save purchase") } }, dismissButton = { TextButton(enabled = !model.busy, onClick = dismiss) { AppText("Cancel") } })
+}
+
+/** Missing/invalid inputs never become zero or inferred principal. Server checks the actual statement cost. */
+internal fun statementBondFigures(principal: String, price: String, fees: String, accrued: String, tax: String): JsonRecord? {
+    val values = listOf(principal, price, fees, accrued, tax).mapIndexed { index, raw ->
+        val decimals = if (index in listOf(0, 2, 3)) 2 else 6
+        if (!raw.trim().matches(Regex("\\d+(?:\\.\\d{1,$decimals})?"))) return null
+        raw.trim().toDoubleOrNull()?.takeIf { it.isFinite() && it in 0.0..1e13 } ?: return null
+    }
+    if (values[0] <= 0 || values[1] <= 0 || values[1] > 1000 || values[4] > 100) return null
+    return JsonRecord().put("faceValue", values[0]).put("pricePercent", values[1]).put("feesPaid", values[2])
+        .put("accruedInterestPaid", values[3]).put("withholdingTaxRate", values[4] / 100)
 }
 
 internal fun statementReconciliationStatus(row: JsonRecord): String = row.text("reconciliationStatus").ifBlank {

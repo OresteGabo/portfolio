@@ -335,6 +335,17 @@ class PortfolioModel(
         statementItems = api.request("/api/bonds/statement-items").rows("items")
         completed()
     }
+    fun createStatementBond(item: JsonRecord, instrument: JsonRecord, figures: JsonRecord, completed: () -> Unit) = action {
+        val id = item.text("id")
+        require(id.matches(Regex("[A-Za-z0-9_-]{1,120}"))) { "Invalid statement record." }
+        val body = JsonRecord(figures.toString()).put("instrumentId", instrument.text("id")).put("confirmed", true)
+            .put("reason", "Verified statement purchase and selected public bond terms")
+            .put("expectedDecisionAt", item.rows("decisions").lastOrNull()?.text("at").orEmpty())
+        val updated = api.request("/api/bonds/statement-items/$id/bond", "POST", body).rows("rows").single()
+        statementReviewRows = statementReviewRows?.map { if (it.text("id") == id) updated else it }
+        completed()
+        refreshAfterWrite("Statement purchase saved using existing bond terms.")
+    }
     var historyComplete by mutableStateOf(false)
         private set
     private var compactOverviewSupported: Boolean? = null
@@ -805,11 +816,16 @@ class PortfolioModel(
                     }
                     pdfImportProgress = progress
                 })?.let { review ->
+                if (review.text("kind") == "statement") {
+                    retryBondOnly = false; retryStatement = null
+                    updateImport { it.copy(targetId = "", statementId = "") }
+                }
                 updateImport { it.copy(kind = review.text("kind")) }
                 pdfImportProgress = PdfImportProgress(PdfImportStage.CHECKING)
                 val existing = findExistingImportPdf(review)
+                val importTarget = targetPurchaseId.takeUnless { review.text("kind") == "statement" }
                 val alreadySaved = existing != null && showExistingImport(existing, review,
-                    requireComplete = resumingImport || !targetPurchaseId.isNullOrBlank(), targetId = targetPurchaseId)
+                    requireComplete = resumingImport || !importTarget.isNullOrBlank(), targetId = importTarget)
                 if (!alreadySaved) {
                     if (existing != null) {
                         uploadedDocument = existing.text("id")

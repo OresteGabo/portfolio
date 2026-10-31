@@ -3,6 +3,12 @@ package dev.orestegabo.portfolio.investments
 import kotlin.test.*
 
 class InvestmentEvidenceTest {
+    @Test fun aStatementSourceIsLabelledSeparatelyFromAnAllocationConfirmation() {
+        val links = investmentEvidence(JsonRecord().put("statementDocumentId", "statement-1"), emptyList())
+        assertEquals("View source statement", links.single().label)
+        assertEquals("BK Capital statement", links.single().document.text("label"))
+        assertEquals("/api/bonds/documents/statement-1", links.single().document.text("downloadUrl"))
+    }
     @Test fun actionsUseExplicitPersonalAndIssuanceLinksAndPreserveMetadata() {
         val investment = JsonRecord().put("confirmationDocumentId", "allocation-1").put("issuanceDocumentId", "issuance-2")
         val document = JsonRecord().put("id", "allocation-1").put("label", "Original allocation")

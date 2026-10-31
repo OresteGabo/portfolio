@@ -160,3 +160,9 @@ These extend existing individual coupon/maturity dates and fee disclosures, rath
 ## Security follow-up — 30 October 2026
 
 The [source audit and verified regressions](security/SECURITY_AUDIT.md) distinguish existing account-scoped purchases/private documents from three reproduced high-risk paths: public cross-account derived contract prices, unprivileged shared issuance publication, and non-atomic daily coupon/reminder work. These are fixed locally, along with completed-PDF envelope checks, anonymous forced-refresh cache bypass and targeted dependency patches. Notices now describe own-account contract charts and owner-published shared public reports. No auth replacement or schema migration. Production rollout, historical shared-source review, backups, retention and legal compliance remain separately unverified.
+
+## 31 October follow-up: statement imports and independent bond terms
+
+The exact recognition failure was reproduced on iOS 18.6 (connected phone: iOS 18.7.1), while iOS 26.2 accepted the original. The native BK statement reader now rebuilds positioned word rows using the existing layout helper; purchase-specific pickers route statements to their own review. See [parser evidence](DOCUMENT_PARSING.md#ios-18-reading-order-correction-31-october-follow-up).
+
+Backend V9 adds independent public bond definitions and purchase references without removing historical snapshot columns. Existing statement reconciliation now offers explicit, sourced missing-bond creation from compatible saved terms, with personal figures verified by the backend, idempotent retries, pending/existing-purchase duplicate protection and direct original-statement access. Parsing/reconciliation still never auto-posts deposits, fees, coupons or dividends as holdings/income. See [review and rollout](RECONCILIATION.md#reviewed-missing-bond-purchases-and-independent-terms-31-october). Source implementation and local verification do not establish production deployment.

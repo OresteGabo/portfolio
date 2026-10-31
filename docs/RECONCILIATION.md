@@ -1,6 +1,6 @@
 # Statement reconciliation and source evidence
 
-Updated 30 October 2026. Extends the existing BK statement parser, `StatementService`, statement-items table, import chat and missing-document screens. No second transaction ledger or reconciliation engine was created. Financial calculations are covered separately in [FINANCIAL_CALCULATIONS.md](FINANCIAL_CALCULATIONS.md).
+Updated 31 October 2026. Extends the existing BK statement parser, `StatementService`, statement-items table, import chat and missing-document screens. No second transaction ledger or reconciliation engine was created. Financial calculations are covered separately in [FINANCIAL_CALCULATIONS.md](FINANCIAL_CALCULATIONS.md).
 
 ## Existing components retained
 
@@ -20,7 +20,7 @@ The important prior gap: a bond debit could be marked recorded solely from settl
 | Bond instrument identifier or explicit transaction reference + execution amount + settlement/posting window + BK broker context, uniquely matching in that account | Matched |
 | Bond with similar amount/date but no reliable instrument/reference identity | Review required if a candidate exists; never automatic |
 | Multiple compatible records or contradictory figures for an identified event | Review required; no financial mutation |
-| No compatible record | Unmatched; retained as a missing-confirmation reminder |
+| No compatible record | Unmatched; retained for confirmation. A sourced bond entry with compatible saved terms can be explicitly reviewed and added as described below |
 | Cash receipt, separate fee, coupon, dividend or other statement movement | Evidence only; never a holding, cash balance or verified income receipt |
 
 Bond cost rows are compared with face value × executed price / 100 + accrued interest paid. Separate fee rows are not added to that debit or charged twice. Equity payable already includes its itemized buying fees. The existing two-cent tolerance is retained for comparison; amounts use BigDecimal and numeric scale differences do not change identity.
@@ -81,6 +81,20 @@ Pure matcher regressions cover identity, broker/currency context, scale-independ
 The full Spring suite ran against a fresh disposable PostgreSQL 18 cluster, including Flyway V1–V8, real HTTP/security, owner isolation, source bytes, retries, manual link/clear history, stale decisions, changed financial records and legacy reminder reuse. No production database was used. Android/iPhone tests and build results are in [VERIFICATION.md](VERIFICATION.md).
 
 Coordinate the Spring migration/API deployment with the new mobile interactions. Source changes/tests are not a deployment; older backend versions cannot supply the new decisions/evidence results. New metadata and operations are additive; original financial records and IDs remain intact.
+
+## Reviewed missing bond purchases and independent terms (31 October)
+
+Flyway V9 adds `bond_instruments`: a public definition keyed by ISIN plus settlement date (reopened auctions stay distinct), with no investor quantities or identities. It seeds the two existing public catalog entries and copies existing shared issuance terms. Future owner-approved issuance uploads register their public terms through `BondInstrumentService`; conflicting coupon/price/date schedules cannot silently replace the definition. `bond_purchases.instrument_id` references this definition. Existing purchase columns remain as compatibility/historical snapshots; the change does not delete them or recalculate existing amounts. V9 backfills only exact security/settlement references. This is an incremental relationship, not a complete replacement of the existing purchase schema.
+
+`bondOptions` is additive metadata on an unmatched sourced bond entry. Candidate terms must fit its existing 0–7 day settlement/posting window and any supplied security identifier. “July Bond Cost” alone never selects a security, invents principal or posts a holding. **Add bond from saved terms** requires an explicit selection and confirmation of principal, actual price, accrued interest, separately charged fees and tax. The primary acquisition is recorded at the selected settlement date (disclosed in review); the original statement posting date remains evidence. Public terms supply coupon, official dates, maturity and schedule, independently of personal amounts. The editable 5% tax field follows the existing app default, not a new legal/tax determination.
+
+Authenticated POST `/statement-items/{id}/bond` accepts `instrumentId`, those five numeric figures, `confirmed`, `reason` and `expectedDecisionAt`. The backend owns the terms and validates the statement source, dates, decimals and debit = principal × executed price / 100 + accrued interest. Fees remain additional and are not posted twice from evidence rows. It refuses creation if an existing/pending purchase may represent the event. In that case use the existing link/confirmation flow. Unknown bonds or uncertain identity/figures still require original confirmation; no invented schedule, coupon or price.
+
+Creation, source link and append-only reconciliation decision share the existing account lock/database transaction. A retry returns the same equivalent creation; changed figures or stale decisions conflict. Overlapping statements may retain separate evidence occurrences but cannot create another matching holding. The new `statementDocumentId` opens the private original from the existing investment evidence actions; it is labelled **View source statement**, never presented as a BNR allocation certificate. No new ledger, cloud parser or trading integration.
+
+The import wrapper also routes a statement selected from a purchase-specific picker to statement review, clearing that purchase target. This fixes a demonstrated context rejection. Separately, the exact native `not_bond_result` message was reproduced on iOS 18.6 after the original passed on iOS 26.2. The connected phone reports iOS 18.7.1, and the Android Studio iPhone product contained the current JS parser. Older PDFKit returned statement columns before its opening-balance boundary. The native reader now reconstructs recognized BK statements from positioned word selections using the existing `layoutOcrText` row helper; numerical tokens are not corrected or guessed, and no OCR/network service is added. Updating Spring cannot replace this client extraction fix; run a rebuilt iPhone app.
+
+Rollout: deploy Spring with V9 before using the new creation action, then install the new mobile build. Older clients and APIs remain compatible; older servers simply omit `bondOptions`, so the mobile app retains upload-confirmation actions. No production migration/deployment was performed in this change. V9 is additive; application rollback can leave its tables/columns intact. Take the usual database backup and verify migrations before production rollout. Verification details are in [VERIFICATION.md](VERIFICATION.md).
 
 ## Deferred institutional and broker workflows
 

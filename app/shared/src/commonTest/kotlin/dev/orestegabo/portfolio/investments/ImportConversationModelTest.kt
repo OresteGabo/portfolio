@@ -10,6 +10,23 @@ import kotlinx.coroutines.test.*
 import kotlin.test.*
 
 class ImportConversationModelTest {
+    @Test fun statementSelectionDetachesTheOriginalPurchaseTargetWithoutSavingAHolding() = runTest {
+        val f = Fixture()
+        f.review.put("kind", "statement").put("toDate", "2026-09-30").put("rows", JsonList())
+        val m = model(f)
+        try {
+            advanceUntilIdle()
+            var reviewed = false
+            m.importPurchasePdf(f.actions(), f.engine, bondOnly = true,
+                expectedStatement = JsonRecord().put("id", "missing-id").put("kind", "bond"), targetPurchaseId = "pending-id") { reviewed = true }
+            advanceUntilIdle()
+            assertTrue(reviewed)
+            val receipt = assertNotNull(m.activeImportReceipt())
+            assertEquals("statement", receipt.kind)
+            assertEquals("", receipt.targetId); assertEquals("", receipt.statementId)
+            assertEquals(0, f.uploads); assertEquals(0, f.writes)
+        } finally { f.store.clear(); Dispatchers.resetMain() }
+    }
     private class Settings : ServerSettings {
         val history = mutableMapOf<String, String>()
         override fun readOrigin() = "https://imports.example.test"

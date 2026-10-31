@@ -163,7 +163,7 @@ fun InvestmentApp(model: PortfolioModel) {
         }
     }
     fun uploadPendingPurchase(purchase: JsonRecord) = model.importPurchasePdf(actions, engine, bondOnly = true, targetPurchaseId = purchase.text("id")) { review ->
-        confirmationTarget = purchase
+        confirmationTarget = purchase.takeUnless { review.text("kind") == "statement" }
         imported(review)
     }
     val incomingPdf = NativePdfInbox.pending

@@ -54,8 +54,11 @@ suspend fun readPurchasePdf(
         val review = parser.parse(bytes)
         progress(PdfImportProgress(PdfImportStage.CHECKING))
         val publicIssuance = review.text("kind") == "bond-issuance"
-        require(!bondOnly || review.text("kind") == "bond" || publicIssuance) { "Use a BNR bond confirmation PDF." }
-        require(expectedStatement == null || publicIssuance && expectedStatement.text("kind") == "bond" || statementConfirmationMatches(expectedStatement, review)) {
+        val statement = review.text("kind") == "statement"
+        // A multi-transaction statement has its own review; it must not be
+        // rejected or used as confirmation for the purchase that opened the picker.
+        require(statement || !bondOnly || review.text("kind") == "bond" || publicIssuance) { "Use a BNR bond confirmation PDF." }
+        require(statement || expectedStatement == null || publicIssuance && expectedStatement.text("kind") == "bond" || statementConfirmationMatches(expectedStatement, review)) {
             "This PDF does not match the statement purchase. Choose its confirmation document."
         }
         selectedPdf(bytes)

@@ -85,4 +85,11 @@ class PurchasePdfImportTest {
         engine.onProgress("Late callback")
         assertEquals(before, progress.size)
     }
+    @Test fun statementFromAPurchaseUploadRoutesToStatementReviewWithoutConfirmingThatPurchase() = runTest {
+        val statement = JsonRecord().put("kind", "statement")
+        assertSame(statement, readPurchasePdf(Actions(byteArrayOf(1)), Engine(statement), bondOnly = true,
+            expectedStatement = JsonRecord().put("kind", "bond")))
+        assertSame(statement, readPurchasePdf(Actions(byteArrayOf(1)), Engine(statement),
+            expectedStatement = JsonRecord().put("kind", "equity")))
+    }
 }
