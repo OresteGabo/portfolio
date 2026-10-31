@@ -114,6 +114,9 @@ class PortfolioModel(
     private var privateDataLoadedAt: TimeMark? = null
     private var privateDataAvailable by mutableStateOf(false)
     val portfolioReady get() = privateDataAvailable
+    // An initial snapshot is pending until a request actually fails. A not-yet-started
+    // sync or blocking session/password restore must never look like a failed request.
+    internal val portfolioLoading get() = portfolioSyncing || (!portfolioReady && portfolioSyncError == null)
     var portfolioSyncing by mutableStateOf(false)
         private set
     var portfolioSyncError by mutableStateOf<String?>(null)
@@ -593,7 +596,14 @@ class PortfolioModel(
     }
 
     suspend fun loadPrivateData(force: Boolean = false) = portfolioSyncMutex.withLock {
-        loadPrivateSnapshot(force, deferSupplementary = false)
+        portfolioSyncError = null
+        try { loadPrivateSnapshot(force, deferSupplementary = false) }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (failure: Exception) {
+            if (!portfolioReady && !(failure is ApiException && failure.status == 401))
+                portfolioSyncError = "Investments could not be loaded. Check your connection and try again."
+            throw failure
+        }
     }
 
     private suspend fun loadPrivateSnapshot(force: Boolean, deferSupplementary: Boolean) {
@@ -650,6 +660,7 @@ class PortfolioModel(
 
     fun retryPortfolioSync() {
         if (locked || user == null) return
+        if (!portfolioReady) error = null
         startupSyncJob?.cancel(); startupSyncJob = null
         privateDataLoadedAt = null
         startPortfolioSync()

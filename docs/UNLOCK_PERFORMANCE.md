@@ -4,6 +4,14 @@
 
 The original 30 October investigation verified a separate mobile navigation gate waiting for portfolio synchronization and optional enrichment. At that time, the physical-device request latency was not attributed: production Cloud Run logs/configuration were not inspected. The implementation below removed the mobile dependency and added diagnostics; the follow-up above supersedes that earlier attribution limit without turning its virtual-time tests into physical-device benchmarks.
 
+## 31 October: initial portfolio error flash
+
+The initial dashboard previously treated `!portfolioReady && !portfolioSyncing` as failure, even without a failed request. Blocking session restoration/password login publishes the authorized user before the snapshot finishes but does not own the background-sync flag. That gave the dashboard a false **Try again** state. Any intermediate unlock transition with the same flags also selected that presentation, although the exact brief screen on the physical iPhone was not captured in this investigation.
+
+The dashboard now uses `portfolioLoading`: an initial snapshot remains loading until an explicit portfolio failure exists, including while asynchronous synchronization is running. Blocking initial-load failures persist in `portfolioSyncError`, independently of the five-second global banner/dismissal. Cancellation and rejected authorization do not become portfolio retry errors. Retry clears the old initial-action banner, starts loading immediately and preserves genuine failure/retry behavior. No artificial delay, navigation wait, biometric change or cached-data authorization bypass was added.
+
+Two new regression tests failed against the prior presentation/error behavior and pass with the fix. A third covers repeated protected unlock, background relock and expired-session renewal with delayed investments. Malformed HTTP-200 HTML/non-JSON responses produce sanitized errors and recover on explicit retry; they do not expose response text. Existing error sanitization and the iOS engine do not render server JSON/HTML as part of unlock. The user's separate report of something resembling an HTTP response remains unconfirmed on-device; tests are not a claim to identify every visual flash. This client fix requires an updated mobile build; the warm-instance configuration alone cannot update its UI.
+
 ## Actual architecture and execution path
 
 Android `MainActivity` creates shared Compose `App`; iOS SwiftUI hosts `MainViewController`/`ComposeUIViewController`. Shared `PortfolioModel` is a lifecycle ViewModel built directly by Compose, with direct settings/vault/API dependencies: there is no DI container or separate repository initialization to optimize here. Preferences use Android SharedPreferences / iOS NSUserDefaults. No local portfolio database or persisted portfolio cache is involved in unlock.

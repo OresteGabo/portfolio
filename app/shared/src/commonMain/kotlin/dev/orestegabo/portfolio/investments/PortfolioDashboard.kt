@@ -47,11 +47,11 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
     if (!model.portfolioReady) {
         Column(Modifier.fillMaxSize().statusBarsPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             AppText("Your portfolio", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            if (model.portfolioSyncing) {
+            if (model.portfolioLoading) {
                 LinearProgressIndicator(Modifier.fillMaxWidth())
                 AppText("Loading your saved investments…")
             } else {
-                AppText(model.portfolioSyncError ?: "Your investments have not loaded yet.")
+                AppText(model.portfolioSyncError ?: "Investments could not be loaded. Check your connection and try again.")
                 Button(onClick = model::retryPortfolioSync) { AppText("Try again") }
             }
         }

@@ -43,6 +43,7 @@ class SecureSessionTest {
         val paths = mutableListOf<String>()
         val failures = mutableMapOf<String, HttpStatusCode>()
         var offline = false
+        var overviewBody = "{}"
     }
     private fun seed(scenario: Scenario) {
         val cookie = JsonRecord().put("name", "__Host-bonds_session").put("value", "test-token").put("domain", "secure.example.test").put("path", "/").put("secure", true).put("httpOnly", true).put("encoding", "RAW")
@@ -65,6 +66,7 @@ class SecureSessionTest {
                     if (scenario.offline) throw IllegalStateException("Synthetic offline transport")
                     scenario.failures[request.url.encodedPath]?.let { status -> return@addHandler respond("{}", status) }
                     when (request.url.encodedPath) {
+                        "/api/bonds/mobile-overview" -> respond(scenario.overviewBody)
                         "/api/bonds/auth/session" -> respond(if (scenario.sessionValid && request.headers[HttpHeaders.Cookie].orEmpty().contains("test-token")) """{"authenticated":true,"user":{"id":"saved","email":"saved@example.test"}}""" else """{"authenticated":false}""")
                         "/api/bonds/auth/login" -> {
                             scenario.logins++
@@ -80,6 +82,69 @@ class SecureSessionTest {
                 }
             }))
         }).also { scenario.store.put("model", it) }
+    }
+
+    @Test fun firstPortfolioDuringPasswordLoginShowsLoadingRatherThanRetry() = runTest {
+        val scenario = Scenario().apply { requestDelay = { if (it.endsWith("mobile-overview")) 1000 else 0 } }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle()
+            model.login("saved@example.test", "synthetic-password-only"); runCurrent()
+            assertNotNull(model.user)
+            assertFalse(model.portfolioReady)
+            assertNull(model.portfolioSyncError)
+            assertTrue(model.portfolioLoading, "An unfinished first load must not show the retry page")
+            advanceUntilIdle()
+            assertTrue(model.portfolioReady)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun failedFirstLoadStaysActionableUntilRetryAndDoesNotExposeHttpText() = runTest {
+        for (body in listOf("<html>HTTP/1.1 502 PRIVATE_RESPONSE_SENTINEL</html>", "not JSON PRIVATE_RESPONSE_SENTINEL")) {
+            val scenario = Scenario().apply { overviewBody = body }
+            val model = model(scenario)
+            try {
+                advanceUntilIdle(); model.login("saved@example.test", "synthetic-password-only"); advanceUntilIdle()
+                assertFalse(model.portfolioReady)
+                assertNotNull(model.portfolioSyncError)
+                assertFalse(model.portfolioLoading)
+                assertFalse(model.portfolioSyncError.orEmpty().contains("PRIVATE_RESPONSE_SENTINEL"))
+                assertFalse(model.error.orEmpty().contains("PRIVATE_RESPONSE_SENTINEL"))
+                model.error = null // Dismissing a banner must not lose the first-load failure.
+                assertNotNull(model.portfolioSyncError)
+                scenario.overviewBody = "{}"
+                scenario.requestDelay = { if (it.endsWith("mobile-overview")) 1000 else 0 }
+                model.retryPortfolioSync(); runCurrent()
+                assertTrue(model.portfolioLoading); assertNull(model.portfolioSyncError); assertNull(model.error)
+                advanceUntilIdle()
+                assertTrue(model.portfolioReady); assertNull(model.portfolioSyncError)
+            } finally { scenario.store.clear(); Dispatchers.resetMain() }
+        }
+    }
+
+    @Test fun biometricUnlockAndReunlockKeepPendingDataInLoadingState() = runTest {
+        for (renew in listOf(false, true)) {
+            val scenario = Scenario().also(::seed).apply {
+                sessionValid = !renew
+                requestDelay = { if (it.contains("/auth/")) 100 else 1000 }
+            }
+            val model = model(scenario)
+            try {
+                advanceUntilIdle()
+                repeat(2) {
+                    model.unlock(); advanceTimeBy(201); runCurrent()
+                    assertFalse(model.locked); assertNotNull(model.user)
+                    assertFalse(model.portfolioReady); assertTrue(model.portfolioLoading)
+                    assertNull(model.portfolioSyncError); assertNull(model.error)
+                    advanceUntilIdle()
+                    assertTrue(model.portfolioReady); assertNull(model.portfolioSyncError)
+                    model.background(); scenario.clock += 31.seconds
+                    advanceTimeBy(SESSION_BACKGROUND_GRACE_MILLIS); runCurrent()
+                    model.foreground(); runCurrent()
+                    // Foreground may automatically start the next protected unlock.
+                }
+            } finally { scenario.store.clear(); Dispatchers.resetMain() }
+        }
     }
 
     @Test fun controlledColdUnlockTiming() = runTest {
