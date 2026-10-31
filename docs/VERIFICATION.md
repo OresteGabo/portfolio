@@ -691,3 +691,9 @@ Reproduced rejection of the supplied original locally with the shipped PDF.js re
 ### 31 October 2026 — Upload request message
 
 Added “Please upload this PDF.” above the attachment in each existing right-side user bubble, preserving filename, timestamp and left-side import progress/result. Reuses the import journal rather than adding messages or persistence fields; includes French translation. Android debug assembly and iOS simulator compilation passed (`/tmp/struct-upload-message-build.log`), and `git diff --check` passed. No new tests were added for this static copy/layout change; no physical-device visual verification claimed.
+
+### 31 October 2026 — Initial dashboard shimmer
+
+Replaced the initial loading text/progress page with dashboard-shaped placeholders. The existing `portfolioReady`/`portfolioLoading` conditions remove them immediately when the first authorized snapshot is ready, retain real data during background refreshes, and preserve genuine failure/retry behavior. One shared drawing-phase animation drives the placeholders; reduced-motion mode uses static shapes. Theme colors support light/dark appearances, the layout scrolls on small screens, and accessibility exposes one localized indeterminate loading status rather than individual placeholders. No delay, authentication or data-fetching change.
+
+All **37 SecureSessionTest regressions passed**, including pending first load, failed load/retry and repeated biometric unlock. Android debug assembly and iOS simulator compilation passed; `git diff --check` passed. Log: `/tmp/struct-shimmer-build.log`. These verify build/state behavior, not a physical-device visual/accessibility assessment; no new UI automation was added for the presentation-only change.

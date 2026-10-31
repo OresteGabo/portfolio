@@ -45,12 +45,10 @@ private val AllocationGreen = Color(0xFF739A87)
 @Composable
 fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, openMissing: (JsonRecord) -> Unit, allMissing: () -> Unit, seeAll: () -> Unit, openCalendar: (LocalDate) -> Unit, detail: (JsonRecord) -> Unit) {
     if (!model.portfolioReady) {
-        Column(Modifier.fillMaxSize().statusBarsPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            AppText("Your portfolio", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            if (model.portfolioLoading) {
-                LinearProgressIndicator(Modifier.fillMaxWidth())
-                AppText("Loading your saved investments…")
-            } else {
+        if (model.portfolioLoading) PortfolioLoadingSkeleton()
+        else {
+            Column(Modifier.fillMaxSize().statusBarsPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                AppText("Your portfolio", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 AppText(model.portfolioSyncError ?: "Investments could not be loaded. Check your connection and try again.")
                 Button(onClick = model::retryPortfolioSync) { AppText("Try again") }
             }
