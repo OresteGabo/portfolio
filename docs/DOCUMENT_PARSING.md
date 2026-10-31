@@ -1,6 +1,6 @@
 # Financial document parsing
 
-Updated: 30 October 2026. This documents the existing ingestion path and the targeted hardening of its supported layouts. [CURRENT_STATE.md](CURRENT_STATE.md) owns the wider feature inventory; [TECHNICAL_DEBT.md](TECHNICAL_DEBT.md) owns remaining production gaps.
+Updated: 31 October 2026. This documents the existing ingestion path and the targeted hardening of its supported layouts. [CURRENT_STATE.md](CURRENT_STATE.md) owns the wider feature inventory; [TECHNICAL_DEBT.md](TECHNICAL_DEBT.md) owns remaining production gaps.
 
 ## Inspected components and reused boundaries
 
@@ -40,10 +40,18 @@ The identity travels with transient review output. It is not yet durable backend
 - BK quantity/price/ISIN extraction no longer accepts valid prefixes of malformed values. Quantities still require integral shares and totals must still reconcile with existing financial validation. Long trade identifiers remain strings; optional absent identifiers remain empty.
 - BK dates use explicit supported month spellings and anchored calendar validation. BNR dates cannot be borrowed from the next labelled row. Existing PDFKit/PDF.js spacing repairs and narrowly scoped OCR date corrections remain supported; security codes are not OCR-corrected by guessing.
 - Conflicting repeated labels and mixed statement/contract/BNR documents are rejected. Multiple contracts and concatenated statements cannot silently select the first document. Identical repeated scalar labels remain compatible.
-- BK statements require opening and closing boundaries, one bounded statement, valid period/row dates and complete trailing debit/credit tokens. An unsupported/truncated ledger fails rather than returning a partly fabricated result.
+- BK statements require opening and closing boundaries, one bounded statement, valid period/row dates and exactly one complete debit/credit pair at a physical line ending per entry. Descriptions may continue after those columns; multiple competing pairs remain ambiguous and fail. An unsupported/truncated ledger fails rather than returning a partly fabricated result.
 - Spring `DocumentService` now accepts the app's existing `Statement` category through the same private, owner/hash-scoped upload path, using `broker-statement.pdf`. Other categories and wire fields are unchanged. Uploading a statement still does not create a bond/equity transaction; reconciliation can create missing-document reminders only.
 
 Existing review guards reject missing/inconsistent purchase figures. OCR warnings remain visible and confirmation stays explicit. Parsing is not signature verification, confirmation of cash arrival or protection against a convincingly forged document. Existing JSON/Double estimate boundaries and BigDecimal backend validation remain; this is not a full financial decimal-model migration.
+
+### Wrapped BK statement correction (31 October 2026)
+
+A customer-supplied text PDF reproduced rejection in both native PDFKit text and the shipped PDF.js reader. Wrapped descriptions followed the financial columns, while a broker reference contained a separated hyphen before digits. The previous flattened-last-two-tokens rule and whole-narrative negative-sign guard rejected these valid entries. PDF.js also rounded baselines into fixed three-point buckets: table descriptions 1–2.5 points above other cells could land before their transaction, and an inline quantity could be mistaken for a contract suffix.
+
+The same parser now reads one unambiguous physical financial-column pair, validates signs at those columns, and recognizes attached or clearly continued contract suffixes independently of quantities. PDF.js groups sorted baselines in anchored three-point bands instead of fixed rounding buckets; empty spacing items do not define bands. Brokerage collection funding no longer becomes a fee merely because its description contains “brokerage”; explicit fee/charge/commission terms retain their classification. Existing normalization, review, duplicate detection, statement reconciliation, server validation and private document storage are reused. Adapter identity remains version 1: these are corrections to extraction of the same supported layout, not a new broker format or API contract.
+
+Only synthetic layout data was added (`bk-statement-wrapped.txt`), including a positioned in-memory PDF regression. The private original was checked locally through Apple PDFKit/JavaScriptCore and shipped PDF.js, with identical normalized results; all 12 dates and amounts agreed with independently extracted table columns. No original bytes, client identity, account fields or raw extracted text were added to Git or sent to the backend. This is text-PDF validation, not a new scanned/OCR quality claim. The fix requires an updated mobile build; no backend migration or deployment is needed.
 
 ## OCR and PDF policy: already adequate boundaries
 

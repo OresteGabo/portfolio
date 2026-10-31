@@ -35,3 +35,29 @@ test('coupon and dividend movements never become holdings or verified income rec
  assert.deepEqual(r.movements.slice(-2).map(r=>r.kind),['coupon','dividend']);
  assert.ok(r.movements.slice(-2).every(r=>r.faceValue===undefined && r.shares===undefined && r.received===undefined));
 });
+
+const wrapped=fs.readFileSync(new URL('./fixtures/bk-statement-wrapped.txt',import.meta.url),'utf8');
+test('wrapped statement amounts and contract suffixes are independent of narrative line order',()=>{
+ const expected=parseBkStatement(text);
+ assert.deepEqual(parseBkStatement(wrapped),expected);
+ const native=wrapped.replace('by 200 90.00 18,400.00 0.00\n01 BR9 - 12SYNTHETIC; Ref. No : DEMO;',
+   'by\n01 BR9 - 12SYNTHETIC; Ref. No : DEMO;\n200 90.00 18,400.00 0.00');
+ assert.deepEqual(parseBkStatement(native),expected);
+ const c=vm.createContext({});vm.runInContext(fs.readFileSync(new URL('../app/shared/src/commonMain/composeResources/files/engine/logic.js',import.meta.url),'utf8'),c);
+ assert.deepEqual(JSON.parse(JSON.stringify(c.PortfolioLogic.parse(wrapped,false))),expected);
+});
+test('wrapped financial columns reject signed, missing, malformed or ambiguous amounts and contract suffixes',()=>{
+ for(const raw of [
+  wrapped.replace('18,400.00','- 18,400.00'), wrapped.replace('18,400.00','-18,400.00'),
+  wrapped.replace('18,400.00','18,40.00'), wrapped.replace('18,400.00','18,400.001'),
+  wrapped.replace('18,400.00 0.00','18,400.00'),
+  wrapped.replace('Synthetic funding','Synthetic funding 1.00 2.00'),
+  wrapped.replace('01 BR9','BR9'),
+ ]) assert.throws(()=>parseBkStatement(raw),e=>e.code==='not_bond_result');
+});
+test('brokerage collection funding is a cash receipt, not a brokerage charge',()=>{
+ const result=parseBkStatement(wrapped.replace('Synthetic funding','Synthetic funding into BK Capital Brokerage Collection'));
+ assert.equal(result.movements[0].kind,'cash-receipt');
+ assert.equal(result.movements[0].direction,'credit');
+ assert.equal(result.rows.length,4);
+});

@@ -93,13 +93,20 @@ export async function importBondPdf(
       const content = await wait(page.getTextContent());
       if (content.items.length > 50_000) throw new BondPdfImportError("text_limit");
       // Reconstruct rows so table columns stay together while field labels retain line breaks.
-      const items = content.items.filter((item) => "str" in item);
+      const items = content.items.filter((item) => "str" in item).filter(item => item.str.trim())
+        .sort((a, b) => b.transform[5] - a.transform[5]);
       const rows = new Map<number, typeof items>();
       let pageTextLength = 0;
+      let rowY: number | undefined;
       for (const item of items) {
         pageTextLength += item.str.length;
         if (pageTextLength > MAX_TEXT) throw new BondPdfImportError("text_limit");
-        const y = Math.round(item.transform[5] / 3) * 3;
+        // Anchor a three-point band to its highest baseline. Rounding into
+        // fixed buckets split BK statement cells only 1–2.5 points apart,
+        // moving a trade description into the preceding transaction.
+        const baseline = item.transform[5];
+        if (rowY === undefined || rowY - baseline > 3) rowY = baseline;
+        const y = rowY;
         const row = rows.get(y);
         if (row) row.push(item); else rows.set(y, [item]);
       }

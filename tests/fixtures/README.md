@@ -2,6 +2,7 @@
 
 - `equity-purchase.txt`: synthetic BK-layout purchase note. Investor identity/account fields are absent; the contract/trade identifiers and amounts are test values. The two existing real RSE security identifiers are public reference data.
 - `bk-statement.txt`: synthetic client code, broker references, contract identifiers and cash movements in the supported BK statement layout. It contains no customer identity.
+- `bk-statement-wrapped.txt`: the same synthetic transactions with descriptions after amount columns, wrapped contract suffixes and a synthetic broker reference containing a separated hyphen. Reproduces the wrapping structure observed in an authorized private sample; no customer names, references or original financial values were copied. Reader tests position synthetic description cells 2.5 points above their date/amount cells to exercise actual PDF.js reconstruction.
 - `bnr-investor-results-synthetic.txt`: synthetic personal-allocation result, security code and investor name with a deterministic coupon schedule. Auction size and applied/allocated principal are deliberately different.
 - `bnr-market-results-2026.txt`, `bnr-market-results-pdfjs-2026.txt`, `bnr-market-results-pdfkit-2026.txt`: existing public BNR auction results represented as normalized/PDF.js/PDFKit text. They contain public auction/reference information and public signatory names, not personal investor allocations.
 

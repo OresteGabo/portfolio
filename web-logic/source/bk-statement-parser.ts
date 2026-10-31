@@ -35,8 +35,14 @@ export function parseBkStatement(raw: string, usedOcr = false): BkStatement | nu
     const text = block.replace(/\s+/g, " ").trim();
     const day = date(match[1]);
     if (!day || day < fromDate || day > toDate) return fail();
-    if (/[+-]\s+\d/.test(text)) return fail();
-    const tokens = text.split(/\s+/);
+    // PDFKit and PDF.js wrap descriptions/references after the amount columns.
+    // Require one complete pair on a physical line, never choose arbitrary numbers
+    // from the flattened narrative. Signs in broker references are not amounts.
+    const columns = block.split(/\r?\n/).map(line => line.trim().split(/\s+/))
+      .filter(tokens => tokens.length >= 2 && tokens.slice(-2).every(token => /^[+\-\d.,()]+$/.test(token)));
+    if (columns.length !== 1) return fail();
+    const tokens = columns[0];
+    if (/^[+-]$/.test(tokens.at(-3) ?? "")) return fail();
     const amount = pdfNumber(tokens.at(-2)), credit = pdfNumber(tokens.at(-1));
     if (amount === undefined || credit === undefined) return fail();
     const purchase = match[2].toLowerCase() === "purchase" || match[2].toLowerCase() === "journal" && /\bBond\s+Cost\b/i.test(text);
@@ -44,7 +50,7 @@ export function parseBkStatement(raw: string, usedOcr = false): BkStatement | nu
       if (amount > 0 && credit > 0) return fail();
       if (amount === 0 && credit === 0) continue;
       const kind: StatementMovement["kind"] = /\bdividend\b/i.test(text) ? "dividend" : /\bcoupon\b/i.test(text) ? "coupon" :
-        /\b(?:fee|fees|charge|charges|custody|brokerage|commission|levy)\b/i.test(text) ? "fee" : match[2].toLowerCase() === "receipt" ? "cash-receipt" : "other";
+        /\b(?:fee|fees|charge|charges|custody|commission|levy)\b/i.test(text) ? "fee" : match[2].toLowerCase() === "receipt" ? "cash-receipt" : "other";
       movements.push({kind,date:day,amount:amount || credit,direction:amount ? "debit" : "credit",rowNumber:i+1,
         title:kind === "cash-receipt" ? "Cash receipt" : kind === "fee" ? "Statement fee" : kind === "coupon" ? "Coupon movement" : kind === "dividend" ? "Dividend movement" : "Other statement movement"});
       continue;
@@ -52,12 +58,14 @@ export function parseBkStatement(raw: string, usedOcr = false): BkStatement | nu
     if (!Number.isFinite(amount) || amount <= 0 || amount > 1e13 || credit !== 0) return fail();
     if (match[2].toLowerCase() === "purchase") {
       const trade = text.match(/Purchase\s+of\s+([A-Z][A-Z0-9]{1,9})\s+(\S+)\s*@\s*(\S+)\s+on\s+(\d{2})-(\d{2})-(\d{4})/i);
-      const contract = block.match(/\bPurchase\s+(\d+#)(?:[ \t]*(\d+)\b|[^\n]*\n\s*(\d+)\b)/i);
+      // An inline quantity is not the contract suffix. A suffix is attached to
+      // '#' or starts its own continuation line before the broker/narrative.
+      const contract = block.match(/\bPurchase[ \t]+(\d+#)(?:([0-9]+)\b|[ \t]+(\d+)(?=[ \t]+Purchase\b|[ \t]*(?:\r?\n|$))|[^\n]*\n[ \t]*(\d+)(?=[ \t]+(?:by\b|[A-Za-z][A-Za-z0-9]*[ \t]*-)|[ \t]*(?:\r?\n|$)))/i);
       if (!trade || !contract) return fail();
       const shares = pdfNumber(trade[2]), pricePerShare = pdfNumber(trade[3]);
       if (shares === undefined || pricePerShare === undefined) return fail();
       if (!Number.isSafeInteger(shares) || shares <= 0 || pricePerShare <= 0 || `${trade[6]}-${trade[5]}-${trade[4]}` !== day || amount < shares * pricePerShare) return fail();
-      rows.push({kind:"equity",rowNumber:i+1,date:day,amount,title:trade[1].toUpperCase(),ticker:trade[1].toUpperCase(),shares,pricePerShare,contractNote:contract[1]+(contract[2] ?? contract[3])});
+      rows.push({kind:"equity",rowNumber:i+1,date:day,amount,title:trade[1].toUpperCase(),ticker:trade[1].toUpperCase(),shares,pricePerShare,contractNote:contract[1]+(contract[2] ?? contract[3] ?? contract[4])});
     } else {
       const title = text.match(/\b([A-Za-z]+\s+Bond\s+Cost)\b/i)?.[1] ?? "Bond purchase";
       rows.push({kind:"bond",rowNumber:i+1,date:day,amount,title});

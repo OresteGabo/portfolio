@@ -12,8 +12,16 @@ const source = fs.readFileSync(new URL('pdf-import.js', android), 'utf8')
   .replace('`/bond-import/pdf.worker.legacy.min.mjs?v=${encodeURIComponent(pdfjs.version)}`', JSON.stringify(new URL('bond-import/pdf.worker.legacy.min.mjs', android).href));
 const { importBondPdf } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 const text = fs.readFileSync(new URL('fixtures/bnr-market-results-2026.txt', import.meta.url), 'utf8');
-function pdf(widget = '/FT /Sig', action = '', documentText = text) {
-  const stream = 'BT /F1 9 Tf 12 1100 Td ' + documentText.split('\n').map(line => `(${line.replace(/[\\()]/g, '\\$&')}) Tj 0 -14 Td`).join('\n') + ' ET';
+function pdf(widget = '/FT /Sig', action = '', documentText = text, positioned = false) {
+  const escape = line => line.replace(/[\\()]/g, '\\$&');
+  const stream = positioned ? documentText.split('\n').map((line, i) => {
+    const y = 1100 - i * 14;
+    const purchase = line.match(/^(\S+ Purchase \d+#) (Purchase of .*?) (\d+ [\d,.]+ [\d,.]+ [\d,.]+)$/);
+    if (!purchase) return `BT /F1 9 Tf 1 0 0 1 12 ${y} Tm (${escape(line)}) Tj ET`;
+    // BK table descriptions sit 2.5pt above date/reference/amount cells.
+    return [[12,y,purchase[1]],[240,y+2.5,purchase[2]],[700,y,purchase[3]]]
+      .map(([x,baseline,value])=>`BT /F1 9 Tf 1 0 0 1 ${x} ${baseline} Tm (${escape(value)}) Tj ET`).join('\n');
+  }).join('\n') : 'BT /F1 9 Tf 12 1100 Td ' + documentText.split('\n').map(line => `(${escape(line)}) Tj 0 -14 Td`).join('\n') + ' ET';
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [5 0 R 6 0 R] /SigFlags 3 >> >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
@@ -30,6 +38,21 @@ function pdf(widget = '/FT /Sig', action = '', documentText = text) {
   out += `trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
   return new Uint8Array(Buffer.from(out));
 }
+
+test('shipped reader keeps offset BK table cells and wrapped contract suffixes in the correct entry', async () => {
+  const documentText = fs.readFileSync(new URL('fixtures/bk-statement-wrapped.txt', import.meta.url), 'utf8');
+  const expected = globalThis.PortfolioLogic.parse(fs.readFileSync(new URL('fixtures/bk-statement.txt', import.meta.url), 'utf8'), false);
+  const result = await read(pdf('/FT /Sig', '', documentText, true));
+  assert.deepEqual(result, expected);
+});
+
+// Explicit opt-in local verification only: never commit a customer's original PDF.
+if (process.env.GABO_TEST_STATEMENT_PDF) test('supplied original statement passes the shipped reader', async () => {
+  const result = await read(new Uint8Array(fs.readFileSync(process.env.GABO_TEST_STATEMENT_PDF)));
+  assert.equal(result.kind, 'statement');
+  assert.ok(result.rows.length > 0);
+  assert.equal(result.usedOcr, false);
+});
 async function read(bytes) {
   return importBondPdf(new File([bytes], 'issuance.pdf', { type: 'application/pdf' }), new AbortController().signal, () => {}, bytes);
 }
