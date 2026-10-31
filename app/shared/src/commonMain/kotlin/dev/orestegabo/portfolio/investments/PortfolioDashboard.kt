@@ -43,12 +43,15 @@ private val DashboardGold = Color(0xFFECC75F)
 private val AllocationGreen = Color(0xFF739A87)
 
 @Composable
-fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, openMissing: (JsonRecord) -> Unit, allMissing: () -> Unit, seeAll: () -> Unit, openCalendar: (LocalDate) -> Unit, detail: (JsonRecord) -> Unit) {
+fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, openMissing: (JsonRecord) -> Unit, allMissing: () -> Unit, seeAll: () -> Unit, openCalendar: (LocalDate) -> Unit, detail: (JsonRecord) -> Unit, openNotifications: () -> Unit = {}, unreadNotifications: Int = 0) {
     if (!model.portfolioReady) {
-        if (model.portfolioLoading) PortfolioLoadingSkeleton()
+        if (model.portfolioLoading) PortfolioLoadingSkeleton(openNotifications, unreadNotifications)
         else {
             Column(Modifier.fillMaxSize().statusBarsPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                AppText("Your portfolio", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    AppText("Your portfolio", Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    NotificationBell(unreadNotifications, openNotifications)
+                }
                 AppText(model.portfolioSyncError ?: "Investments could not be loaded. Check your connection and try again.")
                 Button(onClick = model::retryPortfolioSync) { AppText("Try again") }
             }
@@ -69,7 +72,7 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
     PortfolioPullRefresh(model) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 108.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        item { PortfolioHero(valuation, topInset, model.quoteRefreshFailed || model.quotes?.optJSONObject("source")?.optBoolean("stale") == true,
+        item { PortfolioHero(valuation, topInset, openNotifications, unreadNotifications, model.quoteRefreshFailed || model.quotes?.optJSONObject("source")?.optBoolean("stale") == true,
             model.quotes?.optJSONObject("source")?.text("publishedAt").orEmpty().take(10)) {
             Column(Modifier.fillMaxWidth().smoothContentSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 AppLoadingLine(model.busy && model.refreshPhase == PortfolioRefreshPhase.IDLE)
@@ -158,7 +161,7 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
 }
 
 @Composable
-private fun PortfolioHero(totals: List<CurrencyValuation>, topInset: Dp, stale: Boolean, priceDate: String, notice: @Composable () -> Unit) {
+private fun PortfolioHero(totals: List<CurrencyValuation>, topInset: Dp, openNotifications: () -> Unit, unreadNotifications: Int, stale: Boolean, priceDate: String, notice: @Composable () -> Unit) {
     val background = MaterialTheme.colorScheme.background
     Box(Modifier.fillMaxWidth()) {
         Box(Modifier.fillMaxWidth().height(300.dp + topInset)) {
@@ -178,6 +181,7 @@ private fun PortfolioHero(totals: List<CurrencyValuation>, topInset: Dp, stale: 
                         AppText("Struct Capital", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
                         AppText("Rwanda investments", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = .75f))
                     }
+                    NotificationBell(unreadNotifications, openNotifications, tint = Color.White)
                 }
                 notice()
             }

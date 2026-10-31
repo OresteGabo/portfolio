@@ -19,14 +19,14 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
-import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.unit.dp
 
 /** Only the initial authorized snapshot uses placeholders; refresh keeps real data visible. */
 @Composable
-internal fun PortfolioLoadingSkeleton() {
+internal fun PortfolioLoadingSkeleton(openNotifications: () -> Unit = {}, unreadNotifications: Int = 0) {
     val phase = if (LocalReducedMotion.current) null else {
         rememberInfiniteTransition(label = "Portfolio shimmer").animateFloat(
             initialValue = -1f, targetValue = 2f,
@@ -35,7 +35,7 @@ internal fun PortfolioLoadingSkeleton() {
         )
     }
     val description = localized("Loading your saved investments…")
-    Column(Modifier.fillMaxSize().clearAndSetSemantics {
+    Column(Modifier.fillMaxSize().semantics {
         contentDescription = description
         progressBarRangeInfo = ProgressBarRangeInfo.Indeterminate
     }.verticalScroll(rememberScrollState()).windowInsetsPadding(WindowInsets.safeDrawing)
@@ -47,6 +47,7 @@ internal fun PortfolioLoadingSkeleton() {
                 PortfolioPlaceholder(phase, Modifier.fillMaxWidth().height(24.dp))
                 PortfolioPlaceholder(phase, Modifier.fillMaxWidth(.7f).height(14.dp))
             }
+            NotificationBell(unreadNotifications, openNotifications)
         }
         Column(Modifier.padding(vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             PortfolioPlaceholder(phase, Modifier.width(130.dp).height(16.dp))

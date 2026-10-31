@@ -61,7 +61,8 @@ private val destinations = listOf(
 fun InvestmentApp(model: PortfolioModel) {
     val selectionFeedback = LocalSelectionFeedback.current
     var notificationPurchase by remember { mutableStateOf<JsonRecord?>(null) }
-    var notificationScreen by rememberSaveable { mutableStateOf(false) }
+    var notificationPanel by rememberSaveable { mutableStateOf<String?>(null) }
+    var securityNotificationId by rememberSaveable { mutableStateOf<String?>(null) }
     var handledInboxRequest by rememberSaveable { mutableIntStateOf(0) }
     var tab by rememberSaveable { mutableStateOf("Portfolio") }
     var documentSection by rememberSaveable(model.user?.text("id")) { mutableStateOf("Library") }
@@ -98,6 +99,13 @@ fun InvestmentApp(model: PortfolioModel) {
         // while the user is reading it must not interrupt the tour or mark it completed.
         if (model.user != null && !introductionRequested && !replayIntroduction) finishIntroduction()
     }
+    fun openNotificationInbox() {
+        tab = "Notifications"; notificationPanel = null; securityNotificationId = null
+        legalRoute = null; legalHistory = emptyList(); missingDocuments = false; pendingEntry = false
+        investmentHistory = false; detail = null; editor = null; equityEditor = null
+        simulator = false; investmentTools = false; education = false
+        model.closeDocumentPreview()
+    }
     val systemDark = isSystemInDarkTheme()
     var theme by rememberSaveable { mutableStateOf(preferences.readTheme()?.takeIf { it in listOf("system", "light", "dark") } ?: "system") }
     var chartStyle by rememberSaveable { mutableStateOf(preferences.readChartStyle()?.takeIf { it in listOf("area", "line", "bars") } ?: "area") }
@@ -114,13 +122,13 @@ fun InvestmentApp(model: PortfolioModel) {
     }
     LaunchedEffect(NativePushBridge.inboxRequest, model.user, model.locked) {
         if(NativePushBridge.inboxRequest>handledInboxRequest && model.user!=null && !model.locked) {
-            tab="Stocks";notificationScreen=true;handledInboxRequest=NativePushBridge.inboxRequest
+            openNotificationInbox();handledInboxRequest=NativePushBridge.inboxRequest
         }
     }
     LaunchedEffect(NativePushBridge.updateRevision) { if(model.user!=null && !model.locked)model.refreshNotifications() }
-    LaunchedEffect(tab,model.user,model.locked) { if(tab=="Stocks" && model.user!=null && !model.locked)model.refreshNotifications() }
+    LaunchedEffect(tab,model.user,model.locked) { if(tab=="Notifications" && model.user!=null && !model.locked)model.refreshNotifications() }
     LaunchedEffect(model.user) {
-        if (model.user == null) { notificationPurchase=null;notificationScreen=false; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; simulator = false; investmentTools = false; education = false }
+        if (model.user == null) { notificationPurchase=null;notificationPanel=null;securityNotificationId=null; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; simulator = false; investmentTools = false; education = false }
     }
     LaunchedEffect(model, model.messageRevision) {
         val revision = model.messageRevision
@@ -138,7 +146,7 @@ fun InvestmentApp(model: PortfolioModel) {
     }
     fun showImportConversation() {
         tab = "Documents"; documentSection = "Import"
-        notificationScreen = false; missingDocuments = false; investmentHistory = false
+        notificationPanel = null; missingDocuments = false; investmentHistory = false
         editor = null; equityEditor = null; detail = null; pendingEntry = false
         simulator = false; education = false
     }
@@ -174,7 +182,7 @@ fun InvestmentApp(model: PortfolioModel) {
             NativePdfInbox.take(incomingPdf.id)?.let { received ->
                 confirmationTarget = null
                 model.importPurchasePdf(ReceivedPdfActions(actions, received.bytes, received.fileName), engine) { review ->
-                    notificationScreen = false
+                    notificationPanel = null
                     imported(review)
                 }
             }
@@ -182,7 +190,10 @@ fun InvestmentApp(model: PortfolioModel) {
     }
     LaunchedEffect(notificationPurchase,model.busy) {
         val purchase=notificationPurchase
-        if(purchase!=null && !model.busy) { notificationPurchase=null;uploadPendingPurchase(purchase) }
+        if(purchase!=null && !model.busy) {
+            notificationPurchase=null
+            if (purchase.text("status") == "submitted") uploadPendingPurchase(purchase) else detail = purchase
+        }
     }
     fun uploadMissing(item: JsonRecord) = model.importPurchasePdf(actions, engine, bondOnly = item.text("kind") == "bond", expectedStatement = item) { review ->
         confirmationTarget = null
@@ -197,22 +208,31 @@ fun InvestmentApp(model: PortfolioModel) {
             OnboardingScreen(replayIntroduction, ::finishIntroduction)
             return@MaterialTheme
         }
-        val nested = model.documentPreview != null || notificationScreen || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || editor != null || equityEditor != null || simulator || investmentTools || education
+        val childScreen = model.documentPreview != null || notificationPanel == "security" || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || editor != null || equityEditor != null || simulator || investmentTools || education
+        val nested = childScreen || tab == "Notifications"
         val documentsHome = model.user != null && !model.locked && !nested && tab == "Documents"
         val importChat = documentsHome && documentSection == "Import"
         val back = {
-            if (model.documentPreview != null) { model.closeDocumentPreview() } else if (importChat) { documentSection = "Library" } else if (notificationScreen) { notificationScreen=false } else if (legalRoute != null) {
+            if (model.documentPreview != null) { model.closeDocumentPreview() } else if (importChat) { documentSection = "Library" } else if (notificationPanel == "security") { notificationPanel=null;securityNotificationId=null } else if (legalRoute != null) {
                 legalRoute = legalHistory.lastOrNull()
                 legalHistory = legalHistory.dropLast(1)
-            } else {
+            } else if (tab == "Notifications" && !childScreen) { tab = "Portfolio" } else {
                 if (detail == null && editor == null && equityEditor == null && importReview == null && !pendingEntry && !simulator && !investmentTools && !education) investmentHistory = false
                 missingDocuments = false; detail = null; editor = null; equityEditor = null; pendingEntry = false; simulator = false; investmentTools = false; education = false
             }
         }
-        if (model.user != null && !model.locked) StatementReconciliationDialog(model, ::uploadMissing)
+        if (model.user != null && !model.locked) {
+            StatementReconciliationDialog(model, ::uploadMissing)
+            when (notificationPanel) {
+                "target" -> InvestmentTargetDialog(model) { notificationPanel = null }
+                "report" -> PortfolioReportDialog(model) { notificationPanel = null }
+                "preferences" -> NotificationPreferencesDialog(model) { notificationPanel = null }
+            }
+            if (tab != "Settings") PortfolioReportProgressDialog(model)
+        }
         val screenTitle = when {
             model.documentPreview != null -> model.documentPreview!!.title
-            notificationScreen -> "Notifications"
+            notificationPanel == "security" -> "Sign-in activity"
             legalRoute != null -> legalTitle(legalRoute!!)
             missingDocuments -> "Missing documents"
             pendingEntry -> "Pending purchase"
@@ -260,8 +280,9 @@ fun InvestmentApp(model: PortfolioModel) {
                                 selectionFeedback()
                             }) { AppText(if (documentSection == "Import") "Library" else "Chat", style = MaterialTheme.typography.labelLarge) }
                         }
-                        else if(tab=="Stocks" && !nested && model.user!=null && !model.locked)
-                            NotificationBell(model.unreadNotifications) { notificationScreen=true }
+                        else if (tab == "Notifications" && !childScreen && model.user != null && !model.locked) {
+                            IconButton(onClick = { notificationPanel = "preferences" }) { AppIcon(Icons.Outlined.Tune, "Notification preferences") }
+                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
                 )
@@ -299,9 +320,7 @@ fun InvestmentApp(model: PortfolioModel) {
                                 if (destination.title == "Documents") documentSection = "Library"
                                 selectionFeedback()
                             } },
-                            icon = { BadgedBox(badge={ if(destination.title=="Stocks" && model.unreadNotifications>0) Badge {
-                                AppText(if(model.unreadNotifications>99) "99+" else model.unreadNotifications.toString())
-                            } }) { AppIcon(if (selected) destination.selectedIcon else destination.icon, contentDescription = null, modifier = Modifier.size(24.dp)) } },
+                            icon = { AppIcon(if (selected) destination.selectedIcon else destination.icon, contentDescription = null, modifier = Modifier.size(24.dp)) },
                             label = { AppText(destination.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.secondaryContainer)
                         )
@@ -328,19 +347,30 @@ fun InvestmentApp(model: PortfolioModel) {
                     }
                     model.locked -> UnlockScreen(model) { legalRoute = "hub" }
                     model.user == null -> SignInScreen(model) { legalRoute = "hub" }
-                    notificationScreen -> NotificationsScreen(model,openStocks={ notificationScreen=false;tab="Stocks" },openNotification={ item ->
-                        when(item.text("action")) {
-                            "calendar","coupon" -> { calendarFocus=item.text("dueDate");notificationScreen=false;tab="Calendar" }
-                            "purchase" -> model.action { val result=model.api.request("/api/bonds/purchases/${item.text("purchaseId")}");notificationScreen=false;notificationPurchase=result.getJSONObject("purchase") }
-                            "documents" -> { notificationScreen=false;missingDocuments=true }
-                            else -> { notificationScreen=false;tab="Settings" }
+                    notificationPanel == "security" -> SignInActivityScreen(model, securityNotificationId)
+                    tab == "Notifications" && !childScreen -> NotificationsScreen(model, openPortfolio = { tab = "Portfolio" }, openNotification = { item ->
+                        when (notificationDestination(item)) {
+                            NotificationDestination.CALENDAR -> { calendarFocus = item.text("dueDate"); tab = "Calendar" }
+                            NotificationDestination.PURCHASE -> model.action {
+                                val result = model.api.request("/api/bonds/purchases/${item.text("purchaseId")}")
+                                notificationPurchase = result.getJSONObject("purchase")
+                            }
+                            NotificationDestination.DOCUMENT -> model.action {
+                                val row = model.api.request("/api/bonds/statement-items").rows("items").firstOrNull { it.text("id") == item.text("statementId") }
+                                if (row == null) model.message = "This document reminder has already been resolved."
+                                else model.showStatementRecordReview(row)
+                            }
+                            NotificationDestination.SECURITY -> { securityNotificationId = item.text("id"); notificationPanel = "security" }
+                            NotificationDestination.TARGET -> notificationPanel = "target"
+                            NotificationDestination.REPORT -> notificationPanel = "report"
+                            null -> Unit
                         }
                     })
                     missingDocuments -> MissingDocumentsScreen(model, ::uploadMissing)
                     pendingEntry -> PendingBondScreen(model, pendingIssueId) { pendingEntry = false; pendingIssueId = null }
-                    tab == "Settings" && !nested -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
+                    tab == "Settings" && !childScreen -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
                         chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
-                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { replayIntroduction = true; introductionRequested = true }, openInvestmentTools = { investmentTools = true })
+                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { replayIntroduction = true; introductionRequested = true }, openInvestmentTools = { investmentTools = true }, openSignInActivity = { securityNotificationId = null; notificationPanel = "security" })
                     editor != null -> PurchaseEditor(model, editor!!, { editor = null })
                     equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null })
                     investmentTools -> InvestmentToolsScreen(model, openCalendar = { date -> investmentTools = false; calendarFocus = date.toString(); tab = "Calendar" },
@@ -353,7 +383,7 @@ fun InvestmentApp(model: PortfolioModel) {
                             { detail = null }, { editor = purchase; detail = null })
                     }
                     investmentHistory -> InvestmentHistoryScreen(model, uploadPending = ::uploadPendingPurchase) { detail = it }
-                    tab == "Portfolio" -> PortfolioScreen(model, uploadPending = ::uploadPendingPurchase, openMissing = ::uploadMissing, allMissing = { missingDocuments = true }, seeAll = { investmentHistory = true },
+                    tab == "Portfolio" -> PortfolioScreen(model, openNotifications = ::openNotificationInbox, unreadNotifications = model.unreadNotifications, uploadPending = ::uploadPendingPurchase, openMissing = ::uploadMissing, allMissing = { missingDocuments = true }, seeAll = { investmentHistory = true },
                         openCalendar = { date -> calendarFocus = date.toString(); tab = "Calendar" }, detail = { detail = it })
                     tab == "Calendar" -> CalendarScreen(model, initialDate = calendarFocus?.let(::calendarDate), addPending = { issue, date ->
                         pendingIssueId = issue.text("id"); calendarFocus = date.toString(); confirmationTarget = null; pendingEntry = true

@@ -1,6 +1,5 @@
 package dev.orestegabo.portfolio.investments
 
-import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -45,17 +44,16 @@ object NativePushBridge {
 }
 
 @Composable
-fun NotificationBell(unread: Int, open: () -> Unit) {
+fun NotificationBell(unread: Int, open: () -> Unit, tint: androidx.compose.ui.graphics.Color = LocalContentColor.current) {
     IconButton(onClick=open) {
         BadgedBox(badge={ if(unread>0) Badge { AppText(if(unread>99) "99+" else unread.toString()) } }) {
-            AppIcon(Icons.Outlined.Notifications, "Notifications")
+            AppIcon(Icons.Outlined.Notifications, "Notifications", tint = tint)
         }
     }
 }
 
 @Composable
-fun NotificationsScreen(model: PortfolioModel, openStocks: () -> Unit, openNotification: (JsonRecord) -> Unit) {
-    LaunchedEffect(Unit) { model.refreshNotifications() }
+fun NotificationsScreen(model: PortfolioModel, openPortfolio: () -> Unit, openNotification: (JsonRecord) -> Unit) {
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         if(model.notifications.isNotEmpty()) item {
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
@@ -71,7 +69,7 @@ fun NotificationsScreen(model: PortfolioModel, openStocks: () -> Unit, openNotif
             if(model.notifications.isEmpty()) EmptyState(
                 title="Notifications unavailable",icon=Icons.Outlined.CloudOff,description=message,
                 action=EmptyStateAction("Retry",{ model.refreshNotifications() },Icons.Outlined.Refresh),
-                secondaryAction=EmptyStateAction("View stocks",openStocks))
+                secondaryAction=EmptyStateAction("View portfolio",openPortfolio))
             else {
                 AppText(message,color=MaterialTheme.colorScheme.error)
                 TextButton(onClick={ model.refreshNotifications() }) { AppText("Retry") }
@@ -83,8 +81,8 @@ fun NotificationsScreen(model: PortfolioModel, openStocks: () -> Unit, openNotif
                 title="You’re all caught up",icon=Icons.Outlined.Notifications,description="Updates will appear here.",
                 badgeIcon=Icons.Outlined.Done,
                 action=if(enablePush) EmptyStateAction("Enable phone notifications",NativePushBridge::requestPermission,Icons.Outlined.Notifications)
-                    else EmptyStateAction("View stocks",openStocks,Icons.AutoMirrored.Outlined.TrendingUp),
-                secondaryAction=if(enablePush) EmptyStateAction("View stocks",openStocks) else null)
+                    else EmptyStateAction("View portfolio",openPortfolio,Icons.Outlined.AccountBalanceWallet),
+                secondaryAction=if(enablePush) EmptyStateAction("View portfolio",openPortfolio) else null)
         }
         items(model.notifications,key={ it.text("id") }) { item ->
             if(item.text("kind").isNotBlank() && item.text("kind")!="prices") {
@@ -184,8 +182,8 @@ private fun GeneralNotificationCard(model: PortfolioModel,item: JsonRecord,open:
                     }
                     TextButton(enabled=!model.busy,onClick={ model.confirmCoupon(item.text("purchaseId"),item.text("dueDate"),false) }) { AppText("Mark not received") }
                 } else Button(enabled=!model.busy,onClick={ model.confirmCoupon(item.text("purchaseId"),item.text("dueDate")) }) { AppText("Confirm received") }
-            } else TextButton(onClick={ model.readNotification(item.text("id"));open(item) }) {
-                AppText(when(item.text("action")) { "calendar","coupon" -> "View calendar";"purchase" -> "Upload confirmation";"documents" -> "View missing documents"; else -> "Open settings" })
+            } else notificationDestination(item)?.let { destination ->
+                TextButton(enabled = !model.busy, onClick={ model.readNotification(item.text("id"));open(item) }) { AppText(destination.label) }
             }
         }
     }

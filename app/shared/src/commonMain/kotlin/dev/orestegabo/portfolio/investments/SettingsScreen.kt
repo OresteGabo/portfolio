@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -> Unit,
     chartStyle: String, changeChartStyle: (String) -> Unit,
-    openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit, openLegal: () -> Unit = {}, openAbout: () -> Unit = {}, openIntroduction: () -> Unit = {}, openInvestmentTools: () -> Unit = {}) {
+    openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit, openLegal: () -> Unit = {}, openAbout: () -> Unit = {}, openIntroduction: () -> Unit = {}, openInvestmentTools: () -> Unit = {}, openSignInActivity: () -> Unit = {}) {
     val actions = LocalNativeActions.current
     var setupSecure by remember { mutableStateOf(false) }
     var targetExpanded by remember { mutableStateOf(false) }
@@ -139,6 +139,8 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 }
             } }
             item { SettingsSection("Security") {
+                SettingsRow(Icons.Outlined.Devices, "Sign-in activity", "Review recorded devices", onClick = openSignInActivity)
+                SettingsDivider()
                 SettingsRow(when (model.unlockLabel) { "Face ID" -> Icons.Outlined.Face; "Touch ID" -> Icons.Outlined.Fingerprint; else -> Icons.Outlined.Lock },
                     "Secure sign-in", if (model.secureSignInEnabled) "Unlock with ${localized(model.unlockLabel)}"
                     else if (model.secureSignInAvailable) "Remember sign-in on this device" else "Set up a device screen lock first",
@@ -234,21 +236,8 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                     else "Your phone’s password manager can fill your login. Enable Password AutoFill in your phone’s settings to use saved passwords.\n\nSecure sign-in is separate: it lets you reopen this app with device authentication without typing your password.")
             }, confirmButton = { TextButton(onClick = { dialog = null }) { AppText("Done") } })
         if(dialog=="notifications") NotificationPreferencesDialog(model) { dialog=null }
-        if (dialog == "report") AlertDialog(onDismissRequest = { dialog = null },
-            title = { AppText("Portfolio report") },
-            text = { AppText("Export all bonds, shares, estimated gains and losses, and target progress. The PDF includes your financial figures even when Hide numbers is on. Original PDFs must be downloaded separately.") },
-            confirmButton = { TextButton(enabled = !model.busy, onClick = {
-                dialog = null; model.exportPortfolioReport(actions)
-            }) { AppText("Generate PDF") } },
-            dismissButton = { TextButton(onClick = { dialog = null }) { AppText("Cancel") } })
-        model.reportProgress?.let { progress ->
-            AlertDialog(onDismissRequest = {}, title = { AppText("Portfolio report") }, text = {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    CircularProgressIndicator(Modifier.size(28.dp))
-                    AppText(progress, Modifier.weight(1f))
-                }
-            }, confirmButton = {})
-        }
+        if (dialog == "report") PortfolioReportDialog(model) { dialog = null }
+        PortfolioReportProgressDialog(model)
         if (dialog == "deleteAccount" && model.reportProgress == null) AlertDialog(
             onDismissRequest = { dialog = null; deletionPassword = "" },
             title = { AppText("Delete account?") },
