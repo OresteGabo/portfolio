@@ -10,6 +10,19 @@ import kotlinx.coroutines.test.*
 import kotlin.test.*
 
 class ImportConversationModelTest {
+    @Test fun legacyPurchaseWithoutPdfStillUploadsAndSubmitsItsEvidence() = runTest {
+        val f=Fixture().apply { savedPurchase=JsonRecord(fields.toString()).put("id","purchase-id").put("status","active") }
+        val m=model(f)
+        try {
+            advanceUntilIdle()
+            m.importPurchasePdf(f.actions(),f.engine) {}; advanceUntilIdle()
+            assertEquals(ImportState.REVIEW,m.activeImportReceipt()?.state)
+            m.saveImportedPurchase(f.review,f.fields,null) {}; advanceUntilIdle()
+            assertEquals(1,f.uploads); assertEquals(1,f.writes)
+            assertEquals("doc-id",f.savedPurchase?.text("confirmationDocumentId"))
+            assertEquals(ImportState.SAVED,m.activeImportReceipt()?.state)
+        } finally { f.store.clear(); Dispatchers.resetMain() }
+    }
     @Test fun statementSelectionDetachesTheOriginalPurchaseTargetWithoutSavingAHolding() = runTest {
         val f = Fixture()
         f.review.put("kind", "statement").put("toDate", "2026-09-30").put("rows", JsonList())

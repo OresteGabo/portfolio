@@ -35,7 +35,7 @@ internal fun completedImportPurchase(document: JsonRecord, review: JsonRecord, r
         else when (kind) {
             "bond" -> record.text("confirmationDocumentId") == id
             "bond-issuance" -> record.text("issuanceDocumentId") == id && record.text("confirmationMethod") == "manual"
-            "equity" -> input != null && input.text("contractNote").isNotBlank() &&
+            "equity" -> record.text("contractDocumentId") == id && input != null && input.text("contractNote").isNotBlank() &&
                 listOf("contractNote", "ticker", "tradeDate", "broker").all { input.text(it).equals(record.text(it), true) } &&
                 listOf("shares", "pricePerShare", "netAmountPayable").all { input.optDouble(it) == record.optDouble(it) }
             else -> false

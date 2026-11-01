@@ -840,7 +840,7 @@ class PortfolioModel(
                 val existing = findExistingImportPdf(review)
                 val importTarget = targetPurchaseId.takeUnless { review.text("kind") == "statement" }
                 val alreadySaved = existing != null && showExistingImport(existing, review,
-                    requireComplete = resumingImport || !importTarget.isNullOrBlank(), targetId = importTarget)
+                    requireComplete = true, targetId = importTarget)
                 if (!alreadySaved) {
                     if (existing != null) {
                         uploadedDocument = existing.text("id")
@@ -1023,7 +1023,7 @@ class PortfolioModel(
                 listOf("shares", "pricePerShare", "netAmountPayable").all { existing.optDouble(it) == purchase.optDouble(it) }) {
                 "The saved purchase differs from this PDF. Review your portfolio before importing again."
             }
-            val response = if (existing != null) JsonRecord().put("id", existing.text("id")) else api.request(if (bond) "/api/bonds/purchases" + (id?.let { "/$it" } ?: "") else "/api/bonds/equities",
+            val response = if (existing != null && existing.text("contractDocumentId").isNotBlank()) JsonRecord().put("id", existing.text("id")) else api.request(if (bond) "/api/bonds/purchases" + (id?.let { "/$it" } ?: "") else "/api/bonds/equities",
                 if (bond && id != null) "PUT" else "POST", JsonRecord(purchase.toString()).apply { if(bond)put("confirmationDocumentId",uploadedDocument) else put("contractDocumentId",uploadedDocument) })
             val purchaseId = id ?: response.optJSONObject(if (bond) "purchase" else "holding")?.text("id")
                 ?: response.text("id")

@@ -101,12 +101,12 @@ class ImportDuplicatesTest {
             assertEquals(ImportState.EXISTS, decodeImportHistory(f.history.values.single()).last().state)
         } finally { f.store.clear(); Dispatchers.resetMain() }
     }
-    @Test fun anOlderCloudDocumentIsVerifiedByBytesEvenWhenItsNameDiffers() = runTest {
+    @Test fun anOlderCloudDocumentWithoutLinkedRecordsIsReusedForReviewEvenWhenItsNameDiffers() = runTest {
         val f = Fixture().apply { files["cloud-document"] = bytes }; val m = model(f)
         try {
             advanceUntilIdle()
             m.importPurchasePdf(f.actions(name = "new-name.pdf"), f.engine) {}; advanceUntilIdle()
-            assertEquals(ImportState.EXISTS, m.importHistory.single().state)
+            assertEquals(ImportState.REVIEW, m.importHistory.single().state)
             assertEquals("cloud-document", m.importHistory.single().documentId)
             assertEquals(1, f.reads); assertEquals(0, f.uploads); assertEquals(0, f.writes)
         } finally { f.store.clear(); Dispatchers.resetMain() }
@@ -118,7 +118,7 @@ class ImportDuplicatesTest {
             try {
                 advanceUntilIdle()
                 m.importPurchasePdf(f.actions(name = "renamed.pdf"), f.engine) {}; advanceUntilIdle()
-                assertEquals(if (kind == "statement") ImportState.REVIEW else ImportState.EXISTS, m.importHistory.single().state, kind)
+                assertEquals(ImportState.REVIEW, m.importHistory.single().state, kind) // Bytes alone do not prove saved financial information.
                 if (kind == "statement") assertEquals("cloud-document", m.importHistory.single().documentId) // File exists, but completion is not yet proved.
                 assertEquals(0, f.uploads); assertEquals(0, f.writes)
             } finally { f.store.clear(); Dispatchers.resetMain() }
@@ -258,4 +258,15 @@ class ImportDuplicatesTest {
             assertEquals(0, f.uploads); assertEquals(0, f.writes)
         } finally { f.store.clear(); Dispatchers.resetMain() }
     }
+    @Test fun aContractWithoutAPersistedPurchaseLinkIsNotACompletedImport() {
+        val fields=JsonRecord().put("contractNote","NOTE-123").put("ticker","IMR").put("broker","BK Capital")
+            .put("tradeDate","2026-10-01").put("shares",400).put("pricePerShare",90).put("netAmountPayable",36615.6)
+        val review=JsonRecord().put("kind","equity").put("fields",fields).put("missingFields",JsonList())
+        val document=JsonRecord().put("id","contract-file")
+        val purchase=JsonRecord(fields.toString()).put("id","holding").put("status","active")
+        assertNull(completedImportPurchase(document,review,listOf(purchase),null))
+        purchase.put("contractDocumentId","contract-file")
+        assertEquals("holding",completedImportPurchase(document,review,listOf(purchase),null)?.text("id"))
+    }
+
 }
