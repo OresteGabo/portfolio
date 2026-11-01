@@ -1143,7 +1143,7 @@ class PortfolioModel(
         catch (failure: CancellationException) { throw failure }
         catch (failure: Exception) {
             if (failure is ApiException && failure.status == 401) throw failure
-            error("$success Could not refresh the portfolio. Pull down on Portfolio to update; do not submit it again.")
+            error("$success Could not refresh the portfolio. Pull down on Home to update; do not submit it again.")
         }
     }
 

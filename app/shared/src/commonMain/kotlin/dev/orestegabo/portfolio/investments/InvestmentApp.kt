@@ -47,13 +47,14 @@ import kotlinx.datetime.LocalDate
 private val BrandOlive = Color(0xFF6D5E0F)
 private val BrandCream = Color(0xFFF2E6A7)
 private val Ink = Color(0xFF252317)
-private data class Destination(val title: String, val icon: ImageVector, val selectedIcon: ImageVector)
+// Keep saved route keys independent of user-facing labels.
+private data class Destination(val key: String, val label: String, val icon: ImageVector, val selectedIcon: ImageVector)
 private val destinations = listOf(
-    Destination("Portfolio", Icons.Outlined.AccountBalanceWallet, Icons.Filled.AccountBalanceWallet),
-    Destination("Calendar", Icons.Outlined.CalendarMonth, Icons.Filled.CalendarMonth),
-    Destination("Documents", Icons.Outlined.Description, Icons.Filled.Description),
-    Destination("Stocks", Icons.AutoMirrored.Outlined.TrendingUp, Icons.AutoMirrored.Filled.TrendingUp),
-    Destination("Settings", Icons.Outlined.Settings, Icons.Filled.Settings)
+    Destination("Portfolio", "Home", Icons.Outlined.Home, Icons.Filled.Home),
+    Destination("Calendar", "Calendar", Icons.Outlined.CalendarMonth, Icons.Filled.CalendarMonth),
+    Destination("Documents", "Documents", Icons.Outlined.Description, Icons.Filled.Description),
+    Destination("Stocks", "Markets", Icons.AutoMirrored.Outlined.TrendingUp, Icons.AutoMirrored.Filled.TrendingUp),
+    Destination("Settings", "Settings", Icons.Outlined.Settings, Icons.Filled.Settings)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -245,7 +246,7 @@ fun InvestmentApp(model: PortfolioModel) {
             investmentHistory -> "All investments"
             model.user == null -> "Struct Capital"
             tab == "Settings" -> "Settings"
-            else -> tab
+            else -> destinations.firstOrNull { it.key == tab }?.label ?: tab
         }
         val portfolioHome = model.user != null && !model.locked && !nested && tab == "Portfolio"
         model.pdfImportProgress?.takeIf { model.user != null && !model.locked && model.activeImportId == null }?.let { progress ->
@@ -312,16 +313,16 @@ fun InvestmentApp(model: PortfolioModel) {
             bottomBar = {
                 if (model.user != null && !model.locked && !nested && !importChat) NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
                     destinations.forEach { destination ->
-                        val selected = tab == destination.title
+                        val selected = tab == destination.key
                         NavigationBarItem(
                             selected = selected,
                             onClick = { if (!selected) {
-                                tab = destination.title
-                                if (destination.title == "Documents") documentSection = "Library"
+                                tab = destination.key
+                                if (destination.key == "Documents") documentSection = "Library"
                                 selectionFeedback()
                             } },
                             icon = { AppIcon(if (selected) destination.selectedIcon else destination.icon, contentDescription = null, modifier = Modifier.size(24.dp)) },
-                            label = { AppText(destination.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                            label = { AppText(destination.label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.secondaryContainer)
                         )
                     }

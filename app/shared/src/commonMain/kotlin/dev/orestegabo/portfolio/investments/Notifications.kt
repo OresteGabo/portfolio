@@ -69,7 +69,7 @@ fun NotificationsScreen(model: PortfolioModel, openPortfolio: () -> Unit, openNo
             if(model.notifications.isEmpty()) EmptyState(
                 title="Notifications unavailable",icon=Icons.Outlined.CloudOff,description=message,
                 action=EmptyStateAction("Retry",{ model.refreshNotifications() },Icons.Outlined.Refresh),
-                secondaryAction=EmptyStateAction("View portfolio",openPortfolio))
+                secondaryAction=EmptyStateAction("Go to Home",openPortfolio))
             else {
                 AppText(message,color=MaterialTheme.colorScheme.error)
                 TextButton(onClick={ model.refreshNotifications() }) { AppText("Retry") }
@@ -81,8 +81,8 @@ fun NotificationsScreen(model: PortfolioModel, openPortfolio: () -> Unit, openNo
                 title="You’re all caught up",icon=Icons.Outlined.Notifications,description="Updates will appear here.",
                 badgeIcon=Icons.Outlined.Done,
                 action=if(enablePush) EmptyStateAction("Enable phone notifications",NativePushBridge::requestPermission,Icons.Outlined.Notifications)
-                    else EmptyStateAction("View portfolio",openPortfolio,Icons.Outlined.AccountBalanceWallet),
-                secondaryAction=if(enablePush) EmptyStateAction("View portfolio",openPortfolio) else null)
+                    else EmptyStateAction("Go to Home",openPortfolio,Icons.Outlined.Home),
+                secondaryAction=if(enablePush) EmptyStateAction("Go to Home",openPortfolio) else null)
         }
         items(model.notifications,key={ it.text("id") }) { item ->
             if(item.text("kind").isNotBlank() && item.text("kind")!="prices") {

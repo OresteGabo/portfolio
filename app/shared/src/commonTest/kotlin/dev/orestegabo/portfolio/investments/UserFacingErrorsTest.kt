@@ -35,7 +35,7 @@ class UserFacingErrorsTest {
             IllegalArgumentException("Use an amount in RWF 100,000 increments.")))
         assertEquals("Check the purchase details.", userErrorMessage(
             IllegalArgumentException(diagnostic), "Check the purchase details."))
-        val saved = "Share purchase saved. Could not refresh the portfolio. Pull down on Portfolio to update; do not submit it again."
+        val saved = "Share purchase saved. Could not refresh the portfolio. Pull down on Home to update; do not submit it again."
         assertEquals(saved, userErrorMessage(IllegalStateException(saved)))
         assertEquals("Email or password is incorrect.", userErrorMessage(ApiException(401, "Invalid credentials")))
         assertEquals("Too many attempts. Please wait and try again.", userErrorMessage(ApiException(429, diagnostic)))

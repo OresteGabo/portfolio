@@ -108,7 +108,7 @@ class ComposeCaptureLayerTest {
                                             fontSize = 32.sp, textAlign = TextAlign.Center)
                                         Scaffold(Modifier.fillMaxSize(), containerColor = Color.Transparent, bottomBar = {
                                             NavigationBar(Modifier.fillMaxWidth().onGloballyPositioned { navigationBounds = it.boundsInRoot() }) {
-                                                listOf("Portfolio", "Calendar", "Documents", "Stocks", "Settings").forEachIndexed { index, title ->
+                                                listOf("Home", "Calendar", "Documents", "Markets", "Settings").forEachIndexed { index, title ->
                                                     NavigationBarItem(selected = selectedTab.intValue == index,
                                                         onClick = { selectedTab.intValue = index },
                                                         icon = { AppText("+") }, label = { AppText(title) })

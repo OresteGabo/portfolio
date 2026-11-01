@@ -163,7 +163,7 @@ class OnboardingUiTest {
                         assertTrue(prefs.getBoolean("onboardingCompleted", false))
                     }
                     launch().use {
-                        if (authenticated) await("Portfolio") else await("Welcome back")
+                        if (authenticated) await("Home") else await("Welcome back")
                         assertFalse(nodes().any { it.isVisibleToUser && it.text?.toString() == "Your portfolio.\nA clearer picture." })
                     }
                 }
