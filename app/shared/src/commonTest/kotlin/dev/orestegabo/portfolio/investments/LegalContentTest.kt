@@ -11,6 +11,8 @@ class LegalContentTest {
         assertTrue(en.contains("not other users’ private contracts"))
         assertTrue(en.contains("signed-in users can explicitly share public BNR issuance reports"))
         assertTrue(en.contains("Format validation is not independent verification by BNR"))
+        assertTrue(en.contains("separate projection of public security facts"))
+        assertTrue(en.contains("excludes investor identity, source PDF links"))
         assertFalse(en.contains("no in-app opt-out"))
         assertTrue(fr.contains("compte authentifié"))
         assertTrue(fr.contains("contrats privés des autres utilisateurs"))

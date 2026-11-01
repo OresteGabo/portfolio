@@ -55,7 +55,7 @@ fun PendingBondScreen(model: PortfolioModel, initialIssueId: String? = null, don
 fun PurchaseImportReview(model: PortfolioModel, review: JsonRecord, target: JsonRecord?, done: () -> Unit) {
     DisposableEffect(review) { onDispose { model.discardImportedPdf(review) } }
     var selection by rememberSaveable(review, target?.text("id")) { mutableStateOf(target?.text("id")) }
-    val state = PurchaseReviewState(review, model.documents, model.purchases, model.historyComplete, target, selection)
+    val state = PurchaseReviewState(review, model.documents, model.purchases, model.historyComplete, target, selection, model.sharedCouponTerms)
     val effectiveReview = state.effectiveReview
     val parsed = state.parsed
     val body = state.body
@@ -71,6 +71,7 @@ fun PurchaseImportReview(model: PortfolioModel, review: JsonRecord, target: Json
     }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { AppText("Review purchase", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
+        if (effectiveReview.text("termsSource")=="shared-coupon-terms") item { AppText("Missing coupon details supplied from shared public security terms.", style = MaterialTheme.typography.labelSmall) }
         if (effectiveReview.has("termsSourceDocumentId")) item { AppText("Coupon details from the shared BNR issuance report", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         if (body == null) item { EmptyState(userErrorMessage(parsed.exceptionOrNull(), "Could not read this PDF."), EmptyArtwork.DOCUMENTS, compact = true) }
         else {

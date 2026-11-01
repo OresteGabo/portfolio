@@ -1507,6 +1507,8 @@ internal val frenchStrings: Map<String, String> = mapOf(
     "Confirm that this report is public before sharing it." to "Confirmez que ce rapport est public avant de le partager.",
     "Private · Only you" to "Privé · Vous uniquement",
     "Shared · Public issuance" to "Partagé · Émission publique",
+    "Your PDF stays private. Only public bond terms, such as coupon rates and published payment dates, may be reused." to "Votre PDF reste privé. Seules les conditions publiques de l’obligation, comme le taux de coupon et les dates publiées de paiement, peuvent être réutilisées.",
+    "Missing coupon details supplied from shared public security terms." to "Les informations de coupon manquantes proviennent des conditions publiques partagées du titre.",
     "Annual coupon rate" to "Taux de coupon annuel",
     "Recorded principal" to "Capital enregistré",
     "Payment ledger" to "Registre des versements",

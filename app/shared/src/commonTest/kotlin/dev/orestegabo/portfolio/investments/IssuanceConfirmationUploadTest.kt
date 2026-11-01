@@ -32,6 +32,22 @@ class IssuanceConfirmationUploadTest {
         assertFailsWith<IllegalArgumentException> { sharedIssuanceDocument(other,listOf(doc)) }
         assertNull(sharedIssuanceDocument(incoming,listOf(JsonRecord(doc.toString()).put("category","Bond confirmation"))))
     }
+    @Test fun securityTermsFillOnlyMissingCouponsAndNeverPersonalValuesOrKnownRates() {
+        val r=JsonRecord().put("kind","bond").put("fields",JsonRecord().put("issuer","Government of Rwanda").put("currency","RWF")
+            .put("isin","RWTEST000001/MN").put("maturityDate","2033-07-08").put("purchaseDate","2026-12-01")
+            .put("faceValue",2200000).put("pricePercent",98).put("feesPaid",11000)).put("missingFields",JsonList(listOf("Coupon rate","Coupon schedule")))
+        val terms=JsonRecord().put("isin","RWTEST000001").put("maturityDate","2033-07-08").put("couponRate",.115).put("tenorYears",7)
+            .put("couponFrequency",2).put("couponDates",JsonList(listOf("2026-07-15","2027-01-15","2033-07-08")))
+        val filled=purchaseReviewWithSecurityTerms(r,listOf(terms))
+        val fields=filled.getJSONObject("fields")
+        assertEquals(.115,fields.optDouble("couponRate"));assertEquals(2200000.0,fields.optDouble("faceValue"))
+        assertEquals(98.0,fields.optDouble("pricePercent"));assertEquals(11000.0,fields.optDouble("feesPaid"))
+        assertEquals("2027-01-15",fields.text("firstCouponDate"));assertEquals(2,fields.getJSONArray("couponDates").length())
+        assertFalse(filled.has("termsSourceDocumentId")) // No link to the private contributor's document.
+        val known=JsonRecord(r.toString()).apply { put("fields",getJSONObject("fields").put("couponRate",.12)) }
+        assertEquals(.12,purchaseReviewWithSecurityTerms(known,listOf(terms)).getJSONObject("fields").optDouble("couponRate"))
+        assertSame(r,purchaseReviewWithSecurityTerms(r,listOf(JsonRecord(terms.toString()).put("isin","WRONG"))))
+    }
     @Test fun targetedReviewUsesRecordedAllocationAndRejectsWrongSecurityOrInconsistentCash() {
         val preview = pendingIssuanceConfirmation(review(), pending())
         assertEquals(1_000_000.0, preview.optDouble("faceValue"))

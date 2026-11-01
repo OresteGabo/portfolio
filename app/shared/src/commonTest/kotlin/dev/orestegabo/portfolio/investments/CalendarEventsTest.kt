@@ -4,6 +4,16 @@ import kotlinx.datetime.LocalDate
 import kotlin.test.*
 
 class CalendarEventsTest {
+    @Test fun calendarCanUseExtractedSecurityTermsWithoutAVisiblePrivateDocument() {
+        val issue=JsonRecord().put("id","reopen").put("kind","reopen").put("tenorYears",7).put("maturityDate","2033-07-08")
+        val terms=JsonRecord().put("isin","RWTEST000001").put("maturityDate","2033-07-08").put("couponRate",.115)
+            .put("tenorYears",7).put("issuer","Government of Rwanda").put("currency","RWF")
+        val merged=mergeBondIssuances(listOf(issue),emptyList(),listOf(terms)).single()
+        assertEquals(.115,calendarCouponRate(merged,emptyList(),listOf(terms)))
+        assertFalse(merged.has("issuance"));assertFalse(merged.has("pricePercent"))
+        assertEquals("",mergeBondIssuances(listOf(issue),emptyList(),listOf(terms,JsonRecord(terms.toString()).put("isin","RWOTHER00001"))).single().text("isin"))
+    }
+
     @Test fun explicitReopeningUsesOriginalVerifiedSecurityWithoutInheritingAuctionPrice() {
         val original=JsonRecord().put("id","original").put("settlementDate","2026-07-17").put("maturityDate","2033-07-08")
         val reopen=JsonRecord().put("id","reopen").put("kind","reopen").put("reopensIssueId","original")

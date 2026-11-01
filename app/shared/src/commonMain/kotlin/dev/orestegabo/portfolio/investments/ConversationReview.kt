@@ -35,7 +35,8 @@ internal fun ConversationReview(model: PortfolioModel, review: JsonRecord, targe
 @Composable
 private fun PurchaseConversationReview(model: PortfolioModel, review: JsonRecord, target: JsonRecord?, entry: ImportReceipt, done: () -> Unit) {
     var selection by rememberSaveable(entry.id) { mutableStateOf(target?.text("id")) }
-    val state = PurchaseReviewState(review, model.documents, model.purchases, model.historyComplete, target, selection)
+    val state = PurchaseReviewState(review, model.documents, model.purchases, model.historyComplete, target, selection, model.sharedCouponTerms)
+    if (state.bond) AppText("Your PDF stays private. Only public bond terms, such as coupon rates and published payment dates, may be reused.", style = MaterialTheme.typography.bodySmall)
     LaunchedEffect(entry.id, model.busy, model.historyComplete) {
         if (state.bond && !model.historyComplete && !model.busy && model.error == null) model.loadInvestmentHistory()
     }
@@ -69,6 +70,7 @@ private fun PurchaseConversationReview(model: PortfolioModel, review: JsonRecord
         Fact("Shares", body.text("shares")); Fact("Cost", money(body.optDouble("netAmountPayable"), body.text("currency")))
         Fact("Trade date", body.text("tradeDate"))
     }
+    if (state.effectiveReview.text("termsSource")=="shared-coupon-terms") AppText("Missing coupon details supplied from shared public security terms.", style = MaterialTheme.typography.labelSmall)
     if (state.effectiveReview.has("termsSourceDocumentId")) AppText("Coupon details from the shared BNR issuance report", style = MaterialTheme.typography.labelSmall)
     if (review.optBoolean("usedOcr")) AppText("Text recognition used. Check the figures against your PDF.", style = MaterialTheme.typography.bodySmall)
     Button(enabled = state.ready && !model.busy, modifier = Modifier.fillMaxWidth(), onClick = {

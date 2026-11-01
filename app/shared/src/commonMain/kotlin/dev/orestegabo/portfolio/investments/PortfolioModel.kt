@@ -386,7 +386,9 @@ class PortfolioModel(
     var quoteRefreshFailed by mutableStateOf(false)
         private set
     private var publishedCalendar by mutableStateOf<List<JsonRecord>>(emptyList())
-    val calendar get() = mergeBondIssuances(publishedCalendar, documents)
+    var sharedCouponTerms by mutableStateOf<List<JsonRecord>>(emptyList())
+        private set
+    val calendar get() = mergeBondIssuances(publishedCalendar, documents, sharedCouponTerms)
     var education by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
 
@@ -654,11 +656,18 @@ class PortfolioModel(
         reconcileImportHistory()
         historyComplete = overview == null
         if (!deferSupplementary) {
+            refreshSharedCouponTerms()
             loadStatementItems()
             if (portfolio.activeShares(Today).isNotEmpty()) refreshEquityQuotes()
             fetchNotifications()
         }
         privateDataLoadedAt = clock.markNow()
+    }
+
+    private suspend fun refreshSharedCouponTerms() {
+        try { sharedCouponTerms = api.request("/api/bonds/coupon-terms").rows("terms") }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (failure: Exception) { if (failure is ApiException && failure.status == 401) throw failure }
     }
 
     private suspend fun loadStatementItems() {
@@ -716,6 +725,7 @@ class PortfolioModel(
                         }
                         if (currentSync()) documentsLoading = false
                     }
+                    launch { section("coupon-terms") { refreshSharedCouponTerms() } }
                     launch { section("market") { prefetchMarket() } }
                     launch { section("statements") { loadStatementItems() } }
                     launch { section("notifications") { fetchNotifications() } }
@@ -1308,6 +1318,7 @@ class PortfolioModel(
         monthlyInvestmentTarget = DEFAULT_MONTHLY_INVESTMENT_TARGET
         user = null
         portfolio = PortfolioSnapshot()
+        sharedCouponTerms = emptyList()
         statementItems = emptyList()
         statementReviewRows = null
         pdfImportProgress = null

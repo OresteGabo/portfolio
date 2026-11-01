@@ -95,8 +95,35 @@ fun purchaseReviewWithPublishedTerms(review: JsonRecord, documents: List<JsonRec
         .put("missingFields", JsonList((0 until missing.length()).map(missing::getString).filterNot { it in supplied }))
 }
 
+/** Fill missing security facts only; private acquisition prices, fees and allocations are never inputs. */
+internal fun purchaseReviewWithSecurityTerms(review: JsonRecord, terms: List<JsonRecord>): JsonRecord {
+    if(review.text("kind")!="bond") return review
+    val original=review.optJSONObject("fields") ?: return review
+    if(original.text("issuer")!="Government of Rwanda" || original.text("currency")!="RWF" || original.text("isin").isBlank())return review
+    fun security(p: JsonRecord)=p.text("isin").uppercase().filterNot(Char::isWhitespace).removeSuffix("/MN")
+    val candidate=terms.singleOrNull { security(it)==security(original) && it.text("maturityDate")==original.text("maturityDate") } ?: return review
+    val readRate=original.optDouble("couponRate",Double.NaN)
+    if(readRate.isFinite() && readRate!=candidate.optDouble("couponRate",Double.NaN))return review
+    val fields=JsonRecord(original.toString());val supplied=mutableSetOf<String>()
+    for((key,label) in listOf("couponRate" to "Coupon rate","tenorYears" to "Tenor")) {
+        if(fields.isNull(key)) candidate.optDouble(key,Double.NaN).takeIf { it.isFinite() && it>0 }?.let { fields.put(key,it);supplied+=label }
+    }
+    val purchase=calendarDate(original.text("purchaseDate")) ?: return review
+    val dates=candidate.optJSONArray("couponDates")?.let { a -> (0 until a.length()).map(a::getString) }.orEmpty().filter { calendarDate(it)?.let { day -> day>purchase && it<=original.text("maturityDate") }==true }.distinct().sorted()
+    if((fields.optJSONArray("couponDates")?.length() ?: 0)==0 && dates.isNotEmpty() &&
+        (fields.text("firstCouponDate").isBlank() || fields.text("firstCouponDate") in dates)) {
+        fields.put("couponDates",JsonList(dates)).put("couponFrequency",candidate.optInt("couponFrequency",2)).put("scheduleConfidence","confirmed")
+        if(fields.text("firstCouponDate").isBlank())fields.put("firstCouponDate",dates.first())
+        supplied+="Coupon schedule"
+    }
+    if(supplied.isEmpty())return review
+    val missing=review.optJSONArray("missingFields") ?: return review
+    return JsonRecord(review.toString()).put("fields",fields).put("termsSource","shared-coupon-terms")
+        .put("missingFields",JsonList((0 until missing.length()).map(missing::getString).filterNot { it in supplied }))
+}
+
 /** Overlay the auction's actual terms on its published calendar row; retain book-open dates. */
-fun mergeBondIssuances(published: List<JsonRecord>, documents: List<JsonRecord>): List<JsonRecord> {
+fun mergeBondIssuances(published: List<JsonRecord>, documents: List<JsonRecord>, couponTerms: List<JsonRecord> = emptyList()): List<JsonRecord> {
     val result = published.toMutableList()
     documents.filter { it.text("category") == "Bond issuance" }.forEach { document ->
         val issue = document.optJSONObject("issuance") ?: return@forEach
@@ -107,6 +134,16 @@ fun mergeBondIssuances(published: List<JsonRecord>, documents: List<JsonRecord>)
             .put("tenorYears", issue.optDouble("tenorYears")).put("settlementDate", issue.text("settlementDate"))
             .put("maturityDate", issue.text("maturityDate")).put("issuance", issue)
         if (index >= 0) result[index] = row else result += row
+    }
+    // Calendar identity hints only: unique public security terms, never investor records or auction prices.
+    for (index in result.indices) {
+        val row=result[index]
+        if (row.text("isin").isBlank()) {
+            val candidates=couponTerms.filter { it.text("maturityDate")==row.text("maturityDate") &&
+                it.optDouble("tenorYears",Double.NaN)==row.optDouble("tenorYears",Double.NaN) &&
+                it.text("issuer")=="Government of Rwanda" && it.text("currency")=="RWF" }
+            candidates.singleOrNull()?.let { result[index]=JsonRecord(row.toString()).put("isin",it.text("isin")) }
+        }
     }
     // The published calendar explicitly names the original auction. Inherit only its security
     // identity, never its auction price/yield or settlement/coupon dates.

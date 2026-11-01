@@ -2,8 +2,8 @@ package dev.orestegabo.portfolio.investments
 
 /** Shared by the original review and conversation cards: one set of matching/validation rules. */
 internal class PurchaseReviewState(review: JsonRecord, documents: List<JsonRecord>, purchases: List<JsonRecord>,
-    historyComplete: Boolean, target: JsonRecord?, selection: String?) {
-    val effectiveReview = purchaseReviewWithPublishedTerms(review, documents)
+    historyComplete: Boolean, target: JsonRecord?, selection: String?, couponTerms: List<JsonRecord> = emptyList()) {
+    val effectiveReview = purchaseReviewWithSecurityTerms(purchaseReviewWithPublishedTerms(review, documents), couponTerms)
     val parsed = runCatching { importedPurchaseInput(effectiveReview) }
     val body = parsed.getOrNull()
     val bond = review.text("kind") == "bond"

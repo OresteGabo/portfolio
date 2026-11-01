@@ -125,7 +125,7 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
                         val focusedRange = preferredSubscriptionRange(monthRanges, selected)
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             focusedRange?.let { range ->
-                                SubscriptionRangeHeader(range, today, calendarCouponRate(range.record, model.documents)) { select(range.start) }
+                                SubscriptionRangeHeader(range, today, calendarCouponRate(range.record, model.documents, model.sharedCouponTerms)) { select(range.start) }
 
                             }
                             Row(Modifier.fillMaxWidth()) {

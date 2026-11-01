@@ -111,14 +111,16 @@ internal fun bondSubscriptionDate(now: kotlin.time.Instant): LocalDate =
     now.toLocalDateTime(TimeZone.of("Africa/Kigali")).date
 
 /** Reopenings reuse a security's verified coupon, never a guessed tenor/title match or its yield. */
-internal fun calendarCouponRate(issue: JsonRecord, documents: List<JsonRecord>): Double? {
+internal fun calendarCouponRate(issue: JsonRecord, documents: List<JsonRecord>, couponTerms: List<JsonRecord> = emptyList()): Double? {
     val direct = issue.optJSONObject("issuance")
     fun rate(record: JsonRecord) = record.optDouble("couponRate", Double.NaN).takeIf { it.isFinite() && it in 0.0..1.0 }
     direct?.let { rate(it)?.let { value -> return value } }
     val isin = issue.text("isin").trim().uppercase().removeSuffix("/MN")
     val maturity = calendarDate(issue.text("maturityDate")) ?: return null
     if (isin.isBlank()) return null
-    return documents.filter { it.text("category") == "Bond issuance" }.mapNotNull { it.optJSONObject("issuance") }
+    val published=documents.filter { it.text("category") == "Bond issuance" }.mapNotNull { it.optJSONObject("issuance") }
+    val candidates=published.filter { it.text("isin").trim().uppercase().removeSuffix("/MN")==isin && calendarDate(it.text("maturityDate"))==maturity }
+    return (if(candidates.isNotEmpty()) candidates else couponTerms)
         .filter { it.text("isin").trim().uppercase().removeSuffix("/MN") == isin && calendarDate(it.text("maturityDate")) == maturity }
         .mapNotNull(::rate).distinct().singleOrNull()
 }
