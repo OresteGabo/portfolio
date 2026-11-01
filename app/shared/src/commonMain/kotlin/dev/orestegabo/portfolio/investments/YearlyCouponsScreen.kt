@@ -1,5 +1,6 @@
 package dev.orestegabo.portfolio.investments
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,10 +15,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+
+private data class CouponYearPage(val year: Int, val data: YearCoupons, val next: NextCouponYear?)
 
 @Composable
 internal fun YearlyCouponsScreen(model: PortfolioModel, openBond: (JsonRecord) -> Unit) {
@@ -43,17 +47,25 @@ internal fun YearlyCouponsScreen(model: PortfolioModel, openBond: (JsonRecord) -
     val receipts = model.couponReceipts
     val available = model.couponTrackingAvailable
     val complete = model.historyComplete
-    val result by produceState<Pair<Int, YearCoupons>?>(null, purchases, receipts, year, today, available, complete) {
+    val result by produceState<CouponYearPage?>(null, purchases, receipts, year, today, available, complete) {
         value = null
-        if (complete) value = year to withContext(Dispatchers.Default) { yearlyCoupons(purchases, receipts, year, today, available) }
+        if (complete) {
+            val selectedYear = year
+            value = withContext(Dispatchers.Default) {
+                val selected = yearlyCoupons(purchases, receipts, selectedYear, today, available)
+                CouponYearPage(selectedYear, selected, if (selected.rows.isEmpty()) nextCouponYear(purchases, receipts, selectedYear, today, available) else null)
+            }
+        }
     }
-    val data = result?.takeIf { it.first == year }?.second
+    val page = result?.takeIf { it.year == year }
+    val data = page?.data
     val currencies = data?.rows?.map { it.currency }?.distinct()?.sorted().orEmpty()
     LaunchedEffect(currencies) { if (currencies.isNotEmpty() && currency !in currencies) currency = currencies.first() }
     val displayCurrency = currency.takeIf { it in currencies } ?: currencies.firstOrNull() ?: currency
     val rows = data?.rows?.filter { it.currency == displayCurrency }.orEmpty()
     val visible = rows.take(shown)
-    LazyColumn(Modifier.fillMaxSize(), state = scroll, contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+    Column(Modifier.fillMaxSize()) {
+    LazyColumn(Modifier.fillMaxWidth().weight(1f), state = scroll, contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         item(key = "year") {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -62,7 +74,7 @@ internal fun YearlyCouponsScreen(model: PortfolioModel, openBond: (JsonRecord) -
                     if (year != today.year) TextButton(onClick = { year = today.year }) { AppText("This year") }
                     IconButton(onClick = { year++ }, enabled = year < 9998) { AppIcon(Icons.Outlined.ChevronRight, "Next year") }
                 }
-                DetailNote("A year of coupon dates across your bonds. Tap a payment to open its bond.")
+                DetailNote(localized("Coupons due in {0}. Tap a payment to open its bond.").replace("{0}", year.toString()))
             }
         }
         when {
@@ -105,10 +117,12 @@ internal fun YearlyCouponsScreen(model: PortfolioModel, openBond: (JsonRecord) -
                         } }
                     }
                 }
-                if (rows.isEmpty()) item {
-                    EmptyState("No coupons in this year", EmptyArtwork.CALENDAR, compact = true,
-                        description = "Try another year. Pending purchases are not included.")
+                if (rows.isEmpty()) item(key = "empty-year") {
+                    CouponYearEmptyState(year, page.next)
                 }
+                if (rows.isEmpty()) page.next?.let { next -> item(key = "next-preview") {
+                    NextCouponYearPreview(next) { year = next.year }
+                } }
                 visible.groupBy { it.date.month }.forEach { (_, monthRows) ->
                     item(key = "month:${monthRows.first().date.month}") {
                         DetailHeading(monthRows.first().date.monthLabel())
@@ -139,8 +153,66 @@ internal fun YearlyCouponsScreen(model: PortfolioModel, openBond: (JsonRecord) -
                         if (shown < rows.size) TextButton(onClick = { shown += 12 }, modifier = Modifier.fillMaxWidth()) { AppText("Load more coupons") }
                     }
                 }
+                if (year < 9998 && (rows.isNotEmpty() || page.next == null)) item(key = "next-year") {
+                    FilledTonalButton(onClick = { year++ }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                        AppText("${localized("Next year")} · ${year + 1}", Modifier.weight(1f))
+                        AppIcon(Icons.Outlined.ChevronRight, null)
+                    }
+                }
                 item { DetailNote("Grouped by coupon due date, not bank settlement date. Schedules cover active and matured bonds; sold bonds show recorded entries only. Saved dates take precedence; other dates are estimates. Principal repayments are excluded.") }
             }
         }
+    }
+    if (data != null && rows.isEmpty()) page.next?.let { next ->
+        Surface(color = MaterialTheme.colorScheme.background) {
+            Column(Modifier.fillMaxWidth()) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
+                Button(onClick = { year = next.year }, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp).heightIn(min = 52.dp)) {
+                    AppText(localized("View {0} coupons").replace("{0}", next.year.toString()), Modifier.weight(1f))
+                    AppIcon(Icons.Outlined.ChevronRight, null)
+                }
+            }
+        }
+    }
+    }
+}
+
+@Composable
+private fun NextCouponYearPreview(next: NextCouponYear, open: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val action = localized("View {0} coupons").replace("{0}", next.year.toString())
+    Surface(modifier = Modifier.fillMaxWidth().clickable(role = Role.Button, onClickLabel = action, onClick = open),
+        shape = MaterialTheme.shapes.large, color = colors.primary.copy(alpha = .045f),
+        border = BorderStroke(1.dp, colors.primary.copy(alpha = .15f))) {
+        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            DetailNote("Next year with scheduled coupons")
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                AppText(next.year.toString(), Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Medium)
+                AppIcon(Icons.Outlined.ChevronRight, null, tint = colors.primary)
+            }
+            next.coupons.take(2).forEach { coupon ->
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    AppText(detailDate(coupon.date), style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
+                    FinancialText(coupon.purchase.text("bondName"), style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    FinancialText(money(coupon.expectedNet!!, coupon.currency), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    if (coupon.estimatedDate) DetailNote("Estimated coupon date")
+                }
+            }
+            DetailNote("Preview of scheduled net payments, not confirmed receipts.")
+        }
+    }
+}
+
+@Composable
+private fun CouponYearEmptyState(year: Int, next: NextCouponYear?) {
+    val colors = MaterialTheme.colorScheme
+    Column(Modifier.fillMaxWidth().padding(vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        AppIcon(Icons.Outlined.EventBusy, null, Modifier.size(32.dp), tint = colors.onSurfaceVariant)
+        AppText(localized("No coupons due in {0}").replace("{0}", year.toString()), Modifier.semantics { heading() },
+            style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
+        AppText(next?.let { localized("You have scheduled coupons in {0}. Preview them below.").replace("{0}", it.year.toString()) }
+            ?: localized("Try another year. Pending purchases are not included."),
+            style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center)
     }
 }

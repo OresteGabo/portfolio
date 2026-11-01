@@ -28,11 +28,12 @@ class YearlyCouponsNavigationTest {
         val previousLanguage = AppLanguage.preference
         val marketDate = java.time.LocalDate.now(java.time.ZoneId.of("Africa/Kigali"))
         val today = kotlinx.datetime.LocalDate(marketDate.year, marketDate.monthValue, marketDate.dayOfMonth)
-        val year = today.year
+        val futureOnly = InstrumentationRegistry.getArguments().getString("futureOnly") == "true"
+        val year = today.year + if (futureOnly) 1 else 0
         val dates = listOf("$year-01-01", "$year-07-01", "${year + 1}-01-01", "${year + 1}-07-01")
         val purchases = (1..7).map { index -> JsonRecord().put("id", "year-bond-$index").put("bondName", "Treasury bond $index")
             .put("issuer", "Government of Rwanda").put("isin", "SYNTHETIC-$index").put("status", "active").put("currency", "RWF")
-            .put("purchaseDate", "${year - 1}-01-01").put("maturityDate", "${year + 1}-07-01")
+            .put("purchaseDate", "${today.year - 1}-01-01").put("maturityDate", "${year + 1}-07-01")
             .put("faceValue", 1000000).put("couponRate", .12).put("withholdingTaxRate", .05).put("couponFrequency", 2)
             .put("couponDates", JsonList(dates)).put("scheduleConfidence", "confirmed") }
         val receipts = listOf("manual", "automatic").mapIndexed { index, method -> JsonRecord()
@@ -126,7 +127,16 @@ class YearlyCouponsNavigationTest {
                 val previousMonth = shiftCalendarMonth(today, -1).let { "${it.month.name.lowercase().replaceFirstChar { c -> c.uppercase() }.take(3)} ${it.year}" }
                 await(previousMonth)
                 readerFixtureScreenshot(window, File(instrumentation.targetContext.filesDir, "year-coupons-calendar.png"))
-                click("View yearly coupons"); await("Scheduled net coupons"); await(year.toString())
+                click("View yearly coupons")
+                if (futureOnly) {
+                    await("No coupons due in ${today.year}")
+                    await("View $year coupons")
+                    readerFixtureScreenshot(window, File(instrumentation.targetContext.filesDir, "year-coupons-empty-preview.png"))
+                    scrollTo("Treasury bond 1"); await("RWF 57,000")
+                    readerFixtureScreenshot(window, File(instrumentation.targetContext.filesDir, "year-coupons-next-preview.png"))
+                    click("View $year coupons")
+                }
+                await("Scheduled net coupons"); await(year.toString())
                 scrollTo(formatNumber(798000.0)); scrollTo("Confirmed by you"); scrollTo("Marked automatically"); scrollTo(year.toString())
                 assertNull("Child page hides bottom navigation", find("Markets"))
                 readerFixtureScreenshot(window, File(instrumentation.targetContext.filesDir, "year-coupons-overview.png"))
@@ -135,9 +145,11 @@ class YearlyCouponsNavigationTest {
                 val bondLink = "View bond details: Treasury bond 7 · 1 Jul $year"
                 click(bondLink); await("Bond details"); await("Treasury bond 7")
                 click("Back"); scrollTo("14 of 14 coupons"); await("14 of 14 coupons")
-                scrollTo("Next year"); click("Next year"); await((year + 1).toString()); scrollTo("Load more coupons"); await("12 of 14 coupons")
-                scrollTo("Next year"); click("Next year"); await("No coupons in this year")
-                click("This year"); await(year.toString()); await("Scheduled net coupons")
+                scrollTo("Next year · ${year + 1}"); click("Next year · ${year + 1}"); await((year + 1).toString()); scrollTo("Load more coupons"); await("12 of 14 coupons")
+                scrollTo("Next year"); click("Next year"); await("No coupons due in ${year + 2}")
+                click("This year")
+                if (futureOnly) { await("No coupons due in ${today.year}"); click("View $year coupons") }
+                await(year.toString()); await("Scheduled net coupons")
                 scenario.onActivity { model.toggleNumberVisibility() }
                 await("Financial numbers hidden"); assertNull(find(formatNumber(798000.0)))
                 readerFixtureScreenshot(window, File(instrumentation.targetContext.filesDir, "year-coupons-hidden.png"))

@@ -93,4 +93,29 @@ class YearlyCouponsTest {
         val notReceived = list(listOf(bond()), listOf(receipt().put("received", false))).rows.first()
         assertEquals(CouponReceiptState.NOT_RECEIVED, notReceived.state); assertNull(notReceived.recordedAmount)
     }
+    @Test fun bondsBoughtThisYearCanStartPayingNextYearWithoutAnApiChange() {
+        val seven = bond().put("purchaseDate", "2026-07-23").put("maturityDate", "2033-07-23")
+            .put("couponDates", JsonList((2027..2033).flatMap { listOf("$it-01-23", "$it-07-23") }))
+        val ten = bond("ten").put("purchaseDate", "2026-08-23").put("maturityDate", "2036-08-23")
+            .put("faceValue", 1000000).put("couponRate", .12)
+            .put("couponDates", JsonList((2027..2036).flatMap { listOf("$it-02-23", "$it-08-23") }))
+        val purchases = listOf(seven, ten)
+        val current = yearlyCoupons(purchases, emptyList(), 2026, today, true)
+        assertTrue(current.rows.isEmpty()); assertTrue(current.incomplete.isEmpty())
+        val next = requireNotNull(nextCouponYear(purchases, emptyList(), 2026, today, true))
+        assertEquals(2027, next.year)
+        assertEquals(listOf("2027-01-23", "2027-02-23", "2027-07-23", "2027-08-23"), next.coupons.map { it.date.toString() })
+        assertEquals(listOf(120175.0, 57000.0, 120175.0, 57000.0), next.coupons.map { it.expectedNet })
+        assertEquals(next.coupons, yearlyCoupons(purchases, emptyList(), 2027, today, true).rows)
+        assertEquals(2028, nextCouponYear(purchases, emptyList(), 2027, today, true)?.year)
+    }
+    @Test fun nextYearPreviewUsesActualAvailableYearsAndNeverPendingOrUnknownIncome() {
+        val later = bond().put("couponDates", JsonList(listOf("2027-01-01")))
+        assertEquals(2027, nextCouponYear(listOf(later), emptyList(), 2025, today, true)?.year)
+        assertNull(nextCouponYear(listOf(later), emptyList(), 2027, today, true))
+        assertNull(nextCouponYear(listOf(later.put("status", "submitted")), emptyList(), 2026, today, true))
+        assertNull(nextCouponYear(listOf(bond().put("withholdingTaxRate", null)), emptyList(), 2026, today, true))
+        assertNull(nextCouponYear(listOf(bond(status = "sold")), listOf(receipt()), 2026, today, true))
+    }
+
 }

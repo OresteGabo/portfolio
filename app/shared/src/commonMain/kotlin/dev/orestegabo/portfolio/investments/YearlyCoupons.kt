@@ -13,7 +13,8 @@ internal data class YearCoupon(
 internal data class YearCoupons(val rows: List<YearCoupon>, val incomplete: List<JsonRecord>)
 internal data class YearCouponTotals(val scheduledNet: Double?, val confirmed: Double?, val automatic: Double?)
 
-internal fun yearlyCoupons(purchases: List<JsonRecord>, receipts: List<JsonRecord>, year: Int,
+/** Null year is used only for year discovery; non-null selection remains a strict calendar-year view. */
+internal fun yearlyCoupons(purchases: List<JsonRecord>, receipts: List<JsonRecord>, year: Int?,
     today: LocalDate, receiptsAvailable: Boolean): YearCoupons {
     val rows = mutableListOf<YearCoupon>()
     val incomplete = mutableListOf<JsonRecord>()
@@ -24,16 +25,16 @@ internal fun yearlyCoupons(purchases: List<JsonRecord>, receipts: List<JsonRecor
         if (!purchase.text("currency").matches(Regex("[A-Z]{3}"))) { incomplete += purchase; continue }
         val evidence = if (!receiptsAvailable) emptyMap<LocalDate, JsonRecord>() else receipts.filter {
             it.text("purchaseId") == purchase.text("id") && it.text("currency").ifBlank { purchase.text("currency") } == purchase.text("currency") &&
-                calendarDate(it.text("dueDate"))?.let { due -> due.year == year && due <= today } == true
+                calendarDate(it.text("dueDate"))?.let { due -> (year == null || due.year == year) && due <= today } == true
         }.distinctBy { it.text("dueDate") }.associateBy { calendarDate(it.text("dueDate"))!! }
         val expected = linkedMapOf<LocalDate, Double>()
-        if (purchase.text("status") != "sold" && (bought == null || bought.year <= year) && (maturity == null || maturity.year >= year)) {
+        if (purchase.text("status") != "sold" && (year == null || bought == null || bought.year <= year) && (year == null || maturity == null || maturity.year >= year)) {
             val terms = bondDetailTerms(purchase)?.takeIf { purchase.has("couponFrequency") && it.faceValue > 0 }
             if (terms == null) incomplete += purchase
             else if (terms.couponRate > 0) {
                 val dates = couponSchedule(terms)
                 if (dates.isEmpty()) incomplete += purchase
-                for (due in dates.filter { it.year == year && (purchase.text("status") != "matured" || it <= today) })
+                for (due in dates.filter { (year == null || it.year == year) && (purchase.text("status") != "matured" || it <= today) })
                     expected[due] = terms.netCouponPayment()
             }
         }
@@ -60,4 +61,15 @@ internal fun yearlyCouponTotals(rows: List<YearCoupon>, currency: String, receip
     }
     return YearCouponTotals(if (selected.isEmpty() || selected.any { it.expectedNet == null }) null else sumMoney(selected.mapNotNull { it.expectedNet }),
         recorded(CouponReceiptState.CONFIRMED), recorded(CouponReceiptState.AUTOMATIC))
+}
+
+internal data class NextCouponYear(val year: Int, val coupons: List<YearCoupon>)
+
+/** Next populated schedule year, not a guessed date or a new forecast engine. */
+internal fun nextCouponYear(purchases: List<JsonRecord>, receipts: List<JsonRecord>, afterYear: Int,
+    today: LocalDate, receiptsAvailable: Boolean): NextCouponYear? {
+    val upcoming = yearlyCoupons(purchases, receipts, null, today, receiptsAvailable).rows
+        .filter { it.date.year > afterYear && it.expectedNet != null }
+    val next = upcoming.firstOrNull()?.date?.year ?: return null
+    return NextCouponYear(next, upcoming.filter { it.date.year == next })
 }
