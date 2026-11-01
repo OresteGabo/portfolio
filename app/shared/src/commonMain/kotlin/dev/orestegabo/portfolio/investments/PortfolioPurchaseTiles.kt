@@ -135,18 +135,18 @@ fun BondPurchaseFacts(purchase: JsonRecord) {
         "market" to "Market", "status" to "Status", "purchaseDate" to "Purchase date", "settlementDate" to "Settlement",
         "maturityDate" to "Maturity", "tenorYears" to "Tenor (years)", "broker" to "Broker",
         "accountReference" to "Account", "scheduleConfidence" to "Schedule", "firstCouponDate" to "First coupon")
-        .forEach { (key, label) -> if (purchase.text(key).isNotBlank()) Fact(label, purchase.text(key)) }
-    Fact("Bond principal", money(purchase.optDouble("faceValue", 0.0), currency))
-    Fact("Price", "${purchase.optDouble("pricePercent", 100.0)}%")
-    Fact("Fees", money(purchase.optDouble("feesPaid", 0.0), currency))
-    Fact("Accrued interest paid", money(purchase.optDouble("accruedInterestPaid", 0.0), currency))
-    Fact("Total cash cost", money(purchase.bondCashCost(), currency))
-    Fact("Coupon rate", percent(purchase.optDouble("couponRate", 0.0)))
-    Fact("Withholding tax", percent(purchase.optDouble("withholdingTaxRate", 0.0)))
-    if (purchase.has("couponFrequency")) Fact("Payments per year", purchase.text("couponFrequency"))
-    Fact("Annual net coupon", money(purchase.netAnnualBondCoupon(), currency))
-    if(purchase.text("confirmationMethod")=="manual") Fact("Confirmation","Confirmed by you")
-    if(purchase.text("confirmationMethod")=="document") Fact("Confirmation","Confirmation PDF uploaded")
+        .forEach { (key, label) -> if (purchase.text(key).isNotBlank()) DetailValueRow(label, purchase.text(key)) }
+    DetailValueRow("Bond principal", purchase.optDouble("faceValue", Double.NaN).takeIf { it.isFinite() }?.let { money(it, currency) } ?: "—")
+    DetailValueRow("Price", "${purchase.optDouble("pricePercent", 100.0)}%")
+    DetailValueRow("Fees", money(purchase.optDouble("feesPaid", 0.0), currency))
+    DetailValueRow("Accrued interest paid", money(purchase.optDouble("accruedInterestPaid", 0.0), currency))
+    DetailValueRow("Total cash cost", money(purchase.bondCashCost(), currency))
+    DetailValueRow("Coupon rate", purchase.optDouble("couponRate", Double.NaN).takeIf { it.isFinite() }?.let(::percent) ?: "—")
+    DetailValueRow("Withholding tax", purchase.optDouble("withholdingTaxRate", Double.NaN).takeIf { it.isFinite() }?.let(::percent) ?: "—")
+    if (purchase.has("couponFrequency")) DetailValueRow("Payments per year", purchase.text("couponFrequency"))
+    DetailValueRow("Annual net coupon", bondDetailTerms(purchase)?.let { money(purchase.netAnnualBondCoupon(), currency) } ?: "—")
+    if(purchase.text("confirmationMethod")=="manual") DetailValueRow("Confirmation","Confirmed by you")
+    if(purchase.text("confirmationMethod")=="document") DetailValueRow("Confirmation","Confirmation PDF uploaded")
     PurchaseSourceAndNotes(purchase)
 }
 
@@ -163,13 +163,13 @@ internal fun SharePurchaseFacts(holding: JsonRecord) {
         "shares" to "Shares", "isin" to "ISIN", "exchange" to "Exchange", "broker" to "Broker",
         "contractNote" to "Contract note", "cdsAccountNo" to "CDS account", "cdsReference" to "CDS reference",
         "tradeReportId" to "Trade report").forEach { (key, label) ->
-        if (holding.text(key).isNotBlank()) Fact(label, holding.text(key))
+        if (holding.text(key).isNotBlank()) DetailValueRow(label, holding.text(key))
     }
     listOf("pricePerShare" to "Price per share", "grossConsideration" to "Gross consideration",
         "brokerageCommission" to "Brokerage commission", "rseTransactionFee" to "RSE transaction fee",
         "csdTransactionLevy" to "CSD transaction levy", "cmaTransactionFee" to "CMA transaction fee",
         "totalCharges" to "Total charges", "netAmountPayable" to "Total cash cost").forEach { (key, label) ->
-        if (holding.has(key)) Fact(label, money(holding.optDouble(key), holding.text("currency")))
+        if (holding.has(key)) DetailValueRow(label, money(holding.optDouble(key), holding.text("currency")))
     }
     PurchaseSourceAndNotes(holding)
 }
