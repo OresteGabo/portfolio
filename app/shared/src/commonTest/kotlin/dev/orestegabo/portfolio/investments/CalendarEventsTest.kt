@@ -4,6 +4,28 @@ import kotlinx.datetime.LocalDate
 import kotlin.test.*
 
 class CalendarEventsTest {
+    @Test fun explicitReopeningUsesOriginalVerifiedSecurityWithoutInheritingAuctionPrice() {
+        val original=JsonRecord().put("id","original").put("settlementDate","2026-07-17").put("maturityDate","2033-07-08")
+        val reopen=JsonRecord().put("id","reopen").put("kind","reopen").put("reopensIssueId","original")
+            .put("settlementDate","2026-12-18").put("maturityDate","2033-07-08")
+        val document=JsonRecord().put("id","result").put("category","Bond issuance").put("issuance",JsonRecord()
+            .put("isin","RWTEST001").put("tenorYears",7).put("settlementDate","2026-07-17").put("maturityDate","2033-07-08").put("couponRate",.115).put("pricePercent",101))
+        val merged=mergeBondIssuances(listOf(original,reopen),listOf(document)).last()
+        assertEquals(.115,calendarCouponRate(merged,listOf(document)))
+        assertEquals("2026-12-18",merged.text("settlementDate")); assertFalse(merged.has("pricePercent"))
+        assertNull(calendarCouponRate(reopen,listOf(document))) // No broad title/tenor match.
+    }
+    @Test fun reopeningCouponRequiresVerifiedSecurityAndMaturityAndRejectsConflicts() {
+        val issue=JsonRecord().put("isin","RWTEST001/MN").put("maturityDate","2033-07-01")
+        fun doc(rate: Double, isin: String="RWTEST001", maturity: String="2033-07-01")=JsonRecord().put("category","Bond issuance")
+            .put("issuance",JsonRecord().put("isin",isin).put("maturityDate",maturity).put("couponRate",rate).put("yieldRate",.2))
+        assertNull(calendarCouponRate(issue,emptyList()))
+        assertEquals(.115,calendarCouponRate(issue,listOf(doc(.115))))
+        assertNull(calendarCouponRate(issue,listOf(doc(.115,"OTHER"))))
+        assertNull(calendarCouponRate(issue,listOf(doc(.115,maturity="2034-07-01"))))
+        assertNull(calendarCouponRate(issue,listOf(doc(.115),doc(.12))))
+    }
+
     @Test fun mondayFirstGridIncludesLeapDayAndYearBoundary() {
         val february = calendarMonthDays(LocalDate(2024, 2, 15))
         assertEquals(42, february.size)

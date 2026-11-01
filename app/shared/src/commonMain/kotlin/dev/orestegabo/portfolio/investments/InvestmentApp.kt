@@ -324,6 +324,7 @@ fun InvestmentApp(model: PortfolioModel) {
                             onClick = { if (!selected) {
                                 tab = destination.key
                                 if (destination.key == "Documents") documentSection = "Library"
+                                if (destination.key == "Calendar") calendarFocus = null
                                 selectionFeedback()
                             } },
                             icon = { AppIcon(if (selected) destination.selectedIcon else destination.icon, contentDescription = null, modifier = Modifier.size(24.dp)) },

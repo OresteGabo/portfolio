@@ -105,7 +105,15 @@ fun mergeBondIssuances(published: List<JsonRecord>, documents: List<JsonRecord>)
             .put("maturityDate", issue.text("maturityDate")).put("issuance", issue)
         if (index >= 0) result[index] = row else result += row
     }
-    return result
+    // The published calendar explicitly names the original auction. Inherit only its security
+    // identity, never its auction price/yield or settlement/coupon dates.
+    return result.map { row ->
+        val original = result.singleOrNull { it.text("id") == row.text("reopensIssueId") && row.text("reopensIssueId").isNotBlank() }
+        val verified = original?.optJSONObject("issuance")
+        if (row.text("kind") == "reopen" && row.text("isin").isBlank() && verified != null &&
+            row.text("maturityDate") == verified.text("maturityDate"))
+            JsonRecord(row.toString()).put("isin",verified.text("isin")) else row
+    }
 }
 
 @Composable

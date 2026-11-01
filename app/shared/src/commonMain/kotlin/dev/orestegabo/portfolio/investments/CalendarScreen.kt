@@ -47,6 +47,8 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
         }
     }
     var selectedValue by rememberSaveable(initialDate) { mutableStateOf((initialDate ?: today).toString()) }
+    var followingToday by rememberSaveable(initialDate) { mutableStateOf(initialDate == null) }
+    LaunchedEffect(today) { if (followingToday) selectedValue = today.toString() }
     var expanded by rememberSaveable { mutableStateOf<String?>(null) }
     var showInfo by rememberSaveable { mutableStateOf(false) }
     val selected = calendarDate(selectedValue) ?: today
@@ -67,6 +69,7 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
     var chooseIssue by remember { mutableStateOf(false) }
     fun select(date: LocalDate) {
         if (date != selected) selectionFeedback()
+        followingToday = date == today
         selectedValue = date.toString(); expanded = null
     }
     val changeMonth by rememberUpdatedState<(Int) -> Unit> { offset -> select(shiftCalendarMonth(selected, offset)) }
@@ -122,7 +125,7 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
                         val focusedRange = preferredSubscriptionRange(monthRanges, selected)
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             focusedRange?.let { range ->
-                                SubscriptionRangeHeader(range, today) { select(range.start) }
+                                SubscriptionRangeHeader(range, today, calendarCouponRate(range.record, model.documents)) { select(range.start) }
 
                             }
                             Row(Modifier.fillMaxWidth()) {
@@ -272,11 +275,13 @@ private fun SubscriptionStatusBadge(status: SubscriptionStatus) {
 }
 
 @Composable
-private fun SubscriptionRangeHeader(range: CalendarSubscriptionRange, today: LocalDate, choose: () -> Unit) {
+private fun SubscriptionRangeHeader(range: CalendarSubscriptionRange, today: LocalDate, couponRate: Double?, choose: () -> Unit) {
+    val accessibleRate = couponRate?.let { privateFinancialValue(percent(it)) }
     val colors = MaterialTheme.colorScheme
     Surface(Modifier.fillMaxWidth().padding(horizontal = 8.dp).clickable(onClick = choose).clearAndSetSemantics {
         contentDescription = "${localized(range.record.text("title"))}, ${localized(range.statusOn(today).label)}. " +
-            localized("subscriptions open ${range.start.calendarLabel()}, close ${range.end.calendarLabel()}")
+            localized("subscriptions open ${range.start.calendarLabel()}, close ${range.end.calendarLabel()}") +
+            (accessibleRate?.let { ", ${localized("Annual coupon rate")} $it" } ?: "")
         role = Role.Button
         onClick { choose(); true }
     },
@@ -284,6 +289,7 @@ private fun SubscriptionRangeHeader(range: CalendarSubscriptionRange, today: Loc
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SubscriptionStatusBadge(range.statusOn(today))
             AppText(range.record.text("title"), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+            couponRate?.let { FinancialText("${localized("Annual coupon rate")} · ${percent(it)}", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant) }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column {
                     AppText("${range.start.day} ${range.start.monthLabel().take(3)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)

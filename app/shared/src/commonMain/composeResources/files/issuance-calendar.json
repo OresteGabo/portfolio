@@ -69,7 +69,8 @@
     "openBookDate": "2026-12-14",
     "closingBookDate": "2026-12-16",
     "settlementDate": "2026-12-18",
-    "maturityDate": "2033-07-08"
+    "maturityDate": "2033-07-08",
+    "reopensIssueId": "2026-07-7y-new"
   },
   {
     "id": "2027-01-10y-reopen",
@@ -81,7 +82,8 @@
     "openBookDate": "2027-01-11",
     "closingBookDate": "2027-01-13",
     "settlementDate": "2027-01-15",
-    "maturityDate": "2036-08-01"
+    "maturityDate": "2036-08-01",
+    "reopensIssueId": "2026-08-10y-new"
   },
   {
     "id": "2027-02-25y-new",
@@ -105,7 +107,8 @@
     "openBookDate": "2027-03-15",
     "closingBookDate": "2027-03-17",
     "settlementDate": "2027-03-19",
-    "maturityDate": "2041-08-30"
+    "maturityDate": "2041-08-30",
+    "reopensIssueId": "2026-09-15y-new"
   },
   {
     "id": "2027-04-10y-new",
@@ -129,7 +132,8 @@
     "openBookDate": "2027-05-10",
     "closingBookDate": "2027-05-12",
     "settlementDate": "2027-05-14",
-    "maturityDate": "2046-09-28"
+    "maturityDate": "2046-09-28",
+    "reopensIssueId": "2026-10-20y-new"
   },
   {
     "id": "2027-06-7y-reopen",
@@ -141,6 +145,7 @@
     "openBookDate": "2027-06-14",
     "closingBookDate": "2027-06-16",
     "settlementDate": "2027-06-18",
-    "maturityDate": "2033-07-08"
+    "maturityDate": "2033-07-08",
+    "reopensIssueId": "2026-07-7y-new"
   }
 ]
