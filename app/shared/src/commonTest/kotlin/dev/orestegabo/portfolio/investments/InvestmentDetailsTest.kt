@@ -46,4 +46,24 @@ class InvestmentDetailsTest {
             lot("c", "BOK", "RWF", "2026-10-31"), lot("d", "IMR", "RWF", "2026-10-30"))
         assertEquals(listOf("d", "a"), shareDetailLots(rows, selected).map { it.text("id") })
     }
+    @Test fun missingBondAmountsDoNotBecomeZeroIncomeOrATaxExemption() {
+        assertNotNull(bondDetailTerms(bond()))
+        for (field in listOf("faceValue", "couponRate", "withholdingTaxRate")) {
+            assertNull(bondDetailTerms(bond().put(field, null)))
+        }
+        assertEquals(126500.0, bondDetailTerms(bond().put("withholdingTaxRate", 0))!!.netCouponPayment())
+    }
+
+    @Test fun quotePresentationKeepsUnavailableFutureForeignAndCachedPricesDistinct() {
+        fun quote(price: Double, date: String = today.toString(), stale: Boolean = false) = JsonRecord()
+            .put("source", JsonRecord().put("publishedAt", date).put("stale", stale))
+            .put("quotes", JsonList(listOf(JsonRecord().put("ticker", "IMR").put("closing", price))))
+        assertEquals(100.0, detailQuote(quote(100.0), "IMR", "RWF", today).price)
+        assertTrue(detailQuote(quote(100.0, stale = true), "IMR", "RWF", today).cached)
+        assertEquals(100.0, detailQuote(quote(100.0, stale = true), "IMR", "RWF", today).price)
+        assertNull(detailQuote(quote(100.0), "IMR", "USD", today).price)
+        assertNull(detailQuote(quote(100.0, "2026-11-01"), "IMR", "RWF", today).price)
+        assertNull(detailQuote(quote(0.0), "IMR", "RWF", today).price)
+        assertNull(detailQuote(null, "IMR", "RWF", today).price)
+    }
 }
