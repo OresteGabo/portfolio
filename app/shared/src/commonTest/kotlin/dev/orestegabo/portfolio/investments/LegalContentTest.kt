@@ -9,11 +9,12 @@ class LegalContentTest {
         val fr = privacy.sections.joinToString(" ") { it.body.fr }
         assertTrue(en.contains("authenticated account that saved"))
         assertTrue(en.contains("not other users’ private contracts"))
-        assertTrue(en.contains("published by the owner"))
+        assertTrue(en.contains("signed-in users can explicitly share public BNR issuance reports"))
+        assertTrue(en.contains("Format validation is not independent verification by BNR"))
         assertFalse(en.contains("no in-app opt-out"))
         assertTrue(fr.contains("compte authentifié"))
         assertTrue(fr.contains("contrats privés des autres utilisateurs"))
-        assertTrue(fr.contains("publiés par le propriétaire"))
+        assertTrue(fr.contains("utilisateurs connectés peuvent partager explicitement"))
     }
     @Test fun deletionAndExportsDescribeTheirActualLimits() {
         val data = legalDocuments.single { it.id == "data" }.sections.joinToString(" ") { it.body.en }

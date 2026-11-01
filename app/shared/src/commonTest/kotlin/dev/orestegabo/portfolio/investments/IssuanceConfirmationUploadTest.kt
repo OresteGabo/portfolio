@@ -24,6 +24,14 @@ class IssuanceConfirmationUploadTest {
         .put("tenorYears", 20).put("settlementDate", "2026-10-23").put("maturityDate", "2046-09-28"),
         1_000_000.0, LocalDate.parse("2026-10-22")).put("id", "pending-id")
 
+    @Test fun sharedAuctionReusesCanonicalTermsRegardlessOfFileEncodingAndRejectsConflicts() {
+        val incoming=review()
+        val doc=JsonRecord().put("id","shared-report").put("category","Bond issuance").put("issuance",incoming.getJSONObject("fields"))
+        assertEquals("shared-report",sharedIssuanceDocument(incoming,listOf(doc))?.text("id"))
+        val other=JsonRecord(incoming.toString()).apply { getJSONObject("fields").put("couponRate",.12).also { put("fields",it) } }
+        assertFailsWith<IllegalArgumentException> { sharedIssuanceDocument(other,listOf(doc)) }
+        assertNull(sharedIssuanceDocument(incoming,listOf(JsonRecord(doc.toString()).put("category","Bond confirmation"))))
+    }
     @Test fun targetedReviewUsesRecordedAllocationAndRejectsWrongSecurityOrInconsistentCash() {
         val preview = pendingIssuanceConfirmation(review(), pending())
         assertEquals(1_000_000.0, preview.optDouble("faceValue"))
@@ -44,6 +52,9 @@ class IssuanceConfirmationUploadTest {
     @Test fun lostConfirmationResponseDoesNotConfirmTwice() = runTest {
         exercise(lostResponse = true)
     }
+    @Test fun aNewPublicReportRequiresExplicitSharingConsentBeforeUpload() = runTest {
+        exercise(targeted = false, consent = false)
+    }
     @Test fun generalDocumentUploadDoesNotConfirmAnyPurchase() = runTest {
         exercise(targeted = false)
     }
@@ -56,7 +67,7 @@ class IssuanceConfirmationUploadTest {
     }
 
     private suspend fun TestScope.exercise(failUploadFirst: Boolean = false, failConfirmFirst: Boolean = false,
-        lostResponse: Boolean = false, targeted: Boolean = true, changeAllocation: Boolean = false, eligible: Boolean = true) {
+        lostResponse: Boolean = false, targeted: Boolean = true, changeAllocation: Boolean = false, eligible: Boolean = true, consent: Boolean = true) {
         val dispatcher = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(dispatcher)
         val store = ViewModelStore()
@@ -126,12 +137,17 @@ class IssuanceConfirmationUploadTest {
             override fun cancel() {}
             override fun destroy() {}
         }
-        fun save() { model.saveImportedIssuance(parsed, if (targeted) original else null) { closed = true } }
+        fun save() { model.saveImportedIssuance(parsed, if (targeted) original else null, sharingConfirmed = consent) { closed = true } }
         try {
             advanceUntilIdle()
             model.importPurchasePdf(actions, engine, bondOnly = true) {}
             advanceUntilIdle()
             save(); advanceUntilIdle()
+            if (!consent) {
+                assertEquals(0,uploads); assertEquals(0,confirmations); assertFalse(closed)
+                assertNotNull(model.error)
+                return
+            }
             if (failUploadFirst) {
                 assertFalse(closed); assertEquals(0, confirmations)
                 failUpload = false

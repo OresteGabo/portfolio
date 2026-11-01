@@ -55,3 +55,25 @@ internal fun firstImportAddedTime(document: JsonRecord?, history: List<ImportRec
         .mapNotNull { entry -> instant(entry.updatedAt)?.let { it to entry.updatedAt } }.minByOrNull { it.first }
     return original?.let { ImportAddedTime(it.second, true) }
 }
+
+/** A public auction is identified by its security and settlement, not by PDF encoding or uploader. */
+internal fun sharedIssuanceDocument(review: JsonRecord, documents: List<JsonRecord>): JsonRecord? {
+    if (review.text("kind") != "bond-issuance") return null
+    val incoming = runCatching { importedIssuanceInput(review) }.getOrNull() ?: return null
+    fun security(p: JsonRecord) = p.text("isin").uppercase().filterNot(Char::isWhitespace).removeSuffix("/MN")
+    val candidates = documents.filter { doc ->
+        val saved = doc.optJSONObject("issuance")
+        doc.text("category") == "Bond issuance" && saved != null &&
+            security(saved) == security(incoming) && saved.text("settlementDate") == incoming.text("settlementDate")
+    }
+    require(candidates.size <= 1) { "Multiple saved issuance reports require review." }
+    val document = candidates.singleOrNull() ?: return null
+    val saved = document.getJSONObject("issuance")
+    require(listOf("issuanceDate","maturityDate","firstCouponDate").all { saved.text(it) == incoming.text(it) } &&
+        listOf("tenorYears","pricePercent","couponRate","yieldRate","amountOffered","appliedAmount","amountSold","bidCount").all {
+            saved.optDouble(it, Double.NaN) == incoming.optDouble(it, Double.NaN)
+        } && saved.getJSONArray("couponDates").toString() == incoming.getJSONArray("couponDates").toString()) {
+        "This bond issuance is already saved with different figures. Review the existing report."
+    }
+    return document
+}

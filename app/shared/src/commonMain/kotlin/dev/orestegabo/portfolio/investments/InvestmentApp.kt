@@ -367,6 +367,8 @@ fun InvestmentApp(model: PortfolioModel) {
                                 if (row == null) model.message = "This document reminder has already been resolved."
                                 else model.showStatementRecordReview(row)
                             }
+                            NotificationDestination.ISSUANCE -> model.openDocumentPreview(JsonRecord().put("id",item.text("documentId"))
+                                .put("downloadUrl","/api/bonds/documents/${item.text("documentId")}").put("label","Bond issuance results"))
                             NotificationDestination.SECURITY -> { securityNotificationId = item.text("id"); notificationPanel = "security" }
                             NotificationDestination.TARGET -> notificationPanel = "target"
                             NotificationDestination.REPORT -> notificationPanel = "report"

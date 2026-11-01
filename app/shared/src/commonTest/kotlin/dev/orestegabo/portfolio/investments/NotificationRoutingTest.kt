@@ -16,6 +16,10 @@ class NotificationRoutingTest {
         assertEquals(NotificationDestination.PURCHASE, notificationDestination(event("pending").put("purchaseId", "purchase-1")))
         assertEquals(NotificationDestination.DOCUMENT, notificationDestination(event("documents").put("statementId", "statement-1")))
     }
+    @Test fun sharedIssuanceNotificationOpensOnlyItsExactSafePdf() {
+        assertEquals(NotificationDestination.ISSUANCE,notificationDestination(event("documents").put("stage","issuance").put("documentId","report-123")))
+        assertNull(notificationDestination(event("documents").put("stage","issuance").put("documentId","../private/other")))
+    }
     @Test fun unsupportedOrInvalidTargetsDoNotFallBackToUnrelatedSettings() {
         assertNull(notificationDestination(event("unknown")))
         assertNull(notificationDestination(event("prices")))

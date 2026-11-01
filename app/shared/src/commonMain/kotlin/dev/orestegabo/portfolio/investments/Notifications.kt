@@ -140,8 +140,8 @@ private fun GeneralNotificationCard(model: PortfolioModel,item: JsonRecord,open:
         "coupons" -> if(received && automatic) "Coupon marked automatically" else if(received) "Coupon received" else if(item.text("stage")=="soon") "Upcoming coupon" else "Coupon due"
         "maturities" -> "Bond maturity"
         "subscriptions" -> if(item.text("stage")=="closing") "Subscriptions closing" else "Subscriptions open"
-        "pending" -> "Purchase awaiting confirmation"
-        "documents" -> "Missing purchase document"
+        "pending" -> if(item.text("stage")=="issuance") "Bond terms are now available" else "Purchase awaiting confirmation"
+        "documents" -> if(item.text("stage")=="issuance") "Issuance results linked" else "Missing purchase document"
         "targets" -> "Monthly target reached"
         "reports" -> "Portfolio report saved."
         "security" -> "New device signed in"
@@ -167,6 +167,7 @@ private fun GeneralNotificationCard(model: PortfolioModel,item: JsonRecord,open:
                     AppText(item.text("date"),style=MaterialTheme.typography.labelSmall)
                 }
             }
+            if(item.text("stage")=="issuance") AppText("Public bond terms and the issuance PDF are available. Your personal allocation has not been confirmed by this report.",style=MaterialTheme.typography.bodySmall)
             if(item.text("title").isNotBlank())AppText(displayRecordValue(item.text("title")),style=MaterialTheme.typography.bodyMedium)
             if(item.text("dueDate").isNotBlank())AppText(item.text("dueDate"),style=MaterialTheme.typography.bodyMedium)
             if(item.has("amount"))FinancialText(money(item.optDouble("amount"),item.text("currency").ifBlank { "RWF" }),style=MaterialTheme.typography.titleMedium)

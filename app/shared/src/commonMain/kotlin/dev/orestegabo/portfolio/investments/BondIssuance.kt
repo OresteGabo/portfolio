@@ -1,6 +1,9 @@
 package dev.orestegabo.portfolio.investments
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.Alignment
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -119,13 +122,14 @@ fun mergeBondIssuances(published: List<JsonRecord>, documents: List<JsonRecord>)
 @Composable
 fun BondIssuanceReview(model: PortfolioModel, review: JsonRecord, target: JsonRecord? = null, done: () -> Unit) {
     DisposableEffect(review) { onDispose { model.discardImportedPdf(review) } }
+    var sharingConfirmed by rememberSaveable(review) { mutableStateOf(false) }
     val parsed = remember(review) { runCatching { importedIssuanceInput(review) } }
     val p = review.optJSONObject("fields") ?: JsonRecord()
     val confirmation = remember(review, target) { target?.let { runCatching { pendingIssuanceConfirmation(review, it) } } }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { AppText(if (target == null) "Review bond issuance" else "Review purchase", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
-        item { AppText(if (model.user?.optBoolean("isOwner") == true) "This public report and its bond details will be available to all invited users." else
-            "Only the owner can publish shared issuance results. Ask for this public report to be reviewed, or upload your personal allocation confirmation.", style = MaterialTheme.typography.bodySmall) }
+        item { AppText("This public report and its bond details will be available to all invited users.", style = MaterialTheme.typography.bodySmall) }
+        item { PublicIssuanceConsent(sharingConfirmed) { sharingConfirmed = it } }
         if (target == null) item { AppText("Matching pending purchases receive these terms. Your allocation stays unconfirmed.") }
         else item { Panel {
             AppText("Confirm purchase", fontWeight = FontWeight.Bold)
@@ -156,9 +160,17 @@ fun BondIssuanceReview(model: PortfolioModel, review: JsonRecord, target: JsonRe
         if (parsed.isFailure) item { AppText(parsed.exceptionOrNull()?.message.orEmpty(), color = MaterialTheme.colorScheme.error) }
         item { AppText("Repeated uploads reuse the saved issuance. Different figures require review.", style = MaterialTheme.typography.bodySmall) }
         if (confirmation?.isFailure == true) item { AppText(confirmation.exceptionOrNull()?.message.orEmpty(), color = MaterialTheme.colorScheme.error) }
-        item { Button(enabled = model.user?.optBoolean("isOwner") == true && parsed.isSuccess && (target == null || confirmation?.isSuccess == true) && !model.busy,
-            onClick = { model.saveImportedIssuance(review, target, done) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+        item { Button(enabled = sharingConfirmed && parsed.isSuccess && (target == null || confirmation?.isSuccess == true) && !model.busy,
+            onClick = { model.saveImportedIssuance(review, target, sharingConfirmed, done) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
             AppText(if (target == null) "Save bond issuance" else "Save PDF and confirm purchase")
         } }
+    }
+}
+
+@Composable
+internal fun PublicIssuanceConsent(checked: Boolean, change: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { change(!checked) }, verticalAlignment = Alignment.CenterVertically) {
+        Checkbox(checked = checked, onCheckedChange = change)
+        AppText("This is a public BNR issuance report, not a personal contract or statement. I agree to share it with all users.", style = MaterialTheme.typography.bodySmall)
     }
 }

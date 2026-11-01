@@ -252,6 +252,8 @@ private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolea
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (category.isNotBlank()) AppText(category, style = MaterialTheme.typography.labelSmall, color = accent)
+                    if (generated || document.text("visibility") == "private") AppText("Private · Only you", style = MaterialTheme.typography.labelSmall, color = colours.onSurfaceVariant)
+                    else if (document.text("visibility") == "shared" || category == "Bond issuance") AppText("Shared · Public issuance", style = MaterialTheme.typography.labelSmall, color = colours.onSurfaceVariant)
                     FinancialText(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     if (generated) AppText(document.text("description"), style = MaterialTheme.typography.labelSmall, color = colours.onSurfaceVariant)
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {

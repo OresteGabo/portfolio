@@ -861,6 +861,7 @@ class PortfolioModel(
         // A fresh account-authorized list prevents a stale local receipt from reviving a deleted file.
         val current = api.request("/api/bonds/documents").rows("documents")
         portfolio = portfolio.copy(documents = current)
+        sharedIssuanceDocument(review, current)?.let { return it }
         val knownIds = importHistory.filter { it.digest == digest && it.documentId.isNotBlank() }.map { it.documentId }.toSet()
         current.firstOrNull { it.text("id") in knownIds }?.let { return it }
         val candidates = current.filter { duplicatePdfCandidate(it, review, activeImportReceipt()?.fileName.orEmpty()) }
@@ -1078,17 +1079,18 @@ class PortfolioModel(
         refreshAfterWrite("Purchase confirmed. No personal PDF was added.")
     }
 
-    fun saveImportedIssuance(review: JsonRecord, confirmationTarget: JsonRecord? = null, completed: () -> Unit) = action {
+    fun saveImportedIssuance(review: JsonRecord, confirmationTarget: JsonRecord? = null, sharingConfirmed: Boolean = false, completed: () -> Unit) = action {
         require(importedReview === review && importedPdf != null) { "Choose the PDF again before saving." }
         val issuance = importedIssuanceInput(review)
         val expectedConfirmation = confirmationTarget?.let { pendingIssuanceConfirmation(review, it) }
         startSavingImport()
         if (checkExistingBeforeSave(review, confirmationTarget != null, completed, targetId = confirmationTarget?.text("id"))) return@action
         try {
+            require(uploadedDocument != null || sharingConfirmed) { "Confirm that this report is public before sharing it." }
             val pdf = importedPdf!!
             val chunkSize = 512 * 1024
             val count = (pdf.size + chunkSize - 1) / chunkSize
-            val metadata = JsonRecord().put("label", "Bond issuance results").put("category", "Bond issuance")
+            val metadata = JsonRecord().put("visibility","shared").put("label", "Bond issuance results").put("category", "Bond issuance")
                 .put("instrumentName", issuance.text("bondName")).put("issuer", issuance.text("issuer"))
                 .put("documentDate", issuance.text("issuanceDate")).put("issuance", issuance)
             var duplicate = false
@@ -1098,11 +1100,12 @@ class PortfolioModel(
                     .put("uploadId", pdfUploadId).put("index", index).put("count", count)
                     .put("content", Base64.encode(pdf.copyOfRange(index * chunkSize, minOf(pdf.size, (index + 1) * chunkSize))))
                     .put("metadata", metadata))
-                if (index == count - 1) {
+                if (response.text("documentId").isNotBlank()) {
                     uploadedDocument = response.text("documentId").takeIf { it.isNotBlank() }
                     require(uploadedDocument != null) { "The issuance report could not be saved. Try again." }
                     updateImport { it.copy(documentId = uploadedDocument.orEmpty()) }
                     duplicate = response.optBoolean("duplicate")
+                    break // A globally saved report can be reused after the first chunk.
                 }
             }
             if (confirmationTarget != null && expectedConfirmation != null) {
@@ -1128,6 +1131,7 @@ class PortfolioModel(
                 }
             }
             finishImport(if (confirmationTarget != null) ImportOutcome.PURCHASE else ImportOutcome.ISSUANCE, confirmationTarget?.text("id").orEmpty())
+            if (duplicate && confirmationTarget == null) updateImport { it.copy(state = ImportState.EXISTS) }
             discardImportedPdf(review)
             completed()
             refreshAfterWrite(if (confirmationTarget != null) "PDF saved and purchase confirmed." else if (duplicate) "This issuance is already saved. No extra copy was stored." else "Bond issuance and PDF saved.")
