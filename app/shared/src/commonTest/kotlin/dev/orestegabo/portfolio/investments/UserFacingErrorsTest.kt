@@ -30,6 +30,13 @@ class UserFacingErrorsTest {
         assertEquals(GENERAL_ERROR_MESSAGE, safeErrorMessage(null, diagnostic))
     }
 
+    @Test fun savedPdfLinkFailuresAreActionableWithoutDisplayingArbitraryResponseText() {
+        assertEquals("The saved confirmation PDF could not be linked. Refresh Documents and try again.",
+            userErrorMessage(ApiException(400,"Confirmation PDF not found.")))
+        assertEquals("Check the details and try again.",userErrorMessage(ApiException(400,"Confirmation PDF not found. "+diagnostic)))
+        val conflict="The saved purchase differs from this PDF. Review it before attaching evidence."
+        assertEquals(conflict,userErrorMessage(ApiException(409,conflict)))
+    }
     @Test fun knownValidationAndAlreadySavedWarningsRemainActionable() {
         assertEquals("Use an amount in RWF 100,000 increments.", userErrorMessage(
             IllegalArgumentException("Use an amount in RWF 100,000 increments.")))

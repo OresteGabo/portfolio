@@ -35,6 +35,9 @@ private val approvedErrorMessages = setOf(
     "Account deletion was not confirmed. Please try again.",
     "Authentication required.",
     "Cash injections must fit the horizon.",
+    "The saved confirmation PDF could not be linked. Refresh Documents and try again.",
+    "The saved purchase differs from this PDF. Review it before attaching evidence.",
+    "This purchase already has another confirmation PDF.",
     "Check the details and try again.",
     "Check the purchase details.",
     "Check the share details.",
@@ -119,6 +122,8 @@ internal fun safeErrorMessage(message: String?, fallback: String = GENERAL_ERROR
         ?: fallback.takeIf { it in approvedErrorMessages } ?: GENERAL_ERROR_MESSAGE
 
 internal fun userErrorMessage(failure: Throwable?, fallback: String = GENERAL_ERROR_MESSAGE): String {
+    if (failure is ApiException && failure.status == 400 && failure.message == "Confirmation PDF not found.")
+        return "The saved confirmation PDF could not be linked. Refresh Documents and try again."
     failure?.message?.takeIf { it in approvedErrorMessages }?.let { return it }
     return if (failure is ApiException) when (failure.status) {
         401 -> if (failure.message in setOf("Invalid credentials", "Invalid credentials.", "Invalid email or password."))
