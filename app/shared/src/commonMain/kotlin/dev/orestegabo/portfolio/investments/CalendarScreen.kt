@@ -37,15 +37,7 @@ import kotlinx.datetime.LocalDate
 fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPending: (JsonRecord, LocalDate) -> Unit) {
     val reducedMotion = LocalReducedMotion.current
     val selectionFeedback = LocalSelectionFeedback.current
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    val today by produceState(bondSubscriptionDate(Clock.System.now()), lifecycle) {
-        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            while (true) {
-                value = bondSubscriptionDate(Clock.System.now())
-                delay(30_000)
-            }
-        }
-    }
+    val today = rememberBondCalendarToday()
     var selectedValue by rememberSaveable(initialDate) { mutableStateOf((initialDate ?: today).toString()) }
     var followingToday by rememberSaveable(initialDate) { mutableStateOf(initialDate == null) }
     LaunchedEffect(today) { if (followingToday) selectedValue = today.toString() }
@@ -434,4 +426,18 @@ private fun CalendarEventTile(event: InvestmentCalendarEvent, expanded: Boolean,
 }
 @Composable private fun EventDot(color: Color, size: Int = 6) {
     Canvas(Modifier.size(size.dp)) { drawCircle(color) }
+}
+
+@Composable
+internal fun rememberBondCalendarToday(): LocalDate {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val today by produceState(bondSubscriptionDate(Clock.System.now()), lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                value = bondSubscriptionDate(Clock.System.now())
+                delay(30_000)
+            }
+        }
+    }
+    return today
 }

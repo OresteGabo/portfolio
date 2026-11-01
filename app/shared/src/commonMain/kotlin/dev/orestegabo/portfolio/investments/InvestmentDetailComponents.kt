@@ -30,7 +30,7 @@ internal fun DetailAmount(label: String, value: Double?, currency: String, promi
             MaterialTheme.typography.displaySmall else MaterialTheme.typography.headlineLarge
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                AppText(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                AppText(label, Modifier.weight(1f, fill = false), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 FinancialText(currency, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             FinancialText(value?.let(::formatNumber) ?: "—", style = style.copy(fontFeatureSettings = "tnum"), fontWeight = FontWeight.Medium)

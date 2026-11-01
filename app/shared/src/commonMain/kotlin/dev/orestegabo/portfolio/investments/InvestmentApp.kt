@@ -70,6 +70,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var handledInboxRequest by rememberSaveable { mutableIntStateOf(0) }
     var tab by rememberSaveable { mutableStateOf("Portfolio") }
     var documentSection by rememberSaveable(model.user?.text("id")) { mutableStateOf("Library") }
+    var couponList by rememberSaveable { mutableStateOf(false) }
     var calendarFocus by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingIssueId by rememberSaveable { mutableStateOf<String?>(null) }
     var missingDocuments by rememberSaveable { mutableStateOf(false) }
@@ -91,6 +92,13 @@ fun InvestmentApp(model: PortfolioModel) {
     val engine = LocalImportEngine.current ?: rememberInvestmentEngine()
     DisposableEffect(engine) { onDispose { engine.destroy() } }
     val documentUi = rememberSaveableStateHolder()
+    val calendarUi = rememberSaveableStateHolder()
+    val calendarStateKey = "calendar:${model.origin}|${model.user?.text("id")}"
+    val couponsStateKey = "coupons:${model.origin}|${model.user?.text("id")}"
+    fun openCalendarAt(date: kotlinx.datetime.LocalDate?) {
+        calendarUi.removeState(calendarStateKey)
+        calendarFocus = date?.toString(); tab = "Calendar"
+    }
     val preferences = rememberServerSettings()
     var showImportHint by rememberSaveable { mutableStateOf(!preferences.readImportHintDismissed()) }
     var introductionRequested by rememberSaveable { mutableStateOf(!preferences.readOnboardingCompleted() && !model.locked) }
@@ -108,7 +116,7 @@ fun InvestmentApp(model: PortfolioModel) {
     fun openNotificationInbox() {
         tab = "Notifications"; notificationPanel = null; securityNotificationId = null
         legalRoute = null; legalHistory = emptyList(); missingDocuments = false; pendingEntry = false
-        investmentHistory = false; documentDetail = null; detail = null; shareDetail = null; editor = null; equityEditor = null
+        couponList = false; investmentHistory = false; documentDetail = null; detail = null; shareDetail = null; editor = null; equityEditor = null
         simulator = false; investmentTools = false; education = false
         model.closeDocumentPreview()
     }
@@ -134,7 +142,7 @@ fun InvestmentApp(model: PortfolioModel) {
     LaunchedEffect(NativePushBridge.updateRevision) { if(model.user!=null && !model.locked)model.refreshNotifications() }
     LaunchedEffect(tab,model.user,model.locked) { if(tab=="Notifications" && model.user!=null && !model.locked)model.refreshNotifications() }
     LaunchedEffect(model.user) {
-        if (model.user == null) { documentDetail=null; notificationPurchase=null;notificationPanel=null;securityNotificationId=null; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; shareDetail = null; editor = null; equityEditor = null; importReview = null; simulator = false; investmentTools = false; education = false }
+        if (model.user == null) { couponList=false; documentDetail=null; notificationPurchase=null;notificationPanel=null;securityNotificationId=null; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; shareDetail = null; editor = null; equityEditor = null; importReview = null; simulator = false; investmentTools = false; education = false }
     }
     LaunchedEffect(model, model.messageRevision) {
         val revision = model.messageRevision
@@ -153,7 +161,7 @@ fun InvestmentApp(model: PortfolioModel) {
     fun showImportConversation() {
         tab = "Documents"; documentSection = "Import"
         notificationPanel = null; missingDocuments = false; investmentHistory = false
-        documentDetail = null; editor = null; equityEditor = null; detail = null; shareDetail = null; pendingEntry = false
+        couponList = false; documentDetail = null; editor = null; equityEditor = null; detail = null; shareDetail = null; pendingEntry = false
         simulator = false; education = false
     }
     fun imported(review: JsonRecord) {
@@ -213,7 +221,7 @@ fun InvestmentApp(model: PortfolioModel) {
             OnboardingScreen(replayIntroduction, ::finishIntroduction)
             return@MaterialTheme
         }
-        val childScreen = documentDetail != null || model.documentPreview != null || notificationPanel == "security" || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || shareDetail != null || editor != null || equityEditor != null || simulator || investmentTools || education
+        val childScreen = couponList || documentDetail != null || model.documentPreview != null || notificationPanel == "security" || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || shareDetail != null || editor != null || equityEditor != null || simulator || investmentTools || education
         val nested = childScreen || tab == "Notifications"
         val documentsHome = model.user != null && !model.locked && !nested && tab == "Documents"
         val importChat = documentsHome && documentSection == "Import"
@@ -221,6 +229,7 @@ fun InvestmentApp(model: PortfolioModel) {
             if (model.documentPreview != null) { model.closeDocumentPreview() } else if (importChat) { documentSection = "Library" } else if (notificationPanel == "security") { notificationPanel=null;securityNotificationId=null } else if (legalRoute != null) {
                 legalRoute = legalHistory.lastOrNull()
                 legalHistory = legalHistory.dropLast(1)
+            } else if (couponList && detail == null && shareDetail == null && editor == null && equityEditor == null && model.documentPreview == null) { couponList = false
             } else if (documentDetail != null && detail == null && shareDetail == null && editor == null && equityEditor == null) { documentDetail = null
             } else if (tab == "Notifications" && !childScreen) { tab = "Portfolio" } else {
                 if (detail == null && shareDetail == null && editor == null && equityEditor == null && importReview == null && !pendingEntry && !simulator && !investmentTools && !education) investmentHistory = false
@@ -249,6 +258,7 @@ fun InvestmentApp(model: PortfolioModel) {
             detail != null -> "Bond details"
             shareDetail != null -> "Share details"
             documentDetail != null -> "Document details"
+            couponList -> "Coupons"
             investmentHistory -> "All investments"
             model.user == null -> "Struct Capital"
             tab == "Settings" -> "Settings"
@@ -289,6 +299,9 @@ fun InvestmentApp(model: PortfolioModel) {
                                 selectionFeedback()
                             }) { AppText(if (documentSection == "Import") "Library" else "Chat", style = MaterialTheme.typography.labelLarge) }
                         }
+                        else if (tab == "Calendar" && !childScreen && model.user != null && !model.locked) {
+                            TextButton(modifier = Modifier.semantics { contentDescription = localized("View yearly coupons") }, onClick = { calendarUi.removeState(couponsStateKey); couponList = true }) { AppText("Coupons", style = MaterialTheme.typography.labelLarge) }
+                        }
                         else if (tab == "Notifications" && !childScreen && model.user != null && !model.locked) {
                             IconButton(onClick = { notificationPanel = "preferences" }) { AppIcon(Icons.Outlined.Tune, "Notification preferences") }
                         }
@@ -327,7 +340,7 @@ fun InvestmentApp(model: PortfolioModel) {
                             onClick = { if (!selected) {
                                 tab = destination.key
                                 if (destination.key == "Documents") documentSection = "Library"
-                                if (destination.key == "Calendar") calendarFocus = null
+                                if (destination.key == "Calendar") openCalendarAt(null)
                                 selectionFeedback()
                             } },
                             icon = { AppIcon(if (selected) destination.selectedIcon else destination.icon, contentDescription = null, modifier = Modifier.size(24.dp)) },
@@ -360,7 +373,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     notificationPanel == "security" -> SignInActivityScreen(model, securityNotificationId)
                     tab == "Notifications" && !childScreen -> NotificationsScreen(model, openPortfolio = { tab = "Portfolio" }, openNotification = { item ->
                         when (notificationDestination(item)) {
-                            NotificationDestination.CALENDAR -> { calendarFocus = item.text("dueDate"); tab = "Calendar" }
+                            NotificationDestination.CALENDAR -> openCalendarAt(calendarDate(item.text("dueDate")))
                             NotificationDestination.PURCHASE -> model.action {
                                 val result = model.api.request("/api/bonds/purchases/${item.text("purchaseId")}")
                                 notificationPurchase = result.getJSONObject("purchase")
@@ -385,7 +398,7 @@ fun InvestmentApp(model: PortfolioModel) {
                         openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { replayIntroduction = true; introductionRequested = true }, openInvestmentTools = { investmentTools = true }, openSignInActivity = { securityNotificationId = null; notificationPanel = "security" })
                     editor != null -> PurchaseEditor(model, editor!!, { editor = null })
                     equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null })
-                    investmentTools -> InvestmentToolsScreen(model, openCalendar = { date -> investmentTools = false; calendarFocus = date.toString(); tab = "Calendar" },
+                    investmentTools -> InvestmentToolsScreen(model, openCalendar = { date -> investmentTools = false; openCalendarAt(date) },
                         openHistory = { investmentTools = false; investmentHistory = true })
                     simulator -> SimulatorScreen(model, engine) { simulator = false }
                     education -> EducationScreen(model) { education = false }
@@ -396,12 +409,13 @@ fun InvestmentApp(model: PortfolioModel) {
                     }
                     shareDetail != null -> ShareDetailsScreen(model, shareDetail!!)
                     documentDetail != null -> DocumentDetailsScreen(model, documentDetail!!, openBond = { detail = it }, openShare = { shareDetail = it })
+                    couponList -> calendarUi.SaveableStateProvider(couponsStateKey) { YearlyCouponsScreen(model, openBond = { detail = it }) }
                     investmentHistory -> InvestmentHistoryScreen(model, openShare = { shareDetail = it }) { detail = it }
                     tab == "Portfolio" -> PortfolioScreen(model, openNotifications = ::openNotificationInbox, unreadNotifications = model.unreadNotifications, openShare = { shareDetail = it }, uploadPending = ::uploadPendingPurchase, openMissing = ::uploadMissing, allMissing = { missingDocuments = true }, seeAll = { investmentHistory = true },
-                        openCalendar = { date -> calendarFocus = date.toString(); tab = "Calendar" }, detail = { detail = it })
-                    tab == "Calendar" -> CalendarScreen(model, initialDate = calendarFocus?.let(::calendarDate), addPending = { issue, date ->
+                        openCalendar = ::openCalendarAt, detail = { detail = it })
+                    tab == "Calendar" -> calendarUi.SaveableStateProvider(calendarStateKey) { CalendarScreen(model, initialDate = calendarFocus?.let(::calendarDate), addPending = { issue, date ->
                         pendingIssueId = issue.text("id"); calendarFocus = date.toString(); confirmationTarget = null; pendingEntry = true
-                    })
+                    }) }
                     tab == "Documents" -> documentUi.SaveableStateProvider("documents:${model.origin}|${model.user?.text("id")}") { DocumentsHub(model, engine, importReview, confirmationTarget,
                         section = documentSection, changeSection = { documentSection = it },
                         showHint = showImportHint, dismissHint = { showImportHint = false; preferences.writeImportHintDismissed(true) },
