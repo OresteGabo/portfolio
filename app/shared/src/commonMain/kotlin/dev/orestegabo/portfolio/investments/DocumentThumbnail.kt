@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -79,6 +80,7 @@ internal fun DocumentThumbnail(model: PortfolioModel, document: JsonRecord, titl
         finally { loading = false }
     }
     val frame = Modifier.fillMaxWidth().height(120.dp)
+        .shadow(4.dp, RoundedCornerShape(13.dp), clip = false)
         .clip(RoundedCornerShape(13.dp))
         .clickable(enabled = !model.busy, role = Role.Button, onClickLabel = localized("Open PDF"), onClick = open)
     @Composable fun placeholder(masked: Boolean = hidden) {
@@ -96,10 +98,6 @@ internal fun DocumentThumbnail(model: PortfolioModel, document: JsonRecord, titl
         else Box(Modifier.fillMaxSize().background(Color.White)) {
             Image(bitmap, "${localized("PDF preview")}: ${privateFinancialValue(title)}", Modifier.fillMaxSize(),
                 contentScale = ContentScale.FillWidth, alignment = Alignment.TopCenter)
-            Surface(Modifier.align(Alignment.BottomEnd).padding(8.dp), shape = RoundedCornerShape(6.dp),
-                color = Color.White.copy(alpha = .96f), contentColor = Color(0xFF242424)) {
-                AppText("First page", Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall)
-            }
         }
     }
     Box(Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp)) {

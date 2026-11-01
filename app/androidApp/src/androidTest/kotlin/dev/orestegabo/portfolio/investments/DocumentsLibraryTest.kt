@@ -157,7 +157,7 @@ class DocumentsLibraryTest {
                 while (model.busy && System.currentTimeMillis() < readyDeadline) Thread.sleep(50)
                 assertFalse("Wait for document history before sharing", model.busy)
                 instrumentation.waitForIdleSync()
-                scrollTo("PDF preview: October Treasury Bond"); await("First page")
+                scrollTo("PDF preview: October Treasury Bond")
                 screenshot("document-library-preview.png")
                 val requestsBeforePrivacy = bondDownloads.get()
                 scenario.onActivity { model.toggleNumberVisibility() }

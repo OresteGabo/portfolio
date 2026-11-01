@@ -1515,7 +1515,6 @@ internal val frenchStrings: Map<String, String> = mapOf(
     "Preparing preview" to "Préparation de l’aperçu",
     "Open PDF to view content" to "Ouvrir le PDF pour voir le contenu",
     "PDF preview" to "Aperçu du PDF",
-    "First page" to "Première page",
     "Coupons due in {0}. Tap a payment to open its bond." to "Coupons dus en {0}. Touchez un versement pour ouvrir l’obligation.",
     "No coupons due in {0}" to "Aucun coupon dû en {0}",
     "You have scheduled coupons in {0}. Preview them below." to "Des coupons sont prévus en {0}. Voici un aperçu.",
