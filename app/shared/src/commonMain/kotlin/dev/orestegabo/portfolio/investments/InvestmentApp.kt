@@ -226,7 +226,6 @@ fun InvestmentApp(model: PortfolioModel) {
         if (model.user != null && !model.locked) {
             StatementReconciliationDialog(model, ::uploadMissing)
             when (notificationPanel) {
-                "target" -> InvestmentTargetDialog(model) { notificationPanel = null }
                 "report" -> PortfolioReportDialog(model) { notificationPanel = null }
                 "preferences" -> NotificationPreferencesDialog(model) { notificationPanel = null }
             }
@@ -256,6 +255,8 @@ fun InvestmentApp(model: PortfolioModel) {
         }
         PlatformSystemBarAppearance(dark)
         PlatformBackHandler(nested || importChat, back)
+        // Financial editors stay in this protected scene and must draw after the scaffold.
+        Box(Modifier.fillMaxSize()) {
         Scaffold(
             contentWindowInsets = if (portfolioHome) WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal) else ScaffoldDefaults.contentWindowInsets,
             topBar = {
@@ -406,6 +407,10 @@ fun InvestmentApp(model: PortfolioModel) {
                     tab == "Stocks" -> StocksScreen(model, openShare = { shareDetail = it })
                 }
             }
+        }
+        if (model.user != null && !model.locked && notificationPanel == "target") {
+            InvestmentTargetDialog(model) { notificationPanel = null }
+        }
         }
     }
     }

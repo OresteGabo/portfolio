@@ -716,3 +716,11 @@ All **240 shared Android-host tests**, **256 iOS simulator tests**, **53 backend
 
 
 Final requested placement (Portfolio bell and restored Settings bottom tab): Android debug assembly and iOS simulator compilation passed (`/tmp/struct-portfolio-bell-build.log`), and the three notification routing regressions passed again (`/tmp/struct-portfolio-bell-tests.log`). The wider counts above precede this final presentation adjustment. No backend/financial change or physical-device UI verification.
+
+### 31 October 2026 — Monthly-target editor from notifications
+
+The target notification route correctly selected `notificationPanel=target`, but the in-scene `InvestmentTargetDialog` was composed before the full-screen Scaffold. The editor was covered by the inbox. Kept the protected in-scene editor and moved it to the last child of a full-size Box containing the Scaffold. Role/session gates, the editor component and preference persistence are unchanged; no backend/API change or deployment.
+
+Added `NotificationTargetEditorTest` using an isolated emulator and synthetic localhost account/notification/preferences responses. After correcting the test's native first-run onboarding preference, the same test **failed against the preserved old APK** at `Monthly target` (editor not visible), then **passed against the fixed APK**. It opens the actual Home notification bell, taps the legacy target notification action, chooses 500k, saves and checks model/device storage plus the existing preferences PUT; reopening, selecting 300k and cancelling preserves 500k and returns to the inbox. Test restores connection/onboarding/language state; the connected personal phone was not used.
+
+Android debug app/test APK builds, shared iOS simulator compilation and all 246 shared Android tests pass. The final emulator regression passed (one test); no physical iPhone test is claimed. Logs: `/private/tmp/struct-target-notification-ui/{baseline-test,fixed-test,fixed-build}.log`. `git diff --check` passes. Temporary emulator stopped after verification.
