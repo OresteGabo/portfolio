@@ -4,6 +4,16 @@ import kotlinx.datetime.LocalDate
 import kotlin.test.*
 
 class CalendarEventsTest {
+    @Test fun sevenYearPublicCatalogTermsSupportBothPublishedReopeningsWithoutAnyPersonalHolding() {
+        val original=JsonRecord().put("id","2026-07-7y-new").put("tenorYears",7).put("maturityDate","2033-07-08")
+        fun reopening(id: String)=JsonRecord().put("id",id).put("kind","reopen").put("reopensIssueId","2026-07-7y-new")
+            .put("tenorYears",7).put("maturityDate","2033-07-08")
+        val publicTerms=JsonRecord().put("isin","RWBO7Y000682").put("issuer","Government of Rwanda").put("currency","RWF")
+            .put("tenorYears",7).put("maturityDate","2033-07-08").put("couponRate",.115)
+        val calendar=mergeBondIssuances(listOf(original,reopening("2026-12-7y-reopen"),reopening("2027-06-7y-reopen")),emptyList(),listOf(publicTerms))
+        calendar.forEach { assertEquals(.115,calendarCouponRate(it,emptyList(),listOf(publicTerms))) }
+    }
+
     @Test fun calendarCanUseExtractedSecurityTermsWithoutAVisiblePrivateDocument() {
         val issue=JsonRecord().put("id","reopen").put("kind","reopen").put("tenorYears",7).put("maturityDate","2033-07-08")
         val terms=JsonRecord().put("isin","RWTEST000001").put("maturityDate","2033-07-08").put("couponRate",.115)
