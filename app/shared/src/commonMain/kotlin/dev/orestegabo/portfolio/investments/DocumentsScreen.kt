@@ -154,7 +154,7 @@ fun DocumentsScreen(model: PortfolioModel, initialDocumentId: String? = null,
                 val bonds = documentBonds(document, model.purchases)
                 val shares = documentShares(document, model.holdings)
                 val route = when { bonds.size == 1 && shares.isEmpty() -> "View bond details"; shares.size == 1 && bonds.isEmpty() -> "View share details"; else -> "Document details" }
-                DocumentCard(document, expanded == document.text("id"), saving == document.text("id") || model.annualReportYear == document.optInt("annualReportYear", -1), !model.busy,
+                DocumentCard(model, document, expanded == document.text("id"), saving == document.text("id") || model.annualReportYear == document.optInt("annualReportYear", -1), !model.busy,
                     open = { if (document.optInt("annualReportYear") > 0) { previewAnnual = true; annualToExport = document.optInt("annualReportYear") } else model.openDocumentPreview(document) },
                     detailsLabel = route, viewDetails = {
                         when (route) {
@@ -229,12 +229,13 @@ private fun DocumentStack(modifier: Modifier, ink: Color, paper: Color) {
 }
 
 @Composable
-private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolean, canDownload: Boolean, open: () -> Unit,
+private fun DocumentCard(model: PortfolioModel, document: JsonRecord, expanded: Boolean, saving: Boolean, canDownload: Boolean, open: () -> Unit,
     detailsLabel: String, viewDetails: () -> Unit, moreDetails: () -> Unit, toggle: () -> Unit, download: () -> Unit) {
     val colours = MaterialTheme.colorScheme
     val category = document.text("category")
     val annualYear = document.optInt("annualReportYear")
     val generated = annualYear > 0
+    val hasPreview = documentThumbnailPath(document) != null
     val logo = remember(document) { documentInvestmentLogo(document) }
     val shares = category.contains("share", true) || category.contains("equity", true) || (logo != null && !logo.bond)
     val dark = colours.surface.luminance() < .5f
@@ -245,14 +246,15 @@ private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolea
     Surface(shape = RoundedCornerShape(22.dp), color = colours.surface,
         border = BorderStroke(1.dp, if (expanded) accent.copy(alpha = .4f) else colours.outlineVariant.copy(alpha = .5f))) {
         Column {
+            if (!generated) DocumentThumbnail(model, document, title, open)
             Row(Modifier.fillMaxWidth().clickable(role = Role.Button,
                 enabled = canDownload, onClickLabel = localized("Open PDF"), onClick = open)
                 .padding(start = 16.dp, top = 18.dp, end = 10.dp, bottom = 18.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(width = 58.dp, height = 72.dp)) {
-                    PdfCover(accent)
+                if (!hasPreview || generated || logo != null || shares) Box(Modifier.size(width = if (hasPreview) 40.dp else 58.dp, height = if (hasPreview) 40.dp else 72.dp)) {
+                    if (!hasPreview) PdfCover(accent)
                     if (generated || logo != null || shares) {
-                        Surface(Modifier.align(Alignment.BottomEnd).size(36.dp)
+                        Surface(Modifier.align(if (hasPreview) Alignment.Center else Alignment.BottomEnd).size(if (hasPreview) 40.dp else 36.dp)
                             .then(if (logo != null) Modifier.semantics { contentDescription = localized("Logo: ${logo.name}") } else Modifier),
                             shape = androidx.compose.foundation.shape.CircleShape, color = colours.surface,
                             border = BorderStroke(2.dp, colours.surface), shadowElevation = 1.dp) {

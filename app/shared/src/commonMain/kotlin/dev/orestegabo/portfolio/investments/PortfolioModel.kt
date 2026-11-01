@@ -1245,6 +1245,7 @@ class PortfolioModel(
         if (actions.sharePdf("Struct-Capital-Annual-$year.pdf", bytes)) message = "Annual report ready to share."
     }
 
+    internal val documentThumbnails = DocumentThumbnailCache()
     internal var documentPreview by mutableStateOf<DocumentPreview?>(null)
         private set
     private var loadingDocumentPreview = false
@@ -1295,7 +1296,7 @@ class PortfolioModel(
         }
     }
 
-    override fun onCleared() { backgroundLockJob?.cancel(); documentPreview = null; importedPdf = null; importedReview = null; retryPdf = null; vault?.lock(); api.close() }
+    override fun onCleared() { documentThumbnails.clear(); backgroundLockJob?.cancel(); documentPreview = null; importedPdf = null; importedReview = null; retryPdf = null; vault?.lock(); api.close() }
 
     private fun clearPrivateData() {
         ++startupSyncRevision
@@ -1312,6 +1313,7 @@ class PortfolioModel(
         privateDataLoadedAt = null; marketLoadedAt = null
         privateDataAvailable = false
         importedPdf = null; importedReview = null; uploadedDocument = null; retryPdf = null
+        documentThumbnails.clear()
         documentPreviewRequest++; documentPreview = null; loadingDocumentPreview = false
         activeImportId = null; importJournal.detach(); savedPdfDigests.clear(); resumingImport = false
         refreshPhase = PortfolioRefreshPhase.IDLE

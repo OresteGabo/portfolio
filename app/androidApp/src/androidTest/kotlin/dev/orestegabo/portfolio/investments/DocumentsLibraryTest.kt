@@ -31,6 +31,7 @@ class DocumentsLibraryTest {
         val server = ServerSocket(0)
         val origin = "http://127.0.0.1:${server.localPort}"
         val downloads = LinkedBlockingQueue<String>()
+        val bondDownloads = java.util.concurrent.atomic.AtomicInteger()
         val sourcePdf = readerFixturePdf()
         val shortPdf = readerFixturePdf(pageHeight = 200, pageCount = 1)
         var screenshotWindow: android.view.Window? = null
@@ -47,6 +48,7 @@ class DocumentsLibraryTest {
                     val reader = client.getInputStream().bufferedReader()
                     val path = reader.readLine().orEmpty().split(' ').getOrNull(1).orEmpty()
                     while (!reader.readLine().isNullOrEmpty()) { }
+                    if (path.endsWith("/documents/october-bond")) bondDownloads.incrementAndGet()
                     val body = if (path.endsWith("/documents/share-contract")) shortPdf else if (path.contains("/documents/")) sourcePdf else when {
                         path.endsWith("/auth/session") -> """{"authenticated":true,"user":{"id":"document-library-test","email":"demo@example.test","isOwner":true}}"""
                         path.endsWith("/documents") -> fixtures
@@ -155,12 +157,22 @@ class DocumentsLibraryTest {
                 while (model.busy && System.currentTimeMillis() < readyDeadline) Thread.sleep(50)
                 assertFalse("Wait for document history before sharing", model.busy)
                 instrumentation.waitForIdleSync()
+                scrollTo("PDF preview: October Treasury Bond"); await("First page")
+                screenshot("document-library-preview.png")
+                val requestsBeforePrivacy = bondDownloads.get()
+                scenario.onActivity { model.toggleNumberVisibility() }
+                await("PDF hidden for privacy")
+                assertNull("Raw PDF content must disappear in anonymous mode", find("PDF preview: October Treasury Bond"))
+                screenshot("document-library-preview-hidden.png")
+                scenario.onActivity { model.toggleNumberVisibility() }
+                await("PDF preview: October Treasury Bond")
+                assertEquals("Privacy toggle reuses the session-memory preview", requestsBeforePrivacy, bondDownloads.get())
                 screenshot("document-library-en.png")
                 click("Share PDF: October Treasury Bond")
                 assertEquals("Share error=${model.error}, busy=${model.busy}", "bnr-confirmation.pdf", downloads.poll(5, TimeUnit.SECONDS))
                 assertFalse("Sharing must not expand the card", nodes().any { it.stateDescription?.toString() == "Expanded" })
                 scenario.onActivity { model.message = null }
-                click("October Treasury Bond")
+                click("PDF preview: October Treasury Bond")
                 await("PDF page 1"); await("1 / 2")
                 fun assertPageFillsReaderWidth() {
                     val page = Rect().also(await("PDF page 1")::getBoundsInScreen)

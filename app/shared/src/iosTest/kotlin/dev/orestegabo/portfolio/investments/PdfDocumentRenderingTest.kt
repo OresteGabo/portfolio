@@ -69,5 +69,24 @@ class PdfDocumentRenderingTest {
             assertTrue(pixels.distinct().size > 2)
         } finally { document.close() }
     }
+    @Test fun firstPageExcerptUsesNativeContentAndSessionMemoryCache() = runBlocking {
+        val cache = DocumentThumbnailCache()
+        var opened = 0
+        suspend fun thumbnail() = renderDocumentThumbnail(pdfRenderFixture()) { opened++; IosPdfDocument(it) }
+        val first = requireNotNull(cache.get("one", ::thumbnail))
+        assertEquals(480, first.width); assertEquals(288, first.height)
+        val pixels = IntArray(first.width * first.height).also { first.readPixels(it) }
+        assertTrue(pixels.distinct().size > 1)
+        assertSame(first, cache.get("one", ::thumbnail)); assertEquals(1, opened)
+        cache.clear(); assertNotSame(first, cache.get("one", ::thumbnail)); assertEquals(2, opened)
+    }
+    @Test fun thumbnailMemoryBudgetEvictsOlderImages() = runBlocking {
+        val cache = DocumentThumbnailCache()
+        val image = androidx.compose.ui.graphics.ImageBitmap(1024, 1024)
+        cache.get("one") { image }; cache.get("two") { image }
+        var reloaded = false
+        cache.get("one") { reloaded = true; image }
+        assertTrue(reloaded, "Two 4 MiB images must not both remain cached")
+    }
     @Test fun damagedPdfIsRejected() { assertFails { IosPdfDocument("%PDF-broken".encodeToByteArray()) } }
 }
