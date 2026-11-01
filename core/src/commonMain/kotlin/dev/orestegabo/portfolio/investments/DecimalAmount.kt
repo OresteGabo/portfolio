@@ -9,3 +9,6 @@ internal expect fun decimalAmount(
 ): Double
 
 fun roundedMoney(value: Double): Double = decimalAmount(listOf(value))
+
+/** Sum already denominated amounts at the existing decimal/HALF_UP money boundary. */
+fun sumMoney(values: List<Double>): Double = decimalAmount(emptyList(), addends = values)
