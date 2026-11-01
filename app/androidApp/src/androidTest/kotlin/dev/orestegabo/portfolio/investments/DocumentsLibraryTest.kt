@@ -50,8 +50,8 @@ class DocumentsLibraryTest {
                     val body = if (path.endsWith("/documents/share-contract")) shortPdf else if (path.contains("/documents/")) sourcePdf else when {
                         path.endsWith("/auth/session") -> """{"authenticated":true,"user":{"id":"document-library-test","email":"demo@example.test","isOwner":true}}"""
                         path.endsWith("/documents") -> fixtures
-                        path.endsWith("/purchases") -> """{"purchases":[]}"""
-                        path.endsWith("/equities") -> """{"holdings":[]}"""
+                        path.endsWith("/purchases") -> """{"purchases":[{"id":"library-bond","confirmationDocumentId":"october-bond","bondName":"October Treasury Bond","issuer":"Government of Rwanda","isin":"RWSYNTHETIC123/MN","status":"active","currency":"RWF","faceValue":1200000,"couponRate":0.12,"withholdingTaxRate":0.05,"couponFrequency":2,"purchaseDate":"2026-10-23","firstCouponDate":"2027-04-23","maturityDate":"2046-10-23"}]}"""
+                        path.endsWith("/equities") -> """{"holdings":[{"id":"library-share","contractDocumentId":"share-contract","ticker":"BOK","securityName":"Bank of Kigali","currency":"RWF","status":"active","tradeDate":"2026-09-24","shares":400,"netAmountPayable":36000}]}"""
                         else -> "{}"
                     }.toByteArray()
                     client.getOutputStream().write(("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ${body.size}\r\nConnection: close\r\n\r\n").toByteArray() + body)
@@ -88,9 +88,39 @@ class DocumentsLibraryTest {
         fun await(label: String): AccessibilityNodeInfo {
             val until = System.currentTimeMillis() + 6000
             while (System.currentTimeMillis() < until) { find(label)?.let { return it }; Thread.sleep(100) }
+            File(instrumentation.targetContext.filesDir,"document-test-state.txt").writeText(nodes().joinToString("\n") { "${it.text} | ${it.contentDescription} | scroll=${it.isScrollable}" })
+            instrumentation.uiAutomation.takeScreenshot()?.let { bitmap ->
+                File(instrumentation.targetContext.filesDir,"document-failure.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }
+                bitmap.recycle()
+            }
             throw AssertionError("Missing document control: $label")
         }
+        fun scrollTo(label: String) {
+            if (find(label) != null) return
+            for (direction in listOf(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD, AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
+                repeat(16) {
+                    if (find(label) != null) return
+                    nodes().filter { it.isScrollable && !it.isEditable }.maxByOrNull { node ->
+                        Rect().also(node::getBoundsInScreen).height()
+                    }?.performAction(direction)
+                    instrumentation.waitForIdleSync(); Thread.sleep(100)
+                }
+            }
+            await(label)
+        }
         fun click(label: String) {
+            if (find(label) == null) scrollTo(label)
+            instrumentation.waitForIdleSync(); Thread.sleep(300)
+            // Exercise the accessible action itself; labels can be descendants of merged controls.
+            var control: AccessibilityNodeInfo? = await(label)
+            while (control != null) {
+                if (control.isClickable) {
+                    assertTrue("Accessible click: $label", control.performAction(AccessibilityNodeInfo.ACTION_CLICK))
+                    instrumentation.waitForIdleSync(); Thread.sleep(300)
+                    return
+                }
+                control = control.parent
+            }
             val bounds = Rect().also(await(label)::getBoundsInScreen)
             val down = android.os.SystemClock.uptimeMillis()
             listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP).forEach { action ->
@@ -119,7 +149,7 @@ class DocumentsLibraryTest {
                     }
                 }
                 await("Documents"); click("Documents"); await("Search documents"); await("Add document")
-                await("October Treasury Bond"); await("October 2026"); await("Logo: BNR")
+                scrollTo("October Treasury Bond"); await("October 2026"); await("Logo: BNR")
                 assertNull(find("Upload PDF")); assertNull(find("Import")); await("Chat")
                 val readyDeadline = System.currentTimeMillis() + 10_000
                 while (model.busy && System.currentTimeMillis() < readyDeadline) Thread.sleep(50)
@@ -146,11 +176,19 @@ class DocumentsLibraryTest {
                 click("Previous page"); await("1 / 2")
                 click("Share PDF")
                 assertEquals("bnr-confirmation.pdf", downloads.poll(5, TimeUnit.SECONDS))
-                click("Back"); await("Search documents")
-                click("Details")
+                click("Back"); scrollTo("October Treasury Bond")
+                click("Details: October Treasury Bond")
                 assertTrue("Details remain available independently of PDF opening", nodes().any { it.stateDescription?.toString() == "Expanded" })
-                click("Share contract")
-                await("Bank of Kigali share purchase"); await("Logo: Bank of Kigali")
+                assertNull("Compact summary must not dump financial fact rows", find("Principal"))
+                scrollTo("Document details"); screenshot("document-compact-bond.png")
+                scrollTo("View bond details"); click("View bond details"); await("Bond details"); await("Bond principal")
+                click("Back"); scrollTo("October Treasury Bond")
+                click("Document details"); await("File information")
+                screenshot("document-full-details.png")
+                scrollTo("Principal"); await("Principal")
+                click("Back"); scrollTo("October Treasury Bond")
+                scrollTo("Search documents"); click("Share contract")
+                scrollTo("Bank of Kigali share purchase"); await("Logo: Bank of Kigali")
                 click("Bank of Kigali share purchase"); await("PDF page 1"); await("1 / 1")
                 val beforeZoom = Rect().also(await("PDF page 1")::getBoundsInScreen)
                 click("Zoom in")
@@ -165,12 +203,15 @@ class DocumentsLibraryTest {
                 click("Fit to width")
                 val resetPage = Rect().also(await("PDF page 1")::getBoundsInScreen)
                 assertTrue("Fit to width restores the natural page height", kotlin.math.abs(resetPage.height() - beforeZoom.height()) <= 2)
-                click("Back"); await("Bank of Kigali share purchase")
+                click("Back"); scrollTo("Bank of Kigali share purchase")
                 assertNull("Returning from PDF preserves the category filter", find("October Treasury Bond"))
                 assertNull("Category filter excludes bonds", find("October Treasury Bond"))
                 screenshot("document-library-shares.png")
+                click("Details: Bank of Kigali share purchase"); scrollTo("View share details"); screenshot("document-compact-share.png")
+                click("View share details"); await("Share details"); await("Bank of Kigali")
+                click("Back"); scrollTo("Bank of Kigali share purchase")
                 scenario.onActivity { AppLanguage.select("fr") }
-                await("Documents"); await("Logo : Bank of Kigali")
+                await("Documents"); scrollTo("Logo : Bank of Kigali")
                 screenshot("document-library-fr.png")
             }
         } finally {

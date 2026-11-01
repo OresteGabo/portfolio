@@ -34,7 +34,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun DocumentsScreen(model: PortfolioModel, initialDocumentId: String? = null) {
+fun DocumentsScreen(model: PortfolioModel, initialDocumentId: String? = null,
+    openBond: (JsonRecord) -> Unit = {}, openShare: (JsonRecord) -> Unit = {},
+    openDetails: (JsonRecord) -> Unit = { model.openDocumentPreview(it) }) {
     var search by rememberSaveable { mutableStateOf("") }
     var category by rememberSaveable { mutableStateOf("all") }
     var expanded by rememberSaveable { mutableStateOf<String?>(null) }
@@ -149,8 +151,19 @@ fun DocumentsScreen(model: PortfolioModel, initialDocumentId: String? = null) {
                 }
             }
             items(documents, key = { "document:${it.text("id")}" }) { document ->
+                val bonds = documentBonds(document, model.purchases)
+                val shares = documentShares(document, model.holdings)
+                val route = when { bonds.size == 1 && shares.isEmpty() -> "View bond details"; shares.size == 1 && bonds.isEmpty() -> "View share details"; else -> "Document details" }
                 DocumentCard(document, expanded == document.text("id"), saving == document.text("id") || model.annualReportYear == document.optInt("annualReportYear", -1), !model.busy,
                     open = { if (document.optInt("annualReportYear") > 0) { previewAnnual = true; annualToExport = document.optInt("annualReportYear") } else model.openDocumentPreview(document) },
+                    detailsLabel = route, viewDetails = {
+                        when (route) {
+                            "View bond details" -> openBond(bonds.single())
+                            "View share details" -> openShare(shares.single())
+                            else -> openDetails(document)
+                        }
+                    },
+                    moreDetails = { openDetails(document) },
                     toggle = { expanded = if (expanded == document.text("id")) null else document.text("id") },
                     download = { if (document.optInt("annualReportYear") > 0) { previewAnnual = false; annualToExport = document.optInt("annualReportYear") } else save(document) })
             }
@@ -216,7 +229,8 @@ private fun DocumentStack(modifier: Modifier, ink: Color, paper: Color) {
 }
 
 @Composable
-private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolean, canDownload: Boolean, open: () -> Unit, toggle: () -> Unit, download: () -> Unit) {
+private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolean, canDownload: Boolean, open: () -> Unit,
+    detailsLabel: String, viewDetails: () -> Unit, moreDetails: () -> Unit, toggle: () -> Unit, download: () -> Unit) {
     val colours = MaterialTheme.colorScheme
     val category = document.text("category")
     val annualYear = document.optInt("annualReportYear")
@@ -227,6 +241,7 @@ private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolea
     val accent = if (shares) (if (dark) Color(0xFF9CCBBA) else Color(0xFF397562)) else colours.primary
     val title = if (generated) "${localized("Annual report")} · $annualYear" else document.text("label").ifBlank { document.text("originalFileName").ifBlank { "PDF" } }
     val date = calendarDate(document.text("documentDate"))
+    val detailsDescription = "${localized("Details")}: ${privateFinancialValue(title)}"
     Surface(shape = RoundedCornerShape(22.dp), color = colours.surface,
         border = BorderStroke(1.dp, if (expanded) accent.copy(alpha = .4f) else colours.outlineVariant.copy(alpha = .5f))) {
         Column {
@@ -269,27 +284,23 @@ private fun DocumentCard(document: JsonRecord, expanded: Boolean, saving: Boolea
                 }
             }
             TextButton(onClick = toggle, modifier = Modifier.align(Alignment.End).padding(end = 8.dp)
-                .semantics { stateDescription = localized(if (expanded) "Expanded" else "Collapsed") }) {
+                .semantics { contentDescription = detailsDescription; stateDescription = localized(if (expanded) "Expanded" else "Collapsed") }) {
                 AppText(if (expanded) "Hide details" else "Details", style = MaterialTheme.typography.labelMedium)
                 AppIcon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null, Modifier.size(16.dp))
             }
             AppAnimatedVisibility(expanded) {
                 Column(Modifier.padding(start = 18.dp, end = 18.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     HorizontalDivider(color = colours.outlineVariant.copy(alpha = .5f))
-                    FinancialText(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                    if (document.text("instrumentName").isNotBlank() && document.text("instrumentName") != title)
-                        FinancialText(document.text("instrumentName"), style = MaterialTheme.typography.bodyMedium)
-                    if (document.text("description").isNotBlank()) FinancialText(document.text("description"), style = MaterialTheme.typography.bodySmall)
-                    if (document.text("issuer").isNotBlank()) Fact("Issuer", document.text("issuer"))
-                    if (document.text("originalFileName").isNotBlank()) Fact("File name", document.text("originalFileName"))
-                    document.optJSONObject("details")?.let { details ->
-                        if (details.text("summary").isNotBlank()) FinancialText(details.text("summary"), style = MaterialTheme.typography.bodySmall)
-                        listOf("facts", "charges", "flow").forEach { key -> details.rows(key).forEach { Fact(it.text("label"), it.text("value")) } }
-                        details.rows("sections").forEach { section ->
-                            AppText(section.text("title"), Modifier.semantics { heading() }, fontWeight = FontWeight.SemiBold)
-                            section.rows("items").forEach { Fact(it.text("label"), it.text("value")) }
-                        }
+                    if (document.text("instrumentName").isNotBlank()) FinancialText(document.text("instrumentName"),
+                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    if (document.text("issuer").isNotBlank()) AppText(document.text("issuer"), style = MaterialTheme.typography.bodySmall, color = colours.onSurfaceVariant)
+                    val summary = document.text("description").ifBlank { document.optJSONObject("details")?.text("summary").orEmpty() }
+                    if (summary.isNotBlank()) FinancialText(summary, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    FilledTonalButton(onClick = viewDetails, enabled = canDownload, modifier = Modifier.fillMaxWidth()) {
+                        AppText(detailsLabel, Modifier.weight(1f)); AppIcon(Icons.Outlined.ChevronRight, null, Modifier.size(20.dp))
                     }
+                    if (detailsLabel != "Document details") TextButton(onClick = moreDetails, enabled = canDownload,
+                        modifier = Modifier.align(Alignment.End)) { AppText("Document details") }
                 }
             }
         }

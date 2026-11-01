@@ -41,7 +41,8 @@ internal fun DocumentHeader(section: String, account: String) {
 @Composable
 internal fun DocumentsHub(model: PortfolioModel, engine: InvestmentEngine, review: JsonRecord?, target: JsonRecord?,
     section: String, changeSection: (String) -> Unit, showHint: Boolean, dismissHint: () -> Unit, beginImport: () -> Unit, reviewed: (JsonRecord) -> Unit, done: () -> Unit,
-    openPurchase: (String) -> Unit, openMissing: () -> Unit) {
+    openPurchase: (String) -> Unit, openMissing: () -> Unit,
+    openBond: (JsonRecord) -> Unit = {}, openShare: (JsonRecord) -> Unit = {}, openDetails: (JsonRecord) -> Unit = {}) {
     val account = model.user?.text("id").orEmpty()
     var focusDocument by rememberSaveable(account) { mutableStateOf<String?>(null) }
     var pendingDocument by rememberSaveable(account) { mutableStateOf<String?>(null) }
@@ -67,7 +68,7 @@ internal fun DocumentsHub(model: PortfolioModel, engine: InvestmentEngine, revie
         }
         holder.SaveableStateProvider(section) {
             if (section == "Library") {
-                if (!model.documentsLoading || model.documents.isNotEmpty()) DocumentsScreen(model, initialDocumentId = focusDocument)
+                if (!model.documentsLoading || model.documents.isNotEmpty()) DocumentsScreen(model, initialDocumentId = focusDocument, openBond = openBond, openShare = openShare, openDetails = openDetails)
             }
             else ImportConversation(model, engine, review, target, beginImport, reviewed, done,
                 showHint = showHint, dismissHint = dismissHint,
