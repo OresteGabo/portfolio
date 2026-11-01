@@ -85,6 +85,29 @@ class ImportDuplicatesTest {
             }))
         }).also { f.store.put("model", it) }
     }
+    @Test fun aDeletedPurchaseCanBeRestoredUsingItsRetainedPdfWithoutUploadingAgain() = runTest {
+        val f=Fixture(); val m=model(f)
+        try {
+            advanceUntilIdle(); m.importPurchasePdf(f.actions(),f.engine) {}; advanceUntilIdle()
+            m.saveImportedPurchase(f.review,f.fields,null) {}; advanceUntilIdle()
+            f.purchase=null // Server-side purchase deletion retains the independently stored document.
+            m.importPurchasePdf(f.actions(),f.engine) {}; advanceUntilIdle()
+            assertEquals(ImportState.REVIEW,m.activeImportReceipt()?.state)
+            m.saveImportedPurchase(f.review,f.fields,null) {}; advanceUntilIdle()
+            assertNotNull(f.purchase);assertEquals(1,f.uploads);assertEquals(2,f.writes)
+            assertEquals(ImportState.SAVED,m.activeImportReceipt()?.state)
+        } finally { f.store.clear();Dispatchers.resetMain() }
+    }
+    @Test fun aRetainedFileDiscoveredAtSaveTimeDoesNotSuppressRestoringThePurchase() = runTest {
+        val f=Fixture(); val m=model(f)
+        try {
+            advanceUntilIdle();m.importPurchasePdf(f.actions(),f.engine) {};advanceUntilIdle()
+            f.files["retained-file"]=f.bytes // Another session exposes the retained PDF after selection.
+            m.saveImportedPurchase(f.review,f.fields,null) {};advanceUntilIdle()
+            assertNotNull(f.purchase);assertEquals(0,f.uploads);assertEquals(1,f.writes)
+            assertEquals("retained-file",f.purchase?.text("confirmationDocumentId"))
+        } finally { f.store.clear();Dispatchers.resetMain() }
+    }
     @Test fun selectingTheSameSavedPdfAgainLinksTheExistingDocumentWithoutAnyWrite() = runTest {
         val f = Fixture(); val m = model(f)
         try {
@@ -230,6 +253,7 @@ class ImportDuplicatesTest {
             advanceUntilIdle()
             m.importPurchasePdf(f.actions(), f.engine) {}; advanceUntilIdle()
             f.files["concurrent-document"] = f.bytes
+            f.purchase=JsonRecord(f.fields.toString()).put("id","concurrent-purchase").put("confirmationDocumentId","concurrent-document")
             m.saveImportedPurchase(f.review, f.fields, null) {}; advanceUntilIdle()
             assertEquals(ImportState.EXISTS, m.importHistory.single().state)
             assertEquals("concurrent-document", m.importHistory.single().documentId)

@@ -933,18 +933,13 @@ class PortfolioModel(
         pdfImportProgress = PdfImportProgress(PdfImportStage.CHECKING)
         try {
             val existing = findExistingImportPdf(review) ?: return false
-            if (continueConfirmation || resumingImport) {
-                if (showExistingImport(existing, review, requireComplete = true,
-                        targetId = requestedTarget)) {
-                    completed(); return true
-                }
-                uploadedDocument = existing.text("id")
-                updateImport { it.copy(documentId = existing.text("id")) }
-                return false
+            if (showExistingImport(existing, review, requireComplete = true, targetId = requestedTarget)) {
+                completed(); return true
             }
-            showExistingImport(existing, review)
-            completed()
-            return true
+            // The file can outlive its investment. Reuse the bytes, but still save the missing record.
+            uploadedDocument = existing.text("id")
+            updateImport { it.copy(documentId = existing.text("id")) }
+            return false
         } finally { pdfImportProgress = null }
     }
 
