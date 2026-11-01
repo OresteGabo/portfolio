@@ -83,7 +83,7 @@ private fun CompanyPriceChart(
 }
 
 @Composable
-fun StocksScreen(model: PortfolioModel) {
+fun StocksScreen(model: PortfolioModel, openShare: (JsonRecord) -> Unit) {
     val reducedMotion = LocalReducedMotion.current
     var section by rememberSaveable { mutableStateOf("shares") }
     var search by rememberSaveable { mutableStateOf("") }
@@ -170,7 +170,7 @@ fun StocksScreen(model: PortfolioModel) {
             items(positions) { valuation ->
                 ShareHoldingCard(valuation,
                     name = watchlist.firstOrNull { it.first == valuation.position.ticker }?.second ?: valuation.position.ticker,
-                    onClick = { selectCompany(valuation.position.ticker) })
+                    onClick = { openShare(JsonRecord().put("ticker", valuation.position.ticker).put("currency", valuation.position.currency)) })
             }
             item { AppText("Watchlist", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
             items(watchlist) { (symbol, name) ->
@@ -186,7 +186,7 @@ fun StocksScreen(model: PortfolioModel) {
                             FinancialText((if (change > 0) "+" else "") + percent(change), style = MaterialTheme.typography.labelSmall, color = if (change < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
                         }
                     } },
-                    modifier = Modifier.clickable { selectCompany(symbol) },
+                    modifier = Modifier.clickable { openShare(JsonRecord().put("ticker", symbol).put("currency", "RWF").put("securityName", name)) },
                     colors = ListItemDefaults.colors(containerColor = if (ticker == symbol) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.background)
                 )
             }

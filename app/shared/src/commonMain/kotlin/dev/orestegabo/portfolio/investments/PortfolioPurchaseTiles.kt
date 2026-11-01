@@ -9,42 +9,110 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-private fun PurchaseTile(
-    title: String, subtitle: String, expanded: Boolean, toggle: () -> Unit,
-    pending: Boolean = false,
-    logo: @Composable () -> Unit,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Surface(shape = RoundedCornerShape(22.dp), color = if (pending) MaterialTheme.colorScheme.onSurface.copy(alpha = .07f).compositeOver(MaterialTheme.colorScheme.surface) else MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .3f))) {
+private fun InvestmentEntry(title: String, subtitle: String, bond: Boolean, ticker: String = "", open: () -> Unit) {
+    Surface(onClick = open, shape = RoundedCornerShape(22.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .4f))) {
+        ListItem(
+            headlineContent = { AppText(title, fontWeight = FontWeight.SemiBold) },
+            supportingContent = { FinancialText(subtitle, style = MaterialTheme.typography.bodySmall) },
+            leadingContent = { InvestmentLogo(bond = bond, ticker = ticker) },
+            trailingContent = { AppIcon(Icons.Outlined.ChevronRight, "Details") },
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+        )
+    }
+}
+
+@Composable
+fun BondPurchaseTile(model: PortfolioModel, purchase: JsonRecord, manage: () -> Unit) {
+    var expanded by rememberSaveable(purchase.text("id")) { mutableStateOf(false) }
+    val actions = LocalNativeActions.current
+    var downloading by remember { mutableStateOf<String?>(null) }
+    val pending = purchase.text("status") == "submitted"
+    val next = nextDetailCoupon(purchase, model.couponReceipts, Today)
+    Surface(shape = RoundedCornerShape(22.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .4f))) {
         Column {
             ListItem(
-                headlineContent = { AppText(title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold) },
-                supportingContent = { FinancialText(subtitle, style = MaterialTheme.typography.bodySmall) },
-                leadingContent = { Box(Modifier.alpha(if (pending) .5f else 1f)) { logo() } },
+                headlineContent = { AppText(purchase.text("bondName"), fontWeight = FontWeight.SemiBold) },
+                supportingContent = { FinancialText("${money(purchase.optDouble("faceValue"), purchase.text("currency"))} · ${localized(purchase.text("status"))}",
+                    style = MaterialTheme.typography.bodySmall) },
+                leadingContent = { InvestmentLogo(bond = true) },
                 trailingContent = { AppIcon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null) },
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent,
-                    headlineColor = if (pending) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface),
-                modifier = Modifier.semantics { stateDescription = localized(if (expanded) "Expanded" else "Collapsed") }.clickable(onClickLabel = localized(if (expanded) "Collapse purchase" else "Expand purchase"), onClick = toggle)
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                modifier = Modifier.semantics { stateDescription = localized(if (expanded) "Expanded" else "Collapsed") }
+                    .clickable(onClickLabel = localized(if (expanded) "Hide bond summary" else "Show bond summary")) { expanded = !expanded }
             )
             AppAnimatedVisibility(expanded) {
-                Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    HorizontalDivider()
-                    AppText(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    content()
+                Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = .055f)) {
+                        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                            if (pending) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                AppIcon(Icons.Outlined.Schedule, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                AppText("Awaiting BNR confirmation", style = MaterialTheme.typography.bodySmall)
+                            } else {
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    next?.let { BondPreviewMetric("Next coupon", it.toString()) }
+                                    if (purchase.has("couponRate")) BondPreviewMetric("Coupon rate", percent(purchase.optDouble("couponRate")))
+                                }
+                            }
+                            if (purchase.text("maturityDate").isNotBlank()) {
+                                HorizontalDivider(color = MaterialTheme.colorScheme.primary.copy(alpha = .12f))
+                                Fact("Maturity", purchase.text("maturityDate"))
+                            }
+                        }
+                    }
+                    val files = investmentEvidence(purchase, model.documents)
+                    if (files.isEmpty()) Row(Modifier.padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        AppIcon(Icons.Outlined.Description, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        AppText("No linked document", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    files.forEach { evidence ->
+                        val document = evidence.document
+                        val title = document.text("label")
+                        Surface(shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .4f))) {
+                            Row(Modifier.fillMaxWidth().padding(start = 12.dp, top = 10.dp, end = 8.dp, bottom = 10.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Surface(shape = RoundedCornerShape(10.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                                    Column(Modifier.width(38.dp).padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                        AppIcon(Icons.Outlined.Description, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                                        AppText("PDF", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                    }
+                                }
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    FinancialText(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold,
+                                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    document.text("documentDate").takeIf { it.isNotBlank() }?.let {
+                                        FinancialText(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                                FilledTonalIconButton(enabled = !model.busy, onClick = { model.action {
+                                    downloading = document.text("id")
+                                    try {
+                                        if (shareInvestmentDocument(model.api, actions, document)) model.message = "PDF ready to share."
+                                    } finally { downloading = null }
+                                } }, modifier = Modifier.size(48.dp), shape = RoundedCornerShape(14.dp)) {
+                                    if (downloading == document.text("id")) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                                    else AppIcon(Icons.Outlined.Download, "Download ${privateFinancialValue(title)}", Modifier.size(21.dp))
+                                }
+                            }
+                        }
+                    }
+                    Button(onClick = manage, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), shape = RoundedCornerShape(14.dp)) {
+                        AppText("View bond details", Modifier.weight(1f))
+                        AppIcon(Icons.Outlined.ChevronRight, null, Modifier.size(20.dp))
+                    }
                 }
             }
         }
@@ -52,34 +120,14 @@ private fun PurchaseTile(
 }
 
 @Composable
-fun BondPurchaseTile(purchase: JsonRecord, uploadConfirmation: () -> Unit, manualConfirmation: (() -> Unit)? = null, confirming: Boolean = false, evidence: @Composable () -> Unit = {}, manage: () -> Unit) {
-    var expanded by rememberSaveable(purchase.text("id")) { mutableStateOf(false) }
-    val currency = purchase.text("currency")
-    val pending = purchase.text("status") == "submitted"
-    PurchaseTile(purchase.text("bondName"),
-        "${money(purchase.optDouble("faceValue", 0.0), currency)} · ${if (pending) "Pending" else localized(purchase.text("status"))}",
-        expanded, { expanded = !expanded }, pending = pending, logo = { InvestmentLogo(bond = true) }) {
-        evidence()
-        if (pending) PendingPurchaseFacts(purchase) else BondPurchaseFacts(purchase)
-        if (!pending) purchase.terms()?.let { terms ->
-            val tracking = trackBond(terms, Today)
-            HorizontalDivider()
-            Fact("Next coupon", tracking.nextCoupon?.toString() ?: "No remaining coupons")
-            Fact("Net per payment", money(tracking.netPerPayment, currency))
-            Fact("Scheduled to date", money(tracking.scheduledCouponsToDate, currency))
-            Fact("Accrued coupon", money(tracking.accruedCoupon, currency))
-            Fact("Remaining coupons", money(tracking.remainingCoupons, currency))
-            AppText("Coupon schedule · ${localized(purchase.text("scheduleConfidence").ifBlank { "Estimated" })}",
-                style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-            tracking.schedule.forEach { date -> Fact(date.toString(), money(tracking.netPerPayment, currency)) }
-        }
-        if(pending && manualConfirmation!=null) PendingConfirmationAction(purchase,!confirming,manualConfirmation)
-        OutlinedButton(onClick = if (needsPersonalConfirmation(purchase)) uploadConfirmation else manage, modifier = Modifier.fillMaxWidth()) { AppText(if (needsPersonalConfirmation(purchase)) "Upload confirmation" else "Manage purchase") }
-        if (needsPersonalConfirmation(purchase)) TextButton(onClick = manage, modifier = Modifier.fillMaxWidth()) { AppText("Details") }
+private fun BondPreviewMetric(label: String, value: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        AppText(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        FinancialText(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
     }
 }
 
-/** The inline disclosure and management page show identical saved terms and costs. */
+/** Persisted terms and costs, shared by the bond detail view. */
 @Composable
 fun BondPurchaseFacts(purchase: JsonRecord) {
     val currency = purchase.text("currency")
@@ -103,25 +151,27 @@ fun BondPurchaseFacts(purchase: JsonRecord) {
 }
 
 @Composable
-fun SharePurchaseTile(holding: JsonRecord, evidence: @Composable () -> Unit = {}) {
-    var expanded by rememberSaveable(holding.text("id")) { mutableStateOf(false) }
-    val currency = holding.text("currency")
-    PurchaseTile(listOf(holding.text("securityName"), holding.text("ticker")).filter { it.isNotBlank() }.joinToString(" · "),
-        "${holding.text("shares")} shares · Cost ${money(holding.optDouble("netAmountPayable", 0.0), currency)}",
-        expanded, { expanded = !expanded }, logo = { InvestmentLogo(ticker = holding.text("ticker")) }) {
-        evidence()
-        listOf("ticker" to "Ticker", "isin" to "ISIN", "exchange" to "Exchange", "currency" to "Currency",
-            "status" to "Status", "tradeDate" to "Trade date", "settlementDate" to "Settlement", "shares" to "Shares",
-            "broker" to "Broker", "contractNote" to "Contract note", "cdsAccountNo" to "CDS account",
-            "cdsReference" to "CDS reference", "tradeReportId" to "Trade report")
-            .forEach { (key, label) -> if (holding.text(key).isNotBlank()) Fact(label, holding.text(key)) }
-        listOf("pricePerShare" to "Price per share", "grossConsideration" to "Gross consideration",
-            "brokerageCommission" to "Brokerage commission", "rseTransactionFee" to "RSE transaction fee",
-            "csdTransactionLevy" to "CSD transaction levy", "cmaTransactionFee" to "CMA transaction fee",
-            "totalCharges" to "Total charges", "netAmountPayable" to "Total cash cost")
-            .forEach { (key, label) -> if (holding.has(key)) Fact(label, money(holding.optDouble(key, 0.0), currency)) }
-        PurchaseSourceAndNotes(holding)
+fun SharePurchaseTile(holding: JsonRecord, open: () -> Unit) {
+    InvestmentEntry(holding.text("securityName").ifBlank { holding.text("ticker") },
+        "${holding.text("shares")} shares · Total cost ${money(holding.optDouble("netAmountPayable"), holding.text("currency"))}",
+        bond = false, ticker = holding.text("ticker"), open = open)
+}
+
+@Composable
+internal fun SharePurchaseFacts(holding: JsonRecord) {
+    listOf("tradeDate" to "Trade date", "settlementDate" to "Settlement", "status" to "Status",
+        "shares" to "Shares", "isin" to "ISIN", "exchange" to "Exchange", "broker" to "Broker",
+        "contractNote" to "Contract note", "cdsAccountNo" to "CDS account", "cdsReference" to "CDS reference",
+        "tradeReportId" to "Trade report").forEach { (key, label) ->
+        if (holding.text(key).isNotBlank()) Fact(label, holding.text(key))
     }
+    listOf("pricePerShare" to "Price per share", "grossConsideration" to "Gross consideration",
+        "brokerageCommission" to "Brokerage commission", "rseTransactionFee" to "RSE transaction fee",
+        "csdTransactionLevy" to "CSD transaction levy", "cmaTransactionFee" to "CMA transaction fee",
+        "totalCharges" to "Total charges", "netAmountPayable" to "Total cash cost").forEach { (key, label) ->
+        if (holding.has(key)) Fact(label, money(holding.optDouble(key), holding.text("currency")))
+    }
+    PurchaseSourceAndNotes(holding)
 }
 
 @Composable

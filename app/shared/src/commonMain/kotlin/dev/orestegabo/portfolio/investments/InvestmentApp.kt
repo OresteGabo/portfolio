@@ -74,6 +74,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var confirmationTarget by remember { mutableStateOf<JsonRecord?>(null) }
     var investmentHistory by rememberSaveable { mutableStateOf(false) }
     var detail by remember { mutableStateOf<JsonRecord?>(null) }
+    var shareDetail by remember { mutableStateOf<JsonRecord?>(null) }
     var editor by remember { mutableStateOf<JsonRecord?>(null) }
     var equityEditor by remember { mutableStateOf<JsonRecord?>(null) }
     var investmentTools by rememberSaveable { mutableStateOf(false) }
@@ -103,7 +104,7 @@ fun InvestmentApp(model: PortfolioModel) {
     fun openNotificationInbox() {
         tab = "Notifications"; notificationPanel = null; securityNotificationId = null
         legalRoute = null; legalHistory = emptyList(); missingDocuments = false; pendingEntry = false
-        investmentHistory = false; detail = null; editor = null; equityEditor = null
+        investmentHistory = false; detail = null; shareDetail = null; editor = null; equityEditor = null
         simulator = false; investmentTools = false; education = false
         model.closeDocumentPreview()
     }
@@ -129,7 +130,7 @@ fun InvestmentApp(model: PortfolioModel) {
     LaunchedEffect(NativePushBridge.updateRevision) { if(model.user!=null && !model.locked)model.refreshNotifications() }
     LaunchedEffect(tab,model.user,model.locked) { if(tab=="Notifications" && model.user!=null && !model.locked)model.refreshNotifications() }
     LaunchedEffect(model.user) {
-        if (model.user == null) { notificationPurchase=null;notificationPanel=null;securityNotificationId=null; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; editor = null; equityEditor = null; importReview = null; simulator = false; investmentTools = false; education = false }
+        if (model.user == null) { notificationPurchase=null;notificationPanel=null;securityNotificationId=null; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; shareDetail = null; editor = null; equityEditor = null; importReview = null; simulator = false; investmentTools = false; education = false }
     }
     LaunchedEffect(model, model.messageRevision) {
         val revision = model.messageRevision
@@ -148,7 +149,7 @@ fun InvestmentApp(model: PortfolioModel) {
     fun showImportConversation() {
         tab = "Documents"; documentSection = "Import"
         notificationPanel = null; missingDocuments = false; investmentHistory = false
-        editor = null; equityEditor = null; detail = null; pendingEntry = false
+        editor = null; equityEditor = null; detail = null; shareDetail = null; pendingEntry = false
         simulator = false; education = false
     }
     fun imported(review: JsonRecord) {
@@ -209,7 +210,7 @@ fun InvestmentApp(model: PortfolioModel) {
             OnboardingScreen(replayIntroduction, ::finishIntroduction)
             return@MaterialTheme
         }
-        val childScreen = model.documentPreview != null || notificationPanel == "security" || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || editor != null || equityEditor != null || simulator || investmentTools || education
+        val childScreen = model.documentPreview != null || notificationPanel == "security" || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || shareDetail != null || editor != null || equityEditor != null || simulator || investmentTools || education
         val nested = childScreen || tab == "Notifications"
         val documentsHome = model.user != null && !model.locked && !nested && tab == "Documents"
         val importChat = documentsHome && documentSection == "Import"
@@ -218,8 +219,8 @@ fun InvestmentApp(model: PortfolioModel) {
                 legalRoute = legalHistory.lastOrNull()
                 legalHistory = legalHistory.dropLast(1)
             } else if (tab == "Notifications" && !childScreen) { tab = "Portfolio" } else {
-                if (detail == null && editor == null && equityEditor == null && importReview == null && !pendingEntry && !simulator && !investmentTools && !education) investmentHistory = false
-                missingDocuments = false; detail = null; editor = null; equityEditor = null; pendingEntry = false; simulator = false; investmentTools = false; education = false
+                if (detail == null && shareDetail == null && editor == null && equityEditor == null && importReview == null && !pendingEntry && !simulator && !investmentTools && !education) investmentHistory = false
+                missingDocuments = false; detail = null; shareDetail = null; editor = null; equityEditor = null; pendingEntry = false; simulator = false; investmentTools = false; education = false
             }
         }
         if (model.user != null && !model.locked) {
@@ -243,6 +244,7 @@ fun InvestmentApp(model: PortfolioModel) {
             simulator -> "Simulator"
             education -> "Learn"
             detail != null -> "Bond details"
+            shareDetail != null -> "Share details"
             investmentHistory -> "All investments"
             model.user == null -> "Struct Capital"
             tab == "Settings" -> "Settings"
@@ -379,12 +381,13 @@ fun InvestmentApp(model: PortfolioModel) {
                     simulator -> SimulatorScreen(model, engine) { simulator = false }
                     education -> EducationScreen(model) { education = false }
                     detail != null -> {
-                        val purchase = detail!!
-                        PurchaseDetails(model, purchase, engine, { confirmationTarget = purchase; imported(it) },
+                        val purchase = model.purchases.firstOrNull { it.text("id") == detail!!.text("id") } ?: detail!!
+                        BondDetailsScreen(model, purchase, engine, { confirmationTarget = purchase; imported(it) },
                             { detail = null }, { editor = purchase; detail = null })
                     }
-                    investmentHistory -> InvestmentHistoryScreen(model, uploadPending = ::uploadPendingPurchase) { detail = it }
-                    tab == "Portfolio" -> PortfolioScreen(model, openNotifications = ::openNotificationInbox, unreadNotifications = model.unreadNotifications, uploadPending = ::uploadPendingPurchase, openMissing = ::uploadMissing, allMissing = { missingDocuments = true }, seeAll = { investmentHistory = true },
+                    shareDetail != null -> ShareDetailsScreen(model, shareDetail!!)
+                    investmentHistory -> InvestmentHistoryScreen(model, openShare = { shareDetail = it }) { detail = it }
+                    tab == "Portfolio" -> PortfolioScreen(model, openNotifications = ::openNotificationInbox, unreadNotifications = model.unreadNotifications, openShare = { shareDetail = it }, uploadPending = ::uploadPendingPurchase, openMissing = ::uploadMissing, allMissing = { missingDocuments = true }, seeAll = { investmentHistory = true },
                         openCalendar = { date -> calendarFocus = date.toString(); tab = "Calendar" }, detail = { detail = it })
                     tab == "Calendar" -> CalendarScreen(model, initialDate = calendarFocus?.let(::calendarDate), addPending = { issue, date ->
                         pendingIssueId = issue.text("id"); calendarFocus = date.toString(); confirmationTarget = null; pendingEntry = true
@@ -400,7 +403,7 @@ fun InvestmentApp(model: PortfolioModel) {
                                 ?: model.api.request("/api/bonds/purchases/$id").optJSONObject("purchase")
                             require(row != null) { "Check the purchase details." }; detail = row
                         } }, openMissing = { missingDocuments = true }) }
-                    tab == "Stocks" -> StocksScreen(model)
+                    tab == "Stocks" -> StocksScreen(model, openShare = { shareDetail = it })
                 }
             }
         }
@@ -469,64 +472,5 @@ private fun FieldContent(label: String, value: String, change: (String) -> Unit,
 fun ChoiceRow(choices: List<String>, selected: String, choose: (String) -> Unit) {
     androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items(choices) { item -> FilterChip(selected = item == selected, onClick = { choose(item) }, label = { AppText(item.replaceFirstChar { it.uppercase() }) }) }
-    }
-}
-
-@Composable
-private fun PurchaseDetails(model: PortfolioModel, purchase: JsonRecord, engine: InvestmentEngine, imported: (JsonRecord) -> Unit, back: () -> Unit, edit: () -> Unit) {
-    var confirmDelete by remember { mutableStateOf(false) }
-    if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { AppText("Delete purchase?") }, text = { AppText("This removes ${purchase.text("bondName")} from your synchronized portfolio.") },
-        confirmButton = { TextButton(enabled = !model.busy, onClick = { model.deletePurchase(purchase.text("id"), back); confirmDelete = false }) { AppText("Delete") } }, dismissButton = { TextButton(onClick = { confirmDelete = false }) { AppText("Keep purchase") } })
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        item { TextButton(onClick = back) { AppText("← Back") }; PageTitle("Purchase details", purchase.text("bondName"), purchase.text("isin")) }
-        item { Panel {
-            InvestmentEvidenceActions(model, purchase)
-            if (purchase.text("status") == "submitted") PendingPurchaseFacts(purchase) else BondPurchaseFacts(purchase)
-        } }
-        if (needsPersonalConfirmation(purchase)) item {
-            PendingConfirmationAction(purchase,!model.busy) { model.confirmPendingPurchase(purchase,back) }
-            PdfImportButton(model, engine, imported, bondOnly = true, targetPurchaseId = purchase.text("id"))
-        }
-        if (purchase.text("status") != "submitted") purchase.terms()?.let { terms ->
-            val tracking = trackBond(terms, Today)
-            item { Panel {
-                AppText("Coupon tracking", fontWeight = FontWeight.Bold)
-                Fact("Net per payment", money(tracking.netPerPayment, purchase.text("currency")))
-                Fact("Scheduled to date", money(tracking.scheduledCouponsToDate, purchase.text("currency")))
-                val receipts = couponReceiptTotals(purchase, model.couponReceipts, model.notificationDate)
-                Fact("Confirmed by you", if (model.couponTrackingAvailable) money(receipts.confirmedByUser, purchase.text("currency")) else "—")
-                Fact("Marked automatically", if (model.couponTrackingAvailable) money(receipts.markedAutomatically, purchase.text("currency")) else "—")
-                AppText("Automatic markings follow your settings; they do not verify payment into your account.", style = MaterialTheme.typography.bodySmall)
-                if (!model.couponTrackingAvailable) {
-                    AppText(if (model.notificationsLoading) "Loading receipt status…" else "Receipt status unavailable", style = MaterialTheme.typography.bodySmall)
-                    TextButton(enabled = !model.notificationsLoading, onClick = model::refreshNotifications) { AppText("Refresh receipts") }
-                }
-                Fact("Accrued", money(tracking.accruedCoupon, purchase.text("currency")))
-                Fact("Remaining coupons", money(tracking.remainingCoupons, purchase.text("currency")))
-                AppText("${purchase.text("scheduleConfidence")} schedule · as of $Today", style = MaterialTheme.typography.bodySmall)
-            } }
-            items(tracking.schedule) { date -> Panel {
-                val receipt=model.couponReceipt(purchase.text("id"),date.toString())
-                val received=receipt?.optBoolean("received")==true
-                Fact(date.toString(),money(tracking.netPerPayment,purchase.text("currency")))
-                AppText("Expected net coupon", style = MaterialTheme.typography.labelSmall)
-                val receiptState = couponReceiptState(date, model.notificationDate, model.couponTrackingAvailable, receipt)
-                AppText(receiptState.label, style = MaterialTheme.typography.bodySmall)
-                if (receiptState in listOf(CouponReceiptState.CONFIRMED, CouponReceiptState.AUTOMATIC))
-                    recordedCouponAmount(receipt, purchase.text("currency"))?.let { amount ->
-                        Fact("Recorded receipt amount", money(amount, purchase.text("currency")))
-                    }
-                if(date<=model.notificationDate && model.couponTrackingAvailable) TextButton(enabled=!model.busy,onClick={ model.confirmCoupon(purchase.text("id"),date.toString(),!received) }) {
-                    AppText(if(received) "Mark not received" else "Confirm received")
-                }
-                if (receiptState == CouponReceiptState.AUTOMATIC) TextButton(enabled = !model.busy, onClick = {
-                    model.confirmCoupon(purchase.text("id"), date.toString(), true)
-                }) { AppText("Confirm received") }
-            } }
-        }
-        item { Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (purchase.text("status") != "submitted") Button(onClick = edit, enabled = !model.busy) { AppText("Edit purchase") }
-            OutlinedButton(onClick = { confirmDelete = true }, enabled = !model.busy) { AppText("Delete") }
-        } }
     }
 }

@@ -43,7 +43,7 @@ private val DashboardGold = Color(0xFFECC75F)
 private val AllocationGreen = Color(0xFF739A87)
 
 @Composable
-fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, openMissing: (JsonRecord) -> Unit, allMissing: () -> Unit, seeAll: () -> Unit, openCalendar: (LocalDate) -> Unit, detail: (JsonRecord) -> Unit, openNotifications: () -> Unit = {}, unreadNotifications: Int = 0) {
+fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, openMissing: (JsonRecord) -> Unit, allMissing: () -> Unit, seeAll: () -> Unit, openCalendar: (LocalDate) -> Unit, detail: (JsonRecord) -> Unit, openNotifications: () -> Unit = {}, unreadNotifications: Int = 0, openShare: (JsonRecord) -> Unit) {
     if (!model.portfolioReady) {
         if (model.portfolioLoading) PortfolioLoadingSkeleton(openNotifications, unreadNotifications)
         else {
@@ -140,15 +140,13 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
                     EmptyState("No ${displayRecordValue(status)} bonds", EmptyArtwork.SEARCH, compact = true, actionLabel = "Show all", onAction = { status = "all" })
                 } }
                 items(bonds, key = { "bond:${it.text("id")}" }) { purchase -> AppMovingItem { Inset {
-                    BondPurchaseTile(purchase, uploadConfirmation = { uploadPending(purchase) },
-                        manualConfirmation = { model.confirmPendingPurchase(purchase) }, confirming = model.busy,
-                        evidence = { InvestmentEvidenceActions(model, purchase) }) { detail(purchase) }
+                    BondPurchaseTile(model, purchase) { detail(purchase) }
                 } } }
             }
             if (kind != "bonds") {
                 if (kind == "all") item { SectionLabel("Shares") }
                 if (recentShares.isEmpty()) item { Inset { EmptyState("No shares in the past year", EmptyArtwork.SHARES, compact = true) } }
-                items(recentShares, key = { "share:${it.text("id")}" }) { holding -> AppMovingItem { Inset { SharePurchaseTile(holding) { InvestmentEvidenceActions(model, holding) } } } }
+                items(recentShares, key = { "share:${it.text("id")}" }) { holding -> AppMovingItem { Inset { SharePurchaseTile(holding) { openShare(holding) } } } }
             }
         }
     }

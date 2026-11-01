@@ -30,3 +30,12 @@ internal fun InvestmentEvidenceActions(model: PortfolioModel, record: JsonRecord
         }
     }
 }
+
+/** Same authenticated download and native share/save behavior as the document library. */
+internal suspend fun shareInvestmentDocument(api: PortfolioApi, actions: NativeActions, document: JsonRecord): Boolean {
+    val path = document.text("downloadUrl")
+    require(path.matches(Regex("/api/bonds/documents/[A-Za-z0-9_-]+"))) { "Invalid document URL." }
+    val data = api.bytes(path)
+    require(data.take(5).toByteArray().decodeToString() == "%PDF-") { "The server did not return a PDF." }
+    return actions.sharePdf(document.text("originalFileName").ifBlank { "investment.pdf" }, data)
+}

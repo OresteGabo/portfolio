@@ -55,11 +55,7 @@ fun DocumentsScreen(model: PortfolioModel, initialDocumentId: String? = null) {
     fun save(document: JsonRecord) = model.action {
         saving = document.text("id")
         try {
-            val path = document.text("downloadUrl")
-            require(path.matches(Regex("/api/bonds/documents/[A-Za-z0-9_-]+"))) { "Invalid document URL." }
-            val data = model.api.bytes(path)
-            require(data.take(5).toByteArray().decodeToString() == "%PDF-") { "The server did not return a PDF." }
-            if (actions.sharePdf(document.text("originalFileName").ifBlank { "investment.pdf" }, data)) model.message = "PDF ready to share."
+            if (shareInvestmentDocument(model.api, actions, document)) model.message = "PDF ready to share."
         } finally { saving = null }
     }
     var historyRequested by remember(model.user?.text("id")) { mutableStateOf(false) }
