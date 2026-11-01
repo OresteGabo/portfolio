@@ -1,33 +1,25 @@
-# Investment detail screens
+# Investment detail pages
 
-Added 31 October 2026. Shared Compose UI; no backend schema, API or calculation engine changes.
+Updated 1 November 2026. Shared Compose implementation; the existing protected navigation, APIs and financial calculation services are retained. See [design audit, specification and verification](INVESTMENT_DETAIL_DESIGN.md).
 
-- Home and investment history bond entries expand only a compact summary (coupon rate/next date/maturity), linked PDF downloads and a View bond details button. Full terms, receipts and payment schedules live on the dedicated screen. Share entries navigate directly.
-- Owned share cards and watchlist entries in Markets open share details. Watchlist entries without a personal position show price information and an honest empty purchase history.
-- Child pages have the existing app-bar back button and hide bottom navigation. Returning from a document preview retains the selected investment. Back from an investment opened in history retains history.
+## Bond: principal and cash flows
 
-## Bond page
+A continuous page leads with issuer, investment status, ISIN, principal and annual coupon rate. One restrained highlight presents the next expected net coupon, due date, gross amount, withholding and schedule confidence. An open maturity timeline follows; reaching its endpoint does not confirm principal redemption.
 
-Instrument identity/principal, next scheduled coupon including an unconfirmed payment due today, gross/net per payment and saved withholding rate, maturity progress/principal, income tracking, linked source documents, saved purchase terms/costs/notes, upcoming/past payment schedule and receipt actions. Existing confirmation/upload/edit/delete flows are reused.
+Income tracking separates manually confirmed receipts from automatic markings and scheduled/accrued estimates. The payment ledger filters Upcoming/Past, initially shows three entries, and can expand to the complete schedule. Recorded amounts and expected amounts have distinct labels. Confirmation and reversal retain existing model operations; accessible action descriptions identify the payment date.
 
-Published coupon dates retain precedence through existing couponSchedule/trackBond. Only active holdings have a next payment. A manual receipt for this exact purchase/currency can complete today's payment; automatic markings remain explicitly separate from verified receipt evidence. Scheduled and accrued amounts are estimates, not bank confirmations. Maturity progress is not proof of redemption. Coupon rate is not YTM.
+The identity's Documents action reveals original evidence with independent preview/download controls. Purchase details disclose all existing saved fields. Pending confirmation/import, editing and confirmed deletion retain their existing workflows. Missing financial terms display an unavailable state rather than a zero coupon or tax exemption. Official saved coupon dates retain precedence over generated dates; coupon rate is never described as yield to maturity.
 
-## Share page
+## Share: ownership and market evidence
 
-Uses existing valuedShares calculation, so cost includes recorded acquisition fees and an unavailable price never becomes a fabricated market value or zero-price loss. Header distinguishes purchase cost, market value and closing price for an unowned share. Shows share count, unrealized return, quote date/staleness and refresh; full purchase history includes original cost/fee/reference fields and linked contract/statement PDFs.
+The company/ticker header presents the existing calculated market value and explicitly unrealized gain/loss. Missing usable prices show acquisition cost, never a fabricated current valuation or zero-price loss. Quote provenance includes the published date, cached state and refresh action. Ownership and acquisition cost remain separate from market evidence.
 
-Lots are scoped by both ticker and currency. Full history is requested through the existing model, and a failure gets a retry action rather than pretending the compact portfolio is complete. No new dividend ledger or forecast was introduced: the page explicitly says a verified upcoming dividend is unavailable and dividends are excluded from the return.
+The purchase ledger displays dates, quantity, unit price, gross consideration, recorded fees and total payable where available. Original documents and full purchase breakdowns remain accessible per lot. The first three lots can expand to all history. History loading, retry and empty states reuse the existing model. Lots remain scoped to both ticker and currency. Dividend income, realized gains and future selling fees are excluded from the displayed unrealized return.
 
-## Presentation / verification
+## Implementation and accessibility
 
-Existing Struct Capital Material colors, company/BNR logos, number privacy, light/dark themes and French localization are reused. Information cards wrap; paired metrics stack on narrow content widths. Lazy lists keep long schedules/histories scrollable without rendering everything at once. No extra decorative animation or network-blocked navigation.
+`InvestmentDetails.kt` contains the bond composition; `ShareDetailsScreen.kt` contains the equity composition. Small shared presentation primitives live in `InvestmentDetailComponents.kt`; `InvestmentDetailPresentation.kt` contains pure selection/availability helpers. No universal hero, section-card or tab system is required.
 
-InvestmentDetailsTest covers published dates and gross/net reference amounts, due-today manual versus automatic receipts, wrong purchase/currency/negative receipts, inactive/matured/invalid terms, and ticker/currency lot isolation. Existing financial, document and model tests remain the authority for their respective behavior. Verification: 244 Android shared tests and 260 iOS simulator tests pass, including four new detail tests. The Android debug app and shared iOS code compile. Android instrumentation labels were updated for Home/Markets; instrumentation is compiled but not executed on the connected personal phone. A physical-device visual check is still needed before release.
+The screens reuse the exact Struct Capital Material palette, issuer logos, financial masking, formatting and English/French strings. Financial values use tabular figures and wrap without ellipses. Paired values stack on narrow widths or increased font scale. Dates remain readable through the application's existing date conventions. Lazy lists, saved disclosure/filter state, semantic headings and labelled actions support everyday navigation without added animation or dependencies.
 
-Compact-preview follow-up: the library and bond tile share the same authenticated PDF download/native share helper. Two regressions cover canonical document paths, rejection of arbitrary URLs/non-PDF responses and user cancellation. The shared Android suite now has 246 passing tests; Android debug build and shared iOS compilation pass. The earlier 260-test iOS simulator run predates this preview/download follow-up.
-
-## Visual refinement
-
-The detail pages now lead with a dark olive instrument/value header, with bond status/rate chips or a share unrealized-return badge. Task tabs keep the overview separate from complete payment schedules, document actions and purchase fields. Documents use dedicated PDF rows with independent open/download actions. Repeated tab/section headings and the empty dividend card were removed; dividend limitations remain in a small caption.
-
-`InvestmentDetailLayoutTest` uses only synthetic localhost account/portfolio/quote responses and captures bond/share overviews in light/dark themes. Run it on an isolated unlocked emulator (not a personal phone or production origin). A fresh emulator may need its keyguard dismissed and notification permission granted before instrumentation to avoid OS prompts covering the accessibility tree. Four captures were rendered and inspected; the final instrumentation test passes. Earlier fixture/focus assertions failed and were corrected; they were not counted as passing runs. This does not replace iOS device or accessibility/font-scale validation.
+`InvestmentDetailsTest` covers date precedence, coupon reference amounts, receipt semantics, ticker/currency isolation, missing terms and quote availability. `InvestmentDetailLayoutTest` renders synthetic local fixtures in the actual palette and exercises evidence, receipt and purchase actions on an isolated emulator. Current run details and remaining platform limitations are recorded in the design document and [verification log](VERIFICATION.md).
