@@ -13,7 +13,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -80,7 +83,6 @@ internal fun DocumentThumbnail(model: PortfolioModel, document: JsonRecord, titl
         finally { loading = false }
     }
     val frame = Modifier.fillMaxWidth().height(120.dp)
-        .shadow(4.dp, RoundedCornerShape(13.dp), clip = false)
         .clip(RoundedCornerShape(13.dp))
         .clickable(enabled = !model.busy, role = Role.Button, onClickLabel = localized("Open PDF"), onClick = open)
     @Composable fun placeholder(masked: Boolean = hidden) {
@@ -100,7 +102,16 @@ internal fun DocumentThumbnail(model: PortfolioModel, document: JsonRecord, titl
                 contentScale = ContentScale.FillWidth, alignment = Alignment.TopCenter)
         }
     }
-    Box(Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp)) {
+    Box(Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp).drawWithCache {
+        val depth = 6.dp.toPx()
+        val inset = 13.dp.toPx()
+        val shadow = Brush.verticalGradient(listOf(Color.Black.copy(alpha = .14f), Color.Transparent),
+            startY = size.height, endY = size.height + depth)
+        onDrawBehind {
+            // Confine the shadow below the paper; never outline its top or sides.
+            drawRect(shadow, topLeft = Offset(inset, size.height), size = Size((size.width - inset * 2).coerceAtLeast(0f), depth))
+        }
+    }) {
         if (model.captureProtectionEnabled) CaptureRedactionRegion(frame, masked = { placeholder(true) }) { preview() }
         else Box(frame) { preview() }
     }
