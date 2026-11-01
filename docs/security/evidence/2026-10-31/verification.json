@@ -1,0 +1,58 @@
+{
+  "date": "2026-10-31",
+  "scope": "Synthetic local execution only; see SECURITY_AUDIT_REPORT.md for limitations",
+  "junit": {
+    "core": {
+      "tests": 58,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "sharedAndroid": {
+      "tests": 240,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "sharedIosSimulator": {
+      "tests": 256,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "backend": {
+      "tests": 55,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "androidReleaseLint": {
+    "Error": 0,
+    "Fatal": 0,
+    "Warning": 55
+  },
+  "androidBackupWarningRemaining": false,
+  "nodeParserTests": 78,
+  "pythonPolicyTests": 5,
+  "nextTests": 42,
+  "nuxtUnitTests": 17,
+  "nuxtGeneratedTests": 10,
+  "nuxtHttpTests": 4,
+  "nuxtContrastChecks": 34,
+  "buildsPassed": [
+    "Android release bundle",
+    "Spring Boot bootJar",
+    "unsigned iOS device Release and package check",
+    "Next production",
+    "Nuxt Node production"
+  ],
+  "notRun": [
+    "physical device biometric/transfer/capture",
+    "production penetration testing",
+    "effective DB grants and backup restore",
+    "container CVE/SBOM scan",
+    "dedicated full-history/artifact secret scan",
+    "store signing validation"
+  ]
+}

@@ -1,5 +1,7 @@
 # Security audit — 30 October 2026
 
+Historical assessment. See the [31 October follow-up](../../SECURITY_AUDIT_REPORT.md) and [fresh advisory snapshot](../../DEPENDENCY_ADVISORIES.md) for current findings and scope; this file retains evidence of the earlier fixes.
+
 Scope: the current KMP working tree and companion `gabo-portfolio-api` Spring working tree, including pending performance/UI/planning changes. This is a source audit with synthetic local tests and public advisory checks, not a production penetration test, certification or legal-compliance opinion. Existing work was preserved. No production database, credentials, PDFs, cloud logs or infrastructure configuration were accessed or changed.
 
 ## Verified findings and fixes

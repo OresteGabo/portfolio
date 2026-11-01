@@ -1,0 +1,5 @@
+{
+  "checkedAtUTC": "2026-10-31T15:33:15.869748+00:00",
+  "scope": "Non-secret Cloud Run/IAM configuration only; no env values, credentials, logs or financial data.",
+  "cloudRun": "NOT VERIFIED: metadata command failed; raw error withheld"
+}
