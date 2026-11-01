@@ -104,7 +104,7 @@ fun StocksScreen(model: PortfolioModel, openShare: (JsonRecord) -> Unit) {
             if (reducedMotion) pager.scrollToPage(page) else pager.animateScrollToPage(page)
         }
     }
-    LaunchedEffect(Unit) { if (model.quotes == null) model.loadMarket() }
+    LaunchedEffect(Unit) { if (model.quotes == null || model.market == null) model.loadMarket() }
     // Fetch only the settled company. Captured keys keep rapid swipes from
     // displaying a previous company's response, and cached pages reopen instantly.
     LaunchedEffect(pager.settledPage, period, section, refreshRevision) {
@@ -195,7 +195,7 @@ fun StocksScreen(model: PortfolioModel, openShare: (JsonRecord) -> Unit) {
             if (model.market?.rows("outstanding").orEmpty().isNotEmpty()) item { Field("Search bond or ISIN", search, { search = it }) }
             val rows = model.market?.rows("outstanding").orEmpty().filter { it.text("bond").contains(search, true) || it.text("code").contains(search, true) }.sortedByDescending { it.optDouble("strategyScore", 0.0) }
             if (rows.isEmpty()) item {
-                if (model.busy) LoadingState()
+                if (model.busy || model.marketLoading) LoadingState()
                 else if (search.isNotBlank()) EmptyState("No matches", EmptyArtwork.SEARCH, actionLabel = "Clear search", onAction = { search = "" })
                 else EmptyState("No bond prices yet", EmptyArtwork.BONDS, actionLabel = "Refresh", onAction = { model.loadMarket(refresh = true) })
             }

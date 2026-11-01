@@ -586,7 +586,7 @@ class PortfolioModel(
         val session = api.request("/api/bonds/auth/session")
         user = if (session.optBoolean("authenticated")) session.optJSONObject("user") else null
         loadInvestmentTarget()
-        if (user != null) loadPrivateData()
+        if (user != null) startPortfolioSync()
     }
 
     fun login(email: String, password: String, invitation: String = "", savePassword: Boolean = false,
@@ -602,7 +602,7 @@ class PortfolioModel(
         catch (_: Exception) { message = "Signed in. Your password could not be saved to the password manager." }
         user = account
         loadInvestmentTarget()
-        loadPrivateData(force = true)
+        startPortfolioSync()
         if (savePassword) saveSignIn(email, password)
     }
 
@@ -708,8 +708,6 @@ class PortfolioModel(
                             }
                         }
                         if (currentSync()) portfolioSyncing = false
-                        if (currentSync() && portfolioReady && portfolio.activeShares(Today).isNotEmpty())
-                            section("quotes") { refreshEquityQuotes() }
                     }
                     launch {
                         section("documents") {
@@ -718,6 +716,7 @@ class PortfolioModel(
                         }
                         if (currentSync()) documentsLoading = false
                     }
+                    launch { section("market") { prefetchMarket() } }
                     launch { section("statements") { loadStatementItems() } }
                     launch { section("notifications") { fetchNotifications() } }
                 }
@@ -740,9 +739,9 @@ class PortfolioModel(
     }
 
     // Prices enrich the saved snapshot. An optional quote failure must not hide saved purchases.
-    private suspend fun refreshEquityQuotes() {
+    private suspend fun refreshEquityQuotes(refresh: Boolean = false) {
         try {
-            val latest = api.request("/api/bonds/rse/quotes?kind=equities")
+            val latest = api.request("/api/bonds/rse/quotes?kind=equities" + if (refresh) "&refresh=1" else "")
             if (latest.rows("quotes").isNotEmpty()) {
                 quotes = latest
                 quoteRefreshFailed = latest.optJSONObject("source")?.text("status") == "error"
@@ -774,14 +773,30 @@ class PortfolioModel(
             if (showMessage) message = "Portfolio updated from your server."
         } finally { if (token == generation) refreshPhase = PortfolioRefreshPhase.IDLE }
     }
-    fun loadMarket(refresh: Boolean = false) = action {
-        if (!refresh && market != null && marketLoadedAt?.elapsedNow()?.inWholeMilliseconds?.let { it < DATA_CACHE_MILLIS } == true) return@action
-        marketLoadedAt = null
-        market = api.request("/api/bonds/rse/market" + if (refresh) "?refresh=1" else "")
-        val latest = api.request("/api/bonds/rse/quotes?kind=equities" + if (refresh) "&refresh=1" else "")
-        if (latest.rows("quotes").isNotEmpty()) { quotes = latest; quoteRefreshFailed = false }
-        else quoteRefreshFailed = true
-        marketLoadedAt = clock.markNow()
+    private val marketMutex = Mutex()
+    var marketLoading by mutableStateOf(false)
+        private set
+
+    private suspend fun prefetchMarket(refresh: Boolean = false) = marketMutex.withLock {
+        if (!refresh && marketLoadedAt?.elapsedNow()?.inWholeMilliseconds?.let { it < DATA_CACHE_MILLIS } == true) return@withLock
+        marketLoading = true
+        try {
+            // Independent upstream resources: equity prices never wait for the multi-page bond board.
+            supervisorScope {
+                val prices = async { refreshEquityQuotes(refresh) }
+                val board = async { market = api.request("/api/bonds/rse/market" + if (refresh) "?refresh=1" else "") }
+                prices.await(); board.await()
+            }
+            marketLoadedAt = clock.markNow()
+        } finally { marketLoading = false }
+    }
+
+    fun loadMarket(refresh: Boolean = false) {
+        if (!refresh && marketLoading) return
+        action {
+            if (refresh) marketLoadedAt = null
+            prefetchMarket(refresh)
+        }
     }
 
     fun importPurchasePdf(actions: NativeActions, engine: InvestmentEngine, bondOnly: Boolean = false,

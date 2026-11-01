@@ -40,6 +40,7 @@ class SecureSessionTest {
         var logins = 0
         var requestDelay: (String) -> Long = { 0 }
         var shares = "[]"
+        var quoteResponse = "{}"
         val paths = mutableListOf<String>()
         val failures = mutableMapOf<String, HttpStatusCode>()
         var offline = false
@@ -76,6 +77,7 @@ class SecureSessionTest {
                         "/api/bonds/auth/logout" -> if (scenario.failLogout) respond("{}", HttpStatusCode.ServiceUnavailable) else respond("{}")
                         "/api/bonds/purchases" -> respond("""{"purchases":[{"id":"private"}]}""")
                         "/api/bonds/equities" -> respond("""{"holdings":${scenario.shares}}""")
+                        "/api/bonds/rse/quotes" -> respond(scenario.quoteResponse)
                         "/api/bonds/documents" -> respond("""{"documents":[]}""")
                         else -> respond("{}")
                     }
@@ -145,6 +147,26 @@ class SecureSessionTest {
                 }
             } finally { scenario.store.clear(); Dispatchers.resetMain() }
         }
+    }
+
+    @Test fun allInvestorsPrefetchQuotesIndependentlyOfSlowBondBoardWithoutBlockingUi() = runTest {
+        val scenario=Scenario().also(::seed).apply {
+            requestDelay={ if(it.endsWith("rse/market")) 20000 else 100 }
+            quoteResponse="""{"source":{"publishedAt":"2026-11-01"},"quotes":[{"ticker":"IMR","closing":90}]}"""
+        }
+        val model=model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); advanceTimeBy(501); runCurrent()
+            assertFalse(model.locked); assertFalse(model.busy)
+            assertTrue(scenario.paths.contains("/api/bonds/rse/quotes")) // No equity holding is required.
+            assertTrue(model.marketLoading)
+            assertNotNull(model.quotes) // Fast share prices are published while the slow bond board is still running.
+            val before=scenario.paths.count { it.endsWith("rse/market") }
+            model.loadMarket(); runCurrent()
+            assertFalse(model.busy)
+            assertEquals(before,scenario.paths.count { it.endsWith("rse/market") })
+            advanceUntilIdle(); assertFalse(model.marketLoading)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
 
     @Test fun controlledColdUnlockTiming() = runTest {
