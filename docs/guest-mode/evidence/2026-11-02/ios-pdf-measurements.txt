@@ -1,0 +1,3 @@
+GuestReleaseBenchmark pdf_parse type=bond ocr=false micros=363193
+GuestReleaseBenchmark pdf_parse type=bond ocr=false micros=15418
+GuestReleaseBenchmark pdf_parse type=equity ocr=false micros=22557

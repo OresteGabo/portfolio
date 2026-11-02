@@ -25,6 +25,18 @@ class LegalContentTest {
         assertTrue(data.contains("password-manager"))
         assertTrue(data.contains("active application storage"))
     }
+    @Test fun guestPrivacyAndDeletionExplainConsentLocalRetentionAndSeparateAccountOwnership() {
+        val privacy=legalDocuments.single { it.id=="privacy" }.sections.single { it.title.en=="Private Guest Mode" }
+        assertTrue(privacy.body.en.contains("Signing in does not transfer guest data"))
+        assertTrue(privacy.body.en.contains("not cloud-backed up"))
+        assertTrue(privacy.body.en.contains("A selected PDF is sent in full"))
+        assertTrue(privacy.body.en.contains("does not delete the separate guest workspace"))
+        assertTrue(privacy.body.fr.contains("La connexion ne transfère pas"))
+        assertTrue(privacy.body.fr.contains("ni sauvegardées dans le cloud"))
+        val data=legalDocuments.single { it.id=="data" }.sections.first()
+        assertTrue(data.body.en.contains("Account deletion does not erase guest data"))
+        assertTrue(data.body.fr.contains("La suppression du compte n’efface pas les données invité"))
+    }
     @Test fun allDocumentsHaveDistinctRoutesAndCompleteTranslations() {
         assertEquals(5, legalDocuments.map { it.id }.toSet().size)
         legalDocuments.forEach { doc ->

@@ -17,7 +17,10 @@ import org.lsposed.hiddenapibypass.HiddenApiBypass
 
 /** Debug-only private API experiment; release APKs contain neither this code nor the bypass library. */
 fun installExperimentalCaptureLayer(activity: MainActivity) {
-    if (Build.VERSION.SDK_INT < 33) return
+    // Private SurfaceControl APIs are an explicit developer experiment, never the beta default.
+    // Standard capture masking / FLAG_SECURE remain active without this surface.
+    if (!activity.getSharedPreferences("connection", android.content.Context.MODE_PRIVATE)
+            .getBoolean("experimentalCaptureLayer", false) || Build.VERSION.SDK_INT < 33) return
     val root = activity.findViewById<FrameLayout>(android.R.id.content)
     val surface = SurfaceView(activity).apply {
         setZOrderOnTop(true)

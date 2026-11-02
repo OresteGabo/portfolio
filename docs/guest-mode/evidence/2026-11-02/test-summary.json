@@ -1,0 +1,38 @@
+{
+  "coreJvm": {
+    "tests": 65,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "coreAndroidHost": {
+    "tests": 66,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sharedAndroidHost": {
+    "tests": 350,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "coreIosSimulator": {
+    "tests": 65,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sharedIosSimulator": {
+    "tests": 370,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "backend": {
+    "tests": 70,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

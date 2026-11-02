@@ -158,7 +158,9 @@ actual fun rememberInvestmentEngine(): InvestmentEngine {
 }
 @Composable
 actual fun InvestmentEngineHost(engine: InvestmentEngine) {
-    if (engine is LocalInvestmentEngine) AndroidView(factory = { engine.view }, modifier = Modifier.size(1.dp))
+    if (engine is LocalInvestmentEngine && engine.hostRequested) key(engine,engine.rendererGeneration) {
+        AndroidView(factory = { engine.view }, modifier = Modifier.size(1.dp))
+    }
 }
 @Composable
 actual fun PlatformBackHandler(enabled: Boolean, back: () -> Unit) { BackHandler(enabled, back) }

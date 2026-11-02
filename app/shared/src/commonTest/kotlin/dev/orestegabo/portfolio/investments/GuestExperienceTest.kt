@@ -115,6 +115,29 @@ class GuestExperienceTest {
             assertFails { model.documentBytes(document) } // A local reference cannot fall through after a mode change.
         } finally { ViewModelStore().apply { put("test",model); clear() }; Dispatchers.resetMain() }
     }
+    @Test fun backgroundReadsAndLateWritesCannotRepopulateTheGuestViewButCommitsSurvive()=runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val repository=repo(Disk(),Files());repository.saveBond(guestBondFixture())
+        val settings=object: ServerSettings {
+            override fun readSessionChoice()="guest-personal-v1"
+            override fun writeSessionChoice(value: String?) {}
+            override fun readOrigin(): String?=null
+            override fun writeOrigin(origin: String) {}
+        }
+        val model=PortfolioModel(settings,guestRepository=repository,apiFactory={error("Guest network")})
+        try {
+            advanceUntilIdle();assertTrue(model.portfolioReady)
+            model.updateMonthlyInvestmentTarget(300000) // An already-started durable operation may finish.
+            model.background();assertNull(model.guestPortfolio)
+            advanceUntilIdle();assertNull(model.guestPortfolio)
+            assertEquals("300000",repository.load().metadata.text("monthlyTarget"))
+            model.loadInvestmentHistory(true);model.refresh();advanceUntilIdle()
+            assertNull(model.guestPortfolio);assertFalse(model.guestStorageLoading)
+            model.foreground();advanceUntilIdle();assertTrue(model.portfolioReady)
+            assertEquals(300000,model.monthlyInvestmentTarget)
+            model.background();model.foreground();advanceUntilIdle();assertTrue(model.portfolioReady)
+        } finally { ViewModelStore().apply { put("test",model);clear() };Dispatchers.resetMain() }
+    }
     @Test fun sampleDatesAndCouponsArePlausibleButNeverClaimRealReceiptsOrMarketPrices() {
         val today = LocalDate.parse("2026-11-02")
         val sample = guestSamplePortfolio(today)

@@ -1,0 +1,5 @@
+pdf_parse type=equity ocr=false micros=239013
+pdf_parse type=equity ocr=false micros=95375
+pdf_parse type=bond ocr=false micros=100573
+pdf_parse type=bond ocr=false micros=85536
+pdf_parse type=equity ocr=true micros=2192303

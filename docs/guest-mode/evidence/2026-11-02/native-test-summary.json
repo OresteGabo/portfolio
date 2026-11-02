@@ -1,0 +1,80 @@
+[
+  {
+    "log": "HttpCancellationTest.log",
+    "successful": true,
+    "reportedTests": 1,
+    "assumptionSkips": 0
+  },
+  {
+    "log": "LocalEngineResilienceTest-final.log",
+    "successful": true,
+    "reportedTests": 1,
+    "assumptionSkips": 0
+  },
+  {
+    "log": "PdfSharingTest-final.log",
+    "successful": true,
+    "reportedTests": 1,
+    "assumptionSkips": 0
+  },
+  {
+    "log": "DocumentsLibraryTest-final.log",
+    "successful": true,
+    "reportedTests": 1,
+    "assumptionSkips": 0
+  },
+  {
+    "log": "GuestPersistenceTest.log",
+    "successful": true,
+    "reportedTests": 2,
+    "assumptionSkips": 1
+  },
+  {
+    "log": "GuestEntryTest.log",
+    "successful": true,
+    "reportedTests": 1,
+    "assumptionSkips": 0
+  },
+  {
+    "log": "GuestExperienceUiTest.log",
+    "successful": true,
+    "reportedTests": 1,
+    "assumptionSkips": 0
+  },
+  {
+    "log": "GuestMigrationUiTest.log",
+    "successful": true,
+    "reportedTests": 1,
+    "assumptionSkips": 0
+  },
+  {
+    "log": "ImportConversationUiTest.log",
+    "successful": true,
+    "reportedTests": 1,
+    "assumptionSkips": 0
+  },
+  {
+    "log": "CaptureProtectionTest.log",
+    "successful": true,
+    "reportedTests": 1,
+    "assumptionSkips": 0
+  },
+  {
+    "log": "GuestReleaseReadinessTest.log",
+    "successful": true,
+    "reportedTests": 1,
+    "assumptionSkips": 0
+  },
+  {
+    "log": "pdf-native-final.log",
+    "successful": true,
+    "reportedTests": 1,
+    "assumptionSkips": 0
+  },
+  {
+    "log": "small-dark-final.log",
+    "successful": true,
+    "reportedTests": 1,
+    "assumptionSkips": 0
+  }
+]

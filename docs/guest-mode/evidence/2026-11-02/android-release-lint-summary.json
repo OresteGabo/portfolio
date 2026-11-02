@@ -1,0 +1,277 @@
+[
+  {
+    "id": "OldTargetApi",
+    "severity": "Warning",
+    "file": "app/androidApp/build.gradle.kts"
+  },
+  {
+    "id": "OldTargetApi",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "AndroidGradlePluginVersion",
+    "severity": "Warning",
+    "file": "gradle/wrapper/gradle-wrapper.properties"
+  },
+  {
+    "id": "AndroidGradlePluginVersion",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "AndroidGradlePluginVersion",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "GradleDependency",
+    "severity": "Warning",
+    "file": "app/androidApp/build.gradle.kts"
+  },
+  {
+    "id": "GradleDependency",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "GradleDependency",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "app/androidApp/build.gradle.kts"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "NewerVersionAvailable",
+    "severity": "Warning",
+    "file": "gradle/libs.versions.toml"
+  },
+  {
+    "id": "ObsoleteSdkInt",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/drawable-v24"
+  },
+  {
+    "id": "IconLauncherShape",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/mipmap-hdpi/ic_launcher.png"
+  },
+  {
+    "id": "IconLauncherShape",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/mipmap-mdpi/ic_launcher.png"
+  },
+  {
+    "id": "IconLauncherShape",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/mipmap-xhdpi/ic_launcher.png"
+  },
+  {
+    "id": "IconLauncherShape",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/mipmap-xxhdpi/ic_launcher.png"
+  },
+  {
+    "id": "IconLauncherShape",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/mipmap-xxxhdpi/ic_launcher.png"
+  },
+  {
+    "id": "IconLauncherShape",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/mipmap-hdpi/ic_launcher_round.png"
+  },
+  {
+    "id": "IconLauncherShape",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/mipmap-mdpi/ic_launcher_round.png"
+  },
+  {
+    "id": "IconLauncherShape",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/mipmap-xhdpi/ic_launcher_round.png"
+  },
+  {
+    "id": "IconLauncherShape",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/mipmap-xxhdpi/ic_launcher_round.png"
+  },
+  {
+    "id": "IconLauncherShape",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png"
+  },
+  {
+    "id": "MonochromeLauncherIcon",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+  },
+  {
+    "id": "MonochromeLauncherIcon",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml"
+  },
+  {
+    "id": "IconDuplicates",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/mipmap-hdpi/ic_launcher_round.png"
+  },
+  {
+    "id": "IconDuplicates",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/mipmap-mdpi/ic_launcher_round.png"
+  },
+  {
+    "id": "IconDuplicates",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/mipmap-xhdpi/ic_launcher_round.png"
+  },
+  {
+    "id": "IconDuplicates",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/mipmap-xxhdpi/ic_launcher_round.png"
+  },
+  {
+    "id": "IconDuplicates",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png"
+  },
+  {
+    "id": "UseKtx",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/kotlin/dev/orestegabo/portfolio/MainActivity.kt"
+  },
+  {
+    "id": "UseKtx",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/kotlin/dev/orestegabo/portfolio/MainActivity.kt"
+  },
+  {
+    "id": "UseKtx",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/kotlin/dev/orestegabo/portfolio/MainActivity.kt"
+  },
+  {
+    "id": "UseKtx",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/kotlin/dev/orestegabo/portfolio/MainActivity.kt"
+  },
+  {
+    "id": "UseKtx",
+    "severity": "Warning",
+    "file": "app/androidApp/src/main/kotlin/dev/orestegabo/portfolio/PriceMessagingService.kt"
+  },
+  {
+    "id": "UseTomlInstead",
+    "severity": "Warning",
+    "file": "app/androidApp/build.gradle.kts"
+  },
+  {
+    "id": "UseTomlInstead",
+    "severity": "Warning",
+    "file": "app/androidApp/build.gradle.kts"
+  },
+  {
+    "id": "UseTomlInstead",
+    "severity": "Warning",
+    "file": "app/androidApp/build.gradle.kts"
+  },
+  {
+    "id": "UseTomlInstead",
+    "severity": "Warning",
+    "file": "app/androidApp/build.gradle.kts"
+  },
+  {
+    "id": "UseTomlInstead",
+    "severity": "Warning",
+    "file": "app/androidApp/build.gradle.kts"
+  },
+  {
+    "id": "UseTomlInstead",
+    "severity": "Warning",
+    "file": "app/androidApp/build.gradle.kts"
+  }
+]

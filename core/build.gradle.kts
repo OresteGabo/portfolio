@@ -37,7 +37,7 @@ kotlin {
     }
     
     sourceSets {
-        androidMain.dependencies { implementation(libs.ktor.client.android) }
+        androidMain.dependencies { implementation(libs.ktor.client.cio) }
         iosMain.dependencies { implementation(libs.ktor.client.darwin) }
         jvmMain.dependencies { implementation(libs.ktor.client.cio) }
         commonMain.dependencies {

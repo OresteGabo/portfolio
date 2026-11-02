@@ -26,3 +26,10 @@ class AndroidBackupTests(unittest.TestCase):
                 self.assertEqual(policy.findall('include'), [])
                 self.assertEqual({node.get('domain') for node in policy.findall('exclude')
                                   if node.get('path') == '.'}, DOMAINS)
+
+    def test_optional_push_sdk_cannot_auto_register_before_guest_selection(self):
+        app = ET.parse(ROOT / 'app/androidApp/src/main/AndroidManifest.xml').find('application')
+        metadata = {node.get(ANDROID + 'name'): node.get(ANDROID + 'value')
+                    for node in app.findall('meta-data')}
+        self.assertEqual(metadata.get('firebase_messaging_auto_init_enabled'), 'false')
+        self.assertEqual(metadata.get('firebase_analytics_collection_enabled'), 'false')

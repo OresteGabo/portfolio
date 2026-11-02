@@ -25,6 +25,8 @@ class MainActivity : FragmentActivity() {
         val prefs=getSharedPreferences("portfolio.push",MODE_PRIVATE)
         val id=prefs.getString("deviceId",null) ?: UUID.randomUUID().toString().also { prefs.edit().putString("deviceId",it).apply() }
         NativePushBridge.identify(id,"android")
+        // Also override an SDK preference retained from an older installation. Never enable auto-init.
+        if (FirebaseApp.getApps(this).isNotEmpty()) FirebaseMessaging.getInstance().isAutoInitEnabled = false
         val entry = getSharedPreferences("connection", MODE_PRIVATE)
         if (!entry.getBoolean("onboardingCompleted", false) || entry.getString("sessionChoice", null)?.startsWith("guest-") == true) return
         val configured=FirebaseApp.getApps(this).isNotEmpty()

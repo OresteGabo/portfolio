@@ -52,7 +52,12 @@ class GuestPdfNativeTest {
             override var onProgress:(String)->Unit
                 get()=engine.onProgress
                 set(value){engine.onProgress=value}
-            override suspend fun parse(pdf:ByteArray) = engine.run("pdf",pdf=pdf)
+            override suspend fun parse(pdf:ByteArray): JsonRecord {
+                val start=android.os.SystemClock.elapsedRealtimeNanos()
+                val result=engine.run("pdf",pdf=pdf)
+                android.util.Log.i("GuestReleaseBenchmark","pdf_parse type=${result.text("kind")} ocr=${result.optBoolean("usedOcr")} micros=${(android.os.SystemClock.elapsedRealtimeNanos()-start)/1000}")
+                return result
+            }
             override fun cancel()=engine.cancel()
         }
         try {

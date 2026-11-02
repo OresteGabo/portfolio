@@ -1,0 +1,11 @@
+protected_load_0=4218us
+protected_load_1=5741us
+protected_load_2=4514us
+protected_load_3=3414us
+protected_load_4=6243us
+cold_host_first_data=1582771us
+navigation_to_calendar_0=962413us
+foreground_0=1001153us
+warm_host_first_data=984785us
+navigation_to_calendar_1=392615us
+foreground_1=754846us

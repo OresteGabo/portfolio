@@ -45,6 +45,19 @@ class IosInvestmentEngineTest {
         val store = IosGuestSnapshotStorage(name)
         val repository = LocalGuestPortfolioRepository(store, documentStorage = IosGuestDocumentStorage())
         val workflow = GuestPdfImport(repository)
+        val timedParser=object : InvestmentDocumentParser {
+            private val delegate=EngineDocumentParser(engine)
+            override var onProgress: (String)->Unit
+                get()=delegate.onProgress
+                set(value) { delegate.onProgress=value }
+            override suspend fun parse(pdf: ByteArray): JsonRecord {
+                val mark=kotlin.time.TimeSource.Monotonic.markNow()
+                val result=delegate.parse(pdf)
+                println("GuestReleaseBenchmark pdf_parse type=${result.text("kind")} ocr=${result.optBoolean("usedOcr")} micros=${mark.elapsedNow().inWholeMicroseconds}")
+                return result
+            }
+            override fun cancel()=delegate.cancel()
+        }
         fun actions(bytes: ByteArray) = object : NativeActions {
             override val pickedPdfName = "synthetic-private.pdf"
             override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? = error("Use private selection")
@@ -55,7 +68,7 @@ class IosInvestmentEngineTest {
         }
         try {
             val original = bondPdf(scanned = false)
-            withContext(Dispatchers.Default) { workflow.select(actions(original), EngineDocumentParser(engine)) }
+            withContext(Dispatchers.Default) { workflow.select(actions(original), timedParser) }
             assertNull(workflow.failure); assertEquals("bond", workflow.review?.text("kind"))
             assertTrue(repository.load().portfolio.documents.isEmpty())
             workflow.confirmed = true
@@ -66,7 +79,7 @@ class IosInvestmentEngineTest {
             val saved = workflow.save(corrected)
             val doc = saved.portfolio.documents.single()
             assertContentEquals(original, repository.documentBytes(doc.text("id")))
-            withContext(Dispatchers.Default) { workflow.select(actions(original), EngineDocumentParser(engine)) }
+            withContext(Dispatchers.Default) { workflow.select(actions(original), timedParser) }
             assertNotNull(workflow.duplicate); assertNull(workflow.review)
             assertEquals(1, repository.load().portfolio.purchases.size)
             val equity = bondPdf(scanned = false, textOverride = """
@@ -86,7 +99,7 @@ class IosInvestmentEngineTest {
                 NET AMOUNT PAYABLE 340,728.50
                 All figures are in RWF
             """.trimIndent())
-            withContext(Dispatchers.Default) { workflow.select(actions(equity), EngineDocumentParser(engine)) }
+            withContext(Dispatchers.Default) { workflow.select(actions(equity), timedParser) }
             assertNull(workflow.failure); assertEquals("equity", workflow.review?.text("kind"))
             workflow.confirmed = true
             val shares = workflow.save(requireNotNull(workflow.fields()))

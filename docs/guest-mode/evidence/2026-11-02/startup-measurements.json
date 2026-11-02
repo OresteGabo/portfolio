@@ -1,0 +1,27 @@
+[
+  {
+    "run": 0,
+    "forceStoppedLaunch": "Starting: Intent { cmp=dev.orestegabo.portfolio/.MainActivity }\nStatus: ok\nLaunchState: COLD\nActivity: dev.orestegabo.portfolio/.MainActivity\nTotalTime: 1161\nWaitTime: 1168\nComplete\n",
+    "homeResume": "Starting: Intent { cmp=dev.orestegabo.portfolio/.MainActivity }\nWarning: Activity not started, its current task has been brought to the front\nStatus: ok\nLaunchState: HOT\nActivity: dev.orestegabo.portfolio/.MainActivity\nTotalTime: 1395\nWaitTime: 1471\nComplete\n"
+  },
+  {
+    "run": 1,
+    "forceStoppedLaunch": "Starting: Intent { cmp=dev.orestegabo.portfolio/.MainActivity }\nStatus: ok\nLaunchState: COLD\nActivity: dev.orestegabo.portfolio/.MainActivity\nTotalTime: 1047\nWaitTime: 1069\nComplete\n",
+    "homeResume": "Starting: Intent { cmp=dev.orestegabo.portfolio/.MainActivity }\nWarning: Activity not started, its current task has been brought to the front\nStatus: ok\nLaunchState: HOT\nActivity: dev.orestegabo.portfolio/.MainActivity\nTotalTime: 426\nWaitTime: 432\nComplete\n"
+  },
+  {
+    "run": 2,
+    "forceStoppedLaunch": "Starting: Intent { cmp=dev.orestegabo.portfolio/.MainActivity }\nStatus: ok\nLaunchState: COLD\nActivity: dev.orestegabo.portfolio/.MainActivity\nTotalTime: 1090\nWaitTime: 1091\nComplete\n",
+    "homeResume": "Starting: Intent { cmp=dev.orestegabo.portfolio/.MainActivity }\nWarning: Activity not started, its current task has been brought to the front\nStatus: ok\nLaunchState: UNKNOWN (0)\nActivity: dev.orestegabo.portfolio/.MainActivity\nWaitTime: 336\nComplete\n"
+  },
+  {
+    "run": 3,
+    "forceStoppedLaunch": "Starting: Intent { cmp=dev.orestegabo.portfolio/.MainActivity }\nStatus: ok\nLaunchState: COLD\nActivity: dev.orestegabo.portfolio/.MainActivity\nTotalTime: 1052\nWaitTime: 1082\nComplete\n",
+    "homeResume": "Starting: Intent { cmp=dev.orestegabo.portfolio/.MainActivity }\nWarning: Activity not started, its current task has been brought to the front\nStatus: ok\nLaunchState: HOT\nActivity: dev.orestegabo.portfolio/.MainActivity\nTotalTime: 475\nWaitTime: 490\nComplete\n"
+  },
+  {
+    "run": 4,
+    "forceStoppedLaunch": "Starting: Intent { cmp=dev.orestegabo.portfolio/.MainActivity }\nStatus: ok\nLaunchState: COLD\nActivity: dev.orestegabo.portfolio/.MainActivity\nTotalTime: 1046\nWaitTime: 1047\nComplete\n",
+    "homeResume": "Starting: Intent { cmp=dev.orestegabo.portfolio/.MainActivity }\nWarning: Activity not started, its current task has been brought to the front\nStatus: ok\nLaunchState: HOT\nActivity: dev.orestegabo.portfolio/.MainActivity\nTotalTime: 648\nWaitTime: 655\nComplete\n"
+  }
+]

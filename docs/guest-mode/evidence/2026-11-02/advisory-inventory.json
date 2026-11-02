@@ -1,0 +1,6387 @@
+[
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlin:kotlin-stdlib"
+    },
+    "version": "2.3.21",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath",
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains:annotations"
+    },
+    "version": "13.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-devtools"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework:spring-core"
+    },
+    "version": "7.0.10",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "commons-logging:commons-logging"
+    },
+    "version": "1.3.6",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jspecify:jspecify"
+    },
+    "version": "1.0.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework:spring-context"
+    },
+    "version": "7.0.10",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework:spring-aop"
+    },
+    "version": "7.0.10",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework:spring-beans"
+    },
+    "version": "7.0.10",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework:spring-expression"
+    },
+    "version": "7.0.10",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.micrometer:micrometer-observation"
+    },
+    "version": "1.17.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.micrometer:micrometer-commons"
+    },
+    "version": "1.17.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-autoconfigure"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.firebase:firebase-admin"
+    },
+    "version": "9.11.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.auth:google-auth-library-oauth2-http"
+    },
+    "version": "1.52.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.guava:guava"
+    },
+    "version": "33.7.2-jre",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.guava:failureaccess"
+    },
+    "version": "1.0.3",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.guava:listenablefuture"
+    },
+    "version": "9999.0-empty-to-avoid-conflict-with-guava",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.errorprone:error_prone_annotations"
+    },
+    "version": "2.50.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.j2objc:j2objc-annotations"
+    },
+    "version": "3.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.auto.value:auto-value-annotations"
+    },
+    "version": "1.11.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.code.findbugs:jsr305"
+    },
+    "version": "3.0.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.auth:google-auth-library-credentials"
+    },
+    "version": "1.52.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.http-client:google-http-client"
+    },
+    "version": "2.2.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.apache.httpcomponents:httpclient"
+    },
+    "version": "4.5.14",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.apache.httpcomponents:httpcore"
+    },
+    "version": "4.4.16",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "commons-codec:commons-codec"
+    },
+    "version": "1.21.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.grpc:grpc-context"
+    },
+    "version": "1.84.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.grpc:grpc-api"
+    },
+    "version": "1.84.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opencensus:opencensus-api"
+    },
+    "version": "0.31.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opencensus:opencensus-contrib-http-util"
+    },
+    "version": "0.31.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.http-client:google-http-client-gson"
+    },
+    "version": "2.2.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.code.gson:gson"
+    },
+    "version": "2.13.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.api:api-common"
+    },
+    "version": "2.68.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "javax.annotation:javax.annotation-api"
+    },
+    "version": "1.3.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.api-client:google-api-client"
+    },
+    "version": "2.7.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.oauth-client:google-oauth-client"
+    },
+    "version": "1.39.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.http-client:google-http-client-apache-v2"
+    },
+    "version": "2.2.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.api-client:google-api-client-gson"
+    },
+    "version": "2.7.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.cloud:google-cloud-storage"
+    },
+    "version": "2.73.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.fasterxml.jackson.dataformat:jackson-dataformat-xml"
+    },
+    "version": "2.21.7",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.fasterxml.jackson:jackson-bom"
+    },
+    "version": "2.21.7",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
+    },
+    "version": "2.21.7",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.codehaus.woodstox:stax2-api"
+    },
+    "version": "4.2.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.fasterxml.woodstox:woodstox-core"
+    },
+    "version": "7.0.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.fasterxml.jackson.core:jackson-databind"
+    },
+    "version": "2.21.7",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.fasterxml.jackson.core:jackson-annotations"
+    },
+    "version": "2.21",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.http-client:google-http-client-jackson2"
+    },
+    "version": "2.2.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.apis:google-api-services-storage"
+    },
+    "version": "v1-rev20260524-2.0.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.cloud:google-cloud-core"
+    },
+    "version": "2.75.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.cloud:google-cloud-core-http"
+    },
+    "version": "2.75.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.http-client:google-http-client-appengine"
+    },
+    "version": "2.2.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.api:gax-httpjson"
+    },
+    "version": "2.85.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.conscrypt:conscrypt-openjdk-uber"
+    },
+    "version": "2.6.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.cloud:google-cloud-core-grpc"
+    },
+    "version": "2.75.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.api:gax"
+    },
+    "version": "2.85.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.api:gax-grpc"
+    },
+    "version": "2.85.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.grpc:grpc-inprocess"
+    },
+    "version": "1.84.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.grpc:grpc-alts"
+    },
+    "version": "1.84.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.grpc:grpc-auth"
+    },
+    "version": "1.84.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opentelemetry:opentelemetry-context"
+    },
+    "version": "1.67.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opentelemetry:opentelemetry-common"
+    },
+    "version": "1.67.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.api.grpc:proto-google-iam-v1"
+    },
+    "version": "1.71.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.protobuf:protobuf-java"
+    },
+    "version": "4.36.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.protobuf:protobuf-java-util"
+    },
+    "version": "4.36.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.grpc:grpc-core"
+    },
+    "version": "1.84.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.android:annotations"
+    },
+    "version": "4.1.1.4",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.codehaus.mojo:animal-sniffer-annotations"
+    },
+    "version": "1.27",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.perfmark:perfmark-api"
+    },
+    "version": "0.27.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.grpc:grpc-protobuf"
+    },
+    "version": "1.84.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.grpc:grpc-protobuf-lite"
+    },
+    "version": "1.84.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.api.grpc:proto-google-common-protos"
+    },
+    "version": "2.76.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.threeten:threetenbp"
+    },
+    "version": "1.7.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.api.grpc:proto-google-cloud-storage-v2"
+    },
+    "version": "2.73.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.api.grpc:grpc-google-cloud-storage-v2"
+    },
+    "version": "2.73.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.api.grpc:gapic-google-cloud-storage-v2"
+    },
+    "version": "2.73.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.grpc:grpc-netty-shaded"
+    },
+    "version": "1.84.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.grpc:grpc-util"
+    },
+    "version": "1.84.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.grpc:grpc-googleapis"
+    },
+    "version": "1.84.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.grpc:grpc-xds"
+    },
+    "version": "1.84.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.grpc:grpc-services"
+    },
+    "version": "1.84.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.re2j:re2j"
+    },
+    "version": "1.8",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "dev.cel:runtime"
+    },
+    "version": "0.13.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "dev.cel:common"
+    },
+    "version": "0.13.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.threeten:threeten-extra"
+    },
+    "version": "1.8.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "dev.cel:protobuf"
+    },
+    "version": "0.13.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opentelemetry:opentelemetry-sdk"
+    },
+    "version": "1.67.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opentelemetry:opentelemetry-sdk-trace"
+    },
+    "version": "1.67.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opentelemetry:opentelemetry-sdk-logs"
+    },
+    "version": "1.67.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.grpc:grpc-opentelemetry"
+    },
+    "version": "1.84.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opentelemetry:opentelemetry-api"
+    },
+    "version": "1.67.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opentelemetry:opentelemetry-sdk-metrics"
+    },
+    "version": "1.67.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opentelemetry:opentelemetry-sdk-common"
+    },
+    "version": "1.67.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure-spi"
+    },
+    "version": "1.67.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opentelemetry.semconv:opentelemetry-semconv"
+    },
+    "version": "1.29.0-alpha",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.cloud.opentelemetry:exporter-metrics"
+    },
+    "version": "0.33.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.cloud:libraries-bom"
+    },
+    "version": "26.48.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.grpc:grpc-grpclb"
+    },
+    "version": "1.84.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.grpc:grpc-rls"
+    },
+    "version": "1.84.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.grpc:grpc-stub"
+    },
+    "version": "1.84.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.api.grpc:proto-google-cloud-monitoring-v3"
+    },
+    "version": "3.52.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.cloud:google-cloud-firestore"
+    },
+    "version": "3.47.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.api.grpc:proto-google-cloud-firestore-v1"
+    },
+    "version": "3.47.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.cloud:proto-google-cloud-firestore-bundle-v1"
+    },
+    "version": "3.47.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opentelemetry.instrumentation:opentelemetry-grpc-1.6"
+    },
+    "version": "2.1.0-alpha",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opentelemetry.instrumentation:opentelemetry-instrumentation-api"
+    },
+    "version": "2.1.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opentelemetry:opentelemetry-extension-incubator"
+    },
+    "version": "1.35.0-alpha",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-incubator"
+    },
+    "version": "2.1.0-alpha",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.slf4j:slf4j-api"
+    },
+    "version": "2.0.20",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.cloud:google-cloud-monitoring"
+    },
+    "version": "3.52.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.checkerframework:checker-qual"
+    },
+    "version": "3.55.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.cloud.opentelemetry:shared-resourcemapping"
+    },
+    "version": "0.33.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opentelemetry:opentelemetry-bom"
+    },
+    "version": "1.42.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.opentelemetry.contrib:opentelemetry-gcp-resources"
+    },
+    "version": "1.37.0-alpha",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.cloud.opentelemetry:detector-resources-support"
+    },
+    "version": "0.33.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.fasterxml.jackson.core:jackson-core"
+    },
+    "version": "2.21.7",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-codec-http"
+    },
+    "version": "4.2.19.Final",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-common"
+    },
+    "version": "4.2.19.Final",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-buffer"
+    },
+    "version": "4.2.19.Final",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-transport"
+    },
+    "version": "4.2.19.Final",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-resolver"
+    },
+    "version": "4.2.19.Final",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-codec-base"
+    },
+    "version": "4.2.19.Final",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-codec-compression"
+    },
+    "version": "4.2.19.Final",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-handler"
+    },
+    "version": "4.2.19.Final",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-transport-native-unix-common"
+    },
+    "version": "4.2.19.Final",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.apache.httpcomponents.client5:httpclient5"
+    },
+    "version": "5.6.5",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.apache.httpcomponents.core5:httpcore5"
+    },
+    "version": "5.4.4",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.apache.httpcomponents.core5:httpcore5-h2"
+    },
+    "version": "5.4.4",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.nimbusds:nimbus-jose-jwt"
+    },
+    "version": "10.9.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-starter-actuator"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-starter"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-starter-logging"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "ch.qos.logback:logback-classic"
+    },
+    "version": "1.5.38",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "ch.qos.logback:logback-core"
+    },
+    "version": "1.5.38",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.apache.logging.log4j:log4j-to-slf4j"
+    },
+    "version": "2.25.5",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.apache.logging.log4j:log4j-api"
+    },
+    "version": "2.25.5",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.slf4j:jul-to-slf4j"
+    },
+    "version": "2.0.20",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "jakarta.annotation:jakarta.annotation-api"
+    },
+    "version": "3.0.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.yaml:snakeyaml"
+    },
+    "version": "2.6",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-starter-micrometer-metrics"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-micrometer-metrics"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-micrometer-observation"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.micrometer:micrometer-core"
+    },
+    "version": "1.17.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.hdrhistogram:HdrHistogram"
+    },
+    "version": "2.2.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-actuator-autoconfigure"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-actuator"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-health"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.micrometer:micrometer-jakarta9"
+    },
+    "version": "1.17.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-starter-data-jpa"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-starter-jdbc"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-jdbc"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-sql"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-transaction"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-persistence"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework:spring-tx"
+    },
+    "version": "7.0.10",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework:spring-jdbc"
+    },
+    "version": "7.0.10",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.zaxxer:HikariCP"
+    },
+    "version": "7.0.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-data-jpa"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-data-commons"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.data:spring-data-commons"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-hibernate"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-jpa"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "jakarta.persistence:jakarta.persistence-api"
+    },
+    "version": "3.2.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework:spring-orm"
+    },
+    "version": "7.0.10",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.hibernate.orm:hibernate-core"
+    },
+    "version": "7.4.13.Final",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jboss.logging:jboss-logging"
+    },
+    "version": "3.6.3.Final",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.hibernate.models:hibernate-models"
+    },
+    "version": "1.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "net.bytebuddy:byte-buddy"
+    },
+    "version": "1.18.15",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "jakarta.xml.bind:jakarta.xml.bind-api"
+    },
+    "version": "4.0.5",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "jakarta.activation:jakarta.activation-api"
+    },
+    "version": "2.1.4",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.glassfish.jaxb:jaxb-runtime"
+    },
+    "version": "4.0.9",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.glassfish.jaxb:jaxb-core"
+    },
+    "version": "4.0.9",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.eclipse.angus:angus-activation"
+    },
+    "version": "2.0.3",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.glassfish.jaxb:txw2"
+    },
+    "version": "4.0.9",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.sun.istack:istack-commons-runtime"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "jakarta.inject:jakarta.inject-api"
+    },
+    "version": "2.0.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.antlr:antlr4-runtime"
+    },
+    "version": "4.13.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.hibernate.orm:hibernate-platform"
+    },
+    "version": "7.4.13.Final",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "jakarta.transaction:jakarta.transaction-api"
+    },
+    "version": "2.0.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.data:spring-data-jpa"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework:spring-aspects"
+    },
+    "version": "7.0.10",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.aspectj:aspectjweaver"
+    },
+    "version": "1.9.25.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-starter-flyway"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-flyway"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.flywaydb:flyway-core"
+    },
+    "version": "12.4.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "tools.jackson.core:jackson-databind"
+    },
+    "version": "3.1.7",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "tools.jackson.core:jackson-core"
+    },
+    "version": "3.1.7",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "tools.jackson:jackson-bom"
+    },
+    "version": "3.1.7",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "tools.jackson.module:jackson-module-kotlin"
+    },
+    "version": "3.1.7",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlin:kotlin-reflect"
+    },
+    "version": "2.3.21",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-starter-security"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-security"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.security:spring-security-config"
+    },
+    "version": "7.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.security:spring-security-core"
+    },
+    "version": "7.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.security:spring-security-crypto"
+    },
+    "version": "7.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.security:spring-security-web"
+    },
+    "version": "7.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework:spring-web"
+    },
+    "version": "7.0.10",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-starter-validation"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-validation"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.apache.tomcat.embed:tomcat-embed-el"
+    },
+    "version": "11.0.27",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.hibernate.validator:hibernate-validator"
+    },
+    "version": "9.1.5.Final",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "jakarta.validation:jakarta.validation-api"
+    },
+    "version": "3.1.1",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.fasterxml:classmate"
+    },
+    "version": "1.7.3",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-starter-webmvc"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-starter-jackson"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-jackson"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-starter-tomcat"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-starter-tomcat-runtime"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-tomcat"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-web-server"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.apache.tomcat.embed:tomcat-embed-core"
+    },
+    "version": "11.0.27",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.apache.tomcat.embed:tomcat-embed-websocket"
+    },
+    "version": "11.0.27",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-http-converter"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-webmvc"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-servlet"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework:spring-webmvc"
+    },
+    "version": "7.0.10",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.flywaydb:flyway-database-postgresql"
+    },
+    "version": "12.4.0",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.bouncycastle:bcprov-jdk18on"
+    },
+    "version": "1.85.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jsoup:jsoup"
+    },
+    "version": "1.23.2",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.postgresql:postgresql"
+    },
+    "version": "42.7.14",
+    "scopes": [
+      "dependencies-gabo-portfolio-api:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains:annotations"
+    },
+    "version": "23.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    },
+    "version": "2.1.21",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlin:kotlin-stdlib-jdk7"
+    },
+    "version": "2.1.21",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlin:kotlin-stdlib-common"
+    },
+    "version": "2.3.21",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.firebase:firebase-bom"
+    },
+    "version": "35.1.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.firebase:firebase-messaging"
+    },
+    "version": "26.0.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.firebase:firebase-common"
+    },
+    "version": "23.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-coroutines-play-services"
+    },
+    "version": "1.11.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-coroutines-core"
+    },
+    "version": "1.11.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm"
+    },
+    "version": "1.11.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-coroutines-bom"
+    },
+    "version": "1.11.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-coroutines-android"
+    },
+    "version": "1.11.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-coroutines-slf4j"
+    },
+    "version": "1.11.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.slf4j:slf4j-api"
+    },
+    "version": "2.0.19",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.android.gms:play-services-tasks"
+    },
+    "version": "18.4.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.android.gms:play-services-basement"
+    },
+    "version": "18.9.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.collection:collection"
+    },
+    "version": "1.5.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.collection:collection-jvm"
+    },
+    "version": "1.5.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.annotation:annotation"
+    },
+    "version": "1.9.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.annotation:annotation-jvm"
+    },
+    "version": "1.9.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.collection:collection-ktx"
+    },
+    "version": "1.5.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.core:core"
+    },
+    "version": "1.18.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.annotation:annotation-experimental"
+    },
+    "version": "1.4.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.concurrent:concurrent-futures"
+    },
+    "version": "1.1.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.guava:listenablefuture"
+    },
+    "version": "1.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.core:core-viewtree"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.interpolator:interpolator"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-common"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-common-jvm"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jspecify:jspecify"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-common-java8"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-livedata"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.arch.core:core-common"
+    },
+    "version": "2.2.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.arch.core:core-runtime"
+    },
+    "version": "2.2.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-livedata-core"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-livedata-core-ktx"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-process"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-runtime"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-runtime-android"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.profileinstaller:profileinstaller"
+    },
+    "version": "1.4.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.startup:startup-runtime"
+    },
+    "version": "1.1.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.tracing:tracing"
+    },
+    "version": "1.2.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-runtime-compose"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-runtime-compose-android"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.runtime:runtime"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.runtime:runtime-android"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.runtime:runtime-annotation"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.runtime:runtime-annotation-android"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.runtime:runtime-retain"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.runtime:runtime-retain-android"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.runtime:runtime-saveable"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.runtime:runtime-saveable-android"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.savedstate:savedstate-compose"
+    },
+    "version": "1.4.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.savedstate:savedstate-compose-android"
+    },
+    "version": "1.4.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.core:core-ktx"
+    },
+    "version": "1.18.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.savedstate:savedstate"
+    },
+    "version": "1.4.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.savedstate:savedstate-android"
+    },
+    "version": "1.4.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-serialization-core"
+    },
+    "version": "1.11.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm"
+    },
+    "version": "1.11.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-serialization-bom"
+    },
+    "version": "1.11.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-serialization-json"
+    },
+    "version": "1.11.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-serialization-json-jvm"
+    },
+    "version": "1.11.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.savedstate:savedstate-ktx"
+    },
+    "version": "1.4.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.androidx.savedstate:savedstate"
+    },
+    "version": "1.3.6",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.runtime:runtime-saveable"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.androidx.lifecycle:lifecycle-common"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.androidx.lifecycle:lifecycle-runtime"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.runtime:runtime"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.androidx.savedstate:savedstate-compose"
+    },
+    "version": "1.3.6",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-runtime-ktx"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-runtime-ktx-android"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-viewmodel"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-viewmodel-android"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-viewmodel-compose"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-viewmodel-compose-android"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui-android"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.activity:activity-ktx"
+    },
+    "version": "1.13.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.activity:activity"
+    },
+    "version": "1.13.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-viewmodel-savedstate"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-viewmodel-savedstate-android"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-viewmodel-ktx"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-savedstate"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.navigationevent:navigationevent"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.navigationevent:navigationevent-android"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.navigationevent:navigationevent-compose"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.navigationevent:navigationevent-compose-android"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.activity:activity-compose"
+    },
+    "version": "1.13.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.autofill:autofill"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui-geometry"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui-geometry-android"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui-util"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui-util-android"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui-graphics"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui-graphics-android"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui-unit"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui-unit-android"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui-text"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui-text-android"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.emoji2:emoji2"
+    },
+    "version": "1.4.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.emoji2:emoji2-views-helper"
+    },
+    "version": "1.4.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui-tooling"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui-tooling-android"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.animation:animation"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.animation:animation-android"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.animation:animation-core"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.animation:animation-core-android"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.foundation:foundation-layout"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.foundation:foundation-layout-android"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.foundation:foundation"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.foundation:foundation-android"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.material3:material3"
+    },
+    "version": "1.5.0-alpha17",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.material3:material3-android"
+    },
+    "version": "1.5.0-alpha17",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.material:material-ripple"
+    },
+    "version": "1.11.0-rc01",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.material:material-ripple-android"
+    },
+    "version": "1.11.0-rc01",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.graphics:graphics-shapes"
+    },
+    "version": "1.1.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.graphics:graphics-shapes-android"
+    },
+    "version": "1.1.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui-tooling-data"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui-tooling-data-android"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui-tooling-preview"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.ui:ui-tooling-preview-android"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.graphics:graphics-path"
+    },
+    "version": "1.0.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.customview:customview-poolingcontainer"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.transition:transition"
+    },
+    "version": "1.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.dynamicanimation:dynamicanimation"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.legacy:legacy-support-core-utils"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.documentfile:documentfile"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.loader:loader"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.localbroadcastmanager:localbroadcastmanager"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.print:print"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.window:window"
+    },
+    "version": "1.5.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.window:window-core"
+    },
+    "version": "1.5.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.window:window-core-android"
+    },
+    "version": "1.5.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.versionedparcelable:versionedparcelable"
+    },
+    "version": "1.1.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.fragment:fragment"
+    },
+    "version": "1.8.9",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.viewpager:viewpager"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.customview:customview"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.firebase:firebase-components"
+    },
+    "version": "20.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.firebase:firebase-annotations"
+    },
+    "version": "18.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "javax.inject:javax.inject"
+    },
+    "version": "1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.errorprone:error_prone_annotations"
+    },
+    "version": "2.26.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.datastore:datastore-preferences"
+    },
+    "version": "1.1.7",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.datastore:datastore-preferences-android"
+    },
+    "version": "1.1.7",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.datastore:datastore"
+    },
+    "version": "1.1.7",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.datastore:datastore-android"
+    },
+    "version": "1.1.7",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.datastore:datastore-core"
+    },
+    "version": "1.1.7",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.datastore:datastore-core-android"
+    },
+    "version": "1.1.7",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlin:kotlin-parcelize-runtime"
+    },
+    "version": "1.9.22",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlin:kotlin-android-extensions-runtime"
+    },
+    "version": "1.9.22",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.datastore:datastore-core-okio"
+    },
+    "version": "1.1.7",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.datastore:datastore-core-okio-jvm"
+    },
+    "version": "1.1.7",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.squareup.okio:okio"
+    },
+    "version": "3.4.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.squareup.okio:okio-jvm"
+    },
+    "version": "3.4.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.datastore:datastore-preferences-core"
+    },
+    "version": "1.1.7",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.datastore:datastore-preferences-core-android"
+    },
+    "version": "1.1.7",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.datastore:datastore-preferences-proto"
+    },
+    "version": "1.1.7",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.datastore:datastore-preferences-external-protobuf"
+    },
+    "version": "1.1.7",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.firebase:firebase-datatransport"
+    },
+    "version": "21.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.android.datatransport:transport-api"
+    },
+    "version": "5.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.android.datatransport:transport-backend-cct"
+    },
+    "version": "5.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.android.datatransport:transport-runtime"
+    },
+    "version": "5.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.firebase:firebase-encoders"
+    },
+    "version": "18.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.firebase:firebase-encoders-proto"
+    },
+    "version": "17.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.firebase:firebase-encoders-json"
+    },
+    "version": "19.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.firebase:firebase-iid-interop"
+    },
+    "version": "17.1.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.firebase:firebase-installations"
+    },
+    "version": "20.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.firebase:firebase-installations-interop"
+    },
+    "version": "18.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.firebase:firebase-measurement-connector"
+    },
+    "version": "19.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.android.gms:play-services-base"
+    },
+    "version": "18.9.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.android.gms:play-services-cloud-messaging"
+    },
+    "version": "17.4.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.google.android.gms:play-services-stats"
+    },
+    "version": "17.0.2",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-tooling-preview"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-tooling"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-geometry"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-util"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-graphics"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-unit"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-text"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-tooling-data"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.biometric:biometric"
+    },
+    "version": "1.1.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.appcompat:appcompat"
+    },
+    "version": "1.8.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.appcompat:appcompat-resources"
+    },
+    "version": "1.8.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.vectordrawable:vectordrawable"
+    },
+    "version": "1.1.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.vectordrawable:vectordrawable-animated"
+    },
+    "version": "1.1.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.cursoradapter:cursoradapter"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.drawerlayout:drawerlayout"
+    },
+    "version": "1.0.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.resourceinspection:resourceinspection-annotation"
+    },
+    "version": "1.0.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-client-cio"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-client-cio-jvm"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-client-core"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-client-core-jvm"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-http"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-http-jvm"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-utils"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-utils-jvm"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-io"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-io-jvm"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-io-core"
+    },
+    "version": "0.9.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-io-core-jvm"
+    },
+    "version": "0.9.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-io-bytestring"
+    },
+    "version": "0.9.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-io-bytestring-jvm"
+    },
+    "version": "0.9.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-http-cio"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-http-cio-jvm"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-network"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-network-jvm"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-events"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-events-jvm"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-websocket-serialization"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-websocket-serialization-jvm"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-serialization"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-serialization-jvm"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-websockets"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-websockets-jvm"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-sse"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-sse-jvm"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-network-tls"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-network-tls-jvm"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-datetime"
+    },
+    "version": "0.7.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-datetime-jvm"
+    },
+    "version": "0.7.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-core:androidRuntimeClasspath",
+      "dependencies-core:jvmRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.foundation:foundation"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.animation:animation"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.animation:animation-core"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.foundation:foundation-layout"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.material3:material3"
+    },
+    "version": "1.11.0-alpha07",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.material:material-ripple"
+    },
+    "version": "1.11.0-beta03",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.material:material-icons-extended"
+    },
+    "version": "1.7.3",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.material:material-icons-extended"
+    },
+    "version": "1.7.6",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.material:material-icons-extended-android"
+    },
+    "version": "1.7.6",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.material:material-icons-core"
+    },
+    "version": "1.7.6",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.material:material-icons-core-android"
+    },
+    "version": "1.7.6",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.material:material-icons-core"
+    },
+    "version": "1.7.3",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.components:components-resources"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.components:components-resources-android"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-androidApp:releaseRuntimeClasspath",
+      "dependencies-shared:androidRuntimeClasspath",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-serialization-json"
+    },
+    "version": "1.9.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-serialization-json-iosarm64"
+    },
+    "version": "1.9.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-serialization-core-iosarm64"
+    },
+    "version": "1.11.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-datetime-iosarm64"
+    },
+    "version": "0.7.1",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-coroutines-core-iosarm64"
+    },
+    "version": "1.11.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:atomicfu"
+    },
+    "version": "0.33.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:atomicfu-iosarm64"
+    },
+    "version": "0.33.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-client-core-iosarm64"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-http-iosarm64"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-utils-iosarm64"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-io-iosarm64"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-io-core-iosarm64"
+    },
+    "version": "0.9.1",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlinx:kotlinx-io-bytestring-iosarm64"
+    },
+    "version": "0.9.1",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-http-cio-iosarm64"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-events-iosarm64"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-websocket-serialization-iosarm64"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-serialization-iosarm64"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-websockets-iosarm64"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-sse-iosarm64"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-client-darwin"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-client-darwin-iosarm64"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-network-tls-iosarm64"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-network-iosarm64"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-core:iosArm64CompileKlibraries",
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.appcompat:appcompat"
+    },
+    "version": "1.2.0",
+    "scopes": [
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.fragment:fragment"
+    },
+    "version": "1.2.5",
+    "scopes": [
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.appcompat:appcompat-resources"
+    },
+    "version": "1.2.0",
+    "scopes": [
+      "dependencies-shared:androidRuntimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.runtime:runtime-iosarm64"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.runtime:runtime-iosarm64"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.collection:collection-iosarm64"
+    },
+    "version": "1.5.0",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.annotation:annotation-iosarm64"
+    },
+    "version": "1.9.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.runtime:runtime-annotation-iosarm64"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.runtime:runtime-retain-iosarm64"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.compose.runtime:runtime-saveable-iosarm64"
+    },
+    "version": "1.11.2",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-runtime-compose-iosarm64"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-runtime-iosarm64"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-common-iosarm64"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-viewmodel-iosarm64"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.lifecycle:lifecycle-viewmodel-savedstate-iosarm64"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.savedstate:savedstate-iosarm64"
+    },
+    "version": "1.4.0",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.savedstate:savedstate-compose-iosarm64"
+    },
+    "version": "1.4.0",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose-uikitarm64"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.runtime:runtime-saveable-iosarm64"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.androidx.savedstate:savedstate-compose-uikitarm64"
+    },
+    "version": "1.3.6",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.foundation:foundation-iosarm64"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.animation:animation-iosarm64"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.animation:animation-core-iosarm64"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.collection-internal:collection"
+    },
+    "version": "1.10.0",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-iosarm64"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.navigationevent:navigationevent"
+    },
+    "version": "1.0.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.navigationevent:navigationevent-iosarm64"
+    },
+    "version": "1.0.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.annotation-internal:annotation"
+    },
+    "version": "1.10.0",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-backhandler"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-backhandler-iosarm64"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-util-iosarm64"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-uikit"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-uikit-iosarm64"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-geometry-iosarm64"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-graphics-iosarm64"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-unit-iosarm64"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-text-iosarm64"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.skiko:skiko"
+    },
+    "version": "0.144.6",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.skiko:skiko-iosarm64"
+    },
+    "version": "0.144.6",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.ui:ui-tooling-preview-iosarm64"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.foundation:foundation-layout-iosarm64"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.material3:material3-iosarm64"
+    },
+    "version": "1.11.0-alpha07",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "androidx.graphics:graphics-shapes-iosarm64"
+    },
+    "version": "1.1.0",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.material:material-ripple-iosarm64"
+    },
+    "version": "1.11.0-beta03",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.material:material-icons-extended-uikitarm64"
+    },
+    "version": "1.7.3",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.material:material-icons-core-uikitarm64"
+    },
+    "version": "1.7.3",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose.components:components-resources-iosArm64"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose-uikitarm64"
+    },
+    "version": "2.10.0",
+    "scopes": [
+      "dependencies-shared:iosArm64CompileKlibraries"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-bom"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-server-core-jvm"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.typesafe:config"
+    },
+    "version": "1.4.9",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-server-netty-jvm"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.ktor:ktor-server-core"
+    },
+    "version": "3.6.0",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-codec"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-common"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-buffer"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-transport"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-resolver"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-codec-base"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-codec-compression"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-codec-protobuf"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-codec-marshalling"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-codec-http2"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-handler"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-transport-native-unix-common"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-codec-http"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-codec-http3"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-codec-classes-quic"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-codec-native-quic"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.eclipse.jetty.alpn:alpn-api"
+    },
+    "version": "1.1.3.v20160715",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-transport-native-kqueue"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-transport-classes-kqueue"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-transport-native-epoll"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "io.netty:netty-transport-classes-epoll"
+    },
+    "version": "4.2.17.Final",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "ch.qos.logback:logback-classic"
+    },
+    "version": "1.6.5",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "ch.qos.logback:logback-core"
+    },
+    "version": "1.6.5",
+    "scopes": [
+      "dependencies-server:runtimeClasspath"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "@napi-rs/keyring"
+    },
+    "version": "1.3.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "@napi-rs/keyring-darwin-arm64"
+    },
+    "version": "1.3.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "@napi-rs/keyring-darwin-x64"
+    },
+    "version": "1.3.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "@napi-rs/keyring-freebsd-x64"
+    },
+    "version": "1.3.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "@napi-rs/keyring-linux-arm-gnueabihf"
+    },
+    "version": "1.3.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "@napi-rs/keyring-linux-arm64-gnu"
+    },
+    "version": "1.3.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "@napi-rs/keyring-linux-arm64-musl"
+    },
+    "version": "1.3.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "@napi-rs/keyring-linux-riscv64-gnu"
+    },
+    "version": "1.3.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "@napi-rs/keyring-linux-x64-gnu"
+    },
+    "version": "1.3.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "@napi-rs/keyring-linux-x64-musl"
+    },
+    "version": "1.3.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "@napi-rs/keyring-win32-arm64-msvc"
+    },
+    "version": "1.3.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "@napi-rs/keyring-win32-ia32-msvc"
+    },
+    "version": "1.3.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "@napi-rs/keyring-win32-x64-msvc"
+    },
+    "version": "1.3.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "@neon/config"
+    },
+    "version": "1.9.4",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "@neon/env"
+    },
+    "version": "1.6.5",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "@neon/sdk"
+    },
+    "version": "7.5.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "ansi-regex"
+    },
+    "version": "6.4.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "ansi-styles"
+    },
+    "version": "6.2.3",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "cliui"
+    },
+    "version": "9.0.1",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "string-width"
+    },
+    "version": "7.2.0",
+    "scopes": [
+      "api:runtime",
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "emoji-regex"
+    },
+    "version": "10.6.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "escalade"
+    },
+    "version": "3.2.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "get-caller-file"
+    },
+    "version": "2.0.5",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "get-east-asian-width"
+    },
+    "version": "1.7.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "jiti"
+    },
+    "version": "2.7.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "string-width"
+    },
+    "version": "8.3.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "strip-ansi"
+    },
+    "version": "7.2.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "wrap-ansi"
+    },
+    "version": "9.0.2",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "y18n"
+    },
+    "version": "5.0.8",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "yargs"
+    },
+    "version": "18.2.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "yargs-parser"
+    },
+    "version": "22.0.0",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "zod"
+    },
+    "version": "4.6.7",
+    "scopes": [
+      "api:runtime"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "pdfjs-dist"
+    },
+    "version": "6.4.299",
+    "scopes": [
+      "vendored-mobile-engine"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "tesseract.js"
+    },
+    "version": "7.0.0",
+    "scopes": [
+      "vendored-mobile-engine"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "npm",
+      "name": "tesseract.js-core"
+    },
+    "version": "7.0.0",
+    "scopes": [
+      "vendored-mobile-engine"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "com.android.tools.build:gradle"
+    },
+    "version": "9.0.0",
+    "scopes": [
+      "declared-build-plugin"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.kotlin:kotlin-gradle-plugin"
+    },
+    "version": "2.3.21",
+    "scopes": [
+      "declared-build-plugin"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.springframework.boot:spring-boot-gradle-plugin"
+    },
+    "version": "4.1.2",
+    "scopes": [
+      "declared-build-plugin"
+    ]
+  },
+  {
+    "package": {
+      "ecosystem": "Maven",
+      "name": "org.jetbrains.compose:compose-gradle-plugin"
+    },
+    "version": "1.11.1",
+    "scopes": [
+      "declared-build-plugin"
+    ]
+  }
+]

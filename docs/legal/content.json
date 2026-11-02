@@ -1,5 +1,5 @@
 {
-  "version": "2026-11-01",
+  "version": "2026-11-02",
   "documents": [
     {
       "id": "terms",
@@ -117,8 +117,18 @@
             "fr": "Investissements et documents"
           },
           "body": {
-            "en": "Your purchases, pending entries, statements and documents provide your portfolio, calendar and reports. Without investment records, the app cannot calculate your portfolio.\n\nPDFs are read on your device. Saving a confirmed purchase also uploads its PDF so you can find it in Documents. A statement can create entries that remind you to upload a missing contract.",
-            "fr": "Vos achats, entrées en attente, relevés et documents servent au portefeuille, au calendrier et aux rapports. Sans investissements enregistrés, l’application ne peut pas calculer votre portefeuille.\n\nLes PDF sont lus sur votre appareil. Enregistrer un achat confirmé téléverse aussi son PDF pour le retrouver dans Documents. Un relevé peut créer des entrées rappelant qu’un contrat est manquant."
+            "en": "Your purchases, pending entries, statements and documents provide your portfolio, calendar and reports. Without investment records, the app cannot calculate your portfolio.\n\nPDFs are read on your device. In account mode, saving a confirmed purchase also uploads its PDF so you can find it in Documents. A statement can create entries that remind you to upload a missing contract.",
+            "fr": "En mode compte : Vos achats, entrées en attente, relevés et documents servent au portefeuille, au calendrier et aux rapports. Sans investissements enregistrés, l’application ne peut pas calculer votre portefeuille.\n\nLes PDF sont lus sur votre appareil. Enregistrer un achat confirmé téléverse aussi son PDF pour le retrouver dans Documents. Un relevé peut créer des entrées rappelant qu’un contrat est manquant."
+          }
+        },
+        {
+          "title": {
+            "en": "Private Guest Mode",
+            "fr": "Mode invité privé"
+          },
+          "body": {
+            "en": "Guest Mode does not require an account. Your personal guest investments, coupon receipt states and selected original PDFs are stored on this device using platform protection. They are not automatically sent to Struct Capital, a broker, cloud OCR or an AI service. Fictional samples are separate from personal records. Guest market retrieval is currently disabled.\n\nGuest data is not cloud-backed up or synchronized. Device loss, uninstalling the app or loss of access to protected storage can make it unavailable. Guest Mode does not add a separate app PIN or biometric lock; protect access to your device.\n\nSigning in does not transfer guest data. After normal authentication, you can open Transfer Guest Data, review the destination account and separately select investments, receipts and PDFs. Only after your confirmation are selected items sent to that account. A selected PDF is sent in full. Original guest records and files remain on this device after transfer; conflicts do not silently replace existing account records.\n\nDelete Guest Data in local storage settings requires confirmation and removes the personal guest workspace. Deleting guest data does not delete previously transferred account records or copies you exported/shared. Deleting an account does not delete the separate guest workspace.",
+            "fr": "Le mode invité ne nécessite pas de compte. Vos placements personnels, états de réception de coupons et PDF originaux sélectionnés restent sur cet appareil avec la protection de la plateforme. Ils ne sont pas envoyés automatiquement à Struct Capital, à un courtier, à un OCR cloud ou à un service d’IA. Les exemples fictifs sont séparés de vos données personnelles. La récupération des cours en mode invité est actuellement désactivée.\n\nLes données invité ne sont ni sauvegardées dans le cloud ni synchronisées. La perte de l’appareil, la désinstallation ou la perte d’accès au stockage protégé peut les rendre indisponibles. Le mode invité n’ajoute pas de code ou de verrou biométrique propre à l’app ; protégez l’accès à votre appareil.\n\nLa connexion ne transfère pas les données invité. Après authentification normale, vous pouvez ouvrir le transfert des données invité, vérifier le compte destinataire et sélectionner séparément placements, réceptions et PDF. Seule votre confirmation autorise leur envoi vers ce compte. Un PDF sélectionné est envoyé en entier. Les données et fichiers invité restent sur cet appareil après le transfert ; les conflits ne remplacent pas silencieusement les données du compte.\n\nLa suppression des données invité dans les paramètres de stockage local demande confirmation et supprime l’espace personnel invité. Elle ne supprime pas les données déjà transférées vers un compte ou les copies exportées ou partagées. La suppression d’un compte ne supprime pas l’espace invité distinct."
           }
         },
         {
@@ -299,12 +309,22 @@
       "sections": [
         {
           "title": {
+            "en": "Guest records and account records",
+            "fr": "Données invité et données du compte"
+          },
+          "body": {
+            "en": "Personal Guest Mode uses a separate local workspace. Delete Guest Data in Settings → Local storage requires confirmation and removes its investments, receipt states and originals. Files deliberately exported or shared are outside that deletion. Account deletion does not erase guest data; guest deletion does not erase copies already transferred to an account.\n\nThere is no automatic guest cloud backup or account transfer. Sign in normally and explicitly review and confirm selected items in Transfer Guest Data if you want to transfer them. Local originals remain after transfer. The account portfolio report below is not currently a Guest Mode backup/export feature.",
+            "fr": "Le mode invité personnel utilise un espace local distinct. La suppression des données invité dans Paramètres → Stockage local demande confirmation et supprime ses placements, états de réception et originaux. Les fichiers exportés ou partagés volontairement sont hors de cette suppression. La suppression du compte n’efface pas les données invité ; la suppression des données invité n’efface pas les copies déjà transférées vers un compte.\n\nIl n’existe ni sauvegarde cloud ni transfert automatique du mode invité. Connectez-vous normalement, puis vérifiez et confirmez les éléments sélectionnés dans le transfert des données invité. Les originaux locaux restent après le transfert. Le rapport du compte décrit ci-dessous n’est pas actuellement une fonction de sauvegarde ou d’export du mode invité."
+          }
+        },
+        {
+          "title": {
             "en": "Export your portfolio",
             "fr": "Exporter votre portefeuille"
           },
           "body": {
-            "en": "In Settings, open Tools, then Portfolio report. The report covers all recorded years. You can save or share the PDF using your phone’s options.\n\nExported reports show readable financial amounts even when Hide numbers is on. Choose where you save or share them carefully.",
-            "fr": "Dans Réglages, ouvrez Outils puis Rapport de portefeuille. Le rapport couvre toutes les années enregistrées. Vous pouvez enregistrer ou partager le PDF avec les options de votre téléphone.\n\nLes rapports exportés affichent des montants financiers lisibles même si le masquage des nombres est activé. Choisissez avec soin leur destination."
+            "en": "For a signed-in account: In Settings, open Tools, then Portfolio report. The report covers all recorded years. You can save or share the PDF using your phone’s options.\n\nExported reports show readable financial amounts even when Hide numbers is on. Choose where you save or share them carefully.",
+            "fr": "Pour un compte connecté : Dans Réglages, ouvrez Outils puis Rapport de portefeuille. Le rapport couvre toutes les années enregistrées. Vous pouvez enregistrer ou partager le PDF avec les options de votre téléphone.\n\nLes rapports exportés affichent des montants financiers lisibles même si le masquage des nombres est activé. Choisissez avec soin leur destination."
           }
         },
         {

@@ -136,13 +136,13 @@ class PortfolioModel(
     fun deleteGuestDocument(id: String) = guestWrite({ requireNotNull(guestRepository).deleteDocument(id) }) { documentThumbnails.clear() }
     fun loadGuestPortfolio() = guestAction { requireNotNull(guestRepository).load() }
     private fun guestAction(operation: suspend () -> GuestPortfolio) {
-        if (!isGuest || guestPath != GuestPath.PERSONAL || guestJob?.isActive == true || guestRepository == null) return
+        if (!foreground || !isGuest || guestPath != GuestPath.PERSONAL || guestJob?.isActive == true || guestRepository == null) return
         val revision = generation
         guestStorageLoading = true; guestStorageError = null
         guestJob = viewModelScope.launch {
             try {
                 val result = operation()
-                if (revision == generation && isGuest && guestPath == GuestPath.PERSONAL) guestPortfolio = result
+                if (revision == generation && foreground && isGuest && guestPath == GuestPath.PERSONAL) guestPortfolio = result
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) {
                 if (revision == generation) guestStorageError = if (failure is GuestPdfReviewException || failure is GuestDataDeletionException) failure.message else "Local portfolio could not be opened or saved. Your existing data was not reset. Unlock your device and retry."
@@ -573,12 +573,12 @@ class PortfolioModel(
         }
     }
     fun foreground() {
+        foreground = true
         if (isGuest && guestPath == GuestPath.PERSONAL && guestPortfolio == null) loadGuestPortfolio()
         if (isGuest) refreshGuestQuotes()
         val expired = backgroundGraceExpired()
         backgroundLockJob?.cancel(); backgroundLockJob = null
         backgroundedAt = null
-        foreground = true
         if (expired) lock()
         if (locked && !automaticUnlockAttempted) automaticUnlockPending = true
         tryAutomaticUnlock()
@@ -589,7 +589,7 @@ class PortfolioModel(
         unlock()
     }
     fun background(systemInteraction: Boolean = false) {
-        if (isGuest && !systemInteraction && guestJob?.isActive != true) guestPortfolio = null
+        if (isGuest && !systemInteraction) guestPortfolio = null
         foreground = false
         if (!systemInteraction && vault?.authenticating != true) {
             automaticUnlockPending = false

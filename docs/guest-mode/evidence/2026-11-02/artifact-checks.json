@@ -1,0 +1,22 @@
+{
+  "androidDebug": {
+    "sha256": "3ad5afdb9140eed0b1a856b3d43650b0226c1e0203208a76094a169c34a6cb0b",
+    "bytes": 66840721
+  },
+  "androidUnsignedBundle": {
+    "sha256": "6caafe25e0948b0ffb12b8abdab77f6b7cc319b1b29ac34ea6d4fabe2614bcb3",
+    "bytes": 50174507,
+    "signatureBlocksPresent": false
+  },
+  "iosUnsignedBinary": {
+    "sha256": "5355dc6d8511a7dbb201864609217973237b4e29716b51aa8012a7df0cd5b980",
+    "bytes": 57057744
+  },
+  "releaseHasHiddenApiBypass": false,
+  "androidPackagedManifest": {
+    "allowBackup": "false",
+    "fullBackupContent": "false",
+    "debuggable": "false",
+    "pushAutoInit": "false"
+  }
+}
