@@ -27,7 +27,7 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 
 @Composable
-internal fun SignInScreen(model: PortfolioModel, openLegal: () -> Unit) {
+internal fun SignInScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? = null, openLegal: () -> Unit) {
     val actions = LocalNativeActions.current
     val autofill = LocalAutofillManager.current
     val focus = LocalFocusManager.current
@@ -68,6 +68,10 @@ internal fun SignInScreen(model: PortfolioModel, openLegal: () -> Unit) {
                     AppText(if (register) "Create account" else "Welcome back", Modifier.semantics { heading() },
                         style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 }
+            }
+            item {
+                if (model.guestPath != null) OutlinedButton(onClick = model::returnToGuest, modifier = Modifier.fillMaxWidth()) { AppText("Return to Guest") }
+                else continueAsGuest?.let { OutlinedButton(onClick = it, modifier = Modifier.fillMaxWidth()) { AppText("Continue as Guest") } }
             }
             item {
                 Panel {

@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -> Unit,
     chartStyle: String, changeChartStyle: (String) -> Unit,
-    openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit, openLegal: () -> Unit = {}, openAbout: () -> Unit = {}, openIntroduction: () -> Unit = {}, openInvestmentTools: () -> Unit = {}, openSignInActivity: () -> Unit = {}) {
+    openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit, openLegal: () -> Unit = {}, openAbout: () -> Unit = {}, openIntroduction: () -> Unit = {}, openInvestmentTools: () -> Unit = {}, openSignInActivity: () -> Unit = {}, openGuest: () -> Unit = {}) {
     val actions = LocalNativeActions.current
     var setupSecure by remember { mutableStateOf(false) }
     var targetExpanded by remember { mutableStateOf(false) }
@@ -198,6 +198,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 SettingsRow(Icons.Outlined.PersonAdd, "Invitations", "Create and manage invitations", enabled = !model.busy, onClick = { loadOwner("invitations") })
             } }
             item { SettingsSection("Session") {
+                SettingsRow(Icons.Outlined.PersonOutline, "Continue as Guest", onClick = openGuest, trailing = {})
                 SettingsRow(Icons.AutoMirrored.Filled.Logout, "Sign out", enabled = !model.busy,
                     tint = MaterialTheme.colorScheme.error, onClick = { dialog = "logout" }, trailing = {})
             } }

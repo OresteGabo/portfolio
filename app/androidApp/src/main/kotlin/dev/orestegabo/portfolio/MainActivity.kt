@@ -22,6 +22,11 @@ import dev.orestegabo.portfolio.investments.applyInitialCaptureProtection
 class MainActivity : FragmentActivity() {
     private val pushPermission=registerForActivityResult(ActivityResultContracts.RequestPermission()) { installPush() }
     private fun installPush() {
+        val prefs=getSharedPreferences("portfolio.push",MODE_PRIVATE)
+        val id=prefs.getString("deviceId",null) ?: UUID.randomUUID().toString().also { prefs.edit().putString("deviceId",it).apply() }
+        NativePushBridge.identify(id,"android")
+        val entry = getSharedPreferences("connection", MODE_PRIVATE)
+        if (!entry.getBoolean("onboardingCompleted", false) || entry.getString("sessionChoice", null)?.startsWith("guest-") == true) return
         val configured=FirebaseApp.getApps(this).isNotEmpty()
         val allowed=NotificationManagerCompat.from(this).areNotificationsEnabled()
         NativePushBridge.install(configured,allowed) {
@@ -34,9 +39,6 @@ class MainActivity : FragmentActivity() {
                 startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
             }
         }
-        val prefs=getSharedPreferences("portfolio.push",MODE_PRIVATE)
-        val id=prefs.getString("deviceId",null) ?: UUID.randomUUID().toString().also { prefs.edit().putString("deviceId",it).apply() }
-        NativePushBridge.identify(id,"android")
         if(!configured)return
         if(Build.VERSION.SDK_INT>=26)getSystemService(NotificationManager::class.java).createNotificationChannel(
             NotificationChannel("price_changes",if(resources.configuration.locales[0].language=="fr") "Notifications du portefeuille" else "Portfolio updates",NotificationManager.IMPORTANCE_DEFAULT))

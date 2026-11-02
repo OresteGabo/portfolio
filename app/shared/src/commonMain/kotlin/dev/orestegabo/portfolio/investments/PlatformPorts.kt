@@ -6,6 +6,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 @Composable expect fun PlatformSystemBarAppearance(darkTheme: Boolean)
 
 interface ServerSettings {
+    fun readSessionChoice(): String? = null
+    fun writeSessionChoice(value: String?) {}
     fun readImportHintDismissed(): Boolean = false
     fun writeImportHintDismissed(dismissed: Boolean) {}
     fun readOnboardingCompleted(): Boolean = false

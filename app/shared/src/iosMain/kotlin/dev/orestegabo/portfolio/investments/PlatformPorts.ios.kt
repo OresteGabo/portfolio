@@ -29,6 +29,11 @@ internal fun presentingController(): UIViewController {
 }
 @Composable
 actual fun rememberServerSettings(): ServerSettings = remember { object : ServerSettings {
+    override fun readSessionChoice() = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.sessionChoice")
+    override fun writeSessionChoice(value: String?) {
+        if (value == null) NSUserDefaults.standardUserDefaults.removeObjectForKey("portfolio.sessionChoice")
+        else NSUserDefaults.standardUserDefaults.setObject(value, forKey = "portfolio.sessionChoice")
+    }
     override fun readImportHintDismissed() = NSUserDefaults.standardUserDefaults.boolForKey("portfolio.importHintDismissed")
     override fun writeImportHintDismissed(dismissed: Boolean) { NSUserDefaults.standardUserDefaults.setBool(dismissed, forKey = "portfolio.importHintDismissed") }
     override fun readImportHistory(account: String) = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.importHistory:$account")

@@ -29,7 +29,7 @@ fun App() {
     val vault = rememberSecureSignIn()
     val model = viewModel {
         val timing = UnlockPerformance.begin("viewmodel_initialization")
-        PortfolioModel(settings, vault = vault, initialOrigin = developmentApiOrigin()).also { timing?.end() }
+        PortfolioModel(settings, deferAccountStartup = !settings.readOnboardingCompleted(), vault = vault, initialOrigin = developmentApiOrigin()).also { timing?.end() }
     }
     val haptics = LocalHapticFeedback.current
     NativePrivacyCover(protectCaptures = model.captureProtectionEnabled, protectDocument = model.documentPreview != null)
@@ -38,7 +38,7 @@ fun App() {
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { privacyCover = true }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { model.background(systemInteraction = actions.interactingWithSystem) }
     ShakeNumberVisibility(
-        enabled = model.shakeToHideEnabled && model.user != null && !model.locked &&
+        enabled = model.shakeToHideEnabled && (model.user != null || model.isGuest) && !model.locked &&
             !privacyCover && !actions.interactingWithSystem && !model.numbersRevealBlocked,
         onShake = {
             val previouslyHidden = model.numbersHidden

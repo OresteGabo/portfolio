@@ -48,7 +48,7 @@ internal enum class IntroductionStep(val eyebrow: String, val title: String, val
 internal fun shouldShowIntroduction(requested: Boolean, locked: Boolean): Boolean = requested && !locked
 
 @Composable
-internal fun OnboardingScreen(replay: Boolean = false, finish: () -> Unit) {
+internal fun OnboardingScreen(replay: Boolean = false, continueAsGuest: (() -> Unit)? = null, finish: () -> Unit) {
     val pages = IntroductionStep.entries
     val pager = rememberPagerState(pageCount = { pages.size })
     val scope = rememberCoroutineScope()
@@ -128,6 +128,7 @@ internal fun OnboardingScreen(replay: Boolean = false, finish: () -> Unit) {
                             AppIcon(if (pager.currentPage == pages.lastIndex) Icons.Outlined.Check else Icons.AutoMirrored.Outlined.ArrowForward, null, Modifier.size(19.dp))
                         }
                     }
+                    if (!replay && continueAsGuest != null) OutlinedButton(onClick = continueAsGuest, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { AppText("Continue as Guest") }
                     if (!replay) TextButton(onClick = finish) { AppText("Already have an account? Sign in", textAlign = TextAlign.Center) }
                     else AppText("Built by GABO", Modifier.padding(vertical = 12.dp), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                 }

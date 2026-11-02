@@ -30,11 +30,20 @@ class PortfolioModel(
     initialOrigin: String? = null,
     private val importWorkDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Default,
     private val reportWorkDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Default,
+    private val deferAccountStartup: Boolean = false,
 ) : ViewModel() {
     var origin by mutableStateOf(initialOrigin ?: settings.readOrigin() ?: DEFAULT_ORIGIN)
         private set
-    var api = apiFactory(origin)
-        private set
+    private var entryChoice by mutableStateOf(restoredSessionChoice(runCatching { settings.readSessionChoice() }.getOrDefault(MANUAL_ACCOUNT_ENTRY)))
+    private var accountEntry by mutableStateOf(false)
+    val guestPath get() = GuestPath.restore(entryChoice)
+    val isGuest get() = guestPath != null && !accountEntry
+    val sessionState: SessionState get() = user?.let { SessionState.Authenticated(it.text("id"), origin) }
+        ?: if (isGuest) SessionState.Guest(requireNotNull(guestPath)) else SessionState.SignedOut
+    private var activeApi: PortfolioApi? = null
+    var api: PortfolioApi
+        get() { check(!isGuest) { "Account features are unavailable in guest mode." }; return activeApi ?: apiFactory(origin).also { activeApi = it } }
+        private set(value) { activeApi = value }
     var screenCaptureAllowed by mutableStateOf(settings.readScreenCaptureAllowed())
         private set
     val captureProtectionEnabled get() = !screenCaptureAllowed
@@ -62,7 +71,7 @@ class PortfolioModel(
     }
     val secureSignInAvailable get() = vault?.available == true
     val unlockLabel get() = vault?.unlockLabel ?: "Device unlock"
-    var secureSignInEnabled by mutableStateOf(vault?.hasSaved(origin) == true)
+    var secureSignInEnabled by mutableStateOf(!isGuest && entryChoice != MANUAL_ACCOUNT_ENTRY && vault?.hasSaved(origin) == true)
         private set
     var locked by mutableStateOf(secureSignInEnabled)
         private set
@@ -392,9 +401,9 @@ class PortfolioModel(
     var education by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
 
-    init { runAction(allowLocked = true, failureMessage = CONNECTION_ERROR_MESSAGE) {
+    init { if (!isGuest) runAction(allowLocked = true, failureMessage = CONNECTION_ERROR_MESSAGE) {
         UnlockPerformance.measure("public_assets") { loadPublicData() }
-        if (!locked) checkSession()
+        if (!locked && !deferAccountStartup && entryChoice != MANUAL_ACCOUNT_ENTRY) checkSession()
     } }
 
     private suspend fun loadPublicData() {
@@ -403,7 +412,7 @@ class PortfolioModel(
     }
     fun action(block: suspend () -> Unit) = runAction(false, block = block)
     private fun runAction(allowLocked: Boolean, failureMessage: String = GENERAL_ERROR_MESSAGE, block: suspend () -> Unit) {
-        if (busy || (locked && !allowLocked)) return
+        if (isGuest || busy || (locked && !allowLocked)) return
         busy = true
         error = null
         message = null
@@ -493,11 +502,35 @@ class PortfolioModel(
         secureSignInEnabled = false
         message = "Saved sign-in removed from this device."
     }
+    /** Mode changes cancel account work before exposing any local guest view. No financial data is copied. */
+    fun enterGuest(path: GuestPath): Boolean {
+        try { settings.writeSessionChoice(path.stored) }
+        catch (_: Exception) { error = "Guest mode could not be saved. Try again."; return false }
+        ++generation; activeJob?.cancel(); activeJob = null; busy = false
+        activeApi?.close(); activeApi = null
+        vault?.lock(); clearPrivateData()
+        secureSignInEnabled = false; locked = false
+        automaticUnlockPending = false; automaticUnlockAttempted = true
+        entryChoice = path.stored; accountEntry = false
+        error = null; message = null
+        return true
+    }
+    fun beginAccountSignIn() {
+        if (!isGuest) return
+        accountEntry = true
+        error = null; message = null
+    }
+    fun returnToGuest() { guestPath?.let(::enterGuest) }
+    fun startAccountSession() {
+        if (!isGuest && !locked && user == null && !busy) runAction(true, CONNECTION_ERROR_MESSAGE) { checkSession() }
+    }
+
     private suspend fun saveSignIn(email: String, password: String): Boolean {
         val storage = requireNotNull(vault) { "Device authentication is unavailable." }
         val value = JsonRecord().put("origin", origin).put("email", email.trim()).put("password", password).put("session", api.sessionSnapshot()).toString()
         val saved = storage.save(origin, value)
-        secureSignInEnabled = storage.hasSaved(origin)
+        secureSignInEnabled = (entryChoice != MANUAL_ACCOUNT_ENTRY || saved) && storage.hasSaved(origin)
+        if (saved) { settings.writeSessionChoice(null); entryChoice = null }
         if (!foreground && secureSignInEnabled) scheduleBackgroundLock()
         return saved
     }
@@ -519,9 +552,11 @@ class PortfolioModel(
         automaticUnlockPending = false
         automaticUnlockAttempted = true
         runAction(allowLocked = true) {
+            val revision = generation
             val storage = requireNotNull(vault)
             unlockToUi = UnlockPerformance.begin("unlock_to_first_frame")
             val raw = UnlockPerformance.measure("protected_storage_read_including_prompt") { storage.read(origin) } ?: return@runAction
+            if (revision != generation || isGuest) return@runAction
             verifyingSession = true
             deviceToUi = UnlockPerformance.begin("device_success_to_first_frame")
             require(raw.length <= 48_000) { "Saved sign-in is invalid." }
@@ -554,6 +589,7 @@ class PortfolioModel(
                     throw failure
                 }
             }
+            if (revision != generation || isGuest) return@runAction
             require(account.text("email").equals(email, ignoreCase = true)) { "Sign-in account did not match." }
             if (calendar.isEmpty() && education.isEmpty()) loadPublicData()
             // An unchanged opaque cookie does not need a Keychain/Keystore rewrite on every visit.
@@ -585,7 +621,9 @@ class PortfolioModel(
     }
 
     private suspend fun checkSession() {
+        val revision = generation
         val session = api.request("/api/bonds/auth/session")
+        if (revision != generation || isGuest) return
         user = if (session.optBoolean("authenticated")) session.optJSONObject("user") else null
         loadInvestmentTarget()
         if (user != null) startPortfolioSync()
@@ -593,6 +631,7 @@ class PortfolioModel(
 
     fun login(email: String, password: String, invitation: String = "", savePassword: Boolean = false,
         onAuthenticated: suspend () -> Unit = {}) = action {
+        val revision = generation
         val register = invitation.isNotBlank()
         val response = api.request("/api/bonds/auth/${if (register) "register" else "login"}", "POST",
             JsonRecord().put("email", email.trim()).put("password", password).withDeviceIdentity().apply { if (register) put("invite", invitation.trim()) })
@@ -602,6 +641,11 @@ class PortfolioModel(
         try { onAuthenticated() }
         catch (failure: CancellationException) { throw failure }
         catch (_: Exception) { message = "Signed in. Your password could not be saved to the password manager." }
+        if (revision != generation || isGuest) return@action
+        if (guestPath != null) {
+            val choice = MANUAL_ACCOUNT_ENTRY
+            settings.writeSessionChoice(choice); entryChoice = choice; accountEntry = false
+        }
         user = account
         loadInvestmentTarget()
         startPortfolioSync()
@@ -1296,7 +1340,7 @@ class PortfolioModel(
         }
     }
 
-    override fun onCleared() { documentThumbnails.clear(); backgroundLockJob?.cancel(); documentPreview = null; importedPdf = null; importedReview = null; retryPdf = null; vault?.lock(); api.close() }
+    override fun onCleared() { documentThumbnails.clear(); backgroundLockJob?.cancel(); documentPreview = null; importedPdf = null; importedReview = null; retryPdf = null; vault?.lock(); activeApi?.close() }
 
     private fun clearPrivateData() {
         ++startupSyncRevision

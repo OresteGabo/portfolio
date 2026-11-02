@@ -28,6 +28,8 @@ actual fun rememberServerSettings(): ServerSettings {
     val context = LocalContext.current.applicationContext
     return remember(context) { object : ServerSettings {
         private val prefs = context.getSharedPreferences("connection", Context.MODE_PRIVATE)
+        override fun readSessionChoice() = prefs.getString("sessionChoice", null)
+        override fun writeSessionChoice(value: String?) { check(prefs.edit().putString("sessionChoice", value).commit()) { "Could not save session choice." } }
         override fun readImportHintDismissed() = prefs.getBoolean("importHintDismissed", false)
         override fun writeImportHintDismissed(dismissed: Boolean) { prefs.edit().putBoolean("importHintDismissed", dismissed).apply() }
         override fun readOnboardingCompleted() = prefs.getBoolean("onboardingCompleted", false)

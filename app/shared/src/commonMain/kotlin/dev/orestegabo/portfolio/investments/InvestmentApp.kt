@@ -68,6 +68,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var notificationPanel by rememberSaveable { mutableStateOf<String?>(null) }
     var securityNotificationId by rememberSaveable { mutableStateOf<String?>(null) }
     var handledInboxRequest by rememberSaveable { mutableIntStateOf(0) }
+    var showGuestChoice by rememberSaveable { mutableStateOf(false) }
     var tab by rememberSaveable { mutableStateOf("Portfolio") }
     var documentSection by rememberSaveable(model.user?.text("id")) { mutableStateOf("Library") }
     var couponList by rememberSaveable { mutableStateOf(false) }
@@ -89,7 +90,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var education by rememberSaveable { mutableStateOf(false) }
     var importReview by remember(model) { mutableStateOf(model.currentImportReview()) }
     val actions = LocalNativeActions.current
-    val engine = LocalImportEngine.current ?: rememberInvestmentEngine()
+    val engine = LocalImportEngine.current ?: if (model.isGuest) remember { GuestUnavailableEngine() } else rememberInvestmentEngine()
     DisposableEffect(engine) { onDispose { engine.destroy() } }
     val documentUi = rememberSaveableStateHolder()
     val calendarUi = rememberSaveableStateHolder()
@@ -101,7 +102,7 @@ fun InvestmentApp(model: PortfolioModel) {
     }
     val preferences = rememberServerSettings()
     var showImportHint by rememberSaveable { mutableStateOf(!preferences.readImportHintDismissed()) }
-    var introductionRequested by rememberSaveable { mutableStateOf(!preferences.readOnboardingCompleted() && !model.locked) }
+    var introductionRequested by rememberSaveable { mutableStateOf(!preferences.readOnboardingCompleted() && !model.locked && !model.isGuest) }
     var replayIntroduction by rememberSaveable { mutableStateOf(false) }
     fun finishIntroduction() {
         preferences.writeOnboardingCompleted(true)
@@ -141,7 +142,7 @@ fun InvestmentApp(model: PortfolioModel) {
     }
     LaunchedEffect(NativePushBridge.updateRevision) { if(model.user!=null && !model.locked)model.refreshNotifications() }
     LaunchedEffect(tab,model.user,model.locked) { if(tab=="Notifications" && model.user!=null && !model.locked)model.refreshNotifications() }
-    LaunchedEffect(model.user) {
+    LaunchedEffect(model.user, model.sessionState) {
         if (model.user == null) { couponList=false; documentDetail=null; notificationPurchase=null;notificationPanel=null;securityNotificationId=null; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; shareDetail = null; editor = null; equityEditor = null; importReview = null; simulator = false; investmentTools = false; education = false }
     }
     LaunchedEffect(model, model.messageRevision) {
@@ -216,9 +217,14 @@ fun InvestmentApp(model: PortfolioModel) {
     val colors = structCapitalColorScheme(dark)
     CompositionLocalProvider(LocalChartStyle provides chartStyle, LocalNumbersHidden provides model.numbersConcealed) {
     MaterialTheme(colorScheme = colors, typography = Typography()) {
+        if (showGuestChoice) GuestEntryDialog(close = { showGuestChoice = false }, choose = { path ->
+            if (model.enterGuest(path)) { showGuestChoice = false; finishIntroduction(); tab = "Portfolio" }
+        })
         if (shouldShowIntroduction(introductionRequested, model.locked)) {
             PlatformSystemBarAppearance(dark)
-            OnboardingScreen(replayIntroduction, ::finishIntroduction)
+            OnboardingScreen(replay = replayIntroduction,
+                continueAsGuest = if (model.user == null) ({ showGuestChoice = true }) else null,
+                finish = { finishIntroduction(); model.startAccountSession() })
             return@MaterialTheme
         }
         val childScreen = couponList || documentDetail != null || model.documentPreview != null || notificationPanel == "security" || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || shareDetail != null || editor != null || equityEditor != null || simulator || investmentTools || education
@@ -260,7 +266,7 @@ fun InvestmentApp(model: PortfolioModel) {
             documentDetail != null -> "Document details"
             couponList -> "Coupons"
             investmentHistory -> "All investments"
-            model.user == null -> "Struct Capital"
+            model.user == null && !model.isGuest -> "Struct Capital"
             tab == "Settings" -> "Settings"
             else -> destinations.firstOrNull { it.key == tab }?.label ?: tab
         }
@@ -275,7 +281,7 @@ fun InvestmentApp(model: PortfolioModel) {
         Scaffold(
             contentWindowInsets = if (portfolioHome) WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal) else ScaffoldDefaults.contentWindowInsets,
             topBar = {
-                if (!portfolioHome && (model.user != null || model.locked || nested)) TopAppBar(
+                if (!portfolioHome && (model.user != null || model.isGuest || model.locked || nested)) TopAppBar(
                     title = {
                         if (documentsHome) DocumentHeader(documentSection, model.user?.text("email").orEmpty())
                         else if (model.documentPreview != null) FinancialText(screenTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -332,7 +338,7 @@ fun InvestmentApp(model: PortfolioModel) {
                 )
             },
             bottomBar = {
-                if (model.user != null && !model.locked && !nested && !importChat) NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
+                if ((model.user != null || model.isGuest) && !model.locked && !nested && !importChat) NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
                     destinations.forEach { destination ->
                         val selected = tab == destination.key
                         NavigationBarItem(
@@ -352,7 +358,7 @@ fun InvestmentApp(model: PortfolioModel) {
             }
         ) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).imePadding().portfolioStatusBarFade(portfolioHome)) {
-                if (!model.locked) InvestmentEngineHost(engine)
+                if (!model.locked && !model.isGuest) InvestmentEngineHost(engine)
                 if (!portfolioHome) {
                     AppLoadingLine(model.busy)
                     if (model.documentPreview == null || model.documentPreview?.bytes != null) model.error?.let { Notice(it, true) { model.error = null } }
@@ -368,8 +374,9 @@ fun InvestmentApp(model: PortfolioModel) {
                         legalHistory = legalHistory + legalRoute!!
                         legalRoute = next
                     }
-                    model.locked -> UnlockScreen(model) { legalRoute = "hub" }
-                    model.user == null -> SignInScreen(model) { legalRoute = "hub" }
+                    model.isGuest -> GuestContent(model, tab, choosePath = { showGuestChoice = true }, signIn = { model.beginAccountSignIn() })
+                    model.locked -> UnlockScreen(model, continueAsGuest = { showGuestChoice = true }) { legalRoute = "hub" }
+                    model.user == null -> SignInScreen(model, continueAsGuest = { showGuestChoice = true }) { legalRoute = "hub" }
                     notificationPanel == "security" -> SignInActivityScreen(model, securityNotificationId)
                     tab == "Notifications" && !childScreen -> NotificationsScreen(model, openPortfolio = { tab = "Portfolio" }, openNotification = { item ->
                         when (notificationDestination(item)) {
@@ -395,7 +402,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     pendingEntry -> PendingBondScreen(model, pendingIssueId) { pendingEntry = false; pendingIssueId = null }
                     tab == "Settings" && !childScreen -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
                         chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
-                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { replayIntroduction = true; introductionRequested = true }, openInvestmentTools = { investmentTools = true }, openSignInActivity = { securityNotificationId = null; notificationPanel = "security" })
+                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { replayIntroduction = true; introductionRequested = true }, openInvestmentTools = { investmentTools = true }, openSignInActivity = { securityNotificationId = null; notificationPanel = "security" }, openGuest = { showGuestChoice = true })
                     editor != null -> PurchaseEditor(model, editor!!, { editor = null })
                     equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null })
                     investmentTools -> InvestmentToolsScreen(model, openCalendar = { date -> investmentTools = false; openCalendarAt(date) },

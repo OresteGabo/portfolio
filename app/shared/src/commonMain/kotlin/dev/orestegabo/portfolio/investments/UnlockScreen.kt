@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.*
 
 @Composable
-internal fun UnlockScreen(model: PortfolioModel, openLegal: () -> Unit) {
+internal fun UnlockScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? = null, openLegal: () -> Unit) {
     val colours = MaterialTheme.colorScheme
     BoxWithConstraints(Modifier.fillMaxSize().background(colours.background).clipToBounds(), contentAlignment = Alignment.TopCenter) {
         val compact = maxHeight < 600.dp
@@ -56,6 +56,7 @@ internal fun UnlockScreen(model: PortfolioModel, openLegal: () -> Unit) {
                 AppText(if (model.busy) "Unlocking…" else "Unlock with ${localized(model.unlockLabel)}", textAlign = TextAlign.Center)
             }
             Spacer(Modifier.height(8.dp))
+            continueAsGuest?.let { TextButton(onClick = it) { AppText("Continue as Guest") } }
             TextButton(onClick = model::usePassword, enabled = !model.busy || model.verifyingSession, modifier = Modifier.heightIn(min = 48.dp)) { AppText("Use password instead") }
             TextButton(onClick = openLegal, modifier = Modifier.heightIn(min = 48.dp)) { AppText("Legal & privacy") }
         }

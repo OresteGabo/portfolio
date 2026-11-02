@@ -29,6 +29,9 @@ final class PricePushDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
         return true
     }
     @objc private func refreshPermission() {
+        let entry = UserDefaults.standard
+        guard entry.bool(forKey: "portfolio.onboardingCompleted"),
+              !(entry.string(forKey: "portfolio.sessionChoice")?.hasPrefix("guest-") ?? false) else { return }
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
                 let allowed = settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional

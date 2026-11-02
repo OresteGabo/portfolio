@@ -20,6 +20,7 @@ class PriceMessagingService : FirebaseMessagingService() {
         getSharedPreferences("portfolio.push",MODE_PRIVATE).edit().putString("token",token).apply()
     }
     override fun onMessageReceived(message: RemoteMessage) {
+        if (getSharedPreferences("connection", MODE_PRIVATE).getString("sessionChoice", null)?.startsWith("guest-") == true) return
         Handler(Looper.getMainLooper()).post { NativePushBridge.priceUpdate() }
         if(!NotificationManagerCompat.from(this).areNotificationsEnabled())return
         val open=Intent(this,MainActivity::class.java).putExtra("stockNotifications",true)
