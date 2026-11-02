@@ -200,6 +200,9 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 SettingsDivider()
                 SettingsRow(Icons.Outlined.PersonAdd, "Invitations", "Create and manage invitations", enabled = !model.busy, onClick = { loadOwner("invitations") })
             } }
+            if (!model.isGuest) item { SettingsSection("Guest data") {
+                SettingsRow(Icons.Outlined.PhoneIphone, "Transfer Guest Data", "Review data saved on this device", enabled = !model.busy, onClick = model::reviewGuestMigration)
+            } }
             if (!model.isGuest) item { SettingsSection("Session") {
                 SettingsRow(Icons.Outlined.PersonOutline, "Continue as Guest", onClick = openGuest, trailing = {})
                 SettingsRow(Icons.AutoMirrored.Filled.Logout, "Sign out", enabled = !model.busy,

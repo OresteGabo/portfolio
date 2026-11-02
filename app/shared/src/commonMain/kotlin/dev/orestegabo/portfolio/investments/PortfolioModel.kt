@@ -84,6 +84,44 @@ class PortfolioModel(
         guestQuoteJob?.cancel(); guestQuoteJob = null; guestQuotes = null
         guestQuotesRefreshing = false; guestQuotesFailed = false
     }
+    internal var guestMigration by mutableStateOf<GuestMigration?>(null); private set
+    private var guestMigrationJob: Job? = null
+    internal fun reviewGuestMigration() {
+        val signedIn = user ?: return
+        if (isGuest || locked || busy || guestRepository == null || guestMigrationJob?.isActive == true) return
+        val token = generation
+        val binding = MigrationAccount(origin, signedIn.text("id"), signedIn.text("email"))
+        val coordinator = GuestMigration(guestRepository, ApiGuestMigrationRemote(api), binding) {
+            token == generation && !isGuest && !locked && user?.text("id") == binding.id && origin == binding.origin
+        }
+        guestMigration = coordinator
+        guestMigrationJob = viewModelScope.launch { coordinator.prepare() }
+    }
+    internal fun transferGuestMigration() {
+        val coordinator = guestMigration ?: return
+        if (guestMigrationJob?.isActive == true || user == null || isGuest || locked) return
+        guestMigrationJob = viewModelScope.launch {
+            try {
+                coordinator.transfer()
+                if (guestMigration === coordinator && !isGuest && !locked && user?.text("id") == coordinator.account.id && origin == coordinator.account.origin && coordinator.results.values.any { it.target.isNotBlank() }) refreshPortfolio()
+            }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { error = "Review the selected guest data and confirm again." }
+        }
+    }
+    internal fun previewGuestMigrationDocument(row: MigrationRow) {
+        val coordinator = guestMigration ?: return
+        if (guestMigrationJob?.isActive == true || coordinator.running) return
+        guestMigrationJob = viewModelScope.launch {
+            try { coordinator.showOriginal(row) }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { error = "Could not open the protected local PDF. Unlock this device and retry." }
+        }
+    }
+    internal fun closeGuestMigration() {
+        guestMigrationJob?.cancel(); guestMigrationJob = null
+        guestMigration?.clear(); guestMigration = null
+    }
     val guestImport = guestRepository?.let { GuestPdfImport(it, importWorkDispatcher) }
     fun selectGuestPdf(actions: NativeActions, engine: InvestmentEngine) = guestAction {
         requireNotNull(guestImport).select(actions, EngineDocumentParser(engine))
@@ -1484,9 +1522,10 @@ class PortfolioModel(
         }
     }
 
-    override fun onCleared() { stopGuestQuotes(); guestJob?.cancel(); guestImport?.clear(); guestPortfolio = null; documentThumbnails.clear(); backgroundLockJob?.cancel(); documentPreview = null; importedPdf = null; importedReview = null; retryPdf = null; vault?.lock(); activeApi?.close() }
+    override fun onCleared() { closeGuestMigration(); stopGuestQuotes(); guestJob?.cancel(); guestImport?.clear(); guestPortfolio = null; documentThumbnails.clear(); backgroundLockJob?.cancel(); documentPreview = null; importedPdf = null; importedReview = null; retryPdf = null; vault?.lock(); activeApi?.close() }
 
     private fun clearPrivateData() {
+        closeGuestMigration()
         ++startupSyncRevision
         startupSyncJob?.cancel(); startupSyncJob = null
         verifyingSession = false

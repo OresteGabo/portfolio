@@ -48,6 +48,7 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.compose.runtime)
     androidTestImplementation(libs.androidx.testExt.junit)
+    androidTestImplementation(libs.ktor.client.mock)
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation(libs.compose.foundation)
     androidTestImplementation(libs.compose.material3)

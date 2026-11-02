@@ -34,7 +34,7 @@ fun App() {
         PortfolioModel(settings, guestMarketData = guestMarketData, guestRepository = guestRepository, deferAccountStartup = !settings.readOnboardingCompleted(), vault = vault, initialOrigin = developmentApiOrigin()).also { timing?.end() }
     }
     val haptics = LocalHapticFeedback.current
-    NativePrivacyCover(protectCaptures = model.captureProtectionEnabled, protectDocument = model.documentPreview != null || model.guestImport?.previewBytes != null)
+    NativePrivacyCover(protectCaptures = model.captureProtectionEnabled, protectDocument = model.documentPreview != null || model.guestImport?.previewBytes != null || model.guestMigration?.preview != null)
     var privacyCover by remember { mutableStateOf(false) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { privacyCover = false; model.foreground() }
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { privacyCover = true }

@@ -241,12 +241,12 @@ fun InvestmentApp(model: PortfolioModel) {
             return@MaterialTheme
         }
         val guestImportActive = model.isGuest && (model.guestImport?.review != null || model.guestImport?.previewBytes != null)
-        val childScreen = guestImportActive || couponList || documentDetail != null || model.documentPreview != null || notificationPanel == "security" || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || shareDetail != null || editor != null || equityEditor != null || simulator || investmentTools || education
+        val childScreen = model.guestMigration != null || guestImportActive || couponList || documentDetail != null || model.documentPreview != null || notificationPanel == "security" || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || shareDetail != null || editor != null || equityEditor != null || simulator || investmentTools || education
         val nested = childScreen || tab == "Notifications"
         val documentsHome = (model.user != null || model.isGuest) && !model.locked && !nested && tab == "Documents"
         val importChat = !model.isGuest && documentsHome && documentSection == "Import"
         val back = {
-            if (guestImportActive) { if (model.guestImport?.previewBytes != null) model.guestImport.closePreview() else model.cancelGuestImport() } else if (model.documentPreview != null) { model.closeDocumentPreview() } else if (importChat) { documentSection = "Library" } else if (notificationPanel == "security") { notificationPanel=null;securityNotificationId=null } else if (legalRoute != null) {
+            if (model.guestMigration != null) { if (model.guestMigration?.preview != null) { model.guestMigration?.closePreview(); Unit } else model.closeGuestMigration() } else if (guestImportActive) { if (model.guestImport?.previewBytes != null) model.guestImport.closePreview() else model.cancelGuestImport() } else if (model.documentPreview != null) { model.closeDocumentPreview() } else if (importChat) { documentSection = "Library" } else if (notificationPanel == "security") { notificationPanel=null;securityNotificationId=null } else if (legalRoute != null) {
                 legalRoute = legalHistory.lastOrNull()
                 legalHistory = legalHistory.dropLast(1)
             } else if (couponList && detail == null && shareDetail == null && editor == null && equityEditor == null && model.documentPreview == null) { couponList = false
@@ -265,6 +265,7 @@ fun InvestmentApp(model: PortfolioModel) {
             if (tab != "Settings") PortfolioReportProgressDialog(model)
         }
         val screenTitle = when {
+            model.guestMigration != null -> "Transfer Guest Data"
             model.documentPreview != null -> model.documentPreview!!.title
             notificationPanel == "security" -> "Sign-in activity"
             legalRoute != null -> legalTitle(legalRoute!!)
@@ -402,6 +403,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     guestImportActive -> { GuestImportContent(model, engine) }
                     model.locked -> UnlockScreen(model, continueAsGuest = { showGuestChoice = true }) { legalRoute = "hub" }
                     model.user == null && !model.isGuest -> SignInScreen(model, continueAsGuest = { showGuestChoice = true }) { legalRoute = "hub" }
+                    model.guestMigration != null -> GuestMigrationScreen(model, model.guestMigration!!)
                     notificationPanel == "security" -> SignInActivityScreen(model, securityNotificationId)
                     tab == "Notifications" && !childScreen -> NotificationsScreen(model, openPortfolio = { tab = "Portfolio" }, openNotification = { item ->
                         when (notificationDestination(item)) {
