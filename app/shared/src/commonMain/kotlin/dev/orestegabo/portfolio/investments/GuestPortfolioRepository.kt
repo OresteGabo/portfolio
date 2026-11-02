@@ -27,7 +27,11 @@ interface GuestDocumentStorage {
     suspend fun write(id: String, bytes: ByteArray)
     suspend fun delete(id: String)
 }
+internal class GuestDataDeletionException : IllegalStateException("Guest data deletion was interrupted. Retry local storage to finish removing it.")
+
 interface GuestPortfolioRepository {
+    suspend fun deleteAll(): GuestPortfolio
+    suspend fun setMonthlyTarget(amount: Long): GuestPortfolio
     suspend fun importPdf(bytes: ByteArray, fileName: String, kind: String, body: JsonRecord, targetId: String? = null): GuestPortfolio
     suspend fun documentBytes(id: String): ByteArray
     suspend fun deleteDocument(id: String): GuestPortfolio
@@ -58,6 +62,33 @@ class LocalGuestPortfolioRepository(
         if (migrated) persist(root)
         cleanPending(root)
         view(root)
+    }
+    override suspend fun setMonthlyTarget(amount: Long): GuestPortfolio = update { root ->
+        require(validInvestmentTarget(amount))
+        root.put("metadata", JsonRecord(root.getJSONObject("metadata").toString()).put("monthlyTarget", amount))
+    }
+    override suspend fun deleteAll(): GuestPortfolio = locked {
+        try {
+            val (root, _) = read(); cleanPending(root)
+            erase(root); view(root)
+        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+        catch (_: Exception) { throw GuestDataDeletionException() }
+    }
+    /** A durable deletion intent resumes only after a valid manifest read. Batches retain v3 bounds. */
+    private suspend fun erase(root: JsonRecord) {
+        root.put("metadata", JsonRecord(root.getJSONObject("metadata").toString()).put("deletionRequested", true))
+        for (key in listOf("purchases", "holdings", "receipts")) root.put(key, JsonList())
+        commit(root)
+        while (root.rows("documents").isNotEmpty()) {
+            val docs = root.rows("documents")
+            val remaining = docs.drop(100)
+            root.put("documents", JsonList(remaining))
+            root.put("pendingFiles", JsonList(docs.take(100).map { it.text("localFileId") }.distinct()
+                .filter { file -> remaining.none { it.text("localFileId") == file } }))
+            commit(root); cleanPending(root)
+        }
+        root.put("metadata", JsonRecord().put("createdAt", now()).put("updatedAt", now()))
+        commit(root)
     }
     override suspend fun documentBytes(id: String): ByteArray = locked {
         val (root, _) = read()
@@ -212,6 +243,11 @@ class LocalGuestPortfolioRepository(
             }
             if (version < 3) root.put("schemaVersion", SCHEMA).put("pendingFiles", JsonList())
             validate(root)
+            if (root.getJSONObject("metadata").optBoolean("deletionRequested")) {
+                try { cleanPending(root); erase(root) }
+                catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                catch (_: Exception) { throw GuestDataDeletionException() }
+            }
             return root to (version != SCHEMA.toDouble())
         } finally { bytes.fill(0) }
     }

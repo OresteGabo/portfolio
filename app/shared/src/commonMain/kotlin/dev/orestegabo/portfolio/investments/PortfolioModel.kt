@@ -48,6 +48,16 @@ class PortfolioModel(
         private set
     var guestStorageError by mutableStateOf<String?>(null)
         private set
+    private var samplePortfolio by mutableStateOf(guestSamplePortfolio())
+    var guestViewRevision by mutableIntStateOf(0); private set
+    val sampleGuest get() = isGuest && guestPath == GuestPath.SAMPLE
+    val canEditInvestments get() = !sampleGuest && !busy
+    fun resetSample() { if (sampleGuest) { samplePortfolio = guestSamplePortfolio(); guestViewRevision++ } }
+    fun deleteGuestData() {
+        if (!isGuest || !canEditInvestments) return
+        guestImport?.clear(); closeDocumentPreview(); documentThumbnails.clear()
+        guestWrite({ guestPortfolio = null; requireNotNull(guestRepository).deleteAll() }) { guestViewRevision++ }
+    }
     private var guestJob: Job? = null
     var guestQuotes by mutableStateOf<GuestQuoteSnapshot?>(null); private set
     var guestQuotesRefreshing by mutableStateOf(false); private set
@@ -79,12 +89,13 @@ class PortfolioModel(
         requireNotNull(guestImport).select(actions, EngineDocumentParser(engine))
         requireNotNull(guestRepository).load()
     }
+    fun dismissGuestStorageError() { guestStorageError = null }
     fun finishGuestImport() { guestImport?.clear() }
     fun cancelGuestImport() { guestJob?.cancel(); guestImport?.clear() }
     fun previewGuestPdf(id: String? = null, fileName: String = "investment.pdf") = guestAction {
         requireNotNull(guestImport).preview(id, fileName); requireNotNull(guestRepository).load()
     }
-    fun deleteGuestDocument(id: String) = guestWrite({ requireNotNull(guestRepository).deleteDocument(id) })
+    fun deleteGuestDocument(id: String) = guestWrite({ requireNotNull(guestRepository).deleteDocument(id) }) { documentThumbnails.clear() }
     fun loadGuestPortfolio() = guestAction { requireNotNull(guestRepository).load() }
     private fun guestAction(operation: suspend () -> GuestPortfolio) {
         if (!isGuest || guestPath != GuestPath.PERSONAL || guestJob?.isActive == true || guestRepository == null) return
@@ -96,7 +107,7 @@ class PortfolioModel(
                 if (revision == generation && isGuest && guestPath == GuestPath.PERSONAL) guestPortfolio = result
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) {
-                if (revision == generation) guestStorageError = if (failure is GuestPdfReviewException) failure.message else "Local portfolio could not be opened or saved. Your existing data was not reset. Unlock your device and retry."
+                if (revision == generation) guestStorageError = if (failure is GuestPdfReviewException || failure is GuestDataDeletionException) failure.message else "Local portfolio could not be opened or saved. Your existing data was not reset. Unlock your device and retry."
             } finally { if (revision == generation) { guestStorageLoading = false; guestJob = null } }
         }
     }
@@ -186,10 +197,10 @@ class PortfolioModel(
     private var backgroundLockJob: Job? = null
     private var privateDataLoadedAt: TimeMark? = null
     private var privateDataAvailable by mutableStateOf(false)
-    val portfolioReady get() = privateDataAvailable
+    val portfolioReady get() = if (isGuest) guestPath == GuestPath.SAMPLE || guestPortfolio != null else privateDataAvailable
     // An initial snapshot is pending until a request actually fails. A not-yet-started
     // sync or blocking session/password restore must never look like a failed request.
-    internal val portfolioLoading get() = portfolioSyncing || (!portfolioReady && portfolioSyncError == null)
+    internal val portfolioLoading get() = if (isGuest) guestStorageLoading || (!portfolioReady && guestStorageError == null) else portfolioSyncing || (!portfolioReady && portfolioSyncError == null)
     var portfolioSyncing by mutableStateOf(false)
         private set
     var portfolioSyncError by mutableStateOf<String?>(null)
@@ -218,8 +229,10 @@ class PortfolioModel(
         user?.text("id")?.matches(Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}")) == true
     var refreshPhase by mutableStateOf(PortfolioRefreshPhase.IDLE)
         private set
-    var busy by mutableStateOf(false)
-        private set
+    private var accountBusy by mutableStateOf<Boolean>(false)
+    var busy: Boolean
+        get() = if (isGuest) guestStorageLoading else accountBusy
+        private set(value) { accountBusy = value }
     var pdfImportProgress by mutableStateOf<PdfImportProgress?>(null)
         private set
     var errorRevision by mutableStateOf(0)
@@ -234,8 +247,10 @@ class PortfolioModel(
     var message: String?
         get() = messageText
         set(value) { messageText = value; messageRevision++ }
-    var portfolio by mutableStateOf(PortfolioSnapshot())
-        private set
+    private var accountPortfolio by mutableStateOf<PortfolioSnapshot>(PortfolioSnapshot())
+    var portfolio: PortfolioSnapshot
+        get() = if (isGuest) guestViewPortfolio(guestPath, guestPortfolio, samplePortfolio) else accountPortfolio
+        private set(value) { accountPortfolio = value }
     var notificationPreferences by mutableStateOf(JsonRecord())
         private set
     var notificationSettingsAvailable by mutableStateOf(false)
@@ -249,10 +264,14 @@ class PortfolioModel(
         else notificationPreferences.optJSONObject("categories")?.optBoolean(category, true) ?: true
     var notificationDate by mutableStateOf(Today)
         private set
-    var couponReceipts by mutableStateOf<List<JsonRecord>>(emptyList())
-        private set
-    var couponTrackingAvailable by mutableStateOf(false)
-        private set
+    private var accountCouponReceipts by mutableStateOf<List<JsonRecord>>(emptyList())
+    var couponReceipts: List<JsonRecord>
+        get() = if (isGuest) if (guestPath == GuestPath.PERSONAL) guestPortfolio?.receipts.orEmpty() else emptyList() else accountCouponReceipts
+        private set(value) { accountCouponReceipts = value }
+    private var accountCouponTrackingAvailable by mutableStateOf<Boolean>(false)
+    var couponTrackingAvailable: Boolean
+        get() = if (isGuest) portfolioReady else accountCouponTrackingAvailable
+        private set(value) { accountCouponTrackingAvailable = value }
     private suspend fun fetchNotificationSettings() = notificationSettingsMutex.withLock {
         val revision=notificationGeneration;val account=user?.text("id")
         try {
@@ -422,13 +441,17 @@ class PortfolioModel(
         completed()
         refreshAfterWrite("Statement purchase saved using existing bond terms.")
     }
-    var historyComplete by mutableStateOf(false)
-        private set
+    private var accountHistoryComplete by mutableStateOf<Boolean>(false)
+    var historyComplete: Boolean
+        get() = if (isGuest) portfolioReady else accountHistoryComplete
+        private set(value) { accountHistoryComplete = value }
     private var compactOverviewSupported: Boolean? = null
     val purchases get() = portfolio.purchases
     val holdings get() = portfolio.holdings
-    var monthlyInvestmentTarget by mutableStateOf(DEFAULT_MONTHLY_INVESTMENT_TARGET)
-        private set
+    private var accountMonthlyInvestmentTarget by mutableStateOf<Long>(DEFAULT_MONTHLY_INVESTMENT_TARGET)
+    var monthlyInvestmentTarget: Long
+        get() = if (isGuest) guestPortfolio?.metadata?.text("monthlyTarget")?.toLongOrNull() ?: DEFAULT_MONTHLY_INVESTMENT_TARGET else accountMonthlyInvestmentTarget
+        private set(value) { accountMonthlyInvestmentTarget = value }
     private fun targetAccount() = user?.text("id")?.takeIf { it.isNotBlank() }?.let { "$origin|$it" }
     private fun loadInvestmentTarget() {
         importJournal.attach(targetAccount())
@@ -437,6 +460,7 @@ class PortfolioModel(
     }
     fun updateMonthlyInvestmentTarget(amount: Long) {
         require(validInvestmentTarget(amount)) { "Enter a positive whole RWF amount." }
+        if (isGuest) { guestWrite({ requireNotNull(guestRepository).setMonthlyTarget(amount) }); return }
         val account = requireNotNull(targetAccount())
         settings.writeMonthlyTarget(account, amount)
         monthlyInvestmentTarget = amount
@@ -453,18 +477,22 @@ class PortfolioModel(
         }
     }
     fun monthlyTargetProgress(month: LocalDate = Today): MonthlyInvestmentProgress? =
-        if (privateDataAvailable) monthlyInvestmentProgress(portfolio, month, monthlyInvestmentTarget, Today) else null
-    val documents get() = portfolio.documents
+        if (portfolioReady) monthlyInvestmentProgress(portfolio, month, monthlyInvestmentTarget, Today) else null
+    val documents get() = if (isGuest) guestViewDocuments(portfolio) else portfolio.documents
     var market by mutableStateOf<JsonRecord?>(null)
         private set
-    var quotes by mutableStateOf<JsonRecord?>(null)
-        private set
-    var quoteRefreshFailed by mutableStateOf(false)
-        private set
+    private var accountQuotes by mutableStateOf<JsonRecord?>(null)
+    var quotes: JsonRecord?
+        get() = if (isGuest) if (guestPath == GuestPath.PERSONAL) guestQuotes?.data else null else accountQuotes
+        private set(value) { accountQuotes = value }
+    private var accountQuoteRefreshFailed by mutableStateOf<Boolean>(false)
+    var quoteRefreshFailed: Boolean
+        get() = if (isGuest) guestQuotesFailed || guestQuotes?.stale(kotlin.time.Clock.System.now()) == true else accountQuoteRefreshFailed
+        private set(value) { accountQuoteRefreshFailed = value }
     private var publishedCalendar by mutableStateOf<List<JsonRecord>>(emptyList())
     var sharedCouponTerms by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
-    val calendar get() = mergeBondIssuances(publishedCalendar, documents, sharedCouponTerms)
+    val calendar get() = if (isGuest) emptyList() else mergeBondIssuances(publishedCalendar, documents, sharedCouponTerms)
     var education by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
 
@@ -576,7 +604,7 @@ class PortfolioModel(
     fun enterGuest(path: GuestPath): Boolean {
         try { settings.writeSessionChoice(path.stored) }
         catch (_: Exception) { error = "Guest mode could not be saved. Try again."; return false }
-        stopGuestQuotes()
+        closeDocumentPreview(); stopGuestQuotes()
         ++generation; guestJob?.cancel(); guestJob = null; guestStorageLoading = false; guestPortfolio = null; guestStorageError = null; guestImport?.clear()
         activeJob?.cancel(); activeJob = null; busy = false
         activeApi?.close(); activeApi = null
@@ -591,7 +619,7 @@ class PortfolioModel(
     }
     fun beginAccountSignIn() {
         if (!isGuest) return
-        stopGuestQuotes()
+        closeDocumentPreview(); stopGuestQuotes()
         NativePdfInbox.pending?.bytes?.fill(0); NativePdfInbox.dismiss() // Never forward a queued guest PDF into account ingestion.
         guestJob?.cancel(); guestJob = null; guestPortfolio = null; guestStorageLoading = false; guestStorageError = null; guestImport?.clear()
         accountEntry = true
@@ -800,6 +828,7 @@ class PortfolioModel(
     }
 
     fun retryPortfolioSync() {
+        if (isGuest) { loadGuestPortfolio(); return }
         if (locked || user == null) return
         if (!portfolioReady) error = null
         startupSyncJob?.cancel(); startupSyncJob = null
@@ -858,6 +887,7 @@ class PortfolioModel(
     }
 
     fun loadInvestmentHistory(force: Boolean = false) {
+        if (isGuest) { if (!sampleGuest && (!portfolioReady || force)) loadGuestPortfolio(); return }
         if (historyComplete && !force) return
         action {
             val purchases = api.request("/api/bonds/purchases").rows("purchases")
@@ -886,8 +916,8 @@ class PortfolioModel(
         }
     }
 
-    fun refresh() = refreshWithFeedback(showMessage = true)
-    fun refreshPortfolio() = refreshWithFeedback(showMessage = false)
+    fun refresh() { if (isGuest) { loadGuestPortfolio(); refreshGuestQuotes() } else refreshWithFeedback(showMessage = true) }
+    fun refreshPortfolio() { if (isGuest) { loadGuestPortfolio(); refreshGuestQuotes() } else refreshWithFeedback(showMessage = false) }
     private fun refreshWithFeedback(showMessage: Boolean) = action {
         val token = generation
         val started = TimeSource.Monotonic.markNow()
@@ -923,6 +953,7 @@ class PortfolioModel(
     }
 
     fun loadMarket(refresh: Boolean = false) {
+        if (isGuest) { refreshGuestQuotes(); return }
         if (!refresh && marketLoading) return
         action {
             if (refresh) marketLoadedAt = null
@@ -1384,7 +1415,29 @@ class PortfolioModel(
         private set
     private var loadingDocumentPreview = false
     private var documentPreviewRequest = 0L
-    internal fun openDocumentPreview(document: JsonRecord) = action {
+    suspend fun documentBytes(document: JsonRecord): ByteArray = if (isGuest || document.text("id").startsWith("guest:document:")) {
+        check(isGuest && !sampleGuest); requireNotNull(guestRepository).documentBytes(document.text("id"))
+    } else api.bytes(document.text("downloadUrl").also { require(it.matches(Regex("/api/bonds/documents/[A-Za-z0-9_-]+"))) })
+    fun documentAction(operation: suspend () -> Unit) {
+        if (isGuest) guestWrite({ operation(); requireNotNull(guestRepository).load() }) else action { operation() }
+    }
+    internal fun openDocumentPreview(document: JsonRecord) {
+        if (isGuest) {
+            if (sampleGuest || busy) return
+            val request = ++documentPreviewRequest
+            val preview = DocumentPreview(document, document.text("label").ifBlank { "Local PDF" }, document.text("originalFileName"))
+            documentPreview = preview
+            guestAction {
+                val bytes = requireNotNull(guestRepository).documentBytes(document.text("id"))
+                if (isGuest && documentPreviewRequest == request && documentPreview != null) documentPreview = preview.copy(bytes = bytes)
+                else bytes.fill(0)
+                guestRepository.load()
+            }
+            return
+        }
+        openAccountDocumentPreview(document)
+    }
+    private fun openAccountDocumentPreview(document: JsonRecord) = action {
         val year = document.optInt("annualReportYear")
         val title = if (year > 0) "${localized("Annual report")} · $year" else document.text("label").ifBlank { document.text("originalFileName").ifBlank { "PDF" } }
         val preview = DocumentPreview(document, title, importDisplayName(document.text("originalFileName").ifBlank { "investment.pdf" }))
@@ -1403,6 +1456,7 @@ class PortfolioModel(
     }
     internal fun closeDocumentPreview() {
         documentPreviewRequest++
+        if (isGuest) { documentPreview?.bytes?.fill(0); if (documentPreview != null && documentPreview?.bytes == null) guestJob?.cancel() }
         if (loadingDocumentPreview) activeJob?.cancel()
         documentPreview = null
     }

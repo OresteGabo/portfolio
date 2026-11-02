@@ -38,7 +38,7 @@ class GuestSessionTest {
                 try {
                     model.foreground(); model.background(); advanceUntilIdle()
                     assertEquals(SessionState.Guest(path), model.sessionState)
-                    assertNull(model.user); assertTrue(model.portfolio.purchases.isEmpty()); assertFalse(model.busy)
+                    assertNull(model.user); assertTrue(model.portfolio.purchases.all { it.text("id").startsWith("sample:") }); assertFalse(model.busy)
                     assertEquals(0, clients)
                     assertFailsWith<IllegalStateException> { model.api }
                 } finally { dispose(model) }
@@ -66,7 +66,7 @@ class GuestSessionTest {
             runCurrent(); assertTrue(model.busy)
             assertTrue(model.enterGuest(GuestPath.SAMPLE)); waiting.complete(Unit); advanceUntilIdle()
             assertEquals(SessionState.Guest(GuestPath.SAMPLE), model.sessionState)
-            assertNull(model.user); assertTrue(model.portfolio.purchases.isEmpty())
+            assertNull(model.user); assertTrue(model.portfolio.purchases.all { it.text("id").startsWith("sample:") })
         } finally { dispose(model) }
     }
     @Test fun sampleAndPersonalSwitchesNeverCopyExamplesIntoRealRecords() = runTest {

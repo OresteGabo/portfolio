@@ -108,7 +108,7 @@ fun StocksScreen(model: PortfolioModel, openShare: (JsonRecord) -> Unit) {
     // Fetch only the settled company. Captured keys keep rapid swipes from
     // displaying a previous company's response, and cached pages reopen instantly.
     LaunchedEffect(pager.settledPage, period, section, refreshRevision) {
-        if (section != "shares") return@LaunchedEffect
+        if (model.isGuest || section != "shares") return@LaunchedEffect
         val symbol = watchlist[pager.settledPage].first
         val selectedPeriod = period
         val key = "$symbol/$selectedPeriod"
@@ -128,12 +128,14 @@ fun StocksScreen(model: PortfolioModel, openShare: (JsonRecord) -> Unit) {
         }
     }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (model.isGuest) item { DetailNote(if (model.sampleGuest) "Fictional sample records never use real market quotations." else "Market quotes are currently unavailable. Your local portfolio works offline.") }
         item { Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) { ChoiceRow(listOf("shares", "bonds"), section) { section = it } }
             model.quotes?.optJSONObject("source")?.let { source -> AppText(if (source.optBoolean("stale")) "Stale prices" else source.text("publishedAt").take(10), style = MaterialTheme.typography.labelSmall, color = if (source.optBoolean("stale")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant) }
             IconButton(enabled = !model.busy, onClick = { failedHistories.clear(); refreshRevision++; model.loadMarket(true) }) { AppIcon(Icons.Outlined.Refresh, "Refresh prices") }
         } }
         if (section == "shares") {
+            if (!model.isGuest) {
             item {
                 SecondaryScrollableTabRow(selectedTabIndex = pager.currentPage, edgePadding = 0.dp, divider = {}) {
                     watchlist.forEachIndexed { index, (symbol, _) ->
@@ -161,6 +163,7 @@ fun StocksScreen(model: PortfolioModel, openShare: (JsonRecord) -> Unit) {
                             color = if (page == pager.currentPage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant) {}
                     }
                 }
+            }
             }
             val positions = model.portfolio.valuedShares(Today, model.quotes)
             item { AppText("Your holdings", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }

@@ -11,15 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-/** Re-created fictional examples, never model.portfolio, persisted holdings or a backend account. */
-internal fun guestSamplePortfolio() = PortfolioSnapshot(
-    purchases = listOf(JsonRecord().put("id", "sample:bond").put("bondName", "Example bond — fictional")
-        .put("currency", "RWF").put("status", "active").put("purchaseDate", "2020-01-01")
-        .put("faceValue", 1000000).put("pricePercent", 100).put("feesPaid", 0).put("accruedInterestPaid", 0)),
-    holdings = listOf(JsonRecord().put("id", "sample:shares").put("securityName", "Example company — fictional")
-        .put("ticker", "DEMO").put("currency", "RWF").put("status", "active").put("tradeDate", "2020-01-01")
-        .put("shares", 100).put("netAmountPayable", 50000)))
-
 @Composable
 internal fun GuestEntryDialog(close: () -> Unit, choose: (GuestPath) -> Unit) {
     AlertDialog(onDismissRequest = close, title = { AppText("Continue as Guest") }, text = {
@@ -34,43 +25,19 @@ internal fun GuestEntryDialog(close: () -> Unit, choose: (GuestPath) -> Unit) {
 }
 
 @Composable
-internal fun GuestContent(model: PortfolioModel, tab: String, engine: InvestmentEngine, choosePath: () -> Unit, signIn: () -> Unit) {
-    val sample = model.guestPath == GuestPath.SAMPLE
-    var editingBond by remember(model.sessionState) { mutableStateOf<JsonRecord?>(null) }
-    var editingShare by remember(model.sessionState) { mutableStateOf<JsonRecord?>(null) }
-    var deleting by remember(model.sessionState) { mutableStateOf<Pair<String, Boolean>?>(null) }
-    if (!sample && editingBond != null) {
-        GuestStorageNotice(model)
-        PurchaseEditor(model, requireNotNull(editingBond), { editingBond = null })
-        return
-    }
-    if (!sample && editingShare != null) {
-        GuestStorageNotice(model)
-        EquityEditor(model, requireNotNull(editingShare), { editingShare = null })
-        return
-    }
-    deleting?.let { (id, bond) -> AlertDialog(onDismissRequest = { deleting = null },
-        title = { AppText("Delete local investment?") }, text = { AppText("This removes the investment and its receipt states. Saved PDFs stay in Documents until you delete them separately.") },
-        confirmButton = { TextButton(enabled = !model.guestStorageLoading, onClick = {
-            if (bond) model.deletePurchase(id) { deleting = null } else model.deleteGuestShare(id) { deleting = null }
-        }) { AppText("Delete", color = MaterialTheme.colorScheme.error) } },
-        dismissButton = { TextButton(onClick = { deleting = null }) { AppText("Cancel") } }) }
+internal fun GuestImportContent(model: PortfolioModel, engine: InvestmentEngine): Boolean {
+    val sample = model.sampleGuest
     val importer = model.guestImport
     val actions = LocalNativeActions.current
     val local = model.guestPortfolio
     val incoming = NativePdfInbox.pending
     LaunchedEffect(incoming?.id, model.guestStorageLoading, importer?.review, importer?.previewBytes) {
-        if (!sample && !model.guestStorageLoading && importer?.review == null && importer?.previewBytes == null && editingBond == null && editingShare == null && incoming != null && local != null) {
+        if (!sample && !model.guestStorageLoading && importer?.review == null && importer?.previewBytes == null && incoming != null && local != null) {
             NativePdfInbox.take(incoming.id)?.let { received ->
                 model.selectGuestPdf(ReceivedPdfActions(actions, received.bytes, received.fileName), engine)
             }
         }
     }
-    var deletingDocument by remember(model.sessionState) { mutableStateOf<String?>(null) }
-    deletingDocument?.let { id -> AlertDialog(onDismissRequest = { deletingDocument = null },
-        title = { AppText("Delete local PDF?") }, text = { AppText("Delete the original PDF from this device? Investment records and coupon receipts will remain. This cannot be undone.") },
-        confirmButton = { TextButton(enabled = !model.guestStorageLoading, onClick = { model.deleteGuestDocument(id); deletingDocument = null }) { AppText("Delete", color = MaterialTheme.colorScheme.error) } },
-        dismissButton = { TextButton(onClick = { deletingDocument = null }) { AppText("Cancel") } }) }
     if (!sample && importer?.previewBytes != null) {
         PlatformBackHandler(true) { importer.closePreview() }
         Column(Modifier.fillMaxSize()) {
@@ -78,10 +45,10 @@ internal fun GuestContent(model: PortfolioModel, tab: String, engine: Investment
             val preview = remember(importer.previewBytes, importer.previewName) { DocumentPreview(JsonRecord(), "Local PDF", importer.previewName, importer.previewBytes) }
             Box(Modifier.weight(1f)) { PdfViewerScreen(model, preview, retry = { importer.closePreview() }) }
         }
-        return
+        return true
     }
     if (!sample && importer?.review != null) {
-        val fields = remember(importer.review) { importer.fields() } ?: return
+        val fields = remember(importer.review) { importer.fields() } ?: return true
         PlatformBackHandler(!model.guestStorageLoading) { model.cancelGuestImport() }
         Column(Modifier.fillMaxSize()) {
             GuestStorageNotice(model)
@@ -117,157 +84,9 @@ internal fun GuestContent(model: PortfolioModel, tab: String, engine: Investment
                 else EquityEditor(model, fields, model::finishGuestImport, importer.review)
             }
         }
-        return
+        return true
     }
-    val snapshot = remember { guestSamplePortfolio() }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        item {
-            Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = MaterialTheme.shapes.medium) {
-                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AppText(if (sample) "Guest · Fictional sample" else "Guest · Personal workspace", fontWeight = FontWeight.SemiBold)
-                    AppText(if (sample) "These examples are fictional. They are not your investments or live market values."
-                        else "Your investments and PDFs stay on this device. They are not synced or backed up. Market quotes are delayed public information.", style = MaterialTheme.typography.bodyMedium)
-                    TextButton(enabled = !model.guestStorageLoading, onClick = signIn) { AppText("Sign in to your account") }
-                }
-            }
-        }
-        when (tab) {
-            "Portfolio" -> {
-                if (!sample) {
-                    importer?.duplicate?.let { doc -> item { DetailHeading("This PDF and its investment are already saved."); DetailValueRow("First added", doc.text("createdAt").take(10)) } }
-                    item { GuestStorageNotice(model) }
-                    item { importer?.failure?.let { AppText(it, color = MaterialTheme.colorScheme.error) } }
-                    item { Button(enabled = !model.guestStorageLoading, onClick = { model.selectGuestPdf(actions, engine) }, modifier = Modifier.fillMaxWidth()) { AppText("Import PDF privately") } }
-                    if (local != null) {
-                        item {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(enabled = !model.guestStorageLoading, onClick = { editingBond = JsonRecord() }, modifier = Modifier.fillMaxWidth()) { AppText("Add bond purchase") }
-                                OutlinedButton(enabled = !model.guestStorageLoading, onClick = { editingShare = JsonRecord() }, modifier = Modifier.fillMaxWidth()) { AppText("Add share purchase") }
-                            }
-                        }
-                        if (local.portfolio.purchases.isEmpty() && local.portfolio.holdings.isEmpty()) item {
-                            EmptyState("Your personal portfolio starts here", EmptyArtwork.PORTFOLIO, compact = true,
-                                description = "Add a bond or share purchase. Your records are saved privately on this device.")
-                        }
-                        local.portfolio.summary(Today).forEach { summary -> item {
-                            DetailHeading(summary.currency)
-                            DetailValueRow("Principal", money(summary.bondFaceValue, summary.currency))
-                            DetailValueRow("Acquisition cost", money(summary.investedCash, summary.currency))
-                            DetailNote("Acquisition amounts only. Bond principal is not a market quotation.")
-                        } }
-                        item { GuestMarketNotice(model) }
-                        local.portfolio.valuedShares(Today, model.guestQuotes?.data).forEach { position -> item {
-                            DetailHeading(position.position.ticker)
-                            DetailValueRow("Acquisition cost", money(position.position.cashCost, position.position.currency))
-                            if (position.closingPrice != null) {
-                                DetailValueRow("Published closing price", money(requireNotNull(position.closingPrice), position.position.currency))
-                                DetailValueRow("Value at published close", money(position.estimatedValue, position.position.currency))
-                                DetailValueRow("Unrealized gain / loss", money(requireNotNull(position.gainLoss), position.position.currency))
-                            } else DetailNote("Market value unavailable. Acquisition cost is shown separately.")
-                            HorizontalDivider()
-                        } }
-                        local.portfolio.purchases.forEach { bond -> item(key = bond.text("id")) {
-                            DetailHeading(bond.text("bondName"), bond.text("isin"))
-                            DetailValueRow("Principal", money(bond.optDouble("faceValue"), bond.text("currency")))
-                            GuestBondReceipt(model, bond, local.receipts)
-                            GuestRecordActions(model, edit = { editingBond = bond }, delete = { deleting = bond.text("id") to true })
-                            HorizontalDivider()
-                        } }
-                        local.portfolio.holdings.forEach { share -> item(key = share.text("id")) {
-                            DetailHeading(share.text("securityName"), share.text("ticker"))
-                            DetailValueRow("Shares", share.text("shares"))
-                            DetailValueRow("Acquisition cost", money(share.optDouble("netAmountPayable"), share.text("currency")))
-                            DetailValueRow("Purchase fees", money(share.optDouble("totalCharges"), share.text("currency")))
-                            GuestRecordActions(model, edit = { editingShare = share }, delete = { deleting = share.text("id") to false })
-                            HorizontalDivider()
-                        } }
-                    }
-                }
-                if (sample) {
-                    item { DetailHeading("Sample portfolio", "Fictional examples · acquisition amounts only") }
-                    item {
-                        DetailAmount("Sample bond principal", snapshot.summary(Today).single().bondFaceValue, "RWF")
-                    }
-                    item {
-                        DetailHeading("Example bond — fictional")
-                        DetailValueRow("Principal", money(1000000.0, "RWF"))
-                        HorizontalDivider()
-                    }
-                    item {
-                        DetailHeading("Example company — fictional")
-                        DetailValueRow("Shares", "100")
-                        DetailValueRow("Acquisition cost", money(50000.0, "RWF"))
-                        DetailNote("No live valuation or verified income is shown for sample records.")
-                    }
-                }
-                item { OutlinedButton(enabled = !model.guestStorageLoading, onClick = choosePath, modifier = Modifier.fillMaxWidth()) { AppText("Change guest experience") } }
-            }
-            "Documents" -> if (sample) item {
-                EmptyState("Switch to your personal workspace to import PDFs.", EmptyArtwork.DOCUMENTS, compact = true)
-            } else {
-                item { GuestStorageNotice(model); importer?.failure?.let { AppText(it, color = MaterialTheme.colorScheme.error) } }
-                item { Button(enabled = !model.guestStorageLoading, onClick = { model.selectGuestPdf(actions, engine) }, modifier = Modifier.fillMaxWidth()) { AppText("Import PDF privately") } }
-                importer?.duplicate?.let { doc -> item {
-                    DetailHeading("This PDF and its investment are already saved.")
-                    DetailValueRow("First added", doc.text("createdAt").take(10))
-                } }
-                if (local?.portfolio?.documents?.isEmpty() == true) item { EmptyState("No local PDFs yet", EmptyArtwork.DOCUMENTS, compact = true) }
-                local?.portfolio?.documents.orEmpty().forEach { doc -> item(key = doc.text("id")) {
-                    DetailHeading(doc.text("fileName"))
-                    DetailValueRow("First added", doc.text("createdAt").take(10))
-                    Row {
-                        TextButton(enabled = !model.guestStorageLoading, onClick = { model.previewGuestPdf(doc.text("id"), doc.text("fileName")) }) { AppText("View original PDF") }
-                        TextButton(enabled = !model.guestStorageLoading, onClick = { deletingDocument = doc.text("id") }) { AppText("Delete PDF", color = MaterialTheme.colorScheme.error) }
-                    }
-                    HorizontalDivider()
-                } }
-            }
-            "Settings" -> item {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    DetailHeading("Guest settings")
-                    DetailNote("Changing guest experience never transfers sample records or uploads a personal portfolio.")
-                    OutlinedButton(enabled = !model.guestStorageLoading, onClick = choosePath, modifier = Modifier.fillMaxWidth()) { AppText("Change guest experience") }
-                    TextButton(enabled = !model.guestStorageLoading, onClick = signIn) { AppText("Sign in to your account") }
-                }
-            }
-            "Stocks" -> if (sample) item {
-                DetailNote("Fictional sample records never use real market quotations.")
-            } else {
-                item { GuestMarketNotice(model) }
-                model.guestQuotes?.data?.rows("quotes").orEmpty().forEach { quote -> item(key = quote.text("ticker")) {
-                    DetailHeading(quote.text("ticker"), quote.text("name"))
-                    DetailValueRow("Published closing price", money(quote.optDouble("closing"), "RWF"))
-                    HorizontalDivider()
-                } }
-            }
-            else -> item {
-                EmptyState(when(tab) { "Documents" -> "Guest PDF import is not available yet"; "Calendar" -> "Guest payment calendar is not available yet"; else -> "Guest live markets are not available yet" },
-                    EmptyArtwork.PORTFOLIO, compact = true,
-                    description = "This feature is not available in Guest Mode yet. Sign in to use account features.")
-            }
-        }
-    }
-}
-
-@Composable
-private fun GuestMarketNotice(model: PortfolioModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        DetailHeading("Public closing quotes")
-        if (!model.guestQuotesEnabled) DetailNote("Market quotes are currently unavailable. Your local portfolio works offline.")
-        else {
-            val saved = model.guestQuotes
-            if (saved == null) DetailNote("No saved quotes. Market values are unavailable; your investments remain accessible offline.")
-            else {
-                DetailValueRow("Source", "Rwanda Stock Exchange")
-                DetailValueRow("Published", saved.data.getJSONObject("source").text("publishedAt"))
-                DetailValueRow("Saved on device", saved.receivedAt.toString())
-                DetailNote(if (saved.stale(kotlin.time.Clock.System.now())) "Stale closing quotes · not live prices" else "Published closing quotes · not live prices")
-            }
-            if (model.guestQuotesRefreshing) AppText("Refreshing public quotes…", style = MaterialTheme.typography.bodySmall)
-            if (model.guestQuotesFailed) DetailNote("Quote refresh unavailable. Previously saved quotes are retained.")
-            TextButton(enabled = !model.guestQuotesRefreshing, onClick = model::refreshGuestQuotes) { AppText("Refresh quotes") }
-        }
-    }
+    return false
 }
 
 internal class GuestUnavailableEngine : InvestmentEngine {
@@ -287,10 +106,7 @@ private fun GuestStorageNotice(model: PortfolioModel) {
                 TextButton(onClick = model::cancelGuestImport) { AppText("Cancel") }
             }
         }
-        if (model.guestStorageError != null) {
-            AppText(requireNotNull(model.guestStorageError), color = MaterialTheme.colorScheme.error)
-            TextButton(enabled = !model.guestStorageLoading, onClick = model::loadGuestPortfolio) { AppText("Try again") }
-        }
+
     }
 }
 @Composable

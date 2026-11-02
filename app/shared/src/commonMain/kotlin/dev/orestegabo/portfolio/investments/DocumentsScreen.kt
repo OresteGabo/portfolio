@@ -54,10 +54,10 @@ fun DocumentsScreen(model: PortfolioModel, initialDocumentId: String? = null,
         if (initialDocumentId != null && !focusConsumed) { search = ""; category = "all"; expanded = initialDocumentId }
     }
     val colours = MaterialTheme.colorScheme
-    fun save(document: JsonRecord) = model.action {
+    fun save(document: JsonRecord) = model.documentAction {
         saving = document.text("id")
         try {
-            if (shareInvestmentDocument(model.api, actions, document)) model.message = "PDF ready to share."
+            if (shareInvestmentDocument(model, actions, document)) model.message = "PDF ready to share."
         } finally { saving = null }
     }
     var historyRequested by remember(model.user?.text("id")) { mutableStateOf(false) }
@@ -67,7 +67,7 @@ fun DocumentsScreen(model: PortfolioModel, initialDocumentId: String? = null,
             model.loadInvestmentHistory()
         }
     }
-    val libraryDocuments = model.documents + annualReportDocuments(model.portfolio, bondSubscriptionDate(kotlin.time.Clock.System.now()))
+    val libraryDocuments = model.documents + if (model.isGuest) emptyList() else annualReportDocuments(model.portfolio, bondSubscriptionDate(kotlin.time.Clock.System.now()))
     val categories = listOf("all") + libraryDocuments.map { it.text("category") }.filter { it.isNotBlank() }.distinct()
     LaunchedEffect(categories) { if (category !in categories) category = "all" }
     LaunchedEffect(category, categories, AppLanguage.code) {
@@ -166,6 +166,7 @@ fun DocumentsScreen(model: PortfolioModel, initialDocumentId: String? = null,
                     moreDetails = { openDetails(document) },
                     toggle = { expanded = if (expanded == document.text("id")) null else document.text("id") },
                     download = { if (document.optInt("annualReportYear") > 0) { previewAnnual = false; annualToExport = document.optInt("annualReportYear") } else save(document) })
+                if (model.isGuest) DeleteLocalDocument(model, document)
             }
         }
     }

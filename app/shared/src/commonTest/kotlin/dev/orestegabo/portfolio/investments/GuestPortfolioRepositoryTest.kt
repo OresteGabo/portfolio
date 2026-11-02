@@ -160,7 +160,7 @@ class GuestPortfolioRepositoryTest {
         val model = PortfolioModel(settings, guestRepository = repository, apiFactory = { error("Guest must not construct an account HTTP client") })
         try {
             advanceUntilIdle(); model.savePurchase(guestBondFixture(),null) {}; advanceUntilIdle()
-            assertEquals(1,model.guestPortfolio?.portfolio?.purchases?.size); assertTrue(model.purchases.isEmpty()); assertNull(model.user)
+            assertEquals(1,model.guestPortfolio?.portfolio?.purchases?.size); assertEquals(1, model.purchases.size); assertNull(model.user)
             model.saveEquity(guestShareFixture(),{}); advanceUntilIdle()
             val id = requireNotNull(model.guestPortfolio).portfolio.purchases.single().text("id")
             model.confirmCoupon(id,"2027-01-15"); advanceUntilIdle()

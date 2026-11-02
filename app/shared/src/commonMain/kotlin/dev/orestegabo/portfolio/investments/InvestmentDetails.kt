@@ -39,8 +39,8 @@ fun BondDetailsScreen(model: PortfolioModel, purchase: JsonRecord, engine: Inves
     }
     if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false },
         title = { AppText("Delete purchase?") },
-        text = { AppText("This removes ${purchase.text("bondName")} from your synchronized portfolio.") },
-        confirmButton = { TextButton(enabled = !model.busy, onClick = {
+        text = { AppText(if (model.isGuest) "This removes the local investment and its receipt states. Saved PDFs stay in Documents." else "This removes ${purchase.text("bondName")} from your synchronized portfolio.") },
+        confirmButton = { TextButton(enabled = model.canEditInvestments, onClick = {
             model.deletePurchase(purchase.text("id"), back); confirmDelete = false
         }) { AppText("Delete", color = MaterialTheme.colorScheme.error) } },
         dismissButton = { TextButton(onClick = { confirmDelete = false }) { AppText("Keep purchase") } })
@@ -97,7 +97,7 @@ fun BondDetailsScreen(model: PortfolioModel, purchase: JsonRecord, engine: Inves
                 }
             }
         }
-        if (needsPersonalConfirmation(purchase)) item(key = "confirmation") {
+        if (!model.isGuest && needsPersonalConfirmation(purchase)) item(key = "confirmation") {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 PendingConfirmationAction(purchase, !model.busy) { model.confirmPendingPurchase(purchase) }
                 PdfImportButton(model, engine, imported, bondOnly = true, targetPurchaseId = purchase.text("id"))
@@ -177,8 +177,8 @@ fun BondDetailsScreen(model: PortfolioModel, purchase: JsonRecord, engine: Inves
                 if (showTerms) { if (pending) PendingPurchaseFacts(purchase) else BondPurchaseFacts(purchase) }
                 HorizontalDivider()
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    if (!pending) OutlinedButton(onClick = edit, enabled = !model.busy) { AppIcon(Icons.Outlined.Edit, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); AppText("Edit purchase") }
-                    TextButton(onClick = { confirmDelete = true }, enabled = !model.busy) { AppText("Delete purchase", color = MaterialTheme.colorScheme.error) }
+                    if (!pending || model.isGuest) OutlinedButton(onClick = edit, enabled = model.canEditInvestments) { AppIcon(Icons.Outlined.Edit, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); AppText("Edit purchase") }
+                    TextButton(onClick = { confirmDelete = true }, enabled = model.canEditInvestments) { AppText("Delete purchase", color = MaterialTheme.colorScheme.error) }
                 }
             }
         }
@@ -211,10 +211,10 @@ private fun BondPaymentLedgerRow(model: PortfolioModel, purchase: JsonRecord, da
         })
         if (recorded != null) DetailValueRow("Expected net coupon", money(expected, currency))
         if (date <= today && model.couponTrackingAvailable) FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (receipt?.optBoolean("received") != true || state == CouponReceiptState.AUTOMATIC) TextButton(enabled = !model.busy,
+            if (receipt?.optBoolean("received") != true || state == CouponReceiptState.AUTOMATIC) TextButton(enabled = model.canEditInvestments,
                 modifier = Modifier.semantics { contentDescription = "${localized("Confirm received")} ${detailDate(date)}" },
                 onClick = { model.confirmCoupon(purchase.text("id"), date.toString(), true) }) { AppText("Confirm received") }
-            if (receipt?.optBoolean("received") == true) TextButton(enabled = !model.busy,
+            if (receipt?.optBoolean("received") == true) TextButton(enabled = model.canEditInvestments,
                 modifier = Modifier.semantics { contentDescription = "${localized("Mark not received")} ${detailDate(date)}" },
                 onClick = { model.confirmCoupon(purchase.text("id"), date.toString(), false) }) { AppText("Mark not received") }
         }

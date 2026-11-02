@@ -117,7 +117,7 @@ fun EquityEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit, 
         item { Panel { Fact("Gross consideration", money(gross)); Fact("Total charges", money(fees)); Fact("Net amount payable", money(gross + fees)) } }
         item { Button(enabled = !model.busy && !model.guestStorageLoading && (model.guestImport?.review == null || model.guestImport.confirmed), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), onClick = {
             runCatching {
-                val body = JsonRecord().put("instrumentType", "equity").put("exchange", "RSE").put("currency", "RWF").put("status", "active").put("notes", "")
+                val body = JsonRecord().put("instrumentType", "equity").put("exchange", "RSE").put("currency", "RWF").put("status", "active").put("notes", if (model.isGuest) existing.text("notes") else "")
                 equityFields.forEach { field ->
                     val value = values[field.key].orEmpty().trim()
                     if (field.numeric) body.put(field.key, value.toInputNumberOrNull()?.takeIf { it.isFinite() && it >= 0 } ?: error("Enter a valid ${localized(field.label)}."))

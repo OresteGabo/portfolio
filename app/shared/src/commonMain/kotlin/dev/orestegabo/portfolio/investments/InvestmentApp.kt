@@ -94,8 +94,8 @@ fun InvestmentApp(model: PortfolioModel) {
     DisposableEffect(engine) { onDispose { engine.destroy() } }
     val documentUi = rememberSaveableStateHolder()
     val calendarUi = rememberSaveableStateHolder()
-    val calendarStateKey = "calendar:${model.origin}|${model.user?.text("id")}"
-    val couponsStateKey = "coupons:${model.origin}|${model.user?.text("id")}"
+    val calendarStateKey = "calendar:${model.origin}|${model.user?.text("id")}|${model.guestPath}|${model.guestViewRevision}"
+    val couponsStateKey = "coupons:${model.origin}|${model.user?.text("id")}|${model.guestPath}|${model.guestViewRevision}"
     fun openCalendarAt(date: kotlinx.datetime.LocalDate?) {
         calendarUi.removeState(calendarStateKey)
         calendarFocus = date?.toString(); tab = "Calendar"
@@ -113,6 +113,11 @@ fun InvestmentApp(model: PortfolioModel) {
         // Existing device-protected sessions can bypass the tour at unlock. A session arriving
         // while the user is reading it must not interrupt the tour or mark it completed.
         if (model.user != null && !introductionRequested && !replayIntroduction) finishIntroduction()
+    }
+    fun openGuestSettings() {
+        detail = null; shareDetail = null; documentDetail = null; editor = null; equityEditor = null
+        couponList = false; investmentHistory = false; simulator = false; investmentTools = false; education = false
+        model.closeDocumentPreview(); tab = "Settings"
     }
     fun openNotificationInbox() {
         tab = "Notifications"; notificationPanel = null; securityNotificationId = null
@@ -142,7 +147,7 @@ fun InvestmentApp(model: PortfolioModel) {
     }
     LaunchedEffect(NativePushBridge.updateRevision) { if(model.user!=null && !model.locked)model.refreshNotifications() }
     LaunchedEffect(tab,model.user,model.locked) { if(tab=="Notifications" && model.user!=null && !model.locked)model.refreshNotifications() }
-    LaunchedEffect(model.user, model.sessionState) {
+    LaunchedEffect(model.user, model.sessionState, model.guestViewRevision) {
         if (model.user == null) { couponList=false; documentDetail=null; notificationPurchase=null;notificationPanel=null;securityNotificationId=null; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; shareDetail = null; editor = null; equityEditor = null; importReview = null; simulator = false; investmentTools = false; education = false }
     }
     LaunchedEffect(model, model.messageRevision) {
@@ -170,6 +175,7 @@ fun InvestmentApp(model: PortfolioModel) {
         showImportConversation()
     }
     fun beginDocumentImport() {
+        if (model.isGuest) { model.selectGuestPdf(actions, engine); return }
         confirmationTarget = null
         model.importPurchasePdf(actions, engine, completed = ::imported)
     }
@@ -203,6 +209,13 @@ fun InvestmentApp(model: PortfolioModel) {
             }
         }
     }
+    LaunchedEffect(NativePdfInbox.pending?.id, model.isGuest, model.busy) {
+        val incoming = NativePdfInbox.pending
+        if (model.isGuest && !model.sampleGuest && !model.busy && model.guestImport?.review == null &&
+            model.guestImport?.previewBytes == null && incoming != null && model.portfolioReady) {
+            NativePdfInbox.take(incoming.id)?.let { model.selectGuestPdf(ReceivedPdfActions(actions, it.bytes, it.fileName), engine) }
+        }
+    }
     LaunchedEffect(notificationPurchase,model.busy) {
         val purchase=notificationPurchase
         if(purchase!=null && !model.busy) {
@@ -227,12 +240,13 @@ fun InvestmentApp(model: PortfolioModel) {
                 finish = { finishIntroduction(); model.startAccountSession() })
             return@MaterialTheme
         }
-        val childScreen = couponList || documentDetail != null || model.documentPreview != null || notificationPanel == "security" || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || shareDetail != null || editor != null || equityEditor != null || simulator || investmentTools || education
+        val guestImportActive = model.isGuest && (model.guestImport?.review != null || model.guestImport?.previewBytes != null)
+        val childScreen = guestImportActive || couponList || documentDetail != null || model.documentPreview != null || notificationPanel == "security" || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || shareDetail != null || editor != null || equityEditor != null || simulator || investmentTools || education
         val nested = childScreen || tab == "Notifications"
-        val documentsHome = model.user != null && !model.locked && !nested && tab == "Documents"
-        val importChat = documentsHome && documentSection == "Import"
+        val documentsHome = (model.user != null || model.isGuest) && !model.locked && !nested && tab == "Documents"
+        val importChat = !model.isGuest && documentsHome && documentSection == "Import"
         val back = {
-            if (model.documentPreview != null) { model.closeDocumentPreview() } else if (importChat) { documentSection = "Library" } else if (notificationPanel == "security") { notificationPanel=null;securityNotificationId=null } else if (legalRoute != null) {
+            if (guestImportActive) { if (model.guestImport?.previewBytes != null) model.guestImport.closePreview() else model.cancelGuestImport() } else if (model.documentPreview != null) { model.closeDocumentPreview() } else if (importChat) { documentSection = "Library" } else if (notificationPanel == "security") { notificationPanel=null;securityNotificationId=null } else if (legalRoute != null) {
                 legalRoute = legalHistory.lastOrNull()
                 legalHistory = legalHistory.dropLast(1)
             } else if (couponList && detail == null && shareDetail == null && editor == null && equityEditor == null && model.documentPreview == null) { couponList = false
@@ -257,7 +271,7 @@ fun InvestmentApp(model: PortfolioModel) {
             missingDocuments -> "Missing documents"
             pendingEntry -> "Pending purchase"
             editor != null -> if (editor!!.text("id").isBlank()) "Add bond" else "Edit bond"
-            equityEditor != null -> "Add shares"
+            equityEditor != null -> if (equityEditor!!.text("id").isBlank()) "Add shares" else "Edit shares"
             investmentTools -> "Investment outlook"
             simulator -> "Simulator"
             education -> "Learn"
@@ -270,7 +284,7 @@ fun InvestmentApp(model: PortfolioModel) {
             tab == "Settings" -> "Settings"
             else -> destinations.firstOrNull { it.key == tab }?.label ?: tab
         }
-        val portfolioHome = model.user != null && !model.locked && !nested && tab == "Portfolio"
+        val portfolioHome = (model.user != null || model.isGuest) && !model.locked && !nested && tab == "Portfolio"
         model.pdfImportProgress?.takeIf { model.user != null && !model.locked && model.activeImportId == null }?.let { progress ->
             PdfImportProgressDialog(progress, model::cancelPdfImport)
         }
@@ -288,7 +302,7 @@ fun InvestmentApp(model: PortfolioModel) {
                         else AppText(screenTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                     },
                     navigationIcon = {
-                        if (nested || importChat) IconButton(onClick = back) { AppIcon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                        if (nested || importChat) IconButton(enabled = !model.isGuest || !model.busy, onClick = back) { AppIcon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                         else StructMark(Modifier.padding(start = 16.dp, end = 4.dp).size(40.dp))
                     },
                     actions = {
@@ -297,15 +311,15 @@ fun InvestmentApp(model: PortfolioModel) {
                         }) { AppIcon(Icons.Outlined.FactCheck, "Review statement records") }
                         if (model.documentPreview?.bytes != null) IconButton(enabled = !model.busy, onClick = {
                             val preview = model.documentPreview!!
-                            model.action { actions.sharePdf(preview.fileName, preview.bytes!!) }
+                            model.documentAction { actions.sharePdf(preview.fileName, preview.bytes!!) }
                         }) { AppIcon(Icons.Outlined.Share, "Share PDF") }
-                        else if (documentsHome) {
+                        else if (documentsHome && !model.isGuest) {
                             TextButton(onClick = {
                                 documentSection = if (documentSection == "Import") "Library" else "Import"
                                 selectionFeedback()
                             }) { AppText(if (documentSection == "Import") "Library" else "Chat", style = MaterialTheme.typography.labelLarge) }
                         }
-                        else if (tab == "Calendar" && !childScreen && model.user != null && !model.locked) {
+                        else if (tab == "Calendar" && !childScreen && (model.user != null || model.isGuest) && !model.locked) {
                             TextButton(modifier = Modifier.semantics { contentDescription = localized("View yearly coupons") }, onClick = { calendarUi.removeState(couponsStateKey); couponList = true }) { AppText("Coupons", style = MaterialTheme.typography.labelLarge) }
                         }
                         else if (tab == "Notifications" && !childScreen && model.user != null && !model.locked) {
@@ -316,7 +330,7 @@ fun InvestmentApp(model: PortfolioModel) {
                 )
             },
             floatingActionButton = {
-                if (documentsHome && documentSection == "Library") ExtendedFloatingActionButton(
+                if (documentsHome && documentSection == "Library" && !model.sampleGuest) ExtendedFloatingActionButton(
                     onClick = {
                         if (importReview != null || model.activeImportReceipt()?.state in listOf(ImportState.READING, ImportState.SAVING)) {
                             showImportConversation()
@@ -327,7 +341,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     icon = { AppIcon(Icons.Filled.Add, null) }, text = { AppText("Add document") }
                 )
-                else if (model.user != null && !model.locked && !nested && tab == "Portfolio") ExtendedFloatingActionButton(
+                else if ((model.user != null || model.isGuest) && !model.sampleGuest && !model.locked && !nested && tab == "Portfolio") ExtendedFloatingActionButton(
                     onClick = {
                         if (importReview != null || model.activeImportReceipt()?.state in listOf(ImportState.READING, ImportState.SAVING)) {
                             tab = "Documents"; documentSection = "Import"
@@ -369,15 +383,25 @@ fun InvestmentApp(model: PortfolioModel) {
                     if (model.isGuest) "PDF received. Switch to your personal workspace or finish your current action to import it privately."
                     else if (model.user == null || model.locked) "PDF received. Sign in or unlock to review and import it."
                     else "PDF received. Finish your current action to review and import it.", false, NativePdfInbox::dismiss)
+                if (model.isGuest && !portfolioHome && !guestImportActive) GuestWorkspaceStatus(model, ::openGuestSettings)
+                if (model.isGuest) {
+                    model.guestStorageError?.let { Notice(it, true, model::dismissGuestStorageError) }
+                    model.guestImport?.failure?.let { Notice(it, true) { model.guestImport.clear() } }
+                    model.guestImport?.duplicate?.let { Notice("This PDF and its investment are already saved.", false) { model.guestImport.clear() } }
+                    if (model.busy && !guestImportActive) {
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                        model.guestImport?.progress?.let { stage -> Row { AppText(stage, Modifier.weight(1f)); TextButton(onClick = model::cancelGuestImport) { AppText("Cancel") } } }
+                    }
+                }
                 when {
-                    model.documentPreview != null && model.user != null && !model.locked -> PdfViewerScreen(model, model.documentPreview!!)
+                    model.documentPreview != null && (model.user != null || model.isGuest) && !model.locked -> PdfViewerScreen(model, model.documentPreview!!)
                     legalRoute != null -> LegalScreen(legalRoute!!) { next ->
                         legalHistory = legalHistory + legalRoute!!
                         legalRoute = next
                     }
-                    model.isGuest -> GuestContent(model, tab, engine, choosePath = { showGuestChoice = true }, signIn = { model.beginAccountSignIn() })
+                    guestImportActive -> { GuestImportContent(model, engine) }
                     model.locked -> UnlockScreen(model, continueAsGuest = { showGuestChoice = true }) { legalRoute = "hub" }
-                    model.user == null -> SignInScreen(model, continueAsGuest = { showGuestChoice = true }) { legalRoute = "hub" }
+                    model.user == null && !model.isGuest -> SignInScreen(model, continueAsGuest = { showGuestChoice = true }) { legalRoute = "hub" }
                     notificationPanel == "security" -> SignInActivityScreen(model, securityNotificationId)
                     tab == "Notifications" && !childScreen -> NotificationsScreen(model, openPortfolio = { tab = "Portfolio" }, openNotification = { item ->
                         when (notificationDestination(item)) {
@@ -415,16 +439,17 @@ fun InvestmentApp(model: PortfolioModel) {
                         BondDetailsScreen(model, purchase, engine, { confirmationTarget = purchase; imported(it) },
                             { detail = null }, { editor = purchase; detail = null })
                     }
-                    shareDetail != null -> ShareDetailsScreen(model, shareDetail!!)
+                    shareDetail != null -> ShareDetailsScreen(model, shareDetail!!, edit = { equityEditor = it }, back = { shareDetail = null })
                     documentDetail != null -> DocumentDetailsScreen(model, documentDetail!!, openBond = { detail = it }, openShare = { shareDetail = it })
                     couponList -> calendarUi.SaveableStateProvider(couponsStateKey) { YearlyCouponsScreen(model, openBond = { detail = it }) }
                     investmentHistory -> InvestmentHistoryScreen(model, openShare = { shareDetail = it }) { detail = it }
-                    tab == "Portfolio" -> PortfolioScreen(model, openNotifications = ::openNotificationInbox, unreadNotifications = model.unreadNotifications, openShare = { shareDetail = it }, uploadPending = ::uploadPendingPurchase, openMissing = ::uploadMissing, allMissing = { missingDocuments = true }, seeAll = { investmentHistory = true },
-                        openCalendar = ::openCalendarAt, detail = { detail = it })
+                    tab == "Portfolio" -> PortfolioScreen(model, openNotifications = { if (model.isGuest) openGuestSettings() else openNotificationInbox() }, unreadNotifications = model.unreadNotifications, openShare = { shareDetail = it }, uploadPending = ::uploadPendingPurchase, openMissing = ::uploadMissing, allMissing = { missingDocuments = true }, seeAll = { investmentHistory = true },
+                        openCalendar = ::openCalendarAt, detail = { detail = it }, addBond = { editor = JsonRecord() }, addShare = { equityEditor = JsonRecord() })
                     tab == "Calendar" -> calendarUi.SaveableStateProvider(calendarStateKey) { CalendarScreen(model, initialDate = calendarFocus?.let(::calendarDate), addPending = { issue, date ->
                         pendingIssueId = issue.text("id"); calendarFocus = date.toString(); confirmationTarget = null; pendingEntry = true
                     }) }
-                    tab == "Documents" -> documentUi.SaveableStateProvider("documents:${model.origin}|${model.user?.text("id")}") { DocumentsHub(model, engine, importReview, confirmationTarget,
+                    tab == "Documents" && model.isGuest -> DocumentsScreen(model, openBond = { detail = it }, openShare = { shareDetail = it }, openDetails = { documentDetail = it })
+                    tab == "Documents" -> documentUi.SaveableStateProvider("documents:${model.origin}|${model.user?.text("id")}|${model.guestPath}|${model.guestViewRevision}") { DocumentsHub(model, engine, importReview, confirmationTarget,
                         section = documentSection, changeSection = { documentSection = it },
                         showHint = showImportHint, dismissHint = { showImportHint = false; preferences.writeImportHintDismissed(true) },
                         beginImport = ::beginDocumentImport,

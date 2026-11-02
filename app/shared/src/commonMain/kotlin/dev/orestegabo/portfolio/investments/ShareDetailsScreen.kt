@@ -17,7 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord) {
+fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, edit: (JsonRecord) -> Unit = {}, back: () -> Unit = {}) {
     val ticker = selected.text("ticker")
     val currency = selected.text("currency")
     val lots = shareDetailLots(model.holdings, selected)
@@ -118,7 +118,7 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord) {
             }
         } else if (lots.isEmpty()) item(key = "no-purchases") {
             EmptyState("No purchases recorded for this share", EmptyArtwork.SHARES, compact = true)
-        } else items(if (allLots) lots else lots.take(3), key = { "lot:${it.text("id")}" }) { lot -> SharePurchaseLedgerRow(model, lot) }
+        } else items(if (allLots) lots else lots.take(3), key = { "lot:${it.text("id")}" }) { lot -> SharePurchaseLedgerRow(model, lot, edit, back) }
         if (model.historyComplete && lots.size > 3) item(key = "all-purchases") {
             TextButton(onClick = { allLots = !allLots }, modifier = Modifier.fillMaxWidth()) {
                 AppText(if (allLots) "Show fewer purchases" else "Show all ${lots.size} purchases")
@@ -131,7 +131,9 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord) {
 }
 
 @Composable
-private fun SharePurchaseLedgerRow(model: PortfolioModel, lot: JsonRecord) {
+private fun SharePurchaseLedgerRow(model: PortfolioModel, lot: JsonRecord, edit: (JsonRecord) -> Unit, back: () -> Unit) {
+    var deleting by remember { mutableStateOf(false) }
+    if (deleting) AlertDialog(onDismissRequest = { deleting = false }, title = { AppText("Delete share purchase?") }, text = { AppText("This removes the local purchase. Saved PDFs stay in Documents.") }, confirmButton = { TextButton(enabled = model.canEditInvestments, onClick = { model.deleteGuestShare(lot.text("id")) { deleting = false; back() } }) { AppText("Delete", color = MaterialTheme.colorScheme.error) } }, dismissButton = { TextButton(onClick = { deleting = false }) { AppText("Cancel") } })
     val currency = lot.text("currency")
     var expanded by rememberSaveable(lot.text("id")) { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -149,6 +151,10 @@ private fun SharePurchaseLedgerRow(model: PortfolioModel, lot: JsonRecord) {
         if (lot.has("grossConsideration")) DetailValueRow("Gross consideration", money(lot.optDouble("grossConsideration"), currency))
         if (lot.has("totalCharges")) DetailValueRow("Purchase fees", money(lot.optDouble("totalCharges"), currency))
         DetailDocumentRows(model, lot)
+        if (model.isGuest && !model.sampleGuest) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(enabled = model.canEditInvestments, onClick = { edit(lot) }) { AppText("Edit purchase") }
+            TextButton(enabled = model.canEditInvestments, onClick = { deleting = true }) { AppText("Delete purchase", color = MaterialTheme.colorScheme.error) }
+        }
         DetailDisclosure("Purchase breakdown", expanded) { expanded = !expanded }
         if (expanded) SharePurchaseFacts(lot)
         HorizontalDivider()

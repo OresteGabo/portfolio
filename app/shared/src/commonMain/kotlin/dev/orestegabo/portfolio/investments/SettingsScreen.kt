@@ -60,11 +60,14 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
         }
     }
 
+    if (dialog == "guestPrivacy") AlertDialog(onDismissRequest = { dialog = null }, title = { AppText("Private on-device imports") }, text = { AppText("PDFs are parsed and saved locally. They are not sent to Struct Capital or an AI service. Selecting a file from a cloud provider may download it through that provider. Sharing a PDF sends it only to the destination you choose.") }, confirmButton = { TextButton(onClick = { dialog = null }) { AppText("Done") } })
+
     // In-scene financial editors must overlay the list, not become another child of the app's Column.
     Box(Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)) {
-            item {
+            if (model.isGuest) item { GuestStorageSettings(model, openGuest) }
+            else item {
                 Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
                     Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -79,7 +82,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                     }
                 }
             }
-            item { SettingsSection("Notifications") {
+            if (!model.isGuest) item { SettingsSection("Notifications") {
                 SettingsRow(Icons.Outlined.Notifications, "Notification preferences", "Categories & coupon receipts", onClick={ dialog="notifications" })
                 if(NativePushBridge.available) {
                     SettingsDivider()
@@ -102,7 +105,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                     toggleState = model.shakeToHideEnabled, onClick = { model.updateShakeToHide(!model.shakeToHideEnabled) },
                     trailing = { Switch(checked = model.shakeToHideEnabled, onCheckedChange = null, modifier = Modifier.clearAndSetSemantics {}) })
                 SettingsDivider()
-                SettingsRow(Icons.Outlined.PrivacyTip, "PDF imports & your data", "How your documents are handled", onClick = { dialog = "privacy" })
+                SettingsRow(Icons.Outlined.PrivacyTip, "PDF imports & your data", "How your documents are handled", onClick = { if (model.isGuest) dialog = "guestPrivacy" else dialog = "privacy" })
                 if (model.canDeleteAccount) {
                     SettingsDivider()
                     SettingsRow(Icons.Outlined.DeleteForever, "Delete account", "Permanently remove your account and data",
@@ -125,7 +128,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                         modifier = Modifier.semantics { stateDescription = localized(if (targetExpanded) "Expanded" else "Collapsed") },
                         trailing = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(enabled = !model.busy, onClick = { dialog = "investmentTarget" }) {
+                                IconButton(enabled = model.canEditInvestments, onClick = { dialog = "investmentTarget" }) {
                                     AppIcon(Icons.Outlined.Edit, "Edit monthly target", Modifier.size(20.dp))
                                 }
                                 AppIcon(if (targetExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
@@ -138,7 +141,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                     }
                 }
             } }
-            item { SettingsSection("Security") {
+            if (!model.isGuest) item { SettingsSection("Security") {
                 SettingsRow(Icons.Outlined.Devices, "Sign-in activity", "Review recorded devices", onClick = openSignInActivity)
                 SettingsDivider()
                 SettingsRow(when (model.unlockLabel) { "Face ID" -> Icons.Outlined.Face; "Touch ID" -> Icons.Outlined.Fingerprint; else -> Icons.Outlined.Lock },
@@ -158,7 +161,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 SettingsDivider()
                 SettingsRow(Icons.Outlined.Password, "Passwords & AutoFill", "Use your phone’s password manager", onClick = { dialog = "passwords" })
             } }
-            item { SettingsSection("Tools") {
+            if (!model.isGuest) item { SettingsSection("Tools") {
                 SettingsRow(Icons.Outlined.PictureAsPdf, "Portfolio report", "All years · PDF export", enabled = !model.busy,
                     onClick = { dialog = "report" })
                 SettingsDivider()
@@ -183,8 +186,8 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
             item { SettingsSection("Links", "These links open in your browser.") {
                 val links = listOf(
                     Triple(OFFICIAL_WEBSITE_ORIGIN, "Struct Capital", Icons.Outlined.Language),
-                    Triple(model.origin + "/portfolio", "Portfolio website", Icons.Outlined.AccountBalanceWallet),
-                    Triple(model.origin + "/create-password", "Password setup", Icons.Outlined.Key),
+                    *if (!model.isGuest) arrayOf(Triple(model.origin + "/portfolio", "Portfolio website", Icons.Outlined.AccountBalanceWallet)) else emptyArray(),
+                    *if (!model.isGuest) arrayOf(Triple(model.origin + "/create-password", "Password setup", Icons.Outlined.Key)) else emptyArray(),
                 )
                 links.forEachIndexed { index, (url, title, icon) ->
                     if (index > 0) SettingsDivider()
@@ -197,7 +200,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 SettingsDivider()
                 SettingsRow(Icons.Outlined.PersonAdd, "Invitations", "Create and manage invitations", enabled = !model.busy, onClick = { loadOwner("invitations") })
             } }
-            item { SettingsSection("Session") {
+            if (!model.isGuest) item { SettingsSection("Session") {
                 SettingsRow(Icons.Outlined.PersonOutline, "Continue as Guest", onClick = openGuest, trailing = {})
                 SettingsRow(Icons.AutoMirrored.Filled.Logout, "Sign out", enabled = !model.busy,
                     tint = MaterialTheme.colorScheme.error, onClick = { dialog = "logout" }, trailing = {})

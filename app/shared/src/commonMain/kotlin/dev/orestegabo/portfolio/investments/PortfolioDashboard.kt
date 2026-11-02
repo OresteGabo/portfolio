@@ -43,16 +43,16 @@ private val DashboardGold = Color(0xFFECC75F)
 private val AllocationGreen = Color(0xFF739A87)
 
 @Composable
-fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, openMissing: (JsonRecord) -> Unit, allMissing: () -> Unit, seeAll: () -> Unit, openCalendar: (LocalDate) -> Unit, detail: (JsonRecord) -> Unit, openNotifications: () -> Unit = {}, unreadNotifications: Int = 0, openShare: (JsonRecord) -> Unit) {
+fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, openMissing: (JsonRecord) -> Unit, allMissing: () -> Unit, seeAll: () -> Unit, openCalendar: (LocalDate) -> Unit, detail: (JsonRecord) -> Unit, openNotifications: () -> Unit = {}, unreadNotifications: Int = 0, openShare: (JsonRecord) -> Unit, addBond: () -> Unit = {}, addShare: () -> Unit = {}) {
     if (!model.portfolioReady) {
         if (model.portfolioLoading) PortfolioLoadingSkeleton(openNotifications, unreadNotifications)
         else {
             Column(Modifier.fillMaxSize().statusBarsPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     AppText("Your portfolio", Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                    NotificationBell(unreadNotifications, openNotifications)
+                    if (!model.isGuest) NotificationBell(unreadNotifications, openNotifications)
                 }
-                AppText(model.portfolioSyncError ?: "Investments could not be loaded. Check your connection and try again.")
+                AppText((if (model.isGuest) model.guestStorageError else model.portfolioSyncError) ?: "Investments could not be loaded. Check your connection and try again.")
                 Button(onClick = model::retryPortfolioSync) { AppText("Try again") }
             }
         }
@@ -72,12 +72,19 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
     PortfolioPullRefresh(model) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 108.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        item { PortfolioHero(valuation, topInset, openNotifications, unreadNotifications, model.quoteRefreshFailed || model.quotes?.optJSONObject("source")?.optBoolean("stale") == true,
+        item { PortfolioHero(!model.isGuest, if (model.sampleGuest) "Fictional sample · Not your investments" else if (model.isGuest) "Guest · On this device" else "Rwanda investments", valuation, topInset, openNotifications, unreadNotifications, model.quoteRefreshFailed || model.quotes?.optJSONObject("source")?.optBoolean("stale") == true,
             model.quotes?.optJSONObject("source")?.text("publishedAt").orEmpty().take(10)) {
             Column(Modifier.fillMaxWidth().smoothContentSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 AppLoadingLine(model.busy && model.refreshPhase == PortfolioRefreshPhase.IDLE)
                 model.error?.let { Notice(it, true) { model.error = null } }
                 model.message?.let { Notice(it, false) { model.message = null } }
+            }
+        } }
+        if (model.isGuest) item { GuestWorkspaceStatus(model, openNotifications) }
+        if (model.isGuest && !model.sampleGuest) item { Inset {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(enabled = !model.busy, onClick = addBond) { AppText("Add bond purchase") }
+                OutlinedButton(enabled = !model.busy, onClick = addShare) { AppText("Add share purchase") }
             }
         } }
         item {
@@ -112,7 +119,7 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
                 }
             }
         }
-        if (model.statementItems.isNotEmpty()) {
+        if (!model.isGuest && model.statementItems.isNotEmpty()) {
             item { Inset { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 AppText("Missing documents", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 if (model.statementItems.size > 3) TextButton(onClick = allMissing) { AppText("See all") }
@@ -159,7 +166,7 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
 }
 
 @Composable
-private fun PortfolioHero(totals: List<CurrencyValuation>, topInset: Dp, openNotifications: () -> Unit, unreadNotifications: Int, stale: Boolean, priceDate: String, notice: @Composable () -> Unit) {
+private fun PortfolioHero(showNotifications: Boolean, subtitle: String, totals: List<CurrencyValuation>, topInset: Dp, openNotifications: () -> Unit, unreadNotifications: Int, stale: Boolean, priceDate: String, notice: @Composable () -> Unit) {
     val background = MaterialTheme.colorScheme.background
     Box(Modifier.fillMaxWidth()) {
         Box(Modifier.fillMaxWidth().height(300.dp + topInset)) {
@@ -177,9 +184,9 @@ private fun PortfolioHero(totals: List<CurrencyValuation>, topInset: Dp, openNot
                     }
                     Column(Modifier.weight(1f)) {
                         AppText("Struct Capital", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
-                        AppText("Rwanda investments", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = .75f))
+                        AppText(subtitle, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = .75f))
                     }
-                    NotificationBell(unreadNotifications, openNotifications, tint = Color.White)
+                    if (showNotifications) NotificationBell(unreadNotifications, openNotifications, tint = Color.White)
                 }
                 notice()
             }

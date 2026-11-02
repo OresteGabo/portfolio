@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application android:usesCleartextTraffic="true">
         <activity android:name="dev.orestegabo.portfolio.investments.EngineHostActivity" android:exported="false" />
+        <activity android:name="dev.orestegabo.portfolio.investments.GuestExperienceHostActivity" android:exported="false" />
     </application>
 </manifest>

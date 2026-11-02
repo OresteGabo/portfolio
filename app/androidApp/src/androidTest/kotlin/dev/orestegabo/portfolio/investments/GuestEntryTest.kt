@@ -72,28 +72,28 @@ class GuestEntryTest {
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                 await("Continue as Guest"); assertEquals(0,requests.get())
                 click("Continue as Guest"); await("Explore fictional sample"); click("Explore fictional sample")
-                await("Guest · Fictional sample"); scroll("Example company — fictional")
+                await("Fictional sample · Read only"); scroll("Example company — fictional")
                 var window: android.view.Window? = null
                 scenario.onActivity { window = it.window }
                 readerFixtureScreenshot(requireNotNull(window), File(i.targetContext.filesDir,"guest-sample.png"))
                 assertEquals("guest-sample-v1",prefs.getString("sessionChoice",null))
-                click("Documents"); await("Switch to your personal workspace to import PDFs.")
+                click("Documents"); await("No documents yet")
                 click("Markets"); await("Fictional sample records never use real market quotations.")
                 click("Settings"); click("Change guest experience"); click("Start personal portfolio")
-                await("Guest · Personal workspace"); scroll("Your personal portfolio starts here")
+                await("Guest · On this device"); scroll("Your investments")
                 assertNull(find("Example company — fictional")); assertEquals("guest-personal-v1",prefs.getString("sessionChoice",null))
                 assertTrue(prefs.getBoolean("onboardingCompleted",false)); assertEquals(0,requests.get())
             }
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-                await("Guest · Personal workspace"); scroll("Your personal portfolio starts here")
+                await("Guest · On this device"); scroll("Your investments")
                 var window: android.view.Window? = null
                 scenario.onActivity { window = it.window }
                 readerFixtureScreenshot(requireNotNull(window), File(i.targetContext.filesDir,"guest-personal-reopened.png"))
                 click("Markets"); await("Market quotes are currently unavailable. Your local portfolio works offline.")
                 readerFixtureScreenshot(requireNotNull(window), File(i.targetContext.filesDir,"guest-quotes-disabled.png"))
-                click("Sign in to your account"); await("Welcome back"); await("Return to Guest")
+                click("Settings"); click("Sign in to your account"); await("Welcome back"); await("Return to Guest")
                 assertEquals(0, requests.get())
-                click("Return to Guest"); await("Guest · Personal workspace")
+                click("Return to Guest"); await("Guest · On this device")
                 assertEquals(0, requests.get())
             }
         } finally {

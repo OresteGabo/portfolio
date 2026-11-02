@@ -12,14 +12,14 @@ import androidx.compose.ui.unit.dp
 
 /** Navigation follows owned persisted evidence, never a guessed company name or document title. */
 internal fun documentBonds(document: JsonRecord, purchases: List<JsonRecord>) = purchases.filter { purchase ->
-    document.text("id").isNotBlank() && listOf("confirmationDocumentId", "issuanceDocumentId", "statementDocumentId").any {
+    document.text("id").isNotBlank() && (purchase.hasDocument(document.text("id")) || listOf("confirmationDocumentId", "issuanceDocumentId", "statementDocumentId").any {
         purchase.text(it) == document.text("id")
-    }
+    })
 }
 internal fun documentShares(document: JsonRecord, holdings: List<JsonRecord>) = holdings.filter { holding ->
-    document.text("id").isNotBlank() && listOf("contractDocumentId", "statementDocumentId").any {
+    document.text("id").isNotBlank() && (holding.hasDocument(document.text("id")) || listOf("contractDocumentId", "statementDocumentId").any {
         holding.text(it) == document.text("id")
-    }
+    })
 }.distinctBy { it.text("ticker") to it.text("currency") }
 
 @Composable
@@ -31,7 +31,7 @@ internal fun DocumentDetailsScreen(model: PortfolioModel, document: JsonRecord,
     val bonds = documentBonds(document, model.purchases)
     val shares = documentShares(document, model.holdings)
     fun preview() { if (year > 0) annualAction = "preview" else model.openDocumentPreview(document) }
-    fun share() { if (year > 0) annualAction = "share" else model.action { shareInvestmentDocument(model.api, actions, document) } }
+    fun share() { if (year > 0) annualAction = "share" else model.documentAction { shareInvestmentDocument(model, actions, document) } }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -72,6 +72,7 @@ internal fun DocumentDetailsScreen(model: PortfolioModel, document: JsonRecord,
         item {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 DetailHeading("File information")
+                if (model.isGuest) DetailValueRow("First added", document.text("createdAt").take(10))
                 if (document.text("issuer").isNotBlank()) DetailValueRow("Issuer", document.text("issuer"))
                 calendarDate(document.text("documentDate"))?.let { DetailValueRow("Document date", detailDate(it)) }
                 if (document.text("originalFileName").isNotBlank()) DetailValueRow("File name", document.text("originalFileName"))

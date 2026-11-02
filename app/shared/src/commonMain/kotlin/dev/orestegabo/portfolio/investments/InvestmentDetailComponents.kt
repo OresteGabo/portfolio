@@ -109,9 +109,9 @@ internal fun DetailDocumentRows(model: PortfolioModel, record: JsonRecord) {
                     FinancialText(doc.text("label"), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                     DetailNote(listOf("PDF", calendarDate(doc.text("documentDate"))?.let(::detailDate).orEmpty()).filter { it.isNotBlank() }.joinToString(" · "))
                 }
-                IconButton(enabled = !model.busy, onClick = { model.action {
+                IconButton(enabled = !model.busy, onClick = { model.documentAction {
                     downloading = doc.text("id")
-                    try { if (shareInvestmentDocument(model.api, actions, doc)) model.message = "PDF ready to share." }
+                    try { if (shareInvestmentDocument(model, actions, doc)) model.message = "PDF ready to share." }
                     finally { downloading = null }
                 } }, modifier = Modifier.size(48.dp)) {
                     if (downloading == doc.text("id")) CircularProgressIndicator(Modifier.size(20.dp)

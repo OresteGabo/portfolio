@@ -69,17 +69,17 @@ internal suspend fun renderDocumentThumbnail(bytes: ByteArray, loader: suspend (
 
 @Composable
 internal fun DocumentThumbnail(model: PortfolioModel, document: JsonRecord, title: String, open: () -> Unit) {
-    val path = documentThumbnailPath(document) ?: return
+    val path = if (model.isGuest) document.text("id").takeIf { it.startsWith("guest:document:") } ?: return else documentThumbnailPath(document) ?: return
     val loader = rememberPdfDocumentLoader()
     val cache = model.documentThumbnails
-    val api = model.api
+    val api = if (model.isGuest) null else model.api
     val hidden = LocalNumbersHidden.current || model.captureProtectionEnabled && !nativePdfCaptureProtectionAvailable
     var image by remember(cache, path, api, hidden) { mutableStateOf<ImageBitmap?>(null) }
     var loading by remember(cache, path, api, hidden) { mutableStateOf(true) }
     LaunchedEffect(cache, path, api, hidden) {
-        if (hidden || model.locked || model.user == null) return@LaunchedEffect
+        if (hidden || model.locked || model.user == null && !model.isGuest) return@LaunchedEffect
         // LazyColumn creates work only near the viewport; leaving it cancels pending downloads/decoding.
-        try { image = cache.get(path) { renderDocumentThumbnail(api.bytes(path), loader) } }
+        try { image = cache.get(path) { renderDocumentThumbnail(if (model.isGuest) model.documentBytes(document) else requireNotNull(api).bytes(path), loader) } }
         finally { loading = false }
     }
     val frame = Modifier.fillMaxWidth().height(120.dp)

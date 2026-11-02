@@ -7,6 +7,7 @@ internal data class InvestmentEvidence(val label: String, val document: JsonReco
 
 /** Follow explicit persisted provenance only; a similar ticker/date is not proof of a link. */
 internal fun investmentEvidence(record: JsonRecord, documents: List<JsonRecord>): List<InvestmentEvidence> =
+    (documents.filter { it.text("id").startsWith("guest:document:") && record.hasDocument(it.text("id")) }.map { InvestmentEvidence(if (it.text("kind") == "bond") "View allocation confirmation" else "View share contract", it) } +
     listOf("confirmationDocumentId" to "View allocation confirmation", "contractDocumentId" to "View share contract",
         "issuanceDocumentId" to "View issuance results", "statementDocumentId" to "View source statement").mapNotNull { (key, label) ->
         val id = record.text(key).takeIf { it.matches(Regex("[A-Za-z0-9_-]{1,128}")) } ?: return@mapNotNull null
@@ -20,7 +21,7 @@ internal fun investmentEvidence(record: JsonRecord, documents: List<JsonRecord>)
             else -> "Bond issuance results"
         })
         InvestmentEvidence(label, document)
-    }.distinctBy { it.document.text("id") }
+    }).distinctBy { it.document.text("id") }
 
 @Composable
 internal fun InvestmentEvidenceActions(model: PortfolioModel, record: JsonRecord) {
@@ -38,4 +39,11 @@ internal suspend fun shareInvestmentDocument(api: PortfolioApi, actions: NativeA
     val data = api.bytes(path)
     require(data.take(5).toByteArray().decodeToString() == "%PDF-") { "The server did not return a PDF." }
     return actions.sharePdf(document.text("originalFileName").ifBlank { "investment.pdf" }, data)
+}
+
+internal suspend fun shareInvestmentDocument(model: PortfolioModel, actions: NativeActions, document: JsonRecord): Boolean {
+    if (!model.isGuest) return shareInvestmentDocument(model.api, actions, document)
+    val bytes = model.documentBytes(document)
+    return try { actions.sharePdf(document.text("originalFileName").ifBlank { "investment.pdf" }, bytes) }
+    finally { bytes.fill(0) }
 }

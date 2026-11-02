@@ -182,7 +182,7 @@ class GuestPdfImportTest {
             assertNotNull(model.guestImport?.review); assertTrue(repository.load().portfolio.documents.isEmpty())
             requireNotNull(model.guestImport).confirmed=true
             model.savePurchase(guestBondFixture(),null,model::finishGuestImport); advanceUntilIdle()
-            assertEquals(1,model.guestPortfolio?.portfolio?.purchases?.size); assertTrue(model.documents.isEmpty()); assertNull(model.user)
+            assertEquals(1,model.guestPortfolio?.portfolio?.purchases?.size); assertEquals(1, model.documents.size); assertNull(model.user)
             val queued = pdf("queued-private")
             NativePdfInbox.offer(queued,"guest-test-private-transition","private-name.pdf")
             model.beginAccountSignIn()
