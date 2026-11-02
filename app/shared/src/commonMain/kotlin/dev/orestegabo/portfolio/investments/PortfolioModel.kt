@@ -31,6 +31,7 @@ class PortfolioModel(
     private val importWorkDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Default,
     private val reportWorkDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Default,
     private val deferAccountStartup: Boolean = false,
+    private val guestRepository: GuestPortfolioRepository? = null,
 ) : ViewModel() {
     var origin by mutableStateOf(initialOrigin ?: settings.readOrigin() ?: DEFAULT_ORIGIN)
         private set
@@ -40,6 +41,32 @@ class PortfolioModel(
     val isGuest get() = guestPath != null && !accountEntry
     val sessionState: SessionState get() = user?.let { SessionState.Authenticated(it.text("id"), origin) }
         ?: if (isGuest) SessionState.Guest(requireNotNull(guestPath)) else SessionState.SignedOut
+    var guestPortfolio by mutableStateOf<GuestPortfolio?>(null)
+        private set
+    var guestStorageLoading by mutableStateOf(false)
+        private set
+    var guestStorageError by mutableStateOf<String?>(null)
+        private set
+    private var guestJob: Job? = null
+    fun loadGuestPortfolio() = guestAction { requireNotNull(guestRepository).load() }
+    private fun guestAction(operation: suspend () -> GuestPortfolio) {
+        if (!isGuest || guestPath != GuestPath.PERSONAL || guestJob?.isActive == true || guestRepository == null) return
+        val revision = generation
+        guestStorageLoading = true; guestStorageError = null
+        guestJob = viewModelScope.launch {
+            try {
+                val result = operation()
+                if (revision == generation && isGuest && guestPath == GuestPath.PERSONAL) guestPortfolio = result
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) {
+                if (revision == generation) guestStorageError = "Local portfolio could not be opened or saved. Your existing data was not reset. Unlock your device and retry."
+            } finally { if (revision == generation) { guestStorageLoading = false; guestJob = null } }
+        }
+    }
+    private fun guestWrite(operation: suspend () -> GuestPortfolio, completed: () -> Unit = {}) {
+        val revision = generation
+        guestAction { operation().also { if (revision == generation && isGuest && guestPath == GuestPath.PERSONAL) completed() } }
+    }
     private var activeApi: PortfolioApi? = null
     var api: PortfolioApi
         get() { check(!isGuest) { "Account features are unavailable in guest mode." }; return activeApi ?: apiFactory(origin).also { activeApi = it } }
@@ -245,10 +272,13 @@ class PortfolioModel(
             if (updated && revision == notificationGeneration && account == user?.text("id")) fetchNotifications()
         }
     }
-    fun confirmCoupon(purchaseId: String,dueDate: String,received: Boolean=true) = action {
-        val result=api.request("/api/bonds/notifications/coupons","POST",JsonRecord().put("purchaseId",purchaseId).put("dueDate",dueDate).put("received",received))
-        couponReceipts=result.rows("receipts");couponTrackingAvailable=true
-        fetchNotifications()
+    fun confirmCoupon(purchaseId: String,dueDate: String,received: Boolean=true) {
+        if (isGuest) { guestWrite({ requireNotNull(guestRepository).setReceipt(purchaseId, dueDate, received) }); return }
+        action {
+            val result=api.request("/api/bonds/notifications/coupons","POST",JsonRecord().put("purchaseId",purchaseId).put("dueDate",dueDate).put("received",received))
+            couponReceipts=result.rows("receipts");couponTrackingAvailable=true
+            fetchNotifications()
+        }
     }
     fun couponReceipt(purchaseId: String,dueDate: String)=couponReceipts.firstOrNull { it.text("purchaseId")==purchaseId && it.text("dueDate")==dueDate }
     var notifications by mutableStateOf<List<JsonRecord>>(emptyList())
@@ -401,7 +431,7 @@ class PortfolioModel(
     var education by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
 
-    init { if (!isGuest) runAction(allowLocked = true, failureMessage = CONNECTION_ERROR_MESSAGE) {
+    init { if (isGuest) loadGuestPortfolio() else runAction(allowLocked = true, failureMessage = CONNECTION_ERROR_MESSAGE) {
         UnlockPerformance.measure("public_assets") { loadPublicData() }
         if (!locked && !deferAccountStartup && entryChoice != MANUAL_ACCOUNT_ENTRY) checkSession()
     } }
@@ -440,6 +470,7 @@ class PortfolioModel(
         }
     }
     fun foreground() {
+        if (isGuest && guestPath == GuestPath.PERSONAL && guestPortfolio == null) loadGuestPortfolio()
         val expired = backgroundGraceExpired()
         backgroundLockJob?.cancel(); backgroundLockJob = null
         backgroundedAt = null
@@ -454,6 +485,7 @@ class PortfolioModel(
         unlock()
     }
     fun background(systemInteraction: Boolean = false) {
+        if (isGuest && !systemInteraction && guestJob?.isActive != true) guestPortfolio = null
         foreground = false
         if (!systemInteraction && vault?.authenticating != true) {
             automaticUnlockPending = false
@@ -506,17 +538,20 @@ class PortfolioModel(
     fun enterGuest(path: GuestPath): Boolean {
         try { settings.writeSessionChoice(path.stored) }
         catch (_: Exception) { error = "Guest mode could not be saved. Try again."; return false }
-        ++generation; activeJob?.cancel(); activeJob = null; busy = false
+        ++generation; guestJob?.cancel(); guestJob = null; guestStorageLoading = false; guestPortfolio = null; guestStorageError = null
+        activeJob?.cancel(); activeJob = null; busy = false
         activeApi?.close(); activeApi = null
         vault?.lock(); clearPrivateData()
         secureSignInEnabled = false; locked = false
         automaticUnlockPending = false; automaticUnlockAttempted = true
         entryChoice = path.stored; accountEntry = false
         error = null; message = null
+        loadGuestPortfolio()
         return true
     }
     fun beginAccountSignIn() {
         if (!isGuest) return
+        guestJob?.cancel(); guestJob = null; guestPortfolio = null; guestStorageLoading = false; guestStorageError = null
         accountEntry = true
         error = null; message = null
     }
@@ -1187,22 +1222,35 @@ class PortfolioModel(
         } finally { pdfImportProgress = null }
     }
 
-    fun savePurchase(purchase: JsonRecord, id: String?, completed: () -> Unit) = action {
-        api.request("/api/bonds/purchases" + (id?.let { "/$it" } ?: ""), if (id == null) "POST" else "PUT", purchase)
-        completed()
-        refreshAfterWrite("Purchase saved to your portfolio.")
+    fun savePurchase(purchase: JsonRecord, id: String?, completed: () -> Unit) {
+        if (isGuest) { guestWrite({ requireNotNull(guestRepository).saveBond(purchase, id) }, completed); return }
+        action {
+            api.request("/api/bonds/purchases" + (id?.let { "/$it" } ?: ""), if (id == null) "POST" else "PUT", purchase)
+            completed()
+            refreshAfterWrite("Purchase saved to your portfolio.")
+        }
     }
 
-    fun deletePurchase(id: String, completed: () -> Unit) = action {
-        api.request("/api/bonds/purchases/$id", "DELETE")
-        completed()
-        refreshAfterWrite("Purchase deleted.")
+    fun deletePurchase(id: String, completed: () -> Unit) {
+        if (isGuest) { guestWrite({ requireNotNull(guestRepository).deleteBond(id) }, completed); return }
+        action {
+            api.request("/api/bonds/purchases/$id", "DELETE")
+            completed()
+            refreshAfterWrite("Purchase deleted.")
+        }
     }
 
-    fun saveEquity(holding: JsonRecord, completed: () -> Unit) = action {
-        api.request("/api/bonds/equities", "POST", holding)
-        completed()
-        refreshAfterWrite("Share purchase saved.")
+    fun deleteGuestShare(id: String, completed: () -> Unit) {
+        if (isGuest) guestWrite({ requireNotNull(guestRepository).deleteShare(id) }, completed)
+    }
+    fun saveEquity(holding: JsonRecord, completed: () -> Unit) = saveEquity(holding, null, completed)
+    fun saveEquity(holding: JsonRecord, id: String?, completed: () -> Unit) {
+        if (isGuest) { guestWrite({ requireNotNull(guestRepository).saveShare(holding, id) }, completed); return }
+        action {
+            api.request("/api/bonds/equities", "POST", holding)
+            completed()
+            refreshAfterWrite("Share purchase saved.")
+        }
     }
 
     private suspend fun refreshAfterWrite(success: String) {
@@ -1340,7 +1388,7 @@ class PortfolioModel(
         }
     }
 
-    override fun onCleared() { documentThumbnails.clear(); backgroundLockJob?.cancel(); documentPreview = null; importedPdf = null; importedReview = null; retryPdf = null; vault?.lock(); activeApi?.close() }
+    override fun onCleared() { guestJob?.cancel(); guestPortfolio = null; documentThumbnails.clear(); backgroundLockJob?.cancel(); documentPreview = null; importedPdf = null; importedReview = null; retryPdf = null; vault?.lock(); activeApi?.close() }
 
     private fun clearPrivateData() {
         ++startupSyncRevision

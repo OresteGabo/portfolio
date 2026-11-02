@@ -45,7 +45,7 @@ fun PurchaseEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit
     var status by rememberSaveable { mutableStateOf(existing.text("status").ifBlank { "active" }) }
     var confidence by rememberSaveable { mutableStateOf(existing.text("scheduleConfidence").ifBlank { "estimated" }) }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { TextButton(onClick = back) { AppText("← Cancel") }; PageTitle("Record keeping", if (id == null) "Add bond purchase" else "Edit purchase", "Save the broker-confirmed terms. This updates the same portfolio as your web app.") }
+        item { TextButton(onClick = back) { AppText("← Cancel") }; PageTitle("Record keeping", if (id == null) "Add bond purchase" else "Edit purchase", if (model.isGuest) "Saved privately on this device. No account upload." else "Save the broker-confirmed terms. This updates the same portfolio as your web app.") }
         imported?.let { item { PdfReviewNotice(it) } }
         item { AppText("Instrument", fontWeight = FontWeight.Bold); ChoiceRow(listOf("treasury", "government", "corporate", "municipal", "other"), instrument) { instrument = it } }
         item { AppText("Market", fontWeight = FontWeight.Bold); ChoiceRow(listOf("primary", "secondary", "other"), market) { market = it } }
@@ -64,7 +64,7 @@ fun PurchaseEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit
             val fees = values["feesPaid"]?.toInputNumberOrNull() ?: 0.0
             Panel { Fact("Total cash cost", money(face * price / 100 + accrued + fees, values["currency"].orEmpty())) }
         }
-        item { Button(enabled = !model.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), onClick = {
+        item { Button(enabled = !model.busy && !model.guestStorageLoading, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), onClick = {
             runCatching {
                 val body = JsonRecord()
                 bondFields.forEach { field ->
@@ -110,11 +110,11 @@ fun EquityEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit, 
     val gross = (values["shares"]?.toInputNumberOrNull() ?: 0.0) * (values["pricePerShare"]?.toInputNumberOrNull() ?: 0.0)
     val fees = listOf("brokerageCommission", "rseTransactionFee", "csdTransactionLevy", "cmaTransactionFee").sumOf { values[it]?.toInputNumberOrNull() ?: 0.0 }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { TextButton(onClick = back) { AppText("← Cancel") }; PageTitle("Record keeping", "Add share purchase", "Record the details from your RSE purchase contract note.") }
+        item { TextButton(onClick = back) { AppText("← Cancel") }; PageTitle("Record keeping", if (model.isGuest && existing.text("id").isNotBlank()) "Edit share purchase" else "Add share purchase", if (model.isGuest) "Saved privately on this device. No account upload." else "Record the details from your RSE purchase contract note.") }
         imported?.let { item { PdfReviewNotice(it) } }
         equityFields.forEach { field -> item { Field(field.label, values[field.key].orEmpty(), { values[field.key] = it }, if (field.numeric) KeyboardType.Decimal else KeyboardType.Text) } }
         item { Panel { Fact("Gross consideration", money(gross)); Fact("Total charges", money(fees)); Fact("Net amount payable", money(gross + fees)) } }
-        item { Button(enabled = !model.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), onClick = {
+        item { Button(enabled = !model.busy && !model.guestStorageLoading, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), onClick = {
             runCatching {
                 val body = JsonRecord().put("instrumentType", "equity").put("exchange", "RSE").put("currency", "RWF").put("status", "active").put("notes", "")
                 equityFields.forEach { field ->
@@ -125,7 +125,7 @@ fun EquityEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit, 
                 listOf("tradeDate", "settlementDate").forEach { LocalDate.parse(body.text(it)) }
                 require(body.getDouble("shares") % 1.0 == 0.0 && body.getDouble("shares") > 0) { "Enter a positive whole number of shares." }
                 body.put("grossConsideration", kotlin.math.round(gross * 100) / 100.0).put("totalCharges", kotlin.math.round(fees * 100) / 100.0).put("netAmountPayable", kotlin.math.round((gross + fees) * 100) / 100.0)
-                model.saveEquity(body, back)
+                model.saveEquity(body, id = existing.text("id").takeIf { model.isGuest && it.isNotBlank() }, completed = back)
             }.onFailure { model.error = userErrorMessage(it, "Check the share details.") }
         }) { AppText("Save share purchase") } }
     }
