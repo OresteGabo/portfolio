@@ -1,5 +1,6 @@
 /** Copy only public, client-side investment logic. No private data or environment files. */
 import fs from 'node:fs';
+import {nativeModuleSource, nativePdfModuleOutput} from './native-pdf-module.mjs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
@@ -15,11 +16,10 @@ const modules = ['calculations', 'pdf-import', 'pdf-import-parser', 'pdf-import-
 for (const name of modules) {
   const original = fs.readFileSync(path.join(web, 'lib/bonds', `${name}.ts`), 'utf8');
   fs.writeFileSync(path.join(root, 'web-logic/source', `${name}.ts`), original);
-  let code = original.replaceAll('"pdfjs-dist/legacy/build/pdf.mjs"', '"./pdf.mjs"').replaceAll('"tesseract.js"', '"./tesseract.mjs"');
-  code = code.replace(/(from\s+|import\()("|')(\.\/[^"']+)\2/g, (_, lead, quote, target) => `${lead}${quote}${/\.(mjs|js)$/.test(target) ? target : target + '.js'}${quote}`);
+  const code = nativeModuleSource(original);
   const result = ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } });
   const destination = name === 'pdf-import' ? assets : common;
-  const generated = name === 'pdf-import' ? result.outputText.replace('import { parsePurchasePdfText } from \"./equity-pdf-parser.js\";', 'const parsePurchasePdfText = (text, usedOcr) => PortfolioLogic.parse(text, usedOcr);') : result.outputText;
+  const generated = name === 'pdf-import' ? nativePdfModuleOutput(result.outputText) : result.outputText;
   fs.writeFileSync(path.join(destination, `${name}.js`), generated);
 }
 fs.copyFileSync(path.join(web, 'node_modules/pdfjs-dist/legacy/build/pdf.mjs'), path.join(assets, 'pdf.mjs'));

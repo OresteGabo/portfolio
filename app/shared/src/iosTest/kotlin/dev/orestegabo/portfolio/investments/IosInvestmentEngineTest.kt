@@ -38,6 +38,73 @@ class IosInvestmentEngineTest {
         } finally { engine.destroy(); Dispatchers.resetMain() }
     }
 
+    @Test fun guestNativeParsingReviewProtectedRetentionAndDuplicateDetectionStayLocal() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val engine = IosInvestmentEngine()
+        val name = "test-p4-" + NSUUID().UUIDString.lowercase()
+        val store = IosGuestSnapshotStorage(name)
+        val repository = LocalGuestPortfolioRepository(store, documentStorage = IosGuestDocumentStorage())
+        val workflow = GuestPdfImport(repository)
+        fun actions(bytes: ByteArray) = object : NativeActions {
+            override val pickedPdfName = "synthetic-private.pdf"
+            override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? = error("Use private selection")
+            override suspend fun pickPrivatePdf(onSelected: () -> Unit): ByteArray { onSelected(); return bytes.copyOf() }
+            override suspend fun savePdf(fileName: String, bytes: ByteArray) = error("No upload/export")
+            override fun openUrl(url: String) = error("No remote URL")
+            override fun shareText(text: String) = error("No sharing")
+        }
+        try {
+            val original = bondPdf(scanned = false)
+            withContext(Dispatchers.Default) { workflow.select(actions(original), EngineDocumentParser(engine)) }
+            assertNull(workflow.failure); assertEquals("bond", workflow.review?.text("kind"))
+            assertTrue(repository.load().portfolio.documents.isEmpty())
+            workflow.confirmed = true
+            // Explicit test-user choices for fields absent from this shortened notice: no fees/accrual,
+            // 5% tax, semiannual estimated schedule. These are not attributed to the PDF.
+            val corrected = requireNotNull(workflow.fields()).put("feesPaid", 0).put("accruedInterestPaid", 0).put("withholdingTaxRate", .05)
+                .put("couponFrequency", 2).put("scheduleConfidence", "estimated").put("couponDates", JsonList())
+            val saved = workflow.save(corrected)
+            val doc = saved.portfolio.documents.single()
+            assertContentEquals(original, repository.documentBytes(doc.text("id")))
+            withContext(Dispatchers.Default) { workflow.select(actions(original), EngineDocumentParser(engine)) }
+            assertNotNull(workflow.duplicate); assertNull(workflow.review)
+            assertEquals(1, repository.load().portfolio.purchases.size)
+            val equity = bondPdf(scanned = false, textOverride = """
+                BK CAPITAL
+                EQUITY PURCHASE CONTRACT NOTE : TEST-2026#01
+                Trade Date : 24-Sep-2026 Security Name : BANK OF KIGALI
+                Settlement Date : 28-Sep-2026 ISIN Code : RW000A1JCYA
+                Pin No. : No. of Shares : 500
+                Exchange : RSE Price : 670.00
+                Trade Report ID : 1234567890123456789
+                Gross Consideration 500 @ 670.00 335,000.00
+                Brokerage Commission 1.5000% 5,025.00
+                RSE Transaction Fee 0.1400% 469.00
+                CSD Transaction Levy 0.0500% 167.50
+                CMA Transaction Fee 0.0200% 67.00
+                Total Charges 5,728.50
+                NET AMOUNT PAYABLE 340,728.50
+                All figures are in RWF
+            """.trimIndent())
+            withContext(Dispatchers.Default) { workflow.select(actions(equity), EngineDocumentParser(engine)) }
+            assertNull(workflow.failure); assertEquals("equity", workflow.review?.text("kind"))
+            workflow.confirmed = true
+            val shares = workflow.save(requireNotNull(workflow.fields()))
+            assertEquals(340728.50, shares.portfolio.holdings.single().optDouble("netAmountPayable"))
+            val locked = requireNotNull(PDFDocument(data = original.toData()).dataRepresentationWithOptions(mapOf(
+                PDFDocumentOwnerPasswordOption to "synthetic-owner", PDFDocumentUserPasswordOption to "synthetic-reader")))
+            assertTrue(PDFDocument(data = locked).isLocked())
+            withContext(Dispatchers.Default) { workflow.select(actions(locked.toBytes()), EngineDocumentParser(engine)) }
+            assertNotNull(workflow.failure); assertNull(workflow.review)
+            withContext(Dispatchers.Default) { workflow.select(actions("%PDF-1.7 damaged\n%%EOF".encodeToByteArray()), EngineDocumentParser(engine)) }
+            assertNotNull(workflow.failure); assertNull(workflow.review)
+        } finally {
+            workflow.clear()
+            repository.load().portfolio.documents.forEach { repository.deleteDocument(it.text("id")) }
+            store.delete(); engine.destroy(); Dispatchers.resetMain()
+        }
+    }
+
     @Test fun originalProjectionRunsInJavaScriptCore() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val engine = IosInvestmentEngine()

@@ -37,6 +37,7 @@ interface NativeActions {
     val pickedPdfName: String? get() = null
     suspend fun offerPasswordSave(origin: String, email: String, password: String) {}
     suspend fun pickPdf(onSelected: () -> Unit = {}): ByteArray?
+    suspend fun pickPrivatePdf(onSelected: () -> Unit = {}): ByteArray? = pickPdf(onSelected)
     suspend fun savePdf(fileName: String, bytes: ByteArray): Boolean
     /** Present native sharing, including available save/export actions. */
     suspend fun sharePdf(fileName: String, bytes: ByteArray): Boolean = savePdf(fileName, bytes)

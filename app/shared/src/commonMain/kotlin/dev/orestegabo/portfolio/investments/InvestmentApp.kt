@@ -90,7 +90,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var education by rememberSaveable { mutableStateOf(false) }
     var importReview by remember(model) { mutableStateOf(model.currentImportReview()) }
     val actions = LocalNativeActions.current
-    val engine = LocalImportEngine.current ?: if (model.isGuest) remember { GuestUnavailableEngine() } else rememberInvestmentEngine()
+    val engine = LocalImportEngine.current ?: if (model.isGuest && model.guestPath == GuestPath.PERSONAL) rememberGuestInvestmentEngine() else if (model.isGuest) remember { GuestUnavailableEngine() } else rememberInvestmentEngine()
     DisposableEffect(engine) { onDispose { engine.destroy() } }
     val documentUi = rememberSaveableStateHolder()
     val calendarUi = rememberSaveableStateHolder()
@@ -338,7 +338,7 @@ fun InvestmentApp(model: PortfolioModel) {
                 )
             },
             bottomBar = {
-                if ((model.user != null || model.isGuest) && !model.locked && !nested && !importChat) NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
+                if ((model.user != null || model.isGuest) && !model.locked && !nested && !importChat && !(model.isGuest && (model.guestImport?.review != null || model.guestImport?.previewBytes != null))) NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
                     destinations.forEach { destination ->
                         val selected = tab == destination.key
                         NavigationBarItem(
@@ -358,7 +358,7 @@ fun InvestmentApp(model: PortfolioModel) {
             }
         ) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).imePadding().portfolioStatusBarFade(portfolioHome)) {
-                if (!model.locked && !model.isGuest) InvestmentEngineHost(engine)
+                if (!model.locked && (!model.isGuest || model.guestPath == GuestPath.PERSONAL)) InvestmentEngineHost(engine)
                 if (!portfolioHome) {
                     AppLoadingLine(model.busy)
                     if (model.documentPreview == null || model.documentPreview?.bytes != null) model.error?.let { Notice(it, true) { model.error = null } }
@@ -366,7 +366,8 @@ fun InvestmentApp(model: PortfolioModel) {
                 }
                 NativePdfInbox.error?.let { Notice(it, true, NativePdfInbox::dismissError) }
                 if (NativePdfInbox.pending != null) Notice(
-                    if (model.user == null || model.locked) "PDF received. Sign in or unlock to review and import it."
+                    if (model.isGuest) "PDF received. Switch to your personal workspace or finish your current action to import it privately."
+                    else if (model.user == null || model.locked) "PDF received. Sign in or unlock to review and import it."
                     else "PDF received. Finish your current action to review and import it.", false, NativePdfInbox::dismiss)
                 when {
                     model.documentPreview != null && model.user != null && !model.locked -> PdfViewerScreen(model, model.documentPreview!!)
@@ -374,7 +375,7 @@ fun InvestmentApp(model: PortfolioModel) {
                         legalHistory = legalHistory + legalRoute!!
                         legalRoute = next
                     }
-                    model.isGuest -> GuestContent(model, tab, choosePath = { showGuestChoice = true }, signIn = { model.beginAccountSignIn() })
+                    model.isGuest -> GuestContent(model, tab, engine, choosePath = { showGuestChoice = true }, signIn = { model.beginAccountSignIn() })
                     model.locked -> UnlockScreen(model, continueAsGuest = { showGuestChoice = true }) { legalRoute = "hub" }
                     model.user == null -> SignInScreen(model, continueAsGuest = { showGuestChoice = true }) { legalRoute = "hub" }
                     notificationPanel == "security" -> SignInActivityScreen(model, securityNotificationId)

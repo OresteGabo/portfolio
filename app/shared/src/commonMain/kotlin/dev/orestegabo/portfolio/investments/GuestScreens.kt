@@ -1,7 +1,10 @@
 package dev.orestegabo.portfolio.investments
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -25,13 +28,13 @@ internal fun GuestEntryDialog(close: () -> Unit, choose: (GuestPath) -> Unit) {
             OutlinedButton(onClick = { choose(GuestPath.SAMPLE) }, modifier = Modifier.fillMaxWidth()) { AppText("Explore fictional sample") }
             DetailNote("Illustrative examples only. Sample records are separate from your personal portfolio.")
             Button(onClick = { choose(GuestPath.PERSONAL) }, modifier = Modifier.fillMaxWidth()) { AppText("Start personal portfolio") }
-            DetailNote("Investments are saved privately on this device. PDF import and live markets are not available in Guest Mode yet.")
+            DetailNote("Investments and supported PDFs are saved privately on this device. Live markets are not available in Guest Mode yet.")
         }
     }, confirmButton = {}, dismissButton = { TextButton(onClick = close) { AppText("Cancel") } })
 }
 
 @Composable
-internal fun GuestContent(model: PortfolioModel, tab: String, choosePath: () -> Unit, signIn: () -> Unit) {
+internal fun GuestContent(model: PortfolioModel, tab: String, engine: InvestmentEngine, choosePath: () -> Unit, signIn: () -> Unit) {
     val sample = model.guestPath == GuestPath.SAMPLE
     var editingBond by remember(model.sessionState) { mutableStateOf<JsonRecord?>(null) }
     var editingShare by remember(model.sessionState) { mutableStateOf<JsonRecord?>(null) }
@@ -47,12 +50,75 @@ internal fun GuestContent(model: PortfolioModel, tab: String, choosePath: () -> 
         return
     }
     deleting?.let { (id, bond) -> AlertDialog(onDismissRequest = { deleting = null },
-        title = { AppText("Delete local investment?") }, text = { AppText("This removes the investment and its receipt states from this device. This cannot be undone.") },
+        title = { AppText("Delete local investment?") }, text = { AppText("This removes the investment and its receipt states. Saved PDFs stay in Documents until you delete them separately.") },
         confirmButton = { TextButton(enabled = !model.guestStorageLoading, onClick = {
             if (bond) model.deletePurchase(id) { deleting = null } else model.deleteGuestShare(id) { deleting = null }
         }) { AppText("Delete", color = MaterialTheme.colorScheme.error) } },
         dismissButton = { TextButton(onClick = { deleting = null }) { AppText("Cancel") } }) }
+    val importer = model.guestImport
+    val actions = LocalNativeActions.current
     val local = model.guestPortfolio
+    val incoming = NativePdfInbox.pending
+    LaunchedEffect(incoming?.id, model.guestStorageLoading, importer?.review, importer?.previewBytes) {
+        if (!sample && !model.guestStorageLoading && importer?.review == null && importer?.previewBytes == null && editingBond == null && editingShare == null && incoming != null && local != null) {
+            NativePdfInbox.take(incoming.id)?.let { received ->
+                model.selectGuestPdf(ReceivedPdfActions(actions, received.bytes, received.fileName), engine)
+            }
+        }
+    }
+    var deletingDocument by remember(model.sessionState) { mutableStateOf<String?>(null) }
+    deletingDocument?.let { id -> AlertDialog(onDismissRequest = { deletingDocument = null },
+        title = { AppText("Delete local PDF?") }, text = { AppText("Delete the original PDF from this device? Investment records and coupon receipts will remain. This cannot be undone.") },
+        confirmButton = { TextButton(enabled = !model.guestStorageLoading, onClick = { model.deleteGuestDocument(id); deletingDocument = null }) { AppText("Delete", color = MaterialTheme.colorScheme.error) } },
+        dismissButton = { TextButton(onClick = { deletingDocument = null }) { AppText("Cancel") } }) }
+    if (!sample && importer?.previewBytes != null) {
+        PlatformBackHandler(true) { importer.closePreview() }
+        Column(Modifier.fillMaxSize()) {
+            TextButton(onClick = importer::closePreview) { AppText("Back") }
+            val preview = remember(importer.previewBytes, importer.previewName) { DocumentPreview(JsonRecord(), "Local PDF", importer.previewName, importer.previewBytes) }
+            Box(Modifier.weight(1f)) { PdfViewerScreen(model, preview, retry = { importer.closePreview() }) }
+        }
+        return
+    }
+    if (!sample && importer?.review != null) {
+        val fields = remember(importer.review) { importer.fields() } ?: return
+        PlatformBackHandler(!model.guestStorageLoading) { model.cancelGuestImport() }
+        Column(Modifier.fillMaxSize()) {
+            GuestStorageNotice(model)
+            AppText("Private on-device import", Modifier.padding(horizontal = 20.dp), style = MaterialTheme.typography.titleMedium)
+            Row(Modifier.padding(horizontal = 12.dp)) {
+                TextButton(enabled = !model.guestStorageLoading, onClick = { model.previewGuestPdf() }) { AppText("View original PDF") }
+                TextButton(enabled = !model.guestStorageLoading, onClick = model::cancelGuestImport) { AppText("Cancel") }
+            }
+            val records = if (importer.review?.text("kind") == "bond") local?.portfolio?.purchases.orEmpty() else local?.portfolio?.holdings.orEmpty()
+            var choosingExisting by remember(importer.review) { mutableStateOf(false) }
+            if (records.isNotEmpty()) TextButton(enabled = !model.guestStorageLoading, onClick = { choosingExisting = true }) {
+                AppText(if (importer.targetId == null) "Link to an existing purchase (optional)" else "Existing purchase selected")
+            }
+            if (choosingExisting) AlertDialog(onDismissRequest = { choosingExisting = false }, title = { AppText("Choose existing purchase") },
+                text = { LazyColumn(Modifier.heightIn(max = 240.dp)) {
+                    items(records, key = { it.text("id") }) { record ->
+                        TextButton(onClick = { importer.targetId = record.text("id"); choosingExisting = false }) {
+                            Column {
+                                FinancialText(record.text("bondName").ifBlank { record.text("securityName") })
+                                FinancialText(record.text("purchaseDate").ifBlank { record.text("tradeDate") }, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                } }, confirmButton = { TextButton(onClick = { importer.targetId = null; choosingExisting = false }) { AppText("New purchase") } },
+                dismissButton = { TextButton(onClick = { choosingExisting = false }) { AppText("Cancel") } })
+            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(value = importer.confirmed,
+                enabled = !model.guestStorageLoading, role = Role.Checkbox, onValueChange = { importer.confirmed = it })) {
+                Checkbox(checked = importer.confirmed, onCheckedChange = null, enabled = !model.guestStorageLoading)
+                AppText("I checked these details against the original PDF.", Modifier.weight(1f).padding(top = 12.dp))
+            }
+            Box(Modifier.weight(1f)) {
+                if (importer.review?.text("kind") == "bond") PurchaseEditor(model, fields, model::finishGuestImport, importer.review)
+                else EquityEditor(model, fields, model::finishGuestImport, importer.review)
+            }
+        }
+        return
+    }
     val snapshot = remember { guestSamplePortfolio() }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         item {
@@ -60,7 +126,7 @@ internal fun GuestContent(model: PortfolioModel, tab: String, choosePath: () -> 
                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     AppText(if (sample) "Guest · Fictional sample" else "Guest · Personal workspace", fontWeight = FontWeight.SemiBold)
                     AppText(if (sample) "These examples are fictional. They are not your investments or live market values."
-                        else "Your investments stay on this device. They are not synced or backed up. PDF import and live markets are not available yet.", style = MaterialTheme.typography.bodyMedium)
+                        else "Your investments and PDFs stay on this device. They are not synced or backed up. Live markets are not available yet.", style = MaterialTheme.typography.bodyMedium)
                     TextButton(enabled = !model.guestStorageLoading, onClick = signIn) { AppText("Sign in to your account") }
                 }
             }
@@ -68,7 +134,10 @@ internal fun GuestContent(model: PortfolioModel, tab: String, choosePath: () -> 
         when (tab) {
             "Portfolio" -> {
                 if (!sample) {
+                    importer?.duplicate?.let { doc -> item { DetailHeading("This PDF and its investment are already saved."); DetailValueRow("First added", doc.text("createdAt").take(10)) } }
                     item { GuestStorageNotice(model) }
+                    item { importer?.failure?.let { AppText(it, color = MaterialTheme.colorScheme.error) } }
+                    item { Button(enabled = !model.guestStorageLoading, onClick = { model.selectGuestPdf(actions, engine) }, modifier = Modifier.fillMaxWidth()) { AppText("Import PDF privately") } }
                     if (local != null) {
                         item {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -122,6 +191,26 @@ internal fun GuestContent(model: PortfolioModel, tab: String, choosePath: () -> 
                 }
                 item { OutlinedButton(enabled = !model.guestStorageLoading, onClick = choosePath, modifier = Modifier.fillMaxWidth()) { AppText("Change guest experience") } }
             }
+            "Documents" -> if (sample) item {
+                EmptyState("Switch to your personal workspace to import PDFs.", EmptyArtwork.DOCUMENTS, compact = true)
+            } else {
+                item { GuestStorageNotice(model); importer?.failure?.let { AppText(it, color = MaterialTheme.colorScheme.error) } }
+                item { Button(enabled = !model.guestStorageLoading, onClick = { model.selectGuestPdf(actions, engine) }, modifier = Modifier.fillMaxWidth()) { AppText("Import PDF privately") } }
+                importer?.duplicate?.let { doc -> item {
+                    DetailHeading("This PDF and its investment are already saved.")
+                    DetailValueRow("First added", doc.text("createdAt").take(10))
+                } }
+                if (local?.portfolio?.documents?.isEmpty() == true) item { EmptyState("No local PDFs yet", EmptyArtwork.DOCUMENTS, compact = true) }
+                local?.portfolio?.documents.orEmpty().forEach { doc -> item(key = doc.text("id")) {
+                    DetailHeading(doc.text("fileName"))
+                    DetailValueRow("First added", doc.text("createdAt").take(10))
+                    Row {
+                        TextButton(enabled = !model.guestStorageLoading, onClick = { model.previewGuestPdf(doc.text("id"), doc.text("fileName")) }) { AppText("View original PDF") }
+                        TextButton(enabled = !model.guestStorageLoading, onClick = { deletingDocument = doc.text("id") }) { AppText("Delete PDF", color = MaterialTheme.colorScheme.error) }
+                    }
+                    HorizontalDivider()
+                } }
+            }
             "Settings" -> item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     DetailHeading("Guest settings")
@@ -149,7 +238,13 @@ internal class GuestUnavailableEngine : InvestmentEngine {
 @Composable
 private fun GuestStorageNotice(model: PortfolioModel) {
     Column {
-        if (model.guestStorageLoading) LinearProgressIndicator(Modifier.fillMaxWidth())
+        if (model.guestStorageLoading) {
+            LinearProgressIndicator(Modifier.fillMaxWidth())
+            model.guestImport?.progress?.let {
+                AppText(it, style = MaterialTheme.typography.bodySmall)
+                TextButton(onClick = model::cancelGuestImport) { AppText("Cancel") }
+            }
+        }
         if (model.guestStorageError != null) {
             AppText(requireNotNull(model.guestStorageError), color = MaterialTheme.colorScheme.error)
             TextButton(enabled = !model.guestStorageLoading, onClick = model::loadGuestPortfolio) { AppText("Try again") }

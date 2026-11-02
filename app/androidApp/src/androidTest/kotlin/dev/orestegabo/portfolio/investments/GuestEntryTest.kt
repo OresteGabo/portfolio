@@ -77,15 +77,15 @@ class GuestEntryTest {
                 scenario.onActivity { window = it.window }
                 readerFixtureScreenshot(requireNotNull(window), File(i.targetContext.filesDir,"guest-sample.png"))
                 assertEquals("guest-sample-v1",prefs.getString("sessionChoice",null))
-                click("Documents"); await("Guest PDF import is not available yet")
+                click("Documents"); await("Switch to your personal workspace to import PDFs.")
                 click("Markets"); await("Guest live markets are not available yet")
                 click("Settings"); click("Change guest experience"); click("Start personal portfolio")
-                await("Guest · Personal workspace"); await("Your personal portfolio starts here")
+                await("Guest · Personal workspace"); scroll("Your personal portfolio starts here")
                 assertNull(find("Example company — fictional")); assertEquals("guest-personal-v1",prefs.getString("sessionChoice",null))
                 assertTrue(prefs.getBoolean("onboardingCompleted",false)); assertEquals(0,requests.get())
             }
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-                await("Guest · Personal workspace"); await("Your personal portfolio starts here")
+                await("Guest · Personal workspace"); scroll("Your personal portfolio starts here")
                 var window: android.view.Window? = null
                 scenario.onActivity { window = it.window }
                 readerFixtureScreenshot(requireNotNull(window), File(i.targetContext.filesDir,"guest-personal-reopened.png"))

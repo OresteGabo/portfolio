@@ -19,12 +19,12 @@ import javax.crypto.spec.GCMParameterSpec
 private var applicationGuestRepository: GuestPortfolioRepository? = null
 @Composable actual fun rememberGuestPortfolioRepository(): GuestPortfolioRepository {
     val context = LocalContext.current.applicationContext
-    return remember(context) { applicationGuestRepository ?: LocalGuestPortfolioRepository(AndroidGuestSnapshotStorage(context)).also { applicationGuestRepository = it } }
+    return remember(context) { applicationGuestRepository ?: LocalGuestPortfolioRepository(AndroidGuestSnapshotStorage(context), documentStorage = AndroidGuestDocumentStorage(context)).also { applicationGuestRepository = it } }
 }
 
 /** Independent non-exportable key. AtomicFile's backup holds ciphertext too. Never shares auth-vault keys. */
-class AndroidGuestSnapshotStorage(context: Context, storeName: String = "personal") : GuestSnapshotStorage {
-    init { require(storeName.matches(Regex("[a-z0-9-]{1,60}"))) }
+class AndroidGuestSnapshotStorage(context: Context, storeName: String = "personal", private val maxBytes: Int = GUEST_STORE_MAX_BYTES) : GuestSnapshotStorage {
+    init { require(storeName.matches(Regex("[A-Za-z0-9-]{1,100}"))) }
     private val directory = File(context.noBackupFilesDir, "guest-portfolios")
     private val file = AtomicFile(File(directory, "$storeName.scg"))
     private val alias = "struct.guest.snapshot.$storeName.v1"
@@ -33,7 +33,7 @@ class AndroidGuestSnapshotStorage(context: Context, storeName: String = "persona
     override suspend fun read(): ByteArray? = withContext(Dispatchers.IO) {
         if (!file.baseFile.exists() && !File(file.baseFile.path + ".bak").exists()) return@withContext null
         val encrypted = file.openRead().use { input ->
-            require(input.channel.size() in 32L..(GUEST_STORE_MAX_BYTES + 32L)) { "Invalid guest storage size." }
+            require(input.channel.size() in 32L..(maxBytes + 32L)) { "Invalid guest storage size." }
             input.readBytes()
         }
         require(encrypted.copyOfRange(0, 4).contentEquals(header)) { "Unsupported encrypted storage version." }
@@ -44,7 +44,7 @@ class AndroidGuestSnapshotStorage(context: Context, storeName: String = "persona
         cipher.doFinal(encrypted, 16, encrypted.size - 16)
     }
     override suspend fun write(bytes: ByteArray): Unit = withContext(Dispatchers.IO) {
-        require(bytes.size in 1..GUEST_STORE_MAX_BYTES)
+        require(bytes.size in 1..maxBytes)
         check(directory.isDirectory || directory.mkdirs()) { "Guest storage is unavailable." }
         val keys = store()
         val existingFile = file.baseFile.exists() || File(file.baseFile.path + ".bak").exists()
@@ -64,4 +64,24 @@ class AndroidGuestSnapshotStorage(context: Context, storeName: String = "persona
         catch (failure: Throwable) { file.failWrite(stream); throw failure }
         check(file.openRead().use { it.readBytes() }.contentEquals(header + cipher.iv + encrypted)) { "Guest storage commit could not be verified. Reopen the portfolio before retrying." }
     }
+    suspend fun delete(): Unit = withContext(Dispatchers.IO) {
+        file.delete()
+        check(!file.baseFile.exists() && !File(file.baseFile.path + ".bak").exists())
+        store().deleteEntry(alias)
+    }
+
+}
+
+class AndroidGuestDocumentStorage(private val context: Context) : GuestDocumentStorage {
+    private fun file(id: String): AndroidGuestSnapshotStorage {
+        require(id.matches(Regex("[A-Za-z0-9-]{1,80}")))
+        return AndroidGuestSnapshotStorage(context, "pdf-$id", MAX_PDF_BYTES)
+    }
+    override suspend fun read(id: String) = file(id).read()
+    override suspend fun write(id: String, bytes: ByteArray) = file(id).write(bytes)
+    override suspend fun delete(id: String) = file(id).delete()
+}
+@Composable actual fun rememberGuestInvestmentEngine(): InvestmentEngine {
+    val context = LocalContext.current
+    return remember(context) { LocalInvestmentEngine(context, privateDocuments = true) }
 }

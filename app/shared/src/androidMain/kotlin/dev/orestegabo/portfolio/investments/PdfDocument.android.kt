@@ -36,11 +36,15 @@ class AndroidPdfDocument(bytes: ByteArray, cache: File) : PdfDocumentPages {
         var fd: ParcelFileDescriptor? = null
         var pdf: PdfRenderer? = null
         try {
-            file.writeBytes(bytes)
-            fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-            pdf = PdfRenderer(fd)
+            java.io.FileOutputStream(file).use { output ->
+                fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+                check(file.delete()) { "Could not secure the PDF preview." }
+                // Write only after unlink: even a process crash leaves no named plaintext PDF.
+                output.write(bytes)
+            }
+            pdf = PdfRenderer(requireNotNull(fd))
             require(pdf.pageCount in 1..500)
-            descriptor = fd; renderer = pdf; pageCount = pdf.pageCount
+            descriptor = requireNotNull(fd); renderer = pdf; pageCount = pdf.pageCount
         } catch (failure: Exception) {
             pdf?.close(); fd?.close(); file.delete(); throw failure
         }

@@ -40,7 +40,7 @@ import kotlinx.coroutines.withContext
 private const val PDF_DISPLAY_ERROR = "This PDF could not be displayed. It may be damaged or password-protected."
 
 @Composable
-internal fun PdfViewerScreen(model: PortfolioModel, preview: DocumentPreview) {
+internal fun PdfViewerScreen(model: PortfolioModel, preview: DocumentPreview, retry: () -> Unit = { model.openDocumentPreview(preview.source) }) {
     val loader = rememberPdfDocumentLoader()
     var document by remember(preview) { mutableStateOf<PdfDocumentPages?>(null) }
     var failure by remember(preview) { mutableStateOf(false) }
@@ -58,7 +58,7 @@ internal fun PdfViewerScreen(model: PortfolioModel, preview: DocumentPreview) {
         failure || preview.bytes == null && !model.busy -> Box(Modifier.fillMaxSize().padding(20.dp), contentAlignment = Alignment.Center) {
             EmptyState("Could not open PDF", EmptyArtwork.DOCUMENTS, compact = true,
                 description = if (failure) PDF_DISPLAY_ERROR else model.error ?: "Try opening this document again.",
-                actionLabel = "Retry", onAction = { model.openDocumentPreview(preview.source) })
+                actionLabel = "Retry", onAction = retry)
         }
         preview.bytes == null || document == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {

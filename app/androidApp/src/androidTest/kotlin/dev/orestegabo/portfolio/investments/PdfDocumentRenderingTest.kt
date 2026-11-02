@@ -18,7 +18,7 @@ class PdfDocumentRenderingTest {
             val pixels = IntArray(page.width * page.height)
             page.readPixels(pixels)
             assertTrue(pixels.any { it != -1 })
-            assertTrue(File(cache, "pdf-preview").listFiles().orEmpty().isNotEmpty())
+            assertTrue("Rendering must not retain a named plaintext PDF", File(cache, "pdf-preview").listFiles().orEmpty().isEmpty())
         } finally { document.close() }
         assertTrue(File(cache, "pdf-preview").listFiles().orEmpty().isEmpty())
         assertTrue(unrelated.exists())

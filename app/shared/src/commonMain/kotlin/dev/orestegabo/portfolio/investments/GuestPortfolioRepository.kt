@@ -18,18 +18,26 @@ interface GuestSnapshotStorage {
 }
 const val GUEST_STORE_MAX_BYTES = 4 * 1024 * 1024
 private const val WORKSPACE = "guest-personal"
-private const val SCHEMA = 2
+private const val SCHEMA = 3
 
 /** Full history, not the server's compact overview. Copies cross the boundary, not mutable cached records. */
 data class GuestPortfolio(val portfolio: PortfolioSnapshot, val receipts: List<JsonRecord>, val metadata: JsonRecord, val revision: Int)
+interface GuestDocumentStorage {
+    suspend fun read(id: String): ByteArray?
+    suspend fun write(id: String, bytes: ByteArray)
+    suspend fun delete(id: String)
+}
 interface GuestPortfolioRepository {
+    suspend fun importPdf(bytes: ByteArray, fileName: String, kind: String, body: JsonRecord, targetId: String? = null): GuestPortfolio
+    suspend fun documentBytes(id: String): ByteArray
+    suspend fun deleteDocument(id: String): GuestPortfolio
     suspend fun load(): GuestPortfolio
     suspend fun saveBond(record: JsonRecord, id: String? = null): GuestPortfolio
     suspend fun saveShare(record: JsonRecord, id: String? = null): GuestPortfolio
     suspend fun deleteBond(id: String): GuestPortfolio
     suspend fun deleteShare(id: String): GuestPortfolio
     suspend fun setReceipt(purchaseId: String, dueDate: String, received: Boolean): GuestPortfolio
-    /** Metadata only. Original PDF ownership/bytes are a later import phase. */
+    /** Metadata-only compatibility API; new imports use the atomic file + financial-record path. */
     suspend fun saveDocumentReference(record: JsonRecord, id: String? = null): GuestPortfolio
 }
 @Composable expect fun rememberGuestPortfolioRepository(): GuestPortfolioRepository
@@ -41,13 +49,104 @@ class LocalGuestPortfolioRepository(
     private val newId: () -> String = { Uuid.random().toString() },
     private val today: () -> kotlinx.datetime.LocalDate = { Today },
     private val workDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val documentStorage: GuestDocumentStorage? = null,
 ) : GuestPortfolioRepository {
     private val mutex = Mutex()
     private suspend fun <T> locked(block: suspend () -> T): T = withContext(workDispatcher) { mutex.withLock { block() } }
     override suspend fun load(): GuestPortfolio = locked {
         val (root, migrated) = read()
         if (migrated) persist(root)
+        cleanPending(root)
         view(root)
+    }
+    override suspend fun documentBytes(id: String): ByteArray = locked {
+        val (root, _) = read()
+        val doc = root.rows("documents").singleOrNull { it.text("id") == id } ?: error("Local PDF not found.")
+        val bytes = requireNotNull(requireNotNull(documentStorage).read(doc.text("localFileId"))) { "Original PDF is unavailable." }
+        try { validatePdfEnvelope(bytes); require(importPdfDigest(bytes) == doc.text("sha256")) { "Local PDF integrity check failed." }; bytes }
+        catch (failure: Throwable) { bytes.fill(0); throw failure }
+    }
+    override suspend fun deleteDocument(id: String): GuestPortfolio = locked {
+        val (root, _) = read(); cleanPending(root)
+        val doc = root.rows("documents").singleOrNull { it.text("id") == id } ?: error("Local PDF not found.")
+        root.put("documents", JsonList(root.rows("documents").filterNot { it.text("id") == id }))
+        for (key in listOf("purchases", "holdings")) root.put(key, JsonList(root.rows(key).map { row ->
+            row.optJSONArray("documentIds")?.let { refs -> row.put("documentIds", JsonList((0 until refs.length()).map { refs.getString(it) }.filterNot { it == id })) }
+            row
+        }))
+        val stillReferenced = root.rows("documents").any { it.text("localFileId") == doc.text("localFileId") }
+        root.put("pendingFiles", JsonList(if (stillReferenced) emptyList() else listOf(doc.text("localFileId"))))
+        commit(root); cleanPending(root); view(root)
+    }
+    override suspend fun importPdf(bytes: ByteArray, fileName: String, kind: String, body: JsonRecord, targetId: String?): GuestPortfolio = locked {
+        require(kind in listOf("bond", "equity")) { "Unsupported guest PDF type." }
+        validatePdfEnvelope(bytes)
+        val blobs = requireNotNull(documentStorage)
+        val digest = importPdfDigest(bytes)
+        val (root, _) = read(); cleanPending(root)
+        val key = if (kind == "bond") "purchases" else "holdings"
+        val normalized = if (kind == "bond") normalizeBond(body) else normalizeShare(body)
+        if (normalized.text("isin").isBlank()) throw GuestPdfReviewException("Enter the ISIN before saving an imported investment.")
+        val priorCopies = root.rows("documents").filter { it.text("sha256") == digest }
+        require(priorCopies.size <= 1) { "Multiple stored copies require review before importing this PDF." }
+        val prior = priorCopies.singleOrNull()
+        val priorId = prior?.text("id")
+        if (priorId != null && (root.rows("purchases") + root.rows("holdings")).any { it.hasDocument(priorId) }) {
+            val retained = blobs.read(prior.text("localFileId"))
+            if (retained == null) blobs.write(prior.text("localFileId"), bytes) // Explicit reviewed repair of a missing original only.
+            else try { require(importPdfDigest(retained) == digest) { "Local PDF integrity check failed." } } finally { retained.fill(0) }
+            return@locked view(root) // Never duplicate or overwrite the linked financial event.
+        }
+        val candidates = guestPdfCandidates(normalized, kind, root.rows(key))
+        if (candidates.isNotEmpty() && targetId == null) throw GuestPdfReviewException("Choose the existing purchase before attaching this PDF.")
+        if (targetId != null) {
+            if (candidates.none { it.text("id") == targetId }) throw GuestPdfReviewException("The selected purchase does not match this PDF.")
+            val existing = root.rows(key).single { it.text("id") == targetId }
+            val moneyKeys = if (kind == "bond") listOf("faceValue", "pricePercent", "feesPaid", "accruedInterestPaid", "couponRate", "withholdingTaxRate") else listOf("shares", "pricePerShare", "grossConsideration", "totalCharges", "netAmountPayable")
+            val dateKeys = if (kind == "bond") listOf("maturityDate", "firstCouponDate") else listOf("ticker")
+            val changedTerms = dateKeys.any { existing.text(it).isNotBlank() && normalized.text(it).isNotBlank() && existing.text(it) != normalized.text(it) } ||
+                kind == "bond" && existing.optDouble("couponFrequency") != normalized.optDouble("couponFrequency")
+            if (changedTerms || moneyKeys.any { existing.optDouble(it) != normalized.optDouble(it) }) throw GuestPdfReviewException("The existing figures differ. Correct the purchase before linking this PDF.")
+        }
+        val doc = prior ?: JsonRecord().put("id", id("document")).put("localFileId", newId())
+            .put("fileName", importDisplayName(fileName).take(180)).put("mimeType", "application/pdf").put("sha256", digest)
+            .put("kind", kind).put("createdAt", now()).put("updatedAt", now())
+        validateDocument(doc)
+        val fileId = doc.text("localFileId")
+        // Persist intent before bytes. Interrupted, uncommitted files are deleted on the next valid load.
+        if (prior == null) {
+            root.put("pendingFiles", JsonList(listOf(fileId))); persist(root)
+            blobs.write(fileId, bytes)
+        } else {
+            val retained = blobs.read(fileId)
+            if (retained == null) blobs.write(fileId, bytes)
+            else try { require(importPdfDigest(retained) == digest) { "Local PDF integrity check failed." } } finally { retained.fill(0) }
+        }
+        if (prior == null) root.put("documents", JsonList(root.rows("documents") + doc))
+        val old = root.rows(key).firstOrNull { it.text("id") == targetId }
+        val refs = old?.optJSONArray("documentIds")?.let { a -> (0 until a.length()).map { a.getString(it) } }.orEmpty()
+        // Attaching evidence must not replace existing notes, tax choices or other saved metadata.
+        val record = old?.let { JsonRecord(it.toString()) } ?: normalized
+        if (kind == "bond" && old?.text("status") == "submitted" && normalized.text("status") == "active") record.put("status", "active")
+        record.put("documentIds", JsonList((refs + doc.text("id")).distinct()))
+        upsert(root, key, if (kind == "bond") "bond" else "share", record, targetId)
+        root.put("pendingFiles", JsonList())
+        commit(root)
+        view(root)
+    }
+    private suspend fun commit(root: JsonRecord) {
+        root.put("revision", root.getInt("revision") + 1)
+        root.put("metadata", JsonRecord(root.getJSONObject("metadata").toString()).put("updatedAt", now()))
+        validate(root); persist(root)
+    }
+    private suspend fun cleanPending(root: JsonRecord) {
+        val pending = root.getJSONArray("pendingFiles")
+        if (pending.length() == 0) return
+        val blobs = requireNotNull(documentStorage) { "Local PDF storage is unavailable." }
+        kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+            for (i in 0 until pending.length()) blobs.delete(pending.getString(i))
+            root.put("pendingFiles", JsonList()); persist(root)
+        }
     }
     override suspend fun saveBond(record: JsonRecord, id: String?) = update { root ->
         require(!record.has("id") || record.text("id") == id) { "Only local records can be edited here." }
@@ -86,7 +185,7 @@ class LocalGuestPortfolioRepository(
     private fun validId(id: String, kind: String) = id.startsWith("guest:$kind:") &&
         id.removePrefix("guest:$kind:").matches(Regex("[A-Za-z0-9-]{1,80}"))
     private suspend fun update(change: (JsonRecord) -> Unit): GuestPortfolio = locked {
-        val (root, _) = read() // Read fresh. A failed load never permits an overwrite.
+        val (root, _) = read(); cleanPending(root) // Read fresh. A failed load never permits an overwrite.
         change(root)
         root.put("revision", root.getInt("revision") + 1)
         root.getJSONObject("metadata").let { root.put("metadata", JsonRecord(it.toString()).put("updatedAt", now())) }
@@ -96,7 +195,7 @@ class LocalGuestPortfolioRepository(
     }
     private fun empty() = JsonRecord().put("schemaVersion", SCHEMA).put("workspace", WORKSPACE).put("revision", 0)
         .put("metadata", JsonRecord().put("createdAt", now()).put("updatedAt", now()))
-        .put("purchases", JsonList()).put("holdings", JsonList()).put("receipts", JsonList()).put("documents", JsonList())
+        .put("purchases", JsonList()).put("holdings", JsonList()).put("receipts", JsonList()).put("documents", JsonList()).put("pendingFiles", JsonList())
     private suspend fun read(): Pair<JsonRecord, Boolean> {
         val bytes = storage.read() ?: return empty() to false
         try {
@@ -104,13 +203,14 @@ class LocalGuestPortfolioRepository(
             val root = JsonRecord(bytes.decodeToString(throwOnInvalidSequence = true))
             require(root.text("workspace") == WORKSPACE) { "Wrong local workspace." }
             val version = root.getDouble("schemaVersion")
-            require(version == 1.0 || version == SCHEMA.toDouble()) { "Unsupported local storage version. Update the app; data was not changed." }
+            require(version in listOf(1.0, 2.0, SCHEMA.toDouble())) { "Unsupported local storage version. Update the app; data was not changed." }
             if (version == 1.0) {
                 // v1 contained purchases/holdings/metadata only; no financial fields are rewritten.
                 require(!root.has("receipts") && !root.has("documents"))
                 root.put("schemaVersion", SCHEMA).put("receipts", JsonList()).put("documents", JsonList())
                 if (!root.has("revision")) root.put("revision", 0)
             }
+            if (version < 3) root.put("schemaVersion", SCHEMA).put("pendingFiles", JsonList())
             validate(root)
             return root to (version != SCHEMA.toDouble())
         } finally { bytes.fill(0) }
@@ -162,6 +262,12 @@ class LocalGuestPortfolioRepository(
             }
         }
         require(root.rows("receipts").map { it.text("purchaseId") to it.text("dueDate") }.distinct().size == root.rows("receipts").size)
+        val pending = root.getJSONArray("pendingFiles")
+        require(pending.length() <= 100)
+        for (i in 0 until pending.length()) {
+            val file = pending.getString(i)
+            require(file.matches(Regex("[A-Za-z0-9-]{1,80}")) && root.rows("documents").none { it.text("localFileId") == file })
+        }
         val docs = root.rows("documents").map { it.text("id") }.toSet()
         (root.rows("purchases") + root.rows("holdings")).forEach { row -> if (row.has("documentIds")) row.getJSONArray("documentIds").let { refs ->
             for (i in 0 until refs.length()) require(refs.getString(i) in docs) { "Document reference not found in this workspace." }

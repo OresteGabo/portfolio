@@ -13,14 +13,16 @@ import java.io.ByteArrayInputStream
 
 /** Sandboxed local JS algorithms only. All visible product UI is Compose. No remote pages or session cookies. */
 @SuppressLint("SetJavaScriptEnabled")
-class LocalInvestmentEngine(context: Context) : InvestmentEngine {
+class LocalInvestmentEngine(context: Context, privateDocuments: Boolean = false) : InvestmentEngine {
     private val assets = context.assets
     private val initialized = CompletableDeferred<Unit>()
     private val pending = mutableMapOf<String, CompletableDeferred<JsonRecord>>()
     private var sequence = 0
+    @Volatile private var destroyed = false
     override var onProgress: (String) -> Unit = {}
     val view = WebView(context).apply {
         settings.javaScriptEnabled = true
+        settings.blockNetworkLoads = privateDocuments
         settings.allowFileAccess = false
         settings.allowContentAccess = false
         settings.domStorageEnabled = false
@@ -60,6 +62,7 @@ class LocalInvestmentEngine(context: Context) : InvestmentEngine {
     private fun blocked() = WebResourceResponse("text/plain", "UTF-8", 403, "Blocked", emptyMap(), ByteArrayInputStream(byteArrayOf()))
 
     override suspend fun run(command: String, payload: JsonRecord, pdf: ByteArray?): JsonRecord = withContext(Dispatchers.Main) {
+        check(!destroyed) { "The local engine is closed." }
         withTimeout(150_000) {
             withTimeout(20_000) { initialized.await() }
             val id = (++sequence).toString()
@@ -80,8 +83,9 @@ class LocalInvestmentEngine(context: Context) : InvestmentEngine {
         }
     }
 
-    override fun cancel() { view.evaluateJavascript("window.gabo?.cancel()", null) }
+    override fun cancel() { view.post { if (!destroyed) view.evaluateJavascript("window.gabo?.cancel()", null) } }
     override fun destroy() {
+        destroyed = true
         pending.values.forEach { it.cancel() }
         pending.clear()
         view.removeJavascriptInterface("Gabo")

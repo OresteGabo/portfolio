@@ -37,4 +37,5 @@ object NativePdfInbox : PdfImportInbox()
 /** Reuse the exact picker-import validation/parser, without asking for a second file selection. */
 internal class ReceivedPdfActions(private val original: NativeActions, private val bytes: ByteArray, override val pickedPdfName: String? = null) : NativeActions by original {
     override suspend fun pickPdf(onSelected: () -> Unit): ByteArray { onSelected(); return bytes }
+    override suspend fun pickPrivatePdf(onSelected: () -> Unit): ByteArray = pickPdf(onSelected)
 }

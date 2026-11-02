@@ -32,6 +32,7 @@ fun PurchaseEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit
         mutableStateMapOf<String, String>().apply {
             bondFields.forEach { field ->
                 this[field.key] = when {
+                    model.isGuest && imported != null && (!existing.has(field.key) || existing.isNull(field.key)) -> ""
                     !existing.has(field.key) -> field.initial
                     field.key == "couponRate" || field.key == "withholdingTaxRate" -> (existing.optDouble(field.key, 0.0) * 100).toString()
                     field.key == "couponDates" -> existing.optJSONArray("couponDates")?.let { dates -> (0 until dates.length()).joinToString(", ") { dates.getString(it) } }.orEmpty()
@@ -45,7 +46,7 @@ fun PurchaseEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit
     var status by rememberSaveable { mutableStateOf(existing.text("status").ifBlank { "active" }) }
     var confidence by rememberSaveable { mutableStateOf(existing.text("scheduleConfidence").ifBlank { "estimated" }) }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { TextButton(onClick = back) { AppText("← Cancel") }; PageTitle("Record keeping", if (id == null) "Add bond purchase" else "Edit purchase", if (model.isGuest) "Saved privately on this device. No account upload." else "Save the broker-confirmed terms. This updates the same portfolio as your web app.") }
+        item { TextButton(enabled = !model.guestStorageLoading, onClick = back) { AppText("← Cancel") }; PageTitle("Record keeping", if (id == null) "Add bond purchase" else "Edit purchase", if (model.isGuest) "Saved privately on this device. No account upload." else "Save the broker-confirmed terms. This updates the same portfolio as your web app.") }
         imported?.let { item { PdfReviewNotice(it) } }
         item { AppText("Instrument", fontWeight = FontWeight.Bold); ChoiceRow(listOf("treasury", "government", "corporate", "municipal", "other"), instrument) { instrument = it } }
         item { AppText("Market", fontWeight = FontWeight.Bold); ChoiceRow(listOf("primary", "secondary", "other"), market) { market = it } }
@@ -64,7 +65,7 @@ fun PurchaseEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit
             val fees = values["feesPaid"]?.toInputNumberOrNull() ?: 0.0
             Panel { Fact("Total cash cost", money(face * price / 100 + accrued + fees, values["currency"].orEmpty())) }
         }
-        item { Button(enabled = !model.busy && !model.guestStorageLoading, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), onClick = {
+        item { Button(enabled = !model.busy && !model.guestStorageLoading && (model.guestImport?.review == null || model.guestImport.confirmed), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), onClick = {
             runCatching {
                 val body = JsonRecord()
                 bondFields.forEach { field ->
@@ -106,15 +107,15 @@ private val equityFields = listOf(
 
 @Composable
 fun EquityEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit, imported: JsonRecord? = null) {
-    val values = remember(existing) { mutableStateMapOf<String, String>().apply { equityFields.forEach { this[it.key] = if (existing.has(it.key)) existing.text(it.key) else it.initial } } }
+    val values = remember(existing) { mutableStateMapOf<String, String>().apply { equityFields.forEach { this[it.key] = if (existing.has(it.key)) existing.text(it.key) else if (model.isGuest && imported != null) "" else it.initial } } }
     val gross = (values["shares"]?.toInputNumberOrNull() ?: 0.0) * (values["pricePerShare"]?.toInputNumberOrNull() ?: 0.0)
     val fees = listOf("brokerageCommission", "rseTransactionFee", "csdTransactionLevy", "cmaTransactionFee").sumOf { values[it]?.toInputNumberOrNull() ?: 0.0 }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { TextButton(onClick = back) { AppText("← Cancel") }; PageTitle("Record keeping", if (model.isGuest && existing.text("id").isNotBlank()) "Edit share purchase" else "Add share purchase", if (model.isGuest) "Saved privately on this device. No account upload." else "Record the details from your RSE purchase contract note.") }
+        item { TextButton(enabled = !model.guestStorageLoading, onClick = back) { AppText("← Cancel") }; PageTitle("Record keeping", if (model.isGuest && existing.text("id").isNotBlank()) "Edit share purchase" else "Add share purchase", if (model.isGuest) "Saved privately on this device. No account upload." else "Record the details from your RSE purchase contract note.") }
         imported?.let { item { PdfReviewNotice(it) } }
         equityFields.forEach { field -> item { Field(field.label, values[field.key].orEmpty(), { values[field.key] = it }, if (field.numeric) KeyboardType.Decimal else KeyboardType.Text) } }
         item { Panel { Fact("Gross consideration", money(gross)); Fact("Total charges", money(fees)); Fact("Net amount payable", money(gross + fees)) } }
-        item { Button(enabled = !model.busy && !model.guestStorageLoading, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), onClick = {
+        item { Button(enabled = !model.busy && !model.guestStorageLoading && (model.guestImport?.review == null || model.guestImport.confirmed), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), onClick = {
             runCatching {
                 val body = JsonRecord().put("instrumentType", "equity").put("exchange", "RSE").put("currency", "RWF").put("status", "active").put("notes", "")
                 equityFields.forEach { field ->

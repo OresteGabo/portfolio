@@ -94,8 +94,10 @@ private class IosActions : NativeActions {
         result.invokeOnCancellation { controller.dismissViewControllerAnimated(true, null); picker = null; delegate = null }
         presentingController().presentViewController(controller, animated = true, completion = null)
     }
-    override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? = withContext(Dispatchers.Main) {
-        val url = select(UIDocumentPickerViewController(forOpeningContentTypes = listOf(UTTypePDF), asCopy = true)) ?: return@withContext null
+    override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? = readPdf(onSelected, copy = true)
+    override suspend fun pickPrivatePdf(onSelected: () -> Unit): ByteArray? = readPdf(onSelected, copy = false)
+    private suspend fun readPdf(onSelected: () -> Unit, copy: Boolean): ByteArray? = withContext(Dispatchers.Main) {
+        val url = select(UIDocumentPickerViewController(forOpeningContentTypes = listOf(UTTypePDF), asCopy = copy)) ?: return@withContext null
         pickedPdfName = url.lastPathComponent?.take(180)
         onSelected()
         val access = url.startAccessingSecurityScopedResource()

@@ -98,13 +98,13 @@ class GuestPortfolioRepositoryTest {
         disk.failWrite = false
         val migrated = repo(disk).load()
         assertEquals(original.portfolio.purchases.single().toString(),migrated.portfolio.purchases.single().toString())
-        assertEquals(2,JsonRecord(requireNotNull(disk.bytes).decodeToString()).getInt("schemaVersion"))
+        assertEquals(3,JsonRecord(requireNotNull(disk.bytes).decodeToString()).getInt("schemaVersion"))
         val writes = disk.writes; repo(disk).load(); assertEquals(writes,disk.writes)
     }
     @Test fun corruptionUnknownVersionsAndWrongWorkspaceNeverOverwriteExistingBytes() = runTest {
         val disk = Disk(); repo(disk).saveBond(guestBondFixture())
         val original = requireNotNull(disk.bytes).decodeToString()
-        for (broken in listOf("{broken", original.replace("\"schemaVersion\":2","\"schemaVersion\":99"), original.replace("guest-personal","account-cloud"), original.replace("guest:bond:","sample:bond:"))) {
+        for (broken in listOf("{broken", original.replace("\"schemaVersion\":3","\"schemaVersion\":99"), original.replace("guest-personal","account-cloud"), original.replace("guest:bond:","sample:bond:"))) {
             disk.bytes = broken.encodeToByteArray(); val writes = disk.writes
             assertFails { repo(disk).load() }; assertFails { repo(disk).saveBond(guestBondFixture()) }
             assertEquals(broken,requireNotNull(disk.bytes).decodeToString()); assertEquals(writes,disk.writes)

@@ -122,7 +122,7 @@ export async function importBondPdf(file, signal, onProgress, preparedBytes) {
                 if (!ocr) {
                     stage = "ocr-load";
                     onProgress("Loading text recognition on your device…");
-                    const { createWorker, PSM } = await import("./tesseract.mjs");
+                    const { createWorker, PSM } = await import("./native-tesseract.mjs");
                     signal.throwIfAborted();
                     const worker = await wait(createWorker("eng", 1, {
                         workerPath: "/bond-import/worker.min.js",
