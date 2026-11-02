@@ -28,9 +28,10 @@ fun App() {
     val actions = rememberNativeActions()
     val vault = rememberSecureSignIn()
     val guestRepository = rememberGuestPortfolioRepository()
+    val guestMarketData = rememberGuestMarketData()
     val model = viewModel {
         val timing = UnlockPerformance.begin("viewmodel_initialization")
-        PortfolioModel(settings, guestRepository = guestRepository, deferAccountStartup = !settings.readOnboardingCompleted(), vault = vault, initialOrigin = developmentApiOrigin()).also { timing?.end() }
+        PortfolioModel(settings, guestMarketData = guestMarketData, guestRepository = guestRepository, deferAccountStartup = !settings.readOnboardingCompleted(), vault = vault, initialOrigin = developmentApiOrigin()).also { timing?.end() }
     }
     val haptics = LocalHapticFeedback.current
     NativePrivacyCover(protectCaptures = model.captureProtectionEnabled, protectDocument = model.documentPreview != null || model.guestImport?.previewBytes != null)

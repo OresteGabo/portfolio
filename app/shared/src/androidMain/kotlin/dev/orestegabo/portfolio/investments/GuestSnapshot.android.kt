@@ -85,3 +85,8 @@ class AndroidGuestDocumentStorage(private val context: Context) : GuestDocumentS
     val context = LocalContext.current
     return remember(context) { LocalInvestmentEngine(context, privateDocuments = true) }
 }
+
+@Composable actual fun rememberGuestMarketData(): GuestMarketData {
+    val context = LocalContext.current.applicationContext
+    return remember(context) { GuestMarketData(AndroidGuestSnapshotStorage(context, "public-quotes", PUBLIC_QUOTE_MAX_BYTES), GUEST_RSE_DISTRIBUTION_APPROVED, ::fetchGuestPublicQuotes) }
+}

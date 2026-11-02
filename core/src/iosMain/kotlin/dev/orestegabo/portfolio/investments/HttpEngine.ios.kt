@@ -13,3 +13,4 @@ actual fun createPlatformHttpEngine(): HttpClientEngine = Darwin.create {
     }
 }
 actual val allowsDevelopmentHttp: Boolean get() = Platform.isDebugBinary
+internal actual fun createPublicQuoteHttpEngine(): HttpClientEngine = createPlatformHttpEngine()

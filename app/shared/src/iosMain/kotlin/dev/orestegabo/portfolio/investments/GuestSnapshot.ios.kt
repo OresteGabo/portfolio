@@ -68,3 +68,7 @@ class IosGuestDocumentStorage : GuestDocumentStorage {
     override suspend fun delete(id: String) = file(id).delete()
 }
 @Composable actual fun rememberGuestInvestmentEngine(): InvestmentEngine = remember { IosInvestmentEngine() }
+
+@Composable actual fun rememberGuestMarketData(): GuestMarketData {
+    return remember() { GuestMarketData(IosGuestSnapshotStorage("public-quotes", PUBLIC_QUOTE_MAX_BYTES), GUEST_RSE_DISTRIBUTION_APPROVED, ::fetchGuestPublicQuotes) }
+}

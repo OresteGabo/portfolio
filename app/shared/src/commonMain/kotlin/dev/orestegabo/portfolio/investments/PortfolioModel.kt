@@ -32,6 +32,7 @@ class PortfolioModel(
     private val reportWorkDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Default,
     private val deferAccountStartup: Boolean = false,
     private val guestRepository: GuestPortfolioRepository? = null,
+    private val guestMarketData: GuestMarketData? = null,
 ) : ViewModel() {
     var origin by mutableStateOf(initialOrigin ?: settings.readOrigin() ?: DEFAULT_ORIGIN)
         private set
@@ -48,6 +49,31 @@ class PortfolioModel(
     var guestStorageError by mutableStateOf<String?>(null)
         private set
     private var guestJob: Job? = null
+    var guestQuotes by mutableStateOf<GuestQuoteSnapshot?>(null); private set
+    var guestQuotesRefreshing by mutableStateOf(false); private set
+    var guestQuotesFailed by mutableStateOf(false); private set
+    val guestQuotesEnabled get() = guestMarketData?.enabled == true
+    private var guestQuoteJob: Job? = null
+    fun refreshGuestQuotes() {
+        if (!isGuest || guestPath != GuestPath.PERSONAL || !guestQuotesEnabled || guestQuoteJob?.isActive == true) return
+        val token = generation
+        guestQuotesRefreshing = true
+        guestQuoteJob = viewModelScope.launch {
+            fun current() = token == generation && isGuest && guestPath == GuestPath.PERSONAL
+            try {
+                val saved = guestMarketData?.load()
+                if (current()) guestQuotes = saved
+                val latest = guestMarketData?.refresh()
+                if (current()) { guestQuotes = latest; guestQuotesFailed = false }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { if (current()) guestQuotesFailed = true }
+            finally { if (current()) { guestQuotesRefreshing = false; guestQuoteJob = null } }
+        }
+    }
+    private fun stopGuestQuotes() {
+        guestQuoteJob?.cancel(); guestQuoteJob = null; guestQuotes = null
+        guestQuotesRefreshing = false; guestQuotesFailed = false
+    }
     val guestImport = guestRepository?.let { GuestPdfImport(it, importWorkDispatcher) }
     fun selectGuestPdf(actions: NativeActions, engine: InvestmentEngine) = guestAction {
         requireNotNull(guestImport).select(actions, EngineDocumentParser(engine))
@@ -442,7 +468,7 @@ class PortfolioModel(
     var education by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
 
-    init { if (isGuest) loadGuestPortfolio() else runAction(allowLocked = true, failureMessage = CONNECTION_ERROR_MESSAGE) {
+    init { if (isGuest) { loadGuestPortfolio(); refreshGuestQuotes() } else runAction(allowLocked = true, failureMessage = CONNECTION_ERROR_MESSAGE) {
         UnlockPerformance.measure("public_assets") { loadPublicData() }
         if (!locked && !deferAccountStartup && entryChoice != MANUAL_ACCOUNT_ENTRY) checkSession()
     } }
@@ -482,6 +508,7 @@ class PortfolioModel(
     }
     fun foreground() {
         if (isGuest && guestPath == GuestPath.PERSONAL && guestPortfolio == null) loadGuestPortfolio()
+        if (isGuest) refreshGuestQuotes()
         val expired = backgroundGraceExpired()
         backgroundLockJob?.cancel(); backgroundLockJob = null
         backgroundedAt = null
@@ -549,6 +576,7 @@ class PortfolioModel(
     fun enterGuest(path: GuestPath): Boolean {
         try { settings.writeSessionChoice(path.stored) }
         catch (_: Exception) { error = "Guest mode could not be saved. Try again."; return false }
+        stopGuestQuotes()
         ++generation; guestJob?.cancel(); guestJob = null; guestStorageLoading = false; guestPortfolio = null; guestStorageError = null; guestImport?.clear()
         activeJob?.cancel(); activeJob = null; busy = false
         activeApi?.close(); activeApi = null
@@ -558,10 +586,12 @@ class PortfolioModel(
         entryChoice = path.stored; accountEntry = false
         error = null; message = null
         loadGuestPortfolio()
+        refreshGuestQuotes()
         return true
     }
     fun beginAccountSignIn() {
         if (!isGuest) return
+        stopGuestQuotes()
         NativePdfInbox.pending?.bytes?.fill(0); NativePdfInbox.dismiss() // Never forward a queued guest PDF into account ingestion.
         guestJob?.cancel(); guestJob = null; guestPortfolio = null; guestStorageLoading = false; guestStorageError = null; guestImport?.clear()
         accountEntry = true
@@ -1400,7 +1430,7 @@ class PortfolioModel(
         }
     }
 
-    override fun onCleared() { guestJob?.cancel(); guestImport?.clear(); guestPortfolio = null; documentThumbnails.clear(); backgroundLockJob?.cancel(); documentPreview = null; importedPdf = null; importedReview = null; retryPdf = null; vault?.lock(); activeApi?.close() }
+    override fun onCleared() { stopGuestQuotes(); guestJob?.cancel(); guestImport?.clear(); guestPortfolio = null; documentThumbnails.clear(); backgroundLockJob?.cancel(); documentPreview = null; importedPdf = null; importedReview = null; retryPdf = null; vault?.lock(); activeApi?.close() }
 
     private fun clearPrivateData() {
         ++startupSyncRevision

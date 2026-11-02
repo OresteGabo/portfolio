@@ -28,7 +28,7 @@ internal fun GuestEntryDialog(close: () -> Unit, choose: (GuestPath) -> Unit) {
             OutlinedButton(onClick = { choose(GuestPath.SAMPLE) }, modifier = Modifier.fillMaxWidth()) { AppText("Explore fictional sample") }
             DetailNote("Illustrative examples only. Sample records are separate from your personal portfolio.")
             Button(onClick = { choose(GuestPath.PERSONAL) }, modifier = Modifier.fillMaxWidth()) { AppText("Start personal portfolio") }
-            DetailNote("Investments and supported PDFs are saved privately on this device. Live markets are not available in Guest Mode yet.")
+            DetailNote("Investments and supported PDFs are saved privately on this device. Public closing quotes are optional and may be unavailable.")
         }
     }, confirmButton = {}, dismissButton = { TextButton(onClick = close) { AppText("Cancel") } })
 }
@@ -126,7 +126,7 @@ internal fun GuestContent(model: PortfolioModel, tab: String, engine: Investment
                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     AppText(if (sample) "Guest · Fictional sample" else "Guest · Personal workspace", fontWeight = FontWeight.SemiBold)
                     AppText(if (sample) "These examples are fictional. They are not your investments or live market values."
-                        else "Your investments and PDFs stay on this device. They are not synced or backed up. Live markets are not available yet.", style = MaterialTheme.typography.bodyMedium)
+                        else "Your investments and PDFs stay on this device. They are not synced or backed up. Market quotes are delayed public information.", style = MaterialTheme.typography.bodyMedium)
                     TextButton(enabled = !model.guestStorageLoading, onClick = signIn) { AppText("Sign in to your account") }
                 }
             }
@@ -153,7 +153,18 @@ internal fun GuestContent(model: PortfolioModel, tab: String, engine: Investment
                             DetailHeading(summary.currency)
                             DetailValueRow("Principal", money(summary.bondFaceValue, summary.currency))
                             DetailValueRow("Acquisition cost", money(summary.investedCash, summary.currency))
-                            DetailNote("Acquisition amounts only. No live market valuation.")
+                            DetailNote("Acquisition amounts only. Bond principal is not a market quotation.")
+                        } }
+                        item { GuestMarketNotice(model) }
+                        local.portfolio.valuedShares(Today, model.guestQuotes?.data).forEach { position -> item {
+                            DetailHeading(position.position.ticker)
+                            DetailValueRow("Acquisition cost", money(position.position.cashCost, position.position.currency))
+                            if (position.closingPrice != null) {
+                                DetailValueRow("Published closing price", money(requireNotNull(position.closingPrice), position.position.currency))
+                                DetailValueRow("Value at published close", money(position.estimatedValue, position.position.currency))
+                                DetailValueRow("Unrealized gain / loss", money(requireNotNull(position.gainLoss), position.position.currency))
+                            } else DetailNote("Market value unavailable. Acquisition cost is shown separately.")
+                            HorizontalDivider()
                         } }
                         local.portfolio.purchases.forEach { bond -> item(key = bond.text("id")) {
                             DetailHeading(bond.text("bondName"), bond.text("isin"))
@@ -219,11 +230,42 @@ internal fun GuestContent(model: PortfolioModel, tab: String, engine: Investment
                     TextButton(enabled = !model.guestStorageLoading, onClick = signIn) { AppText("Sign in to your account") }
                 }
             }
+            "Stocks" -> if (sample) item {
+                DetailNote("Fictional sample records never use real market quotations.")
+            } else {
+                item { GuestMarketNotice(model) }
+                model.guestQuotes?.data?.rows("quotes").orEmpty().forEach { quote -> item(key = quote.text("ticker")) {
+                    DetailHeading(quote.text("ticker"), quote.text("name"))
+                    DetailValueRow("Published closing price", money(quote.optDouble("closing"), "RWF"))
+                    HorizontalDivider()
+                } }
+            }
             else -> item {
                 EmptyState(when(tab) { "Documents" -> "Guest PDF import is not available yet"; "Calendar" -> "Guest payment calendar is not available yet"; else -> "Guest live markets are not available yet" },
                     EmptyArtwork.PORTFOLIO, compact = true,
                     description = "This feature is not available in Guest Mode yet. Sign in to use account features.")
             }
+        }
+    }
+}
+
+@Composable
+private fun GuestMarketNotice(model: PortfolioModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        DetailHeading("Public closing quotes")
+        if (!model.guestQuotesEnabled) DetailNote("Market quotes are currently unavailable. Your local portfolio works offline.")
+        else {
+            val saved = model.guestQuotes
+            if (saved == null) DetailNote("No saved quotes. Market values are unavailable; your investments remain accessible offline.")
+            else {
+                DetailValueRow("Source", "Rwanda Stock Exchange")
+                DetailValueRow("Published", saved.data.getJSONObject("source").text("publishedAt"))
+                DetailValueRow("Saved on device", saved.receivedAt.toString())
+                DetailNote(if (saved.stale(kotlin.time.Clock.System.now())) "Stale closing quotes · not live prices" else "Published closing quotes · not live prices")
+            }
+            if (model.guestQuotesRefreshing) AppText("Refreshing public quotes…", style = MaterialTheme.typography.bodySmall)
+            if (model.guestQuotesFailed) DetailNote("Quote refresh unavailable. Previously saved quotes are retained.")
+            TextButton(enabled = !model.guestQuotesRefreshing, onClick = model::refreshGuestQuotes) { AppText("Refresh quotes") }
         }
     }
 }

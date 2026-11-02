@@ -2,6 +2,23 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Investments and supported PDFs are saved privately on this device. Public closing quotes are optional and may be unavailable." to "Les investissements et PDF pris en charge restent privés sur cet appareil. Les cours de clôture publics sont facultatifs et peuvent être indisponibles.",
+    "Your investments and PDFs stay on this device. They are not synced or backed up. Market quotes are delayed public information." to "Vos investissements et PDF restent sur cet appareil, sans synchronisation ni sauvegarde. Les cours publics sont différés.",
+    "Acquisition amounts only. Bond principal is not a market quotation." to "Montants d’acquisition uniquement. Le capital obligataire n’est pas une cotation de marché.",
+    "Published closing price" to "Cours de clôture publié",
+    "Value at published close" to "Valeur au cours de clôture publié",
+    "Unrealized gain / loss" to "Plus-value / moins-value latente",
+    "Market value unavailable. Acquisition cost is shown separately." to "Valeur de marché indisponible. Le coût d’acquisition est indiqué séparément.",
+    "Fictional sample records never use real market quotations." to "Les exemples fictifs n’utilisent jamais de cotations réelles.",
+    "Public closing quotes" to "Cours de clôture publics",
+    "Market quotes are currently unavailable. Your local portfolio works offline." to "Les cotations sont actuellement indisponibles. Votre portefeuille local fonctionne hors ligne.",
+    "No saved quotes. Market values are unavailable; your investments remain accessible offline." to "Aucune cotation enregistrée. Les valeurs de marché sont indisponibles ; vos investissements restent accessibles hors ligne.",
+    "Saved on device" to "Enregistré sur l’appareil",
+    "Stale closing quotes · not live prices" to "Cours de clôture anciens · pas de cours en direct",
+    "Published closing quotes · not live prices" to "Cours de clôture publiés · pas de cours en direct",
+    "Refreshing public quotes…" to "Actualisation des cours publics…",
+    "Quote refresh unavailable. Previously saved quotes are retained." to "Actualisation indisponible. Les cours précédemment enregistrés sont conservés.",
+    "Refresh quotes" to "Actualiser les cours",
     "This PDF and its purchase details are already saved. No further action is needed." to "Ce PDF et les détails de l’achat sont déjà enregistrés. Aucune autre action n’est nécessaire.",
     "This PDF and its bond terms are already saved. No further action is needed." to "Ce PDF et les conditions de l’obligation sont déjà enregistrés. Aucune autre action n’est nécessaire.",
     "This PDF is already saved, and its statement records have been checked. No further action is needed." to "Ce PDF est déjà enregistré et les opérations du relevé ont été vérifiées. Aucune autre action n’est nécessaire.",
