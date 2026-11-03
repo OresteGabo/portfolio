@@ -82,8 +82,10 @@ class IssuanceConfirmationUploadTest {
         exercise(eligible = false)
     }
 
+    @Test fun ordinaryAccountsCannotPublishEvenAfterPublicConsent() = runTest { exercise(authorized = false) }
+
     private suspend fun TestScope.exercise(failUploadFirst: Boolean = false, failConfirmFirst: Boolean = false,
-        lostResponse: Boolean = false, targeted: Boolean = true, changeAllocation: Boolean = false, eligible: Boolean = true, consent: Boolean = true) {
+        lostResponse: Boolean = false, targeted: Boolean = true, changeAllocation: Boolean = false, eligible: Boolean = true, consent: Boolean = true, authorized: Boolean = true) {
         val dispatcher = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(dispatcher)
         val store = ViewModelStore()
@@ -104,7 +106,7 @@ class IssuanceConfirmationUploadTest {
             PortfolioApi(origin, MockEngine(MockEngineConfig().apply {
                 this.dispatcher = dispatcher
                 addHandler { request -> when (request.url.encodedPath) {
-                    "/api/bonds/auth/session" -> respond("""{"authenticated":true,"user":{"id":"test"}}""")
+                    "/api/bonds/auth/session" -> respond("""{"authenticated":true,"user":{"id":"test","canPublishPublicData":$authorized}}""")
                     "/api/bonds/mobile-overview" -> respond("{}", HttpStatusCode.NotFound)
                     "/api/bonds/purchases" -> {
                         assertEquals(HttpMethod.Get, request.method) // Never create a second transaction.
@@ -159,6 +161,11 @@ class IssuanceConfirmationUploadTest {
             model.importPurchasePdf(actions, engine, bondOnly = true) {}
             advanceUntilIdle()
             save(); advanceUntilIdle()
+            if (!authorized) {
+                assertEquals(0, uploads); assertEquals(0, confirmations); assertFalse(closed)
+                assertEquals(PUBLIC_DATA_PERMISSION_ERROR, model.error)
+                return
+            }
             if (!consent) {
                 assertEquals(0,uploads); assertEquals(0,confirmations); assertFalse(closed)
                 assertNotNull(model.error)

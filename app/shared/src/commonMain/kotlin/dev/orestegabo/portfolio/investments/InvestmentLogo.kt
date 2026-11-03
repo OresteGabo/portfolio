@@ -3,6 +3,7 @@ package dev.orestegabo.portfolio.investments
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,15 +31,15 @@ internal fun investmentLogoResource(ticker: String, bond: Boolean = false): org.
 }
 
 @Composable
-fun InvestmentLogo(ticker: String = "", bond: Boolean = false, modifier: Modifier = Modifier, compact: Boolean = false) {
+fun InvestmentLogo(ticker: String = "", bond: Boolean = false, modifier: Modifier = Modifier, compact: Boolean = false, prominent: Boolean = false) {
     val symbol = ticker.trim().uppercase()
     val resource = investmentLogoResource(ticker, bond)
-    Surface(modifier.size(44.dp), shape = CircleShape,
+    Surface(modifier.size(if (prominent) 76.dp else 44.dp), shape = if (prominent) RoundedCornerShape(16.dp) else CircleShape,
         color = if (resource != null) Color.White else MaterialTheme.colorScheme.primaryContainer) {
         Box(contentAlignment = Alignment.Center) {
             if (resource != null) Image(painterResource(resource), null,
-                Modifier.fillMaxSize().padding(if (compact || bond || symbol in listOf("KCB", "MTNR", "MTN")) 3.dp else 7.dp), contentScale = ContentScale.Fit)
-            else AppText(ticker.take(3), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
+                Modifier.fillMaxSize().padding(if (prominent) 8.dp else if (compact || bond || symbol in listOf("KCB", "MTNR", "MTN")) 3.dp else 7.dp), contentScale = ContentScale.Fit)
+            else AppText(ticker.take(3), style = if (prominent) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer)
         }
     }

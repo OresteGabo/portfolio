@@ -159,6 +159,7 @@ fun mergeBondIssuances(published: List<JsonRecord>, documents: List<JsonRecord>,
 @Composable
 fun BondIssuanceReview(model: PortfolioModel, review: JsonRecord, target: JsonRecord? = null, done: () -> Unit) {
     DisposableEffect(review) { onDispose { model.discardImportedPdf(review) } }
+    if (!model.canPublishPublicData) { AppText(PUBLIC_DATA_PERMISSION_ERROR); return }
     var sharingConfirmed by rememberSaveable(review) { mutableStateOf(false) }
     val parsed = remember(review) { runCatching { importedIssuanceInput(review) } }
     val p = review.optJSONObject("fields") ?: JsonRecord()

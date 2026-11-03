@@ -172,6 +172,14 @@ private class IosActions : NativeActions {
             if (!opened) shareText(address)
         }
     }
+    override suspend fun composeEmail(address: String, subject: String, body: String): Boolean {
+        val destination = requireNotNull(NSURL.URLWithString(supportEmailUri(address, subject, body)))
+        return suspendCancellableCoroutine { continuation ->
+            UIApplication.sharedApplication.openURL(destination, options = emptyMap<Any?, Any?>()) { opened ->
+                if (continuation.isActive) continuation.resume(opened)
+            }
+        }
+    }
     override fun shareText(text: String) {
         val controller = UIActivityViewController(activityItems = listOf(text), applicationActivities = null)
         val presenter = presentingController()

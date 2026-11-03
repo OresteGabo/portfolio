@@ -27,7 +27,7 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 
 @Composable
-internal fun SignInScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? = null, openLegal: () -> Unit) {
+internal fun SignInScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? = null, openIssueReport: (() -> Unit)? = null, openLegal: () -> Unit) {
     val actions = LocalNativeActions.current
     val autofill = LocalAutofillManager.current
     val focus = LocalFocusManager.current
@@ -124,6 +124,7 @@ internal fun SignInScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? 
                     }
                 }
             }
+            if (openIssueReport != null) item { TextButton(onClick = openIssueReport, modifier = Modifier.fillMaxWidth()) { AppText("Report a problem") } }
             item { TextButton(onClick = openLegal, modifier = Modifier.fillMaxWidth()) { AppText("Legal & privacy") } }
         }
     }

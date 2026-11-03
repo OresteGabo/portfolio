@@ -6,6 +6,7 @@ internal const val CONNECTION_ERROR_MESSAGE = "Could not connect. Check your con
 /** Exact, app-authored messages only. Never trust free-form exception or server response text. */
 private val approvedErrorMessages = setOf(
     PDF_READ_ERROR,
+    PUBLIC_DATA_PERMISSION_ERROR,
     "This PDF could not be displayed.",
     "Statement PDF saved and records checked. Could not refresh the portfolio. Pull down on Home to update; do not submit it again.",
     "Finish or cancel the current import first.",

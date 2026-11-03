@@ -1,0 +1,488 @@
+diff --git a/src/main/kotlin/dev/orestegabo/portfolio/AuthController.kt b/src/main/kotlin/dev/orestegabo/portfolio/AuthController.kt
+--- a/src/main/kotlin/dev/orestegabo/portfolio/AuthController.kt
++++ b/src/main/kotlin/dev/orestegabo/portfolio/AuthController.kt
+@@ -7,10 +7,10 @@
+ 
+ @RestController
+ @RequestMapping("/api/bonds/auth")
+-class AuthController(private val auth: AuthService, private val portfolios: PortfolioService,private val notifications: PriceNotifications,private val lifecycle: LifecycleNotifications) {
++class AuthController(private val auth: AuthService, private val portfolios: PortfolioService,private val notifications: PriceNotifications,private val lifecycle: LifecycleNotifications,private val publication: PublicDataPublication) {
+     @GetMapping("/session") fun session(): Record {
+         val account = currentAccountOrNull()
+-        return mapOf("authenticated" to (account != null), "user" to account?.publicInfo())
++        return mapOf("authenticated" to (account != null), "user" to account?.let { publicInfo(it) })
+     }
+     @PostMapping("/login") fun login(@RequestBody body: Record, request: HttpServletRequest, response: HttpServletResponse): Record {
+         val email = Passwords.email(body["email"])
+@@ -19,7 +19,7 @@
+         val account = auth.authenticate(email!!, body.text("password")) ?: throw ApiError(401, "Invalid email or password.")
+         RequestPerformance.measure("session_create") { auth.start(account, request, response) }
+         runCatching { RequestPerformance.measure("security_notification_queue") { lifecycle.signIn(account.id,body.text("deviceId"),body.text("platform")) } }
+-        return mapOf("authenticated" to true, "user" to account.publicInfo())
++        return mapOf("authenticated" to true, "user" to publicInfo(account))
+     }
+     @PostMapping("/logout") fun logout(request: HttpServletRequest, response: HttpServletResponse, @RequestBody(required=false) body: Record?): Record {
+         val device=body?.text("deviceId").orEmpty()
+@@ -36,7 +36,7 @@
+         val account = auth.register(email!!, body.text("password"), body.text("invite"))
+         RequestPerformance.measure("session_create") { auth.start(account, request, response) }
+         runCatching { RequestPerformance.measure("security_notification_queue") { lifecycle.signIn(account.id,body.text("deviceId"),body.text("platform")) } }
+-        return mapOf("authenticated" to true, "user" to account.publicInfo())
++        return mapOf("authenticated" to true, "user" to publicInfo(account))
+     }
+     @GetMapping("/registration") fun registration(): Record {
+         currentOwner()
+@@ -52,7 +52,16 @@
+     @DeleteMapping("/registration") fun close(): Record { currentOwner(); auth.closeInvites(); return mapOf("closed" to true) }
+     @GetMapping("/accounts") fun accounts(): Record {
+         val owner = currentOwner()
+-        return mapOf("accounts" to portfolios.accounts(owner, auth.friend()))
++        return mapOf("accounts" to portfolios.accounts(owner, auth.friend()).map { it+mapOf("canPublishPublicData" to publication.canPublish(it.text("id"))) })
++    }
++    private fun publicInfo(account: Account): Record = account.publicInfo()+mapOf("canPublishPublicData" to publication.canPublish(account.id))
++    @PutMapping("/accounts/{id}/public-data-publisher")
++    fun publisher(@PathVariable id: String,@RequestBody body: Record): Record {
++        val owner=currentOwner()
++        checkApi(body.keys==setOf("enabled") && body["enabled"] is Boolean,"Choose whether publication is allowed.")
++        val target=auth.account(id) ?: throw ApiError(404,"Account not found.")
++        publication.setPublisher(owner.id,target.id,body["enabled"]==true)
++        return mapOf("canPublishPublicData" to publication.canPublish(target.id))
+     }
+     @DeleteMapping("/accounts/{id}") fun remove(@PathVariable id: String, @RequestBody body: Record): Record {
+         currentOwner()
+diff --git a/src/main/kotlin/dev/orestegabo/portfolio/AuthService.kt b/src/main/kotlin/dev/orestegabo/portfolio/AuthService.kt
+--- a/src/main/kotlin/dev/orestegabo/portfolio/AuthService.kt
++++ b/src/main/kotlin/dev/orestegabo/portfolio/AuthService.kt
+@@ -124,6 +124,7 @@
+         for (table in listOf("guest_migration_items", "bond_statement_decisions", "bond_statement_sources", "push_devices", "notifications", "coupon_receipts", "notification_preferences", "account_devices", "bond_purchases", "equity_purchases", "bond_statement_items", "bond_uploaded_documents", "bond_document_uploads")) db.update("DELETE FROM $table WHERE owner_id=?", id)
+         db.update("DELETE FROM bond_sessions WHERE user_id=?", id)
+         db.update("DELETE FROM bond_registration WHERE email=?", email)
++        db.update("DELETE FROM public_data_publishers WHERE account_id=?",id)
+         db.update("DELETE FROM bond_users WHERE id=? AND email=?", id, email)
+         return true
+     }
+diff --git a/src/main/kotlin/dev/orestegabo/portfolio/BondInstrumentService.kt b/src/main/kotlin/dev/orestegabo/portfolio/BondInstrumentService.kt
+--- a/src/main/kotlin/dev/orestegabo/portfolio/BondInstrumentService.kt
++++ b/src/main/kotlin/dev/orestegabo/portfolio/BondInstrumentService.kt
+@@ -7,13 +7,17 @@
+ /** Public terms only: never investor principal, account details, fees or statement descriptions. */
+ @Service
+ class BondInstrumentService(private val db: JdbcTemplate,private val json: JsonCodec,private val notifications: PriceNotifications) {
+-    fun instruments(): List<Record> = db.query("SELECT id,terms FROM bond_instruments ORDER BY settlement_date DESC,id",{r,_->json.read(r.getString(2))+mapOf("id" to r.getString(1))})
++    fun instruments(): List<Record> = db.query("""SELECT i.id,i.terms FROM bond_instruments i
++        WHERE i.id NOT LIKE 'issuance-%' OR EXISTS(SELECT 1 FROM bond_issuance_documents d WHERE d.approved AND i.id='issuance-'||d.id::text)
++        ORDER BY i.settlement_date DESC,i.id""",{r,_->json.read(r.getString(2))+mapOf("id" to r.getString(1))})
+     private fun security(value: String)=normalized(value.uppercase().removeSuffix("/MN"))
+     fun reference(p: Record): String? = instruments().singleOrNull {
+         security(it.text("isin"))==security(p.text("isin")) && it.text("settlementDate")==p.text("settlementDate")
+     }?.text("id")
+     fun publish(id: String,terms: Record) {
+-        db.update("INSERT INTO bond_instruments(id,isin,settlement_date,terms) VALUES (?,?,?::date,?::jsonb) ON CONFLICT(isin,settlement_date) DO NOTHING",
++        checkApi(db.queryForObject("SELECT EXISTS(SELECT 1 FROM bond_issuance_documents WHERE id::text=? AND approved)",Boolean::class.java,id)==true,
++            "This public source has not been approved for publication.",403)
++        db.update("INSERT INTO bond_instruments(id,isin,settlement_date,terms) VALUES (?,?,?::date,?::jsonb) ON CONFLICT(isin,settlement_date) DO UPDATE SET terms=EXCLUDED.terms WHERE bond_instruments.id=EXCLUDED.id",
+             "issuance-$id",terms["isin"],terms["settlementDate"],json.write(terms))
+         val saved=instruments().single { security(it.text("isin"))==security(terms.text("isin")) && it.text("settlementDate")==terms.text("settlementDate") }
+         checkApi(listOf("couponRate","pricePercent","tenorYears").all { saved.decimal(it).compareTo(terms.decimal(it))==0 } &&
+@@ -29,35 +33,14 @@
+             mapOf("stage" to "issuance","purchaseId" to row["id"],"documentId" to id,"title" to terms["bondName"],"action" to "document"))
+ 
+     }
+-    /** Called only after an owned personal confirmation PDF has been checked by PortfolioService. */
+-    fun contributePrivateCouponTerms(p: Record) {
+-        if(p.text("status") !in listOf("active","matured","sold"))return
+-        val projected=PublicCouponTerms.project(p) ?: return
+-        db.update("INSERT INTO bond_security_coupon_terms(isin,maturity_date,terms) VALUES (?,?::date,?::jsonb) ON CONFLICT DO NOTHING",
+-            projected["isin"],projected["maturityDate"],json.write(projected))
+-        val stored=db.queryForList("SELECT terms,conflicted FROM bond_security_coupon_terms WHERE isin=? AND maturity_date=?::date FOR UPDATE",
+-            projected["isin"],projected["maturityDate"]).single()
+-        val old=json.read(stored["terms"].toString())
+-        if(!PublicCouponTerms.compatible(old,projected)) {
+-            // Keep the private transaction, but do not choose between conflicting contributors.
+-            db.update("UPDATE bond_security_coupon_terms SET conflicted=true WHERE isin=? AND maturity_date=?::date",projected["isin"],projected["maturityDate"])
+-        } else if(stored["conflicted"]!=true) {
+-            val merged=old+mapOf("couponDates" to (old.strings("couponDates")+projected.strings("couponDates")).distinct().sorted())
+-            db.update("UPDATE bond_security_coupon_terms SET terms=?::jsonb WHERE isin=? AND maturity_date=?::date",json.write(merged),projected["isin"],projected["maturityDate"])
++    // Private confirmations never contribute to a cross-account reference pool.
++    // Old aggregates have no verifiable per-contributor provenance and are deliberately not read.
++    fun sharedCouponTerms(): List<Record> = instruments().mapNotNull { PublicCouponTerms.project(it)?.plus("source" to "published") }
++        .groupBy { it.text("isin") to it.text("maturityDate") }.values.mapNotNull { candidates ->
++            val first=candidates.first()
++            if(candidates.any { !PublicCouponTerms.compatible(first,it) }) null
++            else first+mapOf("couponDates" to candidates.flatMap { it.strings("couponDates") }.distinct().sorted())
+         }
+-    }
+-    fun sharedCouponTerms(): List<Record> {
+-        val published=instruments().mapNotNull { PublicCouponTerms.project(it)?.plus("source" to "published") }
+-        val extracted=db.query("SELECT terms FROM bond_security_coupon_terms WHERE NOT conflicted",{r,_->json.read(r.getString(1))})
+-            .mapNotNull { PublicCouponTerms.project(it+mapOf("scheduleConfidence" to "confirmed")) }
+-        return (published+extracted).groupBy { it.text("isin") to it.text("maturityDate") }.values.mapNotNull { candidates ->
+-            val official=candidates.filter { it.text("source")=="published" }
+-            val chosen=official.ifEmpty { candidates }
+-            val first=chosen.first()
+-            if(chosen.any { !PublicCouponTerms.compatible(first,it) })null
+-            else first+mapOf("couponDates" to chosen.flatMap { it.strings("couponDates") }.distinct().sorted())
+-        }
+-    }
+     fun options(item: Record,available: List<Record> = instruments()): List<Record> = if(item.text("kind")!="bond") emptyList() else available.filter {
+         val settlement=date(it.text("settlementDate"));val posting=date(item.text("date"))
+         settlement!=null && posting!=null && ChronoUnit.DAYS.between(settlement,posting) in 0..7 &&
+diff --git a/src/main/kotlin/dev/orestegabo/portfolio/DocumentService.kt b/src/main/kotlin/dev/orestegabo/portfolio/DocumentService.kt
+--- a/src/main/kotlin/dev/orestegabo/portfolio/DocumentService.kt
++++ b/src/main/kotlin/dev/orestegabo/portfolio/DocumentService.kt
+@@ -6,11 +6,11 @@
+ import java.util.Base64
+ 
+ @Service
+-class DocumentService(private val db: JdbcTemplate,private val json: JsonCodec,private val pending: PendingIssuanceService,private val instruments: BondInstrumentService,private val notifications: PriceNotifications) {
+-    fun documents(owner: String): List<Record> = db.query("SELECT COALESCE(legacy_id,id::text),metadata FROM bond_uploaded_documents WHERE owner_id=? ORDER BY created_at DESC",{r,_->json.read(r.getString(2)).filterKeys { it!="_publishedBy" }+mapOf("id" to r.getString(1),"downloadUrl" to "/api/bonds/documents/${r.getString(1)}","visibility" to "private")},owner) + db.query("SELECT id::text,metadata FROM bond_issuance_documents ORDER BY created_at DESC",{r,_->json.read(r.getString(2)).filterKeys { it!="_publishedBy" }+mapOf("id" to r.getString(1),"downloadUrl" to "/api/bonds/documents/${r.getString(1)}","visibility" to "shared")})
++class DocumentService(private val db: JdbcTemplate,private val json: JsonCodec,private val pending: PendingIssuanceService,private val instruments: BondInstrumentService,private val notifications: PriceNotifications,private val publication: PublicDataPublication) {
++    fun documents(owner: String): List<Record> = db.query("SELECT COALESCE(legacy_id,id::text),metadata FROM bond_uploaded_documents WHERE owner_id=? ORDER BY created_at DESC",{r,_->json.read(r.getString(2)).filterKeys { it!="_publishedBy" }+mapOf("id" to r.getString(1),"downloadUrl" to "/api/bonds/documents/${r.getString(1)}","visibility" to "private")},owner) + db.query("SELECT id::text,metadata FROM bond_issuance_documents WHERE approved ORDER BY created_at DESC",{r,_->json.read(r.getString(2)).filterKeys { it!="_publishedBy" }+mapOf("id" to r.getString(1),"downloadUrl" to "/api/bonds/documents/${r.getString(1)}","visibility" to "shared")})
+     fun download(owner: String,id: String): Pair<ByteArray,String>? {
+         if(!Regex("[a-zA-Z0-9_-]{1,160}").matches(id)) return null
+-        return db.query("SELECT content,metadata FROM bond_uploaded_documents WHERE owner_id=? AND (id::text=? OR legacy_id=?)",{r,_->Base64.getDecoder().decode(r.getString(1)) to json.read(r.getString(2)).text("originalFileName","document.pdf")},owner,id,id).firstOrNull() ?: db.query("SELECT content FROM bond_issuance_documents WHERE id::text=?",{r,_->Base64.getDecoder().decode(r.getString(1)) to "bond-issuance.pdf"},id).firstOrNull()
++        return db.query("SELECT content,metadata FROM bond_uploaded_documents WHERE owner_id=? AND (id::text=? OR legacy_id=?)",{r,_->Base64.getDecoder().decode(r.getString(1)) to json.read(r.getString(2)).text("originalFileName","document.pdf")},owner,id,id).firstOrNull() ?: db.query("SELECT content FROM bond_issuance_documents WHERE approved AND id::text=?",{r,_->Base64.getDecoder().decode(r.getString(1)) to "bond-issuance.pdf"},id).firstOrNull()
+     }
+     /** Public API aliases are not database UUIDs. Resolve only within the authenticated owner's files. */
+     fun ownedEvidenceId(owner: String,reference: String,category: String): String? {
+@@ -30,14 +30,13 @@
+         checkApi(bytes.isNotEmpty() && bytes.size<=512*1024 && Base64.getEncoder().encodeToString(bytes)==p.text("content") && (index==count-1 || bytes.size==512*1024) && (index!=0.0 || bytes.take(5).toByteArray().contentEquals("%PDF-".toByteArray())),error)
+         val m=p["metadata"].record()
+         checkApi(m.text("category") in listOf("Bond confirmation","Share contract","Bond issuance","Statement") && date(m.text("documentDate"))!=null && listOf("label","instrumentName","issuer").all { m[it] is String && m.text(it).length<=240 },error)
+-        // Beta policy: authenticated users may contribute explicitly public issuance reports.
+-        // Private categories never enter the shared table, regardless of supplied visibility.
+-        if(m.text("category")=="Bond issuance") checkApi(owner=="owner" || m.text("visibility")=="shared","Confirm that this report is public before sharing it.",400)
++        // Enforced for every chunk, duplicate and resume before any shared side effect.
++        if(m.text("category")=="Bond issuance") publication.requirePublisher(owner)
+         val issuance=if(m.text("category")=="Bond issuance") BondIssuance.validate(m["issuance"].record()) else null
+         val metadata=m.filterKeys { it in listOf("label","instrumentName","issuer","category","documentDate") }+mapOf("description" to "","originalFileName" to if(m.text("category")=="Bond confirmation") "bond-confirmation.pdf" else if(issuance!=null) "bond-issuance.pdf" else if(m.text("category")=="Statement") "broker-statement.pdf" else "share-contract.pdf") + (issuance?.let { mapOf("issuance" to it,"issuanceKey" to BondIssuance.key(it),"details" to BondIssuance.details(it),"_publishedBy" to owner) } ?: emptyMap())
+         if(issuance!=null) {
+-            val prior=db.queryForList("SELECT id::text,metadata FROM bond_issuance_documents WHERE issue_key=?",BondIssuance.key(issuance)).singleOrNull()
+-            if(prior!=null) {
++            val prior=db.queryForList("SELECT id::text,metadata,approved FROM bond_issuance_documents WHERE issue_key=?",BondIssuance.key(issuance)).singleOrNull()
++            if(prior!=null && prior["approved"]==true) {
+                 checkApi(BondIssuance.validate(json.read(prior["metadata"].toString())["issuance"].record())==issuance,
+                     "This bond issuance is already saved with different figures. Review the existing report.",409)
+                 instruments.publish(prior.text("id"),issuance)
+@@ -63,7 +62,10 @@
+         if(issuance!=null) {
+             // Global unique identity resolves concurrent approved publication.
+             // A conflicting report never overwrites the canonical terms or source PDF.
+-            val saved=db.queryForList("INSERT INTO bond_issuance_documents(issue_key,sha256,content,metadata) VALUES (?,?,?,?::jsonb) ON CONFLICT(issue_key) DO UPDATE SET issue_key=EXCLUDED.issue_key RETURNING id::text,metadata,(xmax<>0) AS duplicate",BondIssuance.key(issuance),hash,Base64.getEncoder().encodeToString(complete),json.write(metadata)).single()
++            val saved=db.queryForList("""INSERT INTO bond_issuance_documents(issue_key,sha256,content,metadata,approved) VALUES (?,?,?,?::jsonb,true) ON CONFLICT(issue_key) DO UPDATE SET
++                sha256=CASE WHEN bond_issuance_documents.approved THEN bond_issuance_documents.sha256 ELSE EXCLUDED.sha256 END,
++                content=CASE WHEN bond_issuance_documents.approved THEN bond_issuance_documents.content ELSE EXCLUDED.content END,
++                metadata=CASE WHEN bond_issuance_documents.approved THEN bond_issuance_documents.metadata ELSE EXCLUDED.metadata END,approved=true RETURNING id::text,metadata,(xmax<>0) AS duplicate""",BondIssuance.key(issuance),hash,Base64.getEncoder().encodeToString(complete),json.write(metadata)).single()
+             val prior=BondIssuance.validate(json.read(saved["metadata"].toString())["issuance"].record())
+             checkApi(prior==issuance,"This bond issuance is already saved with different figures. Review the existing report.",409)
+             instruments.publish(saved.text("id"),issuance)
+diff --git a/src/main/kotlin/dev/orestegabo/portfolio/GuestMigration.kt b/src/main/kotlin/dev/orestegabo/portfolio/GuestMigration.kt
+--- a/src/main/kotlin/dev/orestegabo/portfolio/GuestMigration.kt
++++ b/src/main/kotlin/dev/orestegabo/portfolio/GuestMigration.kt
+@@ -75,7 +75,7 @@
+         checkApi(candidates.size<=1,"Multiple existing investments require review.",409)
+         val old=candidates.singleOrNull()
+         if(old!=null) checkApi(equalFinancial(if(kind=="bond")validation.bond(old) else validation.equity(old),data),"An existing investment has different terms or account context. Review it; nothing was replaced.",409)
+-        val saved=old ?: if(kind=="bond")portfolio.saveBond(owner,data,contributeCouponTerms=false) else portfolio.saveShare(owner,data,preserveNotes=true)
++        val saved=old ?: if(kind=="bond")portfolio.saveBond(owner,data) else portfolio.saveShare(owner,data,preserveNotes=true)
+         checkApi(equalFinancial(if(kind=="bond")validation.bond(saved) else validation.equity(saved),data),"Account normalization differs from the selected figures. Review the investment.",409)
+         val target=saved.text("id")
+         canonical.firstOrNull()?.let { proof ->
+diff --git a/src/main/kotlin/dev/orestegabo/portfolio/PendingIssuanceService.kt b/src/main/kotlin/dev/orestegabo/portfolio/PendingIssuanceService.kt
+--- a/src/main/kotlin/dev/orestegabo/portfolio/PendingIssuanceService.kt
++++ b/src/main/kotlin/dev/orestegabo/portfolio/PendingIssuanceService.kt
+@@ -7,7 +7,7 @@
+ 
+ @Service
+ class PendingIssuanceService(private val db: JdbcTemplate,private val json: JsonCodec,private val notifications: PriceNotifications) {
+-    private fun issues()=db.queryForList("SELECT id::text,metadata FROM bond_issuance_documents").map { it+mapOf("terms" to json.read(it["metadata"].toString())["issuance"].record()) }
++    private fun issues()=db.queryForList("SELECT id::text,metadata FROM bond_issuance_documents WHERE approved").map { it+mapOf("terms" to json.read(it["metadata"].toString())["issuance"].record()) }
+     private fun matching(p: Record,issues: List<Record>): Record? {
+         if(p.text("status")!="submitted" || p.text("currency")!="RWF" || p.text("issuer")!="Government of Rwanda" || p.text("market")!="primary")return null
+         val candidates=issues.filter { row -> val issue=row["terms"].record()
+diff --git a/src/main/kotlin/dev/orestegabo/portfolio/PortfolioService.kt b/src/main/kotlin/dev/orestegabo/portfolio/PortfolioService.kt
+--- a/src/main/kotlin/dev/orestegabo/portfolio/PortfolioService.kt
++++ b/src/main/kotlin/dev/orestegabo/portfolio/PortfolioService.kt
+@@ -15,8 +15,8 @@
+     private val dates = setOf("purchaseDate","settlementDate","maturityDate","firstCouponDate")
+     fun bonds(owner: String): List<Record> {
+         pending.refresh(owner)
+-        val publicEvidence = db.queryForList("SELECT id::text,metadata FROM bond_issuance_documents").map { it.text("id") to json.read(it["metadata"].toString())["issuance"].record() }
+-        return db.queryForList("SELECT p.*,i.metadata AS issuance_metadata,COALESCE(c.legacy_id,c.id::text,p.confirmation_document_id::text) AS confirmation_reference FROM bond_purchases p LEFT JOIN bond_issuance_documents i ON i.id=p.issuance_document_id LEFT JOIN bond_uploaded_documents c ON c.id=p.confirmation_document_id AND c.owner_id=p.owner_id WHERE p.owner_id=? ORDER BY p.purchase_date DESC,p.created_at DESC,p.id",owner).map { row ->
++        val publicEvidence = db.queryForList("SELECT id::text,metadata FROM bond_issuance_documents WHERE approved").map { it.text("id") to json.read(it["metadata"].toString())["issuance"].record() }
++        return db.queryForList("SELECT p.*,i.id AS trusted_issuance_id,i.metadata AS issuance_metadata,COALESCE(c.legacy_id,c.id::text,p.confirmation_document_id::text) AS confirmation_reference FROM bond_purchases p LEFT JOIN bond_issuance_documents i ON i.id=p.issuance_document_id AND i.approved LEFT JOIN bond_uploaded_documents c ON c.id=p.confirmation_document_id AND c.owner_id=p.owner_id WHERE p.owner_id=? ORDER BY p.purchase_date DESC,p.created_at DESC,p.id",owner).map { row ->
+             val result = linkedMapOf<String,Any?>("id" to row["id"].toString(),"createdAt" to (row["created_at"] as java.sql.Timestamp).toInstant().toString(),"instrumentId" to row["instrument_id"],"statementDocumentId" to row["statement_document_id"]?.toString())
+             for(key in bondFields) result[key] = when(key) {
+                 "couponDates" -> json.mapper.readValue(row[column(key)].toString(),List::class.java)
+@@ -25,7 +25,7 @@
+                 else -> row[column(key)]
+             }
+             // Public auction evidence can be linked to an old holding without implying personal allocation proof.
+-            val publicId = row["issuance_document_id"] ?: publicEvidence.filter { (_,issue) ->
++            val publicId = row["trusted_issuance_id"] ?: publicEvidence.filter { (_,issue) ->
+                 normalized(issue.text("isin")).removeSuffix("/mn")==normalized(result.text("isin")).removeSuffix("/mn") && result.text("isin").isNotBlank() &&
+                     issue.text("settlementDate")==result.text("settlementDate") && issue.text("maturityDate")==result.text("maturityDate")
+             }.singleOrNull()?.first
+@@ -34,7 +34,7 @@
+     }
+     fun bond(owner: String,id: String) = bonds(owner).firstOrNull { it.text("id")==id }
+     fun shares(owner: String): List<Record> = db.query("SELECT holding FROM equity_purchases WHERE owner_id=? ORDER BY holding->>'tradeDate' DESC,created_at DESC", { r,_ -> json.read(r.getString(1)) },owner)
+-    @Transactional fun saveBond(owner: String, raw: Record, id: String? = null, contributeCouponTerms: Boolean = true): Record {
++    @Transactional fun saveBond(owner: String, raw: Record, id: String? = null): Record {
+         lockAccount(db,owner)
+         val purchase = validation.bond(raw)
+         val incomingProof=raw.text("confirmationDocumentId")
+@@ -48,7 +48,6 @@
+                 val priorProof=existing.text("confirmationDocumentId")
+                 checkApi(priorProof.isBlank() || documents.ownedEvidenceId(owner,priorProof,"Bond confirmation")==canonicalProof,"This purchase already has another confirmation PDF.",409)
+                 db.update("UPDATE bond_purchases SET confirmation_method='document',confirmation_document_id=?::uuid,updated_at=now() WHERE owner_id=? AND id=?::uuid",canonicalProof,owner,prior["id"])
+-                if(contributeCouponTerms) instruments.contributePrivateCouponTerms(purchase)
+                 return bond(owner,prior.text("id"))!!
+             }
+         }
+@@ -62,7 +61,6 @@
+         val proof=raw.text("confirmationDocumentId")
+         if(proof.isNotBlank()) {
+             db.update("UPDATE bond_purchases SET confirmation_method='document',confirmation_document_id=?::uuid WHERE id=?::uuid",canonicalProof,p["id"])
+-            if(contributeCouponTerms) instruments.contributePrivateCouponTerms(p)
+         }
+         pending.refresh(owner)
+         return bond(owner,p.text("id"))!!
+diff --git a/src/main/kotlin/dev/orestegabo/portfolio/PublicDataPublication.kt b/src/main/kotlin/dev/orestegabo/portfolio/PublicDataPublication.kt
+new file mode 100644
+--- /dev/null
++++ b/src/main/kotlin/dev/orestegabo/portfolio/PublicDataPublication.kt
+@@ -0,0 +1,23 @@
++package dev.orestegabo.portfolio
++
++import org.springframework.jdbc.core.JdbcTemplate
++import org.springframework.stereotype.Service
++import org.springframework.transaction.annotation.Transactional
++
++/** Server-owned capability; invitation, consent and client role fields never grant publication. */
++@Service
++class PublicDataPublication(private val db: JdbcTemplate) {
++    fun canPublish(account: String): Boolean = account == "owner" ||
++        db.queryForObject("SELECT EXISTS(SELECT 1 FROM public_data_publishers WHERE account_id=?)",Boolean::class.java,account)==true
++    fun requirePublisher(account: String) {
++        checkApi(canPublish(account),"Only the owner or authorized Struct Capital staff can publish shared data.",403)
++    }
++    @Transactional fun setPublisher(actor: String,account: String,enabled: Boolean) {
++        checkApi(actor=="owner" && account!="owner","Only the owner can manage publication permissions.",403)
++        // Same lock as document upload: revocation and publication have a defined transaction order.
++        lockAccount(db,account)
++        if(enabled) db.update("INSERT INTO public_data_publishers(account_id,granted_by) VALUES (?,?) ON CONFLICT DO NOTHING",account,actor)
++        else db.update("DELETE FROM public_data_publishers WHERE account_id=?",account)
++        db.update("INSERT INTO public_data_permission_events(account_id,actor_id,enabled) VALUES (?,?,?)",account,actor,enabled)
++    }
++}
+diff --git a/src/main/resources/db/migration/V12__trusted_public_data_publishers.sql b/src/main/resources/db/migration/V12__trusted_public_data_publishers.sql
+new file mode 100644
+--- /dev/null
++++ b/src/main/resources/db/migration/V12__trusted_public_data_publishers.sql
+@@ -0,0 +1,17 @@
++-- Named staff may publish shared reference data; this is not an owner/admin role.
++CREATE TABLE public_data_publishers (
++    account_id text PRIMARY KEY CHECK (account_id <> 'owner'),
++    granted_by text NOT NULL CHECK (granted_by = 'owner'),
++    granted_at timestamptz NOT NULL DEFAULT now()
++);
++CREATE TABLE public_data_permission_events (
++    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
++    account_id text NOT NULL,
++    actor_id text NOT NULL CHECK (actor_id = 'owner'),
++    enabled boolean NOT NULL,
++    created_at timestamptz NOT NULL DEFAULT now()
++);
++-- Preserve old files for investigation. Only server-recorded owner publications are grandfathered.
++-- A visibility flag, valid PDF format, or missing publisher is not publication authority.
++ALTER TABLE bond_issuance_documents ADD COLUMN approved boolean NOT NULL DEFAULT false;
++UPDATE bond_issuance_documents SET approved=true WHERE metadata->>'_publishedBy'='owner';
+diff --git a/src/test/kotlin/dev/orestegabo/portfolio/GaboPortfolioApiApplicationTests.kt b/src/test/kotlin/dev/orestegabo/portfolio/GaboPortfolioApiApplicationTests.kt
+--- a/src/test/kotlin/dev/orestegabo/portfolio/GaboPortfolioApiApplicationTests.kt
++++ b/src/test/kotlin/dev/orestegabo/portfolio/GaboPortfolioApiApplicationTests.kt
+@@ -44,7 +44,7 @@
+     }
+     @BeforeEach fun clean() {
+         // The test configuration supplies an isolated container or explicitly fenced disposable local PostgreSQL datasource.
+-        db.execute("TRUNCATE guest_migration_items,bond_security_coupon_terms,bond_statement_decisions,bond_statement_sources,account_devices,coupon_receipts,notification_preferences,price_push_deliveries,push_devices,notifications,bond_issuance_documents,bond_purchases,equity_purchases,bond_users,bond_sessions,bond_registration,bond_auth_attempts,bond_uploaded_documents,bond_document_uploads,bond_statement_items,equity_market_observations,equity_market_collection,bond_market_observations,bond_data_migrations")
++        db.execute("TRUNCATE public_data_permission_events,public_data_publishers,guest_migration_items,bond_security_coupon_terms,bond_statement_decisions,bond_statement_sources,account_devices,coupon_receipts,notification_preferences,price_push_deliveries,push_devices,notifications,bond_issuance_documents,bond_purchases,equity_purchases,bond_users,bond_sessions,bond_registration,bond_auth_attempts,bond_uploaded_documents,bond_document_uploads,bond_statement_items,equity_market_observations,equity_market_collection,bond_market_observations,bond_data_migrations")
+         db.update("DELETE FROM bond_instruments WHERE id LIKE 'issuance-%'")
+     }
+     private fun call(path: String,method: String="GET",body: Any?=null,cookie: String?=null,origin: String?="https://web.example.test",type: String="application/json"): HttpResponse<String> {
+@@ -183,7 +183,7 @@
+         val result=call("/documents","POST",mapOf("uploadId" to "e".repeat(32),"index" to 0,"count" to 1,
+             "content" to Base64.getEncoder().encodeToString("%PDF-1.7 synthetic untrusted publication\n%%EOF".toByteArray()),
+             "metadata" to mapOf("category" to "Bond issuance","label" to "Untrusted publication","instrumentName" to issue["bondName"],"issuer" to issue["issuer"],"documentDate" to issue["issuanceDate"],"issuance" to issue)),other)
+-        assertEquals(400,result.statusCode(),result.body())
++        assertEquals(403,result.statusCode(),result.body())
+         assertEquals(0,db.queryForObject("SELECT count(*) FROM bond_issuance_documents",Int::class.java))
+         assertEquals(0,db.queryForObject("SELECT count(*) FROM bond_document_uploads",Int::class.java))
+         assertEquals(0.0,data(call("/purchases/${purchase.text("id")}",cookie=owner))["purchase"].record().number("couponRate"))
+@@ -432,7 +432,8 @@
+     }
+ 
+     @Test fun `two part public report saves its PDF and enriches all accounts only after completion`() {
+-        val owner=login();val (_,other)=user();val (_,contributor)=user()
++        val owner=login();val (_,other)=user();val (publisherId,contributor)=user()
++        assertEquals(200,call("/auth/accounts/$publisherId/public-data-publisher","PUT",mapOf("enabled" to true),owner).statusCode())
+         val issue=json.read(javaClass.getResourceAsStream("/bnr-issuance.json")!!.bufferedReader().use { it.readText() })
+         val pending=bond()+mapOf("bondName" to "October 20-year bond","isin" to "","tenorYears" to 20,"maturityDate" to issue["maturityDate"],"couponRate" to 0,"firstCouponDate" to "","couponDates" to emptyList<String>())
+         val a=data(call("/purchases","POST",pending,owner))["purchase"].record()
+@@ -472,6 +473,8 @@
+ 
+     @Test fun `public contributions are globally reused while identical personal PDFs remain owner private`() {
+         val (_,a)=user();val (contributor,b)=user()
++        val owner=login()
++        assertEquals(200,call("/auth/accounts/$contributor/public-data-publisher","PUT",mapOf("enabled" to true),owner).statusCode())
+         val one=data(upload(a)).text("documentId");val two=data(upload(b)).text("documentId")
+         assertNotEquals(one,two)
+         assertEquals(404,call("/documents/$one",cookie=b).statusCode())
+@@ -487,7 +490,8 @@
+                 "instrumentName" to issue["bondName"],"issuer" to "Government of Rwanda","issuance" to terms)),cookie)
+         val published=publish(b);assertEquals(200,published.statusCode(),published.body())
+         val id=data(published).text("documentId")
+-        val repeated=publish(a);assertEquals(200,repeated.statusCode(),repeated.body())
++        assertEquals(403,publish(a).statusCode())
++        val repeated=publish(owner);assertEquals(200,repeated.statusCode(),repeated.body())
+         assertEquals(true,data(repeated)["duplicate"]);assertEquals(id,data(repeated)["documentId"])
+         val saved=data(call("/purchases",cookie=a)).records("purchases").single()
+         assertEquals(id,saved["issuanceDocumentId"]);assertEquals("active",saved["status"])
+@@ -503,6 +507,74 @@
+         val shared=data(call("/documents",cookie=b)).records("documents").single { it.text("id")==id }
+         assertEquals("shared",shared["visibility"]);assertFalse(shared.containsKey("_publishedBy"))
+         assertEquals(contributor,db.queryForObject("SELECT metadata->>'_publishedBy' FROM bond_issuance_documents WHERE id=?::uuid",String::class.java,id))
++    }
++
++    @Test fun `publication is denied by default and only owner grants a revocable staff capability`() {
++        val owner=login();val (staffId,staff)=user();val (otherId,other)=user()
++        assertEquals(false,data(call("/auth/session",cookie=staff))["user"].record()["canPublishPublicData"])
++        val issue=json.read(javaClass.getResourceAsStream("/bnr-issuance.json")!!.bufferedReader().use { it.readText() })
++        val metadata=mapOf("visibility" to "shared","_publishedBy" to "owner","canPublishPublicData" to true,
++            "category" to "Bond issuance","documentDate" to issue["issuanceDate"],"label" to "Synthetic report",
++            "instrumentName" to issue["bondName"],"issuer" to issue["issuer"],"issuance" to issue)
++        val request=mapOf("uploadId" to "d".repeat(32),"index" to 0,"count" to 1,
++            "content" to Base64.getEncoder().encodeToString("%PDF-1.7 synthetic role report\n%%EOF".toByteArray()),"metadata" to metadata)
++        assertEquals(403,call("/documents","POST",request,staff).statusCode())
++        assertEquals(0,db.queryForObject("SELECT count(*) FROM bond_document_uploads",Int::class.java))
++        assertEquals(403,call("/auth/accounts/$staffId/public-data-publisher","PUT",mapOf("enabled" to true),staff).statusCode())
++        assertEquals(200,call("/auth/accounts/$staffId/public-data-publisher","PUT",mapOf("enabled" to true),owner).statusCode())
++        assertEquals(true,data(call("/auth/session",cookie=staff))["user"].record()["canPublishPublicData"])
++        assertEquals(false,data(call("/auth/session",cookie=staff))["user"].record()["isOwner"])
++        assertEquals(403,call("/auth/accounts",cookie=staff).statusCode())
++        assertEquals(403,call("/auth/accounts/$otherId/public-data-publisher","PUT",mapOf("enabled" to true),staff).statusCode())
++        val published=call("/documents","POST",request,staff);assertEquals(200,published.statusCode(),published.body())
++        val id=data(published).text("documentId")
++        assertEquals(200,call("/documents/$id",cookie=other).statusCode())
++        assertEquals(200,call("/auth/accounts/$staffId/public-data-publisher","PUT",mapOf("enabled" to false),owner).statusCode())
++        assertEquals(false,data(call("/auth/session",cookie=staff))["user"].record()["canPublishPublicData"])
++        // Duplicate and resumed requests do not bypass revocation.
++        assertEquals(403,call("/documents","POST",request,staff).statusCode())
++        assertEquals(2,db.queryForObject("SELECT count(*) FROM public_data_permission_events WHERE account_id=?",Int::class.java,staffId))
++    }
++
++    @Test fun `revoking staff while a public upload is incomplete blocks its final chunk`() {
++        val owner=login();val (id,staff)=user()
++        assertEquals(200,call("/auth/accounts/$id/public-data-publisher","PUT",mapOf("enabled" to true),owner).statusCode())
++        val issue=json.read(javaClass.getResourceAsStream("/bnr-issuance.json")!!.bufferedReader().use { it.readText() })
++        val metadata=mapOf("category" to "Bond issuance","visibility" to "shared","label" to "Synthetic report",
++            "instrumentName" to issue["bondName"],"issuer" to issue["issuer"],"documentDate" to issue["issuanceDate"],"issuance" to issue)
++        fun chunk(index: Int,bytes: ByteArray)=call("/documents","POST",mapOf("uploadId" to "a".repeat(32),"index" to index,"count" to 2,
++            "content" to Base64.getEncoder().encodeToString(bytes),"metadata" to metadata),staff)
++        val first="%PDF-1.7\n".toByteArray()+ByteArray(512*1024-9) { 32 }
++        assertEquals(200,chunk(0,first).statusCode())
++        assertEquals(1,db.queryForObject("SELECT count(*) FROM bond_document_uploads WHERE owner_id=?",Int::class.java,id))
++        assertEquals(200,call("/auth/accounts/$id/public-data-publisher","PUT",mapOf("enabled" to false),owner).statusCode())
++        assertEquals(403,chunk(1,"\n%%EOF".toByteArray()).statusCode())
++        assertEquals(0,db.queryForObject("SELECT count(*) FROM bond_issuance_documents",Int::class.java))
++        assertEquals(0,db.queryForObject("SELECT count(*) FROM bond_instruments WHERE id LIKE 'issuance-%'",Int::class.java))
++    }
++
++    @Test fun `quarantined sources cannot affect document reads coupon terms or pending confirmation`() {
++        val owner=login();val (_,other)=user()
++        val issue=json.read(javaClass.getResourceAsStream("/bnr-issuance.json")!!.bufferedReader().use { it.readText() })
++        val metadata=mapOf("issuance" to issue,"_publishedBy" to "untrusted-user","category" to "Bond issuance")
++        val id=db.queryForObject("INSERT INTO bond_issuance_documents(issue_key,sha256,content,metadata) VALUES (?,repeat('b',64),'JVBERi0=',?::jsonb) RETURNING id::text",String::class.java,BondIssuance.key(issue),json.write(metadata))!!
++        db.update("INSERT INTO bond_instruments(id,isin,settlement_date,terms) VALUES (?,?,?::date,?::jsonb)","issuance-$id",issue["isin"],issue["settlementDate"],json.write(issue))
++        val pending=bond()+mapOf("isin" to issue["isin"],"settlementDate" to issue["settlementDate"],"tenorYears" to issue["tenorYears"],"maturityDate" to issue["maturityDate"],"couponRate" to 0,"firstCouponDate" to "","couponDates" to emptyList<String>())
++        assertEquals(201,call("/purchases","POST",pending,other).statusCode())
++        assertEquals(404,call("/documents/$id",cookie=other).statusCode())
++        assertTrue(data(call("/documents",cookie=other)).records("documents").isEmpty())
++        assertTrue(data(call("/coupon-terms",cookie=other)).records("terms").none { it.text("isin")==issue.text("isin") })
++        val saved=data(call("/purchases",cookie=other)).records("purchases").single()
++        assertEquals(0.0,saved.number("couponRate"));assertFalse(saved["canConfirmWithoutPdf"]==true)
++        // An owner must re-upload the complete reviewed PDF before the source is released.
++        val publication=call("/documents","POST",mapOf("uploadId" to "e".repeat(32),"index" to 0,"count" to 1,
++            "content" to Base64.getEncoder().encodeToString("%PDF-1.7 owner reviewed report\n%%EOF".toByteArray()),
++            "metadata" to metadata+mapOf("label" to "Reviewed report","instrumentName" to issue["bondName"],"issuer" to issue["issuer"],"documentDate" to issue["issuanceDate"])),owner)
++        assertEquals(200,publication.statusCode(),publication.body())
++        assertEquals(id,data(publication)["documentId"])
++        assertEquals(true,db.queryForObject("SELECT approved FROM bond_issuance_documents WHERE id=?::uuid",Boolean::class.java,id))
++        assertEquals("owner",db.queryForObject("SELECT metadata->>'_publishedBy' FROM bond_issuance_documents WHERE id=?::uuid",String::class.java,id))
++        assertEquals(200,call("/documents/$id",cookie=other).statusCode())
+     }
+ 
+     @Test fun `issuance uploads are shared idempotent and guarded against conflicting terms`() {
+@@ -534,7 +606,7 @@
+         val (_,other)=user()
+         assertEquals(2,data(call("/documents",cookie=other)).records("documents").size)
+         val otherUpload=send('e',token=other)
+-        assertEquals(400,otherUpload.statusCode(),otherUpload.body()) // Explicit sharing consent is required for contributors.
++        assertEquals(403,otherUpload.statusCode(),otherUpload.body()) // Consent never grants publication authority.
+         assertEquals(200,call("/documents/${data(a)["documentId"]}",cookie=other).statusCode())
+         assertEquals(401,call("/documents/${data(a)["documentId"]}").statusCode())
+         assertEquals(2,db.queryForObject("SELECT count(*) FROM bond_issuance_documents",Int::class.java))
+@@ -639,41 +711,28 @@
+         assertEquals(1,db.queryForObject("SELECT count(*) FROM bond_uploaded_documents",Int::class.java))
+     }
+ 
+-    @Test fun `private confirmations share only security coupons and conflicting contributors never choose a rate`() {
++    @Test fun `private confirmations never contribute cross-account reference terms`() {
+         val (_,a)=user();val (_,b)=user()
+         val proof=data(upload(a)).text("documentId")
+-        val dates=listOf("2027-04-23","2031-10-23")
+-        val input=bond("active")+mapOf("confirmationDocumentId" to proof,"couponDates" to dates,"firstCouponDate" to dates.first(),
+-            "scheduleConfidence" to "confirmed","accountReference" to "SECRET-ACCOUNT","notes" to "SECRET-NOTES","broker" to "SECRET-BROKER")
+-        val saved=call("/purchases","POST",input,a);assertEquals(201,saved.statusCode(),saved.body())
+-        db.update("UPDATE bond_security_coupon_terms SET terms=terms||?::jsonb WHERE isin='RWTEST123456'",json.write(mapOf("privateMarker" to "SECRET-EXTRA","ownerId" to "SECRET-OWNER")))
+-        val response=call("/coupon-terms",cookie=b);assertEquals(200,response.statusCode(),response.body())
+-        val public=data(response).records("terms").single { it.text("isin")=="RWTEST123456" }
+-        assertEquals(.12,public.number("couponRate"));assertEquals(dates,public.strings("couponDates"))
+-        assertEquals("document-extracted",public["source"])
+-        assertEquals(setOf("isin","issuer","currency","instrumentType","maturityDate","couponRate","couponFrequency","tenorYears","couponDates","source"),public.keys)
+-        assertFalse(response.body().contains("SECRET"));assertFalse(response.body().contains(proof))
++        val input=bond("active")+mapOf("confirmationDocumentId" to proof,"couponDates" to listOf("2027-04-23","2031-10-23"),
++            "firstCouponDate" to "2027-04-23","scheduleConfidence" to "confirmed","notes" to "SECRET-NOTES")
++        assertEquals(201,call("/purchases","POST",input,a).statusCode())
++        assertEquals(0,db.queryForObject("SELECT count(*) FROM bond_security_coupon_terms",Int::class.java))
++        // Even an old unconflicted aggregate is no longer a trusted public source.
++        db.update("INSERT INTO bond_security_coupon_terms(isin,maturity_date,terms) VALUES ('RWTEST123456','2031-10-23',?::jsonb)",json.write(input))
++        val response=call("/coupon-terms",cookie=b)
++        assertEquals(200,response.statusCode())
++        assertTrue(data(response).records("terms").none { it.text("isin")=="RWTEST123456" })
++        assertFalse(response.body().contains("SECRET"))
+         assertEquals(401,call("/coupon-terms").statusCode())
+         assertEquals(404,call("/documents/$proof",cookie=b).statusCode())
+-        assertTrue(data(call("/documents",cookie=b)).records("documents").isEmpty())
+-        val proofB=data(upload(b)).text("documentId")
+-        val conflict=call("/purchases","POST",input+mapOf("confirmationDocumentId" to proofB,"couponRate" to .13),b)
+-        assertEquals(201,conflict.statusCode(),conflict.body())
+-        assertTrue(data(call("/coupon-terms",cookie=b)).records("terms").none { it.text("isin")=="RWTEST123456" })
+         assertEquals(.12,data(call("/purchases",cookie=a)).records("purchases").single().number("couponRate"))
+-        assertEquals(.13,data(call("/purchases",cookie=b)).records("purchases").single().number("couponRate"))
+-        // An established public instrument can resolve the display source without exposing the private records.
+-        val official=input+mapOf("isin" to "RWTEST123456","couponRate" to .12)
+-        db.update("INSERT INTO bond_instruments(id,isin,settlement_date,terms) VALUES ('issuance-synthetic-authority','RWTEST123456','2026-10-23',?::jsonb)",json.write(official))
+-        val resolved=data(call("/coupon-terms",cookie=b)).records("terms").single { it.text("isin")=="RWTEST123456" }
+-        assertEquals(.12,resolved.number("couponRate"));assertEquals("published",resolved["source"])
+-        assertFalse(json.write(resolved).contains("SECRET"))
+     }
+ 
+     @Test fun `legacy investments gain owned evidence without duplicates or financial changes`() {
+         val (_,a)=user(); val (_,b)=user()
+         val original=data(call("/purchases","POST",bond("active"),a))["purchase"].record()
+-        val publicId=db.queryForObject("INSERT INTO bond_issuance_documents(issue_key,sha256,content,metadata) VALUES ('synthetic-legacy-auction',repeat('a',64),'JVBERi0=',?::jsonb) RETURNING id::text",String::class.java,
++        val publicId=db.queryForObject("INSERT INTO bond_issuance_documents(issue_key,sha256,content,metadata,approved) VALUES ('synthetic-legacy-auction',repeat('a',64),'JVBERi0=',?::jsonb,true) RETURNING id::text",String::class.java,
+             json.write(mapOf("issuance" to mapOf("isin" to "RWTEST123456","settlementDate" to "2026-10-23","maturityDate" to "2031-10-23","couponRate" to .12))))
+         val withPublicEvidence=data(call("/purchases",cookie=a)).records("purchases").single()
+         assertEquals(publicId,withPublicEvidence["issuanceDocumentId"])

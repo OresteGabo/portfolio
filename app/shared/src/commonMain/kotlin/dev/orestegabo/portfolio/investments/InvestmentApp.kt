@@ -33,6 +33,7 @@ import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -69,6 +70,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var securityNotificationId by rememberSaveable { mutableStateOf<String?>(null) }
     var handledInboxRequest by rememberSaveable { mutableIntStateOf(0) }
     var showGuestChoice by rememberSaveable { mutableStateOf(false) }
+    var issueReportSource by remember(model.user?.text("id"), model.isGuest, model.locked) { mutableStateOf<String?>(null) }
     var tab by rememberSaveable { mutableStateOf("Portfolio") }
     var documentSection by rememberSaveable(model.user?.text("id")) { mutableStateOf("Library") }
     var couponList by rememberSaveable { mutableStateOf(false) }
@@ -285,15 +287,22 @@ fun InvestmentApp(model: PortfolioModel) {
             tab == "Settings" -> "Settings"
             else -> destinations.firstOrNull { it.key == tab }?.label ?: tab
         }
+        var supportMenuOpen by remember(screenTitle) { mutableStateOf(false) }
         val portfolioHome = (model.user != null || model.isGuest) && !model.locked && !nested && tab == "Portfolio"
         model.pdfImportProgress?.takeIf { model.user != null && !model.locked && model.activeImportId == null }?.let { progress ->
             PdfImportProgressDialog(progress, model::cancelPdfImport)
         }
         PlatformSystemBarAppearance(dark)
         PlatformBackHandler(nested || importChat, back)
+        val investmentDetailsVisible = ((shareDetail != null && screenTitle == "Share details") ||
+            (detail != null && screenTitle == "Bond details")) && model.documentPreview == null && !model.locked &&
+            (model.user != null || model.isGuest) && !guestImportActive
         // Financial editors stay in this protected scene and must draw after the scaffold.
-        Box(Modifier.fillMaxSize()) {
+        InvestmentDetailsBackdrop(enabled = investmentDetailsVisible) {
         Scaffold(
+            modifier = if (issueReportSource != null) Modifier.clearAndSetSemantics {} else Modifier,
+            containerColor = if (investmentDetailsVisible) Color.Transparent else MaterialTheme.colorScheme.background,
+            contentColor = MaterialTheme.colorScheme.onBackground,
             contentWindowInsets = if (portfolioHome) WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal) else ScaffoldDefaults.contentWindowInsets,
             topBar = {
                 if (!portfolioHome && (model.user != null || model.isGuest || model.locked || nested)) TopAppBar(
@@ -326,8 +335,20 @@ fun InvestmentApp(model: PortfolioModel) {
                         else if (tab == "Notifications" && !childScreen && model.user != null && !model.locked) {
                             IconButton(onClick = { notificationPanel = "preferences" }) { AppIcon(Icons.Outlined.Tune, "Notification preferences") }
                         }
+                        if (!model.locked) Box {
+                            IconButton(onClick = { supportMenuOpen = true }) { AppIcon(Icons.Outlined.MoreVert, "More options") }
+                            DropdownMenu(expanded = supportMenuOpen, onDismissRequest = { supportMenuOpen = false }) {
+                                DropdownMenuItem(text = { AppText("Report a problem") }, onClick = {
+                                    supportMenuOpen = false
+                                    issueReportSource = issueReportScreenName(screenTitle, model.documentPreview != null)
+                                })
+                            }
+                        }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = if (investmentDetailsVisible) Color.Transparent else MaterialTheme.colorScheme.background,
+                        scrolledContainerColor = if (investmentDetailsVisible) Color.Transparent else MaterialTheme.colorScheme.background,
+                    )
                 )
             },
             floatingActionButton = {
@@ -402,7 +423,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     }
                     guestImportActive -> { GuestImportContent(model, engine) }
                     model.locked -> UnlockScreen(model, continueAsGuest = { showGuestChoice = true }) { legalRoute = "hub" }
-                    model.user == null && !model.isGuest -> SignInScreen(model, continueAsGuest = { showGuestChoice = true }) { legalRoute = "hub" }
+                    model.user == null && !model.isGuest -> SignInScreen(model, continueAsGuest = { showGuestChoice = true }, openIssueReport = { issueReportSource = "Sign in" }) { legalRoute = "hub" }
                     model.guestMigration != null -> GuestMigrationScreen(model, model.guestMigration!!)
                     notificationPanel == "security" -> SignInActivityScreen(model, securityNotificationId)
                     tab == "Notifications" && !childScreen -> NotificationsScreen(model, openPortfolio = { tab = "Portfolio" }, openNotification = { item ->
@@ -429,7 +450,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     pendingEntry -> PendingBondScreen(model, pendingIssueId) { pendingEntry = false; pendingIssueId = null }
                     tab == "Settings" && !childScreen -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
                         chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
-                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { replayIntroduction = true; introductionRequested = true }, openInvestmentTools = { investmentTools = true }, openSignInActivity = { securityNotificationId = null; notificationPanel = "security" }, openGuest = { showGuestChoice = true })
+                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { replayIntroduction = true; introductionRequested = true }, openInvestmentTools = { investmentTools = true }, openSignInActivity = { securityNotificationId = null; notificationPanel = "security" }, openGuest = { showGuestChoice = true }, openIssueReport = { issueReportSource = "Settings" })
                     editor != null -> PurchaseEditor(model, editor!!, { editor = null })
                     equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null })
                     investmentTools -> InvestmentToolsScreen(model, openCalendar = { date -> investmentTools = false; openCalendarAt(date) },
@@ -468,6 +489,9 @@ fun InvestmentApp(model: PortfolioModel) {
         }
         if (model.user != null && !model.locked && notificationPanel == "target") {
             InvestmentTargetDialog(model) { notificationPanel = null }
+        }
+        if (!model.locked) issueReportSource?.let { source ->
+            IssueReportScreen(source, close = { issueReportSource = null })
         }
         }
     }

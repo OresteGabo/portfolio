@@ -132,6 +132,11 @@ private class AndroidActions(private val context: Context) : NativeActions {
             ))
         }
     }
+    override suspend fun composeEmail(address: String, subject: String, body: String): Boolean = try {
+        context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse(supportEmailUri(address, subject, body))))
+        true
+    } catch (_: android.content.ActivityNotFoundException) { false }
+      catch (_: SecurityException) { false }
     override fun shareText(text: String) {
         context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), localized("Share invitation")))
     }

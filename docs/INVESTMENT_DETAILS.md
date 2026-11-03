@@ -14,9 +14,13 @@ The identity's Documents action reveals original evidence with independent previ
 
 The company/ticker header presents the existing calculated market value and explicitly unrealized gain/loss. Missing usable prices show acquisition cost, never a fabricated current valuation or zero-price loss. Quote provenance includes the published date, cached state and refresh action. Ownership and acquisition cost remain separate from market evidence.
 
+The issuer remains in the foreground at the upper left: a 76dp logo on a flat white, softly rounded backing with 8dp internal clearance. This gives wide and square company marks more room without cropping or recoloring them. The ticker stays alongside it and the company name below; the faint app watermark keeps its separate background role. Other investment lists retain their compact 44dp logos.
+
 The purchase ledger displays dates, quantity, unit price, gross consideration, recorded fees and total payable where available. Original documents and full purchase breakdowns remain accessible per lot. The first three lots can expand to all history. History loading, retry and empty states reuse the existing model. Lots remain scoped to both ticker and currency. Dividend income, realized gains and future selling fees are excluded from the displayed unrealized return.
 
 ## Implementation and accessibility
+
+Bond and share details use the same large, low-opacity Struct Capital monogram behind the top-right corner, cropped by the screen edges and extending across the transparent app bar into the identity header. The decoration stays fixed while the details scroll, takes no layout space, accepts no input and is hidden from accessibility services. `InvestmentDetailsBackdrop` uses the existing theme-aware brand vector; the watermark is only visible on these two routes and disappears for previews, editors and the privacy cover. Financial text stays fully opaque above the faint artwork.
 
 `InvestmentDetails.kt` contains the bond composition; `ShareDetailsScreen.kt` contains the equity composition. Small shared presentation primitives live in `InvestmentDetailComponents.kt`; `InvestmentDetailPresentation.kt` contains pure selection/availability helpers. No universal hero, section-card or tab system is required.
 

@@ -43,8 +43,8 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, edit: (JsonR
         verticalArrangement = Arrangement.spacedBy(24.dp)) {
         item(key = "company") {
             Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    InvestmentLogo(ticker = ticker)
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    InvestmentLogo(ticker = ticker, prominent = true)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         FinancialText(listOf(ticker, exchange).filter { it.isNotBlank() }.joinToString(" · "),
                             style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)

@@ -44,6 +44,8 @@ interface NativeActions {
     fun openUrl(url: String)
     /** Open a draft in the mail app; platforms without one can share the address. */
     fun openEmail(address: String) { shareText(address) }
+    /** Opens an editable draft; true means a mail handler opened, never that a report was sent. */
+    suspend fun composeEmail(address: String, subject: String, body: String): Boolean = false
     fun shareText(text: String)
 }
 interface InvestmentEngine {

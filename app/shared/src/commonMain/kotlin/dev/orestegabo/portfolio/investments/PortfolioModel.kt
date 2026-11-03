@@ -52,6 +52,7 @@ class PortfolioModel(
     var guestViewRevision by mutableIntStateOf(0); private set
     val sampleGuest get() = isGuest && guestPath == GuestPath.SAMPLE
     val canEditInvestments get() = !sampleGuest && !busy
+    val canPublishPublicData get() = !isGuest && mayPublishSharedData(user)
     fun resetSample() { if (sampleGuest) { samplePortfolio = guestSamplePortfolio(); guestViewRevision++ } }
     fun deleteGuestData() {
         if (!isGuest || !canEditInvestments) return
@@ -1031,6 +1032,7 @@ class PortfolioModel(
                     }
                     pdfImportProgress = progress
                 })?.let { review ->
+                require(review.text("kind") != "bond-issuance" || canPublishPublicData) { PUBLIC_DATA_PERMISSION_ERROR }
                 if (review.text("kind") == "statement") {
                     retryBondOnly = false; retryStatement = null
                     updateImport { it.copy(targetId = "", statementId = "") }
@@ -1275,6 +1277,7 @@ class PortfolioModel(
     }
 
     fun saveImportedIssuance(review: JsonRecord, confirmationTarget: JsonRecord? = null, sharingConfirmed: Boolean = false, completed: () -> Unit) = action {
+        require(canPublishPublicData) { PUBLIC_DATA_PERMISSION_ERROR }
         require(importedReview === review && importedPdf != null) { "Choose the PDF again before saving." }
         val issuance = importedIssuanceInput(review)
         val expectedConfirmation = confirmationTarget?.let { pendingIssuanceConfirmation(review, it) }

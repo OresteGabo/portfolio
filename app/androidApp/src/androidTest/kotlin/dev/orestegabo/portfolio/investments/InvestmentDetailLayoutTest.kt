@@ -28,6 +28,8 @@ class InvestmentDetailLayoutTest {
         val profile = args.getString("profile") ?: "normal"
         val mode = args.getString("quoteMode") ?: "fresh"
         val language = args.getString("language") ?: "en"
+        val ticker = args.getString("ticker") ?: "IMR"
+        val company = if (ticker == "BK") "BK Group Plc" else "I&M Bank Rwanda"
         val large = profile == "large"
         val prefs = instrumentation.targetContext.getSharedPreferences("connection", 0)
         val original = prefs.getString("origin", null)
@@ -36,9 +38,9 @@ class InvestmentDetailLayoutTest {
         val origin = "http://127.0.0.1:${server.localPort}"
         val bond = JsonRecord("""{"id":"layout-bond","bondName":"Rwanda Treasury Bond","issuer":"National Bank of Rwanda","isin":"RW-SYNTHETIC-2033","status":"active","currency":"RWF","faceValue":2200000,"purchaseDate":"2025-01-01","maturityDate":"2033-07-01","couponRate":0.115,"withholdingTaxRate":0.05,"couponFrequency":2,"firstCouponDate":"2025-07-01","scheduleConfidence":"estimated","confirmationDocumentId":"layout-pdf"}""")
         if (large) bond.put("faceValue", 2200000000L).put("bondName", "Rwanda Treasury Bond — long instrument name for accessibility verification")
-        val holding = JsonRecord("""{"id":"layout-share","ticker":"IMR","securityName":"I&M Bank Rwanda","currency":"RWF","status":"active","exchange":"RSE","tradeDate":"2026-07-01","shares":400,"pricePerShare":90,"grossConsideration":36000,"totalCharges":615.60,"netAmountPayable":36615.60,"contractDocumentId":"layout-pdf"}""")
+        val holding = JsonRecord("""{"id":"layout-share","ticker":"$ticker","securityName":"$company","currency":"RWF","status":"active","exchange":"RSE","tradeDate":"2026-07-01","shares":400,"pricePerShare":90,"grossConsideration":36000,"totalCharges":615.60,"netAmountPayable":36615.60,"contractDocumentId":"layout-pdf"}""")
         if (large) holding.put("shares", 40000000).put("grossConsideration", 3600000000L).put("totalCharges",61560000).put("netAmountPayable",3661560000L)
-            .put("securityName","I&M Bank Rwanda — long company name for accessibility verification")
+            .put("securityName","$company — long company name for accessibility verification")
         val receipts = """[{"purchaseId":"layout-bond","currency":"RWF","dueDate":"2026-01-01","received":true,"method":"manual","amount":120175},{"purchaseId":"layout-bond","currency":"RWF","dueDate":"2026-07-01","received":true,"method":"automatic","amount":120175}]"""
         val receiptRecords = JsonRecord("""{"receipts":$receipts}""").rows("receipts").toMutableList()
         val couponWrites = AtomicInteger()
@@ -73,7 +75,7 @@ class InvestmentDetailLayoutTest {
                     path.endsWith("/auth/session") -> """{"authenticated":true,"user":{"id":"layout-only","email":"layout@example.test","isOwner":true}}"""
                     path.endsWith("/purchases") -> """{"purchases":[$bond]}"""
                     path.endsWith("/equities") -> """{"holdings":[$holding]}"""
-                    path.contains("/rse/quotes") -> """{"quotes":[{"ticker":"IMR","closing":${if (mode == "missing") 0 else 100}}],"source":{"publishedAt":"$Today","stale":${mode == "stale"}}}"""
+                    path.contains("/rse/quotes") -> """{"quotes":[{"ticker":"$ticker","closing":${if (mode == "missing") 0 else 100}}],"source":{"publishedAt":"$Today","stale":${mode == "stale"}}}"""
                     path.endsWith("/documents") -> """{"documents":[{"id":"layout-pdf","label":"Original investment document","originalFileName":"synthetic.pdf","documentDate":"2026-07-01"}]}"""
                     path.endsWith("/statement-items") -> """{"items":[]}"""
                     path.endsWith("/notifications/coupons") -> JsonRecord().put("receipts", JsonList(receiptRecords)).toString()
@@ -150,11 +152,16 @@ class InvestmentDetailLayoutTest {
                     activity.setContent {
                         CompositionLocalProvider(LocalNativeActions provides actions, LocalNumbersHidden provides false) {
                             MaterialTheme(colorScheme = structCapitalColorScheme(dark.value)) {
-                                Scaffold(topBar = { TopAppBar(title = { AppText(if (share.value) "Share details" else "Bond details") }) }) { padding ->
-                                    Box(Modifier.fillMaxSize().padding(padding)) { key(composition.intValue) {
-                                        if (share.value) ShareDetailsScreen(model, JsonRecord().put("ticker", "IMR").put("currency", "RWF"))
-                                        else BondDetailsScreen(model, bond, engine, {}, {}, { edits.incrementAndGet() })
-                                    } }
+                                InvestmentDetailsBackdrop(enabled = true) {
+                                    Scaffold(containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                                        contentColor = MaterialTheme.colorScheme.onBackground,
+                                        topBar = { TopAppBar(title = { AppText(if (share.value) "Share details" else "Bond details") },
+                                            colors = TopAppBarDefaults.topAppBarColors(containerColor = androidx.compose.ui.graphics.Color.Transparent)) }) { padding ->
+                                        Box(Modifier.fillMaxSize().padding(padding)) { key(composition.intValue) {
+                                            if (share.value) ShareDetailsScreen(model, JsonRecord().put("ticker", ticker).put("currency", "RWF"))
+                                            else BondDetailsScreen(model, bond, engine, {}, {}, { edits.incrementAndGet() })
+                                        } }
+                                    }
                                 }
                             }
                         }
@@ -175,7 +182,7 @@ class InvestmentDetailLayoutTest {
                 for (isShare in listOf(false, true)) for (isDark in listOf(false, true)) {
                     scenario.onActivity { share.value = isShare; dark.value = isDark; composition.intValue++ }
                     instrumentation.waitForIdleSync(); Thread.sleep(700)
-                    val prefix = if (isShare) "I&M Bank Rwanda" else "Rwanda Treasury Bond"
+                    val prefix = if (isShare) company else "Rwanda Treasury Bond"
                     repeat(50) {
                         if (visible { node -> node.text?.toString()?.contains(prefix) == true } == null) Thread.sleep(100)
                     }

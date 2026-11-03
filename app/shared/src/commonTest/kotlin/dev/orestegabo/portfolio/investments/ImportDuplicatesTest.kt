@@ -21,6 +21,7 @@ class ImportDuplicatesTest {
         }
         val store = ViewModelStore()
         var account = "alice"
+        var publisher = false
         var uploads = 0
         var writes = 0
         var reads = 0
@@ -61,7 +62,7 @@ class ImportDuplicatesTest {
                 addHandler { request ->
                     val path = request.url.encodedPath
                     when {
-                        path.endsWith("/auth/session") -> respond("""{"authenticated":true,"user":{"id":"${f.account}"}}""")
+                        path.endsWith("/auth/session") -> respond("""{"authenticated":true,"user":{"id":"${f.account}","canPublishPublicData":${f.publisher}}}""")
                         path.endsWith("/mobile-overview") -> respond("{}", HttpStatusCode.NotFound)
                         path.endsWith("/documents") && request.method == HttpMethod.Post -> {
                             val id = "uploaded-${++f.uploads}"
@@ -136,7 +137,7 @@ class ImportDuplicatesTest {
     }
     @Test fun contractsStatementsAndIssuanceReportsAlsoRecognizeExistingPdfBytes() = runTest {
         for ((kind, category) in listOf("equity" to "Share contract", "statement" to "Statement", "bond-issuance" to "Bond issuance")) {
-            val f = Fixture().apply { review.put("kind", kind); this.category = category; files["cloud-document"] = bytes }
+            val f = Fixture().apply { review.put("kind", kind); this.category = category; publisher = kind == "bond-issuance"; files["cloud-document"] = bytes }
             val m = model(f)
             try {
                 advanceUntilIdle()

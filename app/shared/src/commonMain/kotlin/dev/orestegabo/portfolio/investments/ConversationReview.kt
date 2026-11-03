@@ -36,7 +36,7 @@ internal fun ConversationReview(model: PortfolioModel, review: JsonRecord, targe
 private fun PurchaseConversationReview(model: PortfolioModel, review: JsonRecord, target: JsonRecord?, entry: ImportReceipt, done: () -> Unit) {
     var selection by rememberSaveable(entry.id) { mutableStateOf(target?.text("id")) }
     val state = PurchaseReviewState(review, model.documents, model.purchases, model.historyComplete, target, selection, model.sharedCouponTerms)
-    if (state.bond) AppText("Your PDF stays private. Only public bond terms, such as coupon rates and published payment dates, may be reused.", style = MaterialTheme.typography.bodySmall)
+    if (state.bond) AppText("Your PDF and its extracted terms stay private. Shared reference data is published by authorized Struct Capital staff.", style = MaterialTheme.typography.bodySmall)
     LaunchedEffect(entry.id, model.busy, model.historyComplete) {
         if (state.bond && !model.historyComplete && !model.busy && model.error == null) model.loadInvestmentHistory()
     }
@@ -82,6 +82,7 @@ private fun PurchaseConversationReview(model: PortfolioModel, review: JsonRecord
 
 @Composable
 private fun IssuanceConversationReview(model: PortfolioModel, review: JsonRecord, target: JsonRecord?, entry: ImportReceipt, done: () -> Unit) {
+    if (!model.canPublishPublicData) { AppText(PUBLIC_DATA_PERMISSION_ERROR); return }
     val parsed = remember(review) { runCatching { importedIssuanceInput(review) } }
     val fields = parsed.getOrNull()
     if (fields == null) { AppText(userErrorMessage(parsed.exceptionOrNull(), "Could not read this PDF."), color = MaterialTheme.colorScheme.error); return }

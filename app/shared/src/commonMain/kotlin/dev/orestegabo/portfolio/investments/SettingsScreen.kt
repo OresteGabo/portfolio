@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -> Unit,
     chartStyle: String, changeChartStyle: (String) -> Unit,
-    openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit, openLegal: () -> Unit = {}, openAbout: () -> Unit = {}, openIntroduction: () -> Unit = {}, openInvestmentTools: () -> Unit = {}, openSignInActivity: () -> Unit = {}, openGuest: () -> Unit = {}) {
+    openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit, openLegal: () -> Unit = {}, openAbout: () -> Unit = {}, openIntroduction: () -> Unit = {}, openInvestmentTools: () -> Unit = {}, openSignInActivity: () -> Unit = {}, openGuest: () -> Unit = {}, openIssueReport: () -> Unit = {}) {
     val actions = LocalNativeActions.current
     var setupSecure by remember { mutableStateOf(false) }
     var targetExpanded by remember { mutableStateOf(false) }
@@ -47,6 +47,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
     var dialog by rememberSaveable { mutableStateOf<String?>(null) }
     var ownerSection by rememberSaveable { mutableStateOf<String?>(null) }
     var accounts by remember { mutableStateOf<JsonRecord?>(null) }
+    var publisherChange by remember { mutableStateOf<JsonRecord?>(null) }
     var registration by remember { mutableStateOf<JsonRecord?>(null) }
     var bondSearch by rememberSaveable { mutableStateOf("") }
     var inviteEmail by rememberSaveable { mutableStateOf("") }
@@ -58,6 +59,24 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
             if (section == "accounts") accounts = model.api.request("/api/bonds/auth/accounts")
             else registration = model.api.request("/api/bonds/auth/registration")
         }
+    }
+
+    publisherChange?.takeIf { owner }?.let { account ->
+        val enabled = !account.optBoolean("canPublishPublicData")
+        AlertDialog(onDismissRequest = { publisherChange = null },
+            title = { AppText(if (enabled) "Allow shared-data publication?" else "Remove publication permission?") },
+            text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                AppText(account.text("email"))
+                AppText("This permission allows publishing reference data that affects all users. It does not grant owner administration access.")
+            } },
+            confirmButton = { TextButton(enabled = !model.busy, onClick = {
+                model.action {
+                    model.api.request("/api/bonds/auth/accounts/${account.text("id")}/public-data-publisher", "PUT", JsonRecord().put("enabled", enabled))
+                    accounts = model.api.request("/api/bonds/auth/accounts")
+                    publisherChange = null
+                }
+            }) { AppText(if (enabled) "Allow publication" else "Remove permission") } },
+            dismissButton = { TextButton(onClick = { publisherChange = null }) { AppText("Cancel") } })
     }
 
     if (dialog == "guestPrivacy") AlertDialog(onDismissRequest = { dialog = null }, title = { AppText("Private on-device imports") }, text = { AppText("PDFs are parsed and saved locally. They are not sent to Struct Capital or an AI service. Selecting a file from a cloud provider may download it through that provider. Sharing a PDF sends it only to the destination you choose.") }, confirmButton = { TextButton(onClick = { dialog = null }) { AppText("Done") } })
@@ -178,9 +197,12 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 SettingsDivider()
                 SettingsRow(Icons.Outlined.AutoStories, "Replay introduction", "A quick tour of Struct Capital", onClick = openIntroduction)
             } }
-            item { SettingsSection("Legal & privacy") {
-                SettingsRow(Icons.Outlined.Email, "Contact support", BrandContacts.SUPPORT, onClick = { actions.openEmail(BrandContacts.SUPPORT) })
+            item { SettingsSection("Help & support") {
+                SettingsRow(Icons.Outlined.BugReport, "Report a problem", "Bugs, incorrect data or anything that is not working", onClick = openIssueReport)
                 SettingsDivider()
+                SettingsRow(Icons.Outlined.Email, "Contact support", BrandContacts.SUPPORT, onClick = { actions.openEmail(BrandContacts.SUPPORT) })
+            } }
+            item { SettingsSection("Legal & privacy") {
                 SettingsRow(Icons.Outlined.Policy, "Legal documents", "Terms, privacy, data rights & credits", onClick = openLegal)
             } }
             item { SettingsSection("Links", "These links open in your browser.") {
@@ -304,6 +326,13 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                             AppText(account.text("email"), fontWeight = FontWeight.SemiBold)
                             Fact("Account", "${account.text("kind")} · ${account.text("status")}")
                             account.optJSONObject("portfolio")?.let { Fact("Bond purchases", it.text("purchaseCount")) }
+                            if (account.has("canPublishPublicData")) {
+                                AppText(if (account.optBoolean("canPublishPublicData")) "Can publish shared data" else "Personal account only", style = MaterialTheme.typography.bodySmall)
+                                if (account.text("id") != "owner" && account.text("status") == "active") TextButton(
+                                    enabled = !model.busy, onClick = { publisherChange = account }) {
+                                    AppText(if (account.optBoolean("canPublishPublicData")) "Remove publication permission" else "Allow shared-data publication")
+                                }
+                            }
                             HorizontalDivider()
                         }
                     } }
