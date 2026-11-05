@@ -1,17 +1,46 @@
 package dev.orestegabo.portfolio.investments
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.AlternateEmail
+import androidx.compose.material.icons.outlined.Key
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
@@ -21,9 +50,16 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalAutofillManager
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.semantics.*
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.*
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -32,16 +68,17 @@ internal fun SignInScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? 
     val autofill = LocalAutofillManager.current
     val focus = LocalFocusManager.current
     var email by rememberSaveable { mutableStateOf("") }
-    // Passwords and invitation secrets stay out of saved instance state.
     var password by remember { mutableStateOf("") }
     var invitation by remember { mutableStateOf("") }
     var confirmation by remember { mutableStateOf("") }
     var register by rememberSaveable { mutableStateOf(false) }
     var savePassword by rememberSaveable { mutableStateOf(false) }
+
     val passwordFocus = remember { FocusRequester() }
     val confirmationFocus = remember { FocusRequester() }
     val invitationFocus = remember { FocusRequester() }
     val canSubmit = !model.busy && email.isNotBlank() && password.isNotEmpty()
+
     fun submit() {
         if (!canSubmit) return
         focus.clearFocus()
@@ -57,79 +94,191 @@ internal fun SignInScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? 
             actions.offerPasswordSave(submittedOrigin, submittedEmail, submittedPassword)
         }
     }
+
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-        LazyColumn(Modifier.widthIn(max = 480.dp).fillMaxSize(), contentPadding = PaddingValues(24.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        LazyColumn(
+            Modifier.widthIn(max = 480.dp).fillMaxSize(),
+            contentPadding = PaddingValues(24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            // Header Section
             item {
-                Column(Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    StructMark(Modifier.size(72.dp))
-                    AppText("STRUCT CAPITAL", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
-                    AppText(if (register) "Create account" else "Welcome back", Modifier.semantics { heading() },
-                        style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Column(
+                    Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    StructMark(Modifier.size(64.dp))
+                    AppText(
+                        "STRUCT CAPITAL",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    AppText(
+                        if (register) "Create account" else "Welcome back",
+                        Modifier.semantics { heading() },
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
-            item {
-                if (model.guestPath != null) OutlinedButton(onClick = model::returnToGuest, modifier = Modifier.fillMaxWidth()) { AppText("Return to Guest") }
-                else continueAsGuest?.let { OutlinedButton(onClick = it, modifier = Modifier.fillMaxWidth()) { AppText("Continue as Guest") } }
-            }
+
+            // Main Auth Panel
             item {
                 Panel {
-                    CredentialField("Email", email, { email = it }, Icons.Outlined.AlternateEmail,
-                        input = CredentialInput.USERNAME,
-                        content = (if (register) ContentType.NewUsername else ContentType.Username) + ContentType.EmailAddress,
-                        enabled = !model.busy, imeAction = ImeAction.Next, onIme = { passwordFocus.requestFocus() })
-                    CredentialField("Password", password, { password = it.take(128) }, Icons.Outlined.Lock,
-                        input = if (register) CredentialInput.NEW_PASSWORD else CredentialInput.PASSWORD,
-                        content = if (register) ContentType.NewPassword else ContentType.Password,
-                        enabled = !model.busy, focusRequester = passwordFocus,
-                        helper = if (register) "At least 15 characters" else null,
-                        imeAction = if (register) ImeAction.Next else ImeAction.Go,
-                        onIme = { if (register) confirmationFocus.requestFocus() else submit() })
-                    if (register) {
-                        CredentialField("Confirm password", confirmation, { confirmation = it.take(128) }, Icons.Outlined.Lock,
-                            input = CredentialInput.NEW_PASSWORD, content = ContentType.NewPassword,
-                            enabled = !model.busy, focusRequester = confirmationFocus,
-                            imeAction = ImeAction.Next, onIme = { invitationFocus.requestFocus() })
-                        CredentialField("Invitation code", invitation, { invitation = it }, Icons.Outlined.Key,
-                            enabled = !model.busy, focusRequester = invitationFocus,
-                            imeAction = ImeAction.Done, onIme = ::submit)
-                    }
-                    val canRemember = model.secureSignInAvailable && !model.busy
-                    Row(Modifier.fillMaxWidth().heightIn(min = 56.dp)
-                        .toggleable(value = savePassword, enabled = canRemember, role = Role.Checkbox, onValueChange = { savePassword = it })
-                        .padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(savePassword, null, modifier = Modifier.size(32.dp), enabled = canRemember)
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            AppText("Save sign-in with ${localized(model.unlockLabel)}", style = MaterialTheme.typography.bodyMedium)
-                            AppText(if (model.secureSignInAvailable) "Securely saved on this device" else "Set up device authentication first",
-                                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        CredentialField(
+                            "Email",
+                            email,
+                            { email = it },
+                            Icons.Outlined.AlternateEmail,
+                            input = CredentialInput.USERNAME,
+                            content = (if (register) ContentType.NewUsername else ContentType.Username) + ContentType.EmailAddress,
+                            enabled = !model.busy,
+                            imeAction = ImeAction.Next,
+                            onIme = { passwordFocus.requestFocus() }
+                        )
+
+                        CredentialField(
+                            "Password", password, { password = it.take(128) }, Icons.Outlined.Lock,
+                            input = if (register) CredentialInput.NEW_PASSWORD else CredentialInput.PASSWORD,
+                            content = if (register) ContentType.NewPassword else ContentType.Password,
+                            enabled = !model.busy, focusRequester = passwordFocus,
+                            helper = if (register && password.length < 15) "At least 15 characters required" else null,
+                            imeAction = if (register) ImeAction.Next else ImeAction.Go,
+                            onIme = { if (register) confirmationFocus.requestFocus() else submit() }
+                        )
+
+                        // Smooth expansion for registration fields
+                        if (register) {
+                            CredentialField(
+                                "Confirm password",
+                                confirmation,
+                                { confirmation = it.take(128) },
+                                Icons.Outlined.Lock,
+                                input = CredentialInput.NEW_PASSWORD,
+                                content = ContentType.NewPassword,
+                                enabled = !model.busy,
+                                focusRequester = confirmationFocus,
+                                imeAction = ImeAction.Next,
+                                onIme = { invitationFocus.requestFocus() }
+                            )
+                            CredentialField(
+                                "Invitation code",
+                                invitation,
+                                { invitation = it },
+                                Icons.Outlined.Key,
+                                enabled = !model.busy,
+                                focusRequester = invitationFocus,
+                                imeAction = ImeAction.Done,
+                                onIme = ::submit
+                            )
                         }
-                    }
-                    Button(onClick = ::submit, enabled = canSubmit,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp), shape = RoundedCornerShape(16.dp)) {
-                        if (model.busy) {
-                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = LocalContentColor.current)
-                            Spacer(Modifier.width(10.dp))
+
+                        val canRemember = model.secureSignInAvailable && !model.busy
+                        Row(
+                            Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                                .toggleable(
+                                    value = savePassword,
+                                    enabled = canRemember,
+                                    role = Role.Checkbox,
+                                    onValueChange = { savePassword = it })
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                savePassword,
+                                null,
+                                modifier = Modifier.size(28.dp),
+                                enabled = canRemember
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Column(
+                                Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                AppText(
+                                    "Save sign-in with ${localized(model.unlockLabel)}",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                AppText(
+                                    if (model.secureSignInAvailable) "Securely saved on this device" else "Set up device authentication first",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
-                        AppText(if (model.busy) "Signing in…" else if (register) "Create account" else "Sign in")
-                    }
-                    TextButton(onClick = {
-                        autofill?.cancel()
-                        focus.clearFocus()
-                        register = !register
-                    }, enabled = !model.busy, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                        AppText(if (register) "Back to sign in" else "Use an invitation")
+
+                        Spacer(Modifier.height(4.dp))
+
+                        Button(
+                            onClick = ::submit, enabled = canSubmit,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            if (model.busy) {
+                                CircularProgressIndicator(
+                                    Modifier.size(18.dp),
+                                    strokeWidth = 2.dp,
+                                    color = LocalContentColor.current
+                                )
+                                Spacer(Modifier.width(10.dp))
+                            }
+                            AppText(if (model.busy) "Signing in…" else if (register) "Create account" else "Sign in")
+                        }
+
+                        // Mode switcher inside card footer
+                        TextButton(
+                            onClick = {
+                                autofill?.cancel()
+                                focus.clearFocus()
+                                register = !register
+                            },
+                            enabled = !model.busy,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        ) {
+                            AppText(if (register) "Already have an account? Sign in" else "Have an invitation code? Create account")
+                        }
                     }
                 }
             }
-            if (openIssueReport != null) item { TextButton(onClick = openIssueReport, modifier = Modifier.fillMaxWidth()) { AppText("Report a problem") } }
-            item { TextButton(onClick = openLegal, modifier = Modifier.fillMaxWidth()) { AppText("Legal & privacy") } }
+
+            // Secondary Actions (Guest & Footer Links) placed cleanly below the card
+            item {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (model.guestPath != null) {
+                        OutlinedButton(
+                            onClick = model::returnToGuest,
+                            modifier = Modifier.fillMaxWidth()
+                        ) { AppText("Return to Guest") }
+                    } else {
+                        continueAsGuest?.let {
+                            OutlinedButton(
+                                onClick = it,
+                                modifier = Modifier.fillMaxWidth()
+                            ) { AppText("Continue as Guest") }
+                        }
+                    }
+
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (openIssueReport != null) {
+                            TextButton(onClick = openIssueReport) { AppText("Report a problem") }
+                        }
+                        TextButton(onClick = openLegal) { AppText("Legal & privacy") }
+                    }
+                }
+            }
         }
     }
 }
-
 @Composable
 private fun CredentialField(
     label: String, value: String, change: (String) -> Unit, icon: ImageVector,
