@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,10 +12,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,8 +51,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalAutofillManager
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.Role
@@ -61,9 +69,17 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.painterResource
+import portfolio.app.shared.generated.resources.Res
+import portfolio.app.shared.generated.resources.kigali_assets_36653828
 
 @Composable
-internal fun SignInScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? = null, openIssueReport: (() -> Unit)? = null, openLegal: () -> Unit) {
+internal fun SignInScreen(
+    model: PortfolioModel,
+    continueAsGuest: (() -> Unit)? = null,
+    openIssueReport: (() -> Unit)? = null,
+    openLegal: () -> Unit
+) {
     val actions = LocalNativeActions.current
     val autofill = LocalAutofillManager.current
     val focus = LocalFocusManager.current
@@ -95,44 +111,108 @@ internal fun SignInScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? 
         }
     }
 
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+    Box(
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        // 1. Immersive Full-Height Atmospheric Kigali Photo Background Layer
+        Box(Modifier.fillMaxSize()) {
+            Image(
+                painter = painterResource(Res.drawable.kigali_assets_36653828),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            // Soft atmospheric gradient fading downward behind the lower form stack
+            Box(
+                Modifier.fillMaxSize().background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = 0.1f),
+                            Color.Black.copy(alpha = 0.35f),
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                            MaterialTheme.colorScheme.surface
+                        ),
+                        startY = 0f,
+                        endY = 1800f
+                    )
+                )
+            )
+        }
+
+        // 2. Core Layout: Everything stays in a single unified LazyColumn with imePadding
         LazyColumn(
-            Modifier.widthIn(max = 480.dp).fillMaxSize(),
-            contentPadding = PaddingValues(24.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            Modifier
+                .widthIn(max = 480.dp)
+                .fillMaxSize()
+                .imePadding(), // Resizes layout cleanly when soft keyboard appears without overlapping elements
+            contentPadding = PaddingValues(
+                start = 20.dp,
+                end = 20.dp,
+                top = 20.dp,
+                bottom = 24.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Header Section
+            // Floating Curved Logo Card (Top Right)
             item {
-                Column(
-                    Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    contentAlignment = Alignment.CenterEnd
                 ) {
-                    StructMark(Modifier.size(64.dp))
-                    AppText(
-                        "STRUCT CAPITAL",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    AppText(
-                        if (register) "Create account" else "Welcome back",
-                        Modifier.semantics { heading() },
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(
+                            topStart = 24.dp,
+                            bottomStart = 24.dp,
+                            topEnd = 24.dp,
+                            bottomEnd = 8.dp
+                        ),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                        tonalElevation = 6.dp,
+                        shadowElevation = 8.dp,
+                        modifier = Modifier.wrapContentWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            StructMark(Modifier.size(32.dp))
+                            Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                                AppText(
+                                    "STRUCT CAPITAL",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                AppText(
+                                    if (register) "Create account" else "Welcome back",
+                                    Modifier.semantics { heading() },
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
-            // Main Auth Panel
+            // Room for Kigali photography
+            item {
+                Spacer(Modifier.height(100.dp))
+            }
+
+            // Main Auth Panel Card
             item {
                 Panel {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         CredentialField(
-                            "Email",
-                            email,
-                            { email = it },
-                            Icons.Outlined.AlternateEmail,
+                            label = "Email",
+                            value = email,
+                            change = { email = it },
+                            icon = Icons.Outlined.AlternateEmail,
                             input = CredentialInput.USERNAME,
                             content = (if (register) ContentType.NewUsername else ContentType.Username) + ContentType.EmailAddress,
                             enabled = !model.busy,
@@ -141,22 +221,25 @@ internal fun SignInScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? 
                         )
 
                         CredentialField(
-                            "Password", password, { password = it.take(128) }, Icons.Outlined.Lock,
+                            label = "Password",
+                            value = password,
+                            change = { password = it.take(128) },
+                            icon = Icons.Outlined.Lock,
                             input = if (register) CredentialInput.NEW_PASSWORD else CredentialInput.PASSWORD,
                             content = if (register) ContentType.NewPassword else ContentType.Password,
-                            enabled = !model.busy, focusRequester = passwordFocus,
+                            enabled = !model.busy,
+                            focusRequester = passwordFocus,
                             helper = if (register && password.length < 15) "At least 15 characters required" else null,
                             imeAction = if (register) ImeAction.Next else ImeAction.Go,
                             onIme = { if (register) confirmationFocus.requestFocus() else submit() }
                         )
 
-                        // Smooth expansion for registration fields
                         if (register) {
                             CredentialField(
-                                "Confirm password",
-                                confirmation,
-                                { confirmation = it.take(128) },
-                                Icons.Outlined.Lock,
+                                label = "Confirm password",
+                                value = confirmation,
+                                change = { confirmation = it.take(128) },
+                                icon = Icons.Outlined.Lock,
                                 input = CredentialInput.NEW_PASSWORD,
                                 content = ContentType.NewPassword,
                                 enabled = !model.busy,
@@ -165,10 +248,10 @@ internal fun SignInScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? 
                                 onIme = { invitationFocus.requestFocus() }
                             )
                             CredentialField(
-                                "Invitation code",
-                                invitation,
-                                { invitation = it },
-                                Icons.Outlined.Key,
+                                label = "Invitation code",
+                                value = invitation,
+                                change = { invitation = it },
+                                icon = Icons.Outlined.Key,
                                 enabled = !model.busy,
                                 focusRequester = invitationFocus,
                                 imeAction = ImeAction.Done,
@@ -178,22 +261,23 @@ internal fun SignInScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? 
 
                         val canRemember = model.secureSignInAvailable && !model.busy
                         Row(
-                            Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                            Modifier.fillMaxWidth().heightIn(min = 42.dp)
                                 .toggleable(
                                     value = savePassword,
                                     enabled = canRemember,
                                     role = Role.Checkbox,
-                                    onValueChange = { savePassword = it })
-                                .padding(vertical = 4.dp),
+                                    onValueChange = { savePassword = it }
+                                )
+                                .padding(vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Checkbox(
                                 savePassword,
                                 null,
-                                modifier = Modifier.size(28.dp),
+                                modifier = Modifier.size(24.dp),
                                 enabled = canRemember
                             )
-                            Spacer(Modifier.width(12.dp))
+                            Spacer(Modifier.width(10.dp))
                             Column(
                                 Modifier.weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -210,11 +294,10 @@ internal fun SignInScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? 
                             }
                         }
 
-                        Spacer(Modifier.height(4.dp))
-
                         Button(
-                            onClick = ::submit, enabled = canSubmit,
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                            onClick = ::submit,
+                            enabled = canSubmit,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                             shape = RoundedCornerShape(16.dp)
                         ) {
                             if (model.busy) {
@@ -228,7 +311,6 @@ internal fun SignInScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? 
                             AppText(if (model.busy) "Signing in…" else if (register) "Create account" else "Sign in")
                         }
 
-                        // Mode switcher inside card footer
                         TextButton(
                             onClick = {
                                 autofill?.cancel()
@@ -244,23 +326,30 @@ internal fun SignInScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? 
                 }
             }
 
-            // Secondary Actions (Guest & Footer Links) placed cleanly below the card
+            // Footer Links inside the scrollable column to prevent overlap collisions
             item {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     if (model.guestPath != null) {
                         OutlinedButton(
                             onClick = model::returnToGuest,
-                            modifier = Modifier.fillMaxWidth()
-                        ) { AppText("Return to Guest") }
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 42.dp)
+                        ) {
+                            AppText("Return to Guest")
+                        }
                     } else {
                         continueAsGuest?.let {
                             OutlinedButton(
                                 onClick = it,
-                                modifier = Modifier.fillMaxWidth()
-                            ) { AppText("Continue as Guest") }
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 42.dp)
+                            ) {
+                                AppText("Continue as Guest")
+                            }
                         }
                     }
 
@@ -279,41 +368,64 @@ internal fun SignInScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? 
         }
     }
 }
+
 @Composable
 private fun CredentialField(
-    label: String, value: String, change: (String) -> Unit, icon: ImageVector,
-    input: CredentialInput? = null, content: ContentType? = null, enabled: Boolean,
-    focusRequester: FocusRequester? = null, helper: String? = null, imeAction: ImeAction, onIme: () -> Unit,
+    label: String,
+    value: String,
+    change: (String) -> Unit,
+    icon: ImageVector,
+    input: CredentialInput? = null,
+    content: ContentType? = null,
+    enabled: Boolean,
+    focusRequester: FocusRequester? = null,
+    helper: String? = null,
+    imeAction: ImeAction,
+    onIme: () -> Unit,
 ) {
     var revealed by remember(input) { mutableStateOf(false) }
     val password = input == CredentialInput.PASSWORD || input == CredentialInput.NEW_PASSWORD
     val colours = MaterialTheme.colorScheme
     val fill = colours.onSurface.copy(alpha = .025f).compositeOver(colours.surface)
-    OutlinedTextField(value, change,
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = change,
         modifier = Modifier.fillMaxWidth()
             .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
             .then(if (content != null) Modifier.semantics { contentType = content } else Modifier),
-        label = { AppText(label) }, singleLine = true, enabled = enabled,
+        label = { AppText(label) },
+        singleLine = true,
+        enabled = enabled,
         shape = RoundedCornerShape(16.dp),
         leadingIcon = { AppIcon(icon, null, Modifier.size(21.dp), tint = colours.onSurfaceVariant) },
-        trailingIcon = if (password) { {
-            IconButton(onClick = { revealed = !revealed }, enabled = enabled) {
-                AppIcon(if (revealed) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                    if (revealed) "Hide password" else "Show password", Modifier.size(21.dp))
+        trailingIcon = if (password) {
+            {
+                IconButton(onClick = { revealed = !revealed }, enabled = enabled) {
+                    AppIcon(
+                        if (revealed) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                        if (revealed) "Hide password" else "Show password",
+                        Modifier.size(21.dp)
+                    )
+                }
             }
-        } } else null,
+        } else null,
         supportingText = helper?.let { { AppText(it) } },
         visualTransformation = if (password && !revealed) PasswordVisualTransformation() else VisualTransformation.None,
         keyboardOptions = KeyboardOptions(
             keyboardType = if (password) KeyboardType.Password else if (input == CredentialInput.USERNAME) KeyboardType.Email else KeyboardType.Ascii,
-            autoCorrectEnabled = false, capitalization = KeyboardCapitalization.None, imeAction = imeAction,
-            platformImeOptions = input?.let(::credentialImeOptions)),
+            autoCorrectEnabled = false,
+            capitalization = KeyboardCapitalization.None,
+            imeAction = imeAction,
+            platformImeOptions = input?.let(::credentialImeOptions)
+        ),
         keyboardActions = KeyboardActions(onNext = { onIme() }, onGo = { onIme() }, onDone = { onIme() }),
         colors = OutlinedTextFieldDefaults.colors(
             focusedContainerColor = fill,
             unfocusedContainerColor = fill,
             disabledContainerColor = fill,
             unfocusedBorderColor = colours.onSurface.copy(alpha = .18f),
-            focusedBorderColor = colours.primary),
+            focusedBorderColor = colours.primary
+        ),
     )
 }
