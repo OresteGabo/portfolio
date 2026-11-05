@@ -1,9 +1,30 @@
 package dev.orestegabo.portfolio.investments
 
-import dev.orestegabo.portfolio.design.StructColors
-
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -11,10 +32,32 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.AccountBalance
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ChevronLeft
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.EventAvailable
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Percent
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,24 +65,29 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.datetime.LocalDate
+import dev.orestegabo.portfolio.design.StructColors
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
+import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.painterResource
-import portfolio.app.shared.generated.resources.*
+import portfolio.app.shared.generated.resources.Res
+import portfolio.app.shared.generated.resources.kigali_hero
+import kotlin.math.roundToInt
 
 enum class BondStatus(val value: String, val label: String) {
     ALL("all", "All"),
@@ -462,22 +510,30 @@ private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, pri
             )
             Column(
                 Modifier.fillMaxWidth().padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp) // Slightly better breathing room
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                // Top section: Net Worth Header & Primary Value
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         AppText(
                             "Estimated net worth",
-                            Modifier.weight(1f),
                             style = MaterialTheme.typography.labelLarge,
                             color = StructColors.Dashboard.worthLabel
                         )
-                        IconButton(onClick = { showBasis = true }) {
+                        // Improved touch target semantics and padding alignment
+                        IconButton(
+                            onClick = { showBasis = true },
+                            modifier = Modifier.size(36.dp) // Compact yet touch-friendly
+                        ) {
                             AppIcon(
                                 Icons.Outlined.Info,
-                                contentDescription = "Valuation basis",
+                                contentDescription = "Valuation basis details",
                                 tint = StructColors.Dashboard.worthLabel,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
@@ -496,56 +552,68 @@ private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, pri
                     )
                 }
 
-                HorizontalDivider(color = StructColors.Dashboard.gold.copy(alpha = .2f))
+                HorizontalDivider(color = StructColors.Dashboard.gold.copy(alpha = .15f))
 
-                // Replaced heavy TextMeasurer/BoxWithConstraints layout thrashing with
-                // a standard configuration check using LocalDensity & LocalConfiguration if needed,
-                // or a clean fallback layout that prevents unnecessary re-measure passes.
-                val density = LocalDensity.current
-                val fontScale = density.fontScale
+                // Bottom metrics: Clean layout switch without heavy measurement passes
+                val isCompact = LocalDensity.current.fontScale > 1.3f
 
-                BoxWithConstraints(Modifier.fillMaxWidth()) {
-                    val useColumn = maxWidth < 240.dp || fontScale > 1.3f
-
-                    if (useColumn) {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            MoneyMetric("Bond principal", total.bondFaceValue, total.currency, Icons.Outlined.AccountBalance, Modifier.fillMaxWidth())
-                            MoneyMetric("RSE equity value", valuation.shareValue, total.currency, Icons.Outlined.BarChart, Modifier.fillMaxWidth())
-                            MoneyMetric("Annual net coupon", total.netAnnualCoupon, total.currency, Icons.Outlined.Percent, Modifier.fillMaxWidth())
-                        }
-                    } else {
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            MoneyMetric(
-                                "Bond principal",
-                                total.bondFaceValue,
-                                total.currency,
-                                Icons.Outlined.AccountBalance,
-                                Modifier.weight(1f)
-                            )
-                            MoneyMetric(
-                                "RSE equity value",
-                                valuation.shareValue,
-                                total.currency,
-                                Icons.Outlined.BarChart,
-                                Modifier.weight(1f)
-                            )
-                            MoneyMetric(
-                                "Annual net coupon",
-                                total.netAnnualCoupon,
-                                total.currency,
-                                Icons.Outlined.Percent,
-                                Modifier.weight(1f)
-                            )
-                        }
+                if (isCompact) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        MoneyMetric(
+                            "Bond principal",
+                            total.bondFaceValue,
+                            total.currency,
+                            Icons.Outlined.AccountBalance,
+                            Modifier.fillMaxWidth()
+                        )
+                        MoneyMetric(
+                            "RSE equity value",
+                            valuation.shareValue,
+                            total.currency,
+                            Icons.Outlined.BarChart,
+                            Modifier.fillMaxWidth()
+                        )
+                        MoneyMetric(
+                            "Annual net coupon",
+                            total.netAnnualCoupon,
+                            total.currency,
+                            Icons.Outlined.Percent,
+                            Modifier.fillMaxWidth()
+                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        MoneyMetric(
+                            "Bond principal",
+                            total.bondFaceValue,
+                            total.currency,
+                            Icons.Outlined.AccountBalance,
+                            Modifier.weight(1f)
+                        )
+                        MoneyMetric(
+                            "RSE equity value",
+                            valuation.shareValue,
+                            total.currency,
+                            Icons.Outlined.BarChart,
+                            Modifier.weight(1f)
+                        )
+                        MoneyMetric(
+                            "Annual net coupon",
+                            total.netAnnualCoupon,
+                            total.currency,
+                            Icons.Outlined.Percent,
+                            Modifier.weight(1f)
+                        )
                     }
                 }
             }
         }
     }
 }
+
 @Composable
 private fun MoneyMetric(label: String, value: Double, currency: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(7.dp)) {
