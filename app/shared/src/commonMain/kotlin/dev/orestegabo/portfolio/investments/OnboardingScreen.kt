@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.StructColors
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -56,8 +58,8 @@ internal fun OnboardingScreen(replay: Boolean = false, continueAsGuest: (() -> U
     val feedback = LocalSelectionFeedback.current
     val dark = MaterialTheme.colorScheme.background.luminance() < .5f
     val colors = MaterialTheme.colorScheme
-    val background = if (dark) Color(0xFF181F18) else Color(0xFFFAF8F2)
-    val artworkSurface = if (dark) Color(0xFF272B1B) else Color(0xFFFAF8F2)
+    val background = StructColors.Onboarding.background.resolve(dark)
+    val artworkSurface = StructColors.Onboarding.artworkSurface.resolve(dark)
     fun move(page: Int) {
         feedback()
         scope.launch { if (reducedMotion) pager.scrollToPage(page) else pager.animateScrollToPage(page) }
@@ -120,8 +122,11 @@ internal fun OnboardingScreen(replay: Boolean = false, continueAsGuest: (() -> U
                         }
                         Button(onClick = { if (pager.currentPage == pages.lastIndex) finish() else move(pager.currentPage + 1) },
                             modifier = Modifier.weight(1f).heightIn(min = 56.dp), shape = RoundedCornerShape(18.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = if (dark) Color(0xFFE6D787) else Color(0xFF6D5E0F),
-                                contentColor = if (dark) Color(0xFF242915) else Color.White)) {
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = StructColors.Onboarding.action.resolve(dark),
+                                contentColor = StructColors.Onboarding.onAction.resolve(dark)
+                            )
+                        ) {
                             AppText(if (pager.currentPage == pages.lastIndex) { if (replay) "Done" else "Get started" } else "Continue",
                                 style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                             Spacer(Modifier.width(10.dp))
@@ -168,7 +173,9 @@ private fun IntroductionArtwork(step: IntroductionStep, dark: Boolean) {
         IntroductionStep.REPORTS -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             IntroductionImage(if (dark) Res.drawable.onboarding_reports_dark else Res.drawable.onboarding_reports_light)
             Surface(Modifier.align(Alignment.BottomEnd).padding(end = 24.dp, bottom = 8.dp), shape = RoundedCornerShape(15.dp),
-                color = if (dark) Color(0xFF272B1B) else Color(0xFFFAF8F2), border = BorderStroke(1.dp, primary.copy(alpha = .2f))) {
+                color = StructColors.Onboarding.artworkSurface.resolve(dark),
+                border = BorderStroke(1.dp, primary.copy(alpha = .2f))
+            ) {
                 StructMark(Modifier.padding(8.dp).size(40.dp))
             }
         }

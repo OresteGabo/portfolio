@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.StructColors
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,7 +27,7 @@ internal fun ShareHoldingCard(valuation: ValuedSharePosition, name: String, onCl
     val dark = MaterialTheme.colorScheme.background.luminance() < .5f
     val returnColor = when {
         gain == null || gain == 0.0 -> MaterialTheme.colorScheme.onSurfaceVariant
-        gain > 0 -> if (dark) Color(0xFF81D8A7) else Color(0xFF147D46)
+        gain > 0 -> StructColors.Financial.holdingGain.resolve(dark)
         else -> MaterialTheme.colorScheme.error
     }
     val trend = when {

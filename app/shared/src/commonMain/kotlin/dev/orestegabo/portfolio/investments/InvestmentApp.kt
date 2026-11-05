@@ -1,12 +1,10 @@
 package dev.orestegabo.portfolio.investments
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.clickable
-import androidx.compose.ui.semantics.Role
+import dev.orestegabo.portfolio.design.structCapitalColorScheme
+
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -36,20 +34,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlinx.datetime.LocalDate
-
-private val BrandOlive = Color(0xFF6D5E0F)
-private val BrandCream = Color(0xFFF2E6A7)
-private val Ink = Color(0xFF252317)
-fun structCapitalColorScheme(dark: Boolean): ColorScheme = if (dark) darkColorScheme(primary = BrandCream, onPrimary = Ink, primaryContainer = Color(0xFF514716), onPrimaryContainer = BrandCream, secondary = BrandCream, secondaryContainer = Color(0xFF514716), onSecondaryContainer = BrandCream, background = Color(0xFF11150F), surface = Color(0xFF1D2219), onSurface = Color(0xFFF3F1E8), onSurfaceVariant = Color(0xFFC5C7BA), outlineVariant = Color(0xFF414735))
-        else lightColorScheme(primary = BrandOlive, onPrimary = Color.White, primaryContainer = BrandCream, onPrimaryContainer = Ink, secondary = BrandOlive, secondaryContainer = BrandCream, onSecondaryContainer = Ink, background = Color(0xFFFAF8F2), surface = Color.White, onSurface = Ink)
 
 // Keep saved route keys independent of user-facing labels.
 private data class Destination(val key: String, val label: String, val icon: ImageVector, val selectedIcon: ImageVector)
@@ -556,8 +545,35 @@ private fun FieldContent(label: String, value: String, change: (String) -> Unit,
 }
 
 @Composable
-fun ChoiceRow(choices: List<String>, selected: String, choose: (String) -> Unit) {
-    androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(choices) { item -> FilterChip(selected = item == selected, onClick = { choose(item) }, label = { AppText(item.replaceFirstChar { it.uppercase() }) }) }
+fun <T : Enum<T>> ChoiceRow(
+    choices: List<T>,
+    selected: T,
+    choose: (T) -> Unit
+) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(choices) { item ->
+            FilterChip(
+                selected = item == selected,
+                onClick = { choose(item) },
+                label = { AppText(item.toString()) }
+            )
+        }
+    }
+}
+
+@Composable
+fun ChoiceRow(
+    choices: List<String>,
+    selected: String,
+    choose: (String) -> Unit
+) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(choices) { item ->
+            FilterChip(
+                selected = item == selected,
+                onClick = { choose(item) },
+                label = { AppText(item.replaceFirstChar { it.uppercase() }) }
+            )
+        }
     }
 }

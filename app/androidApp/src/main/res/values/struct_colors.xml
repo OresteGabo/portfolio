@@ -1,0 +1,7 @@
+<!-- Generated colors: scripts/sync-design-colors.py; edit design/StructColors.kt. -->
+<resources>
+    <color name="struct_brand_olive">#6D5E0F</color>
+    <color name="struct_brand_cream">#F2E6A7</color>
+    <color name="struct_brand_canvas">#FAF8F2</color>
+    <color name="struct_fixed_white">#FFFFFF</color>
+</resources>

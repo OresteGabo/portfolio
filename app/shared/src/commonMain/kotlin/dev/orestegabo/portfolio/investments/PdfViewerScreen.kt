@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.StructColors
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -108,7 +110,9 @@ private fun PdfPageList(document: PdfDocumentPages, failed: () -> Unit) {
     val reducedMotion = LocalReducedMotion.current
     fun move(index: Int) { scope.launch { if (reducedMotion) scroll.scrollToItem(index) else scroll.animateScrollToItem(index) } }
     Column(Modifier.fillMaxSize()) {
-        LazyColumn(Modifier.weight(1f).fillMaxWidth().background(Color(0xFF30332D)), state = scroll,
+        LazyColumn(
+            Modifier.weight(1f).fillMaxWidth().background(StructColors.Document.readerCanvas),
+            state = scroll,
             contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items((0 until document.pageCount).toList(), key = { it }) { page ->
                 val viewport by remember(scroll, page) { derivedStateOf {
@@ -159,7 +163,10 @@ private fun PdfPageImage(document: PdfDocumentPages, page: Int, zoom: Float, vis
             offsetX = (panX + pan.x).coerceIn(-limit, limit)
             if (pan.y != 0f) scrollVertically(pan.y)
         }
-        if (bitmap == null) Box(Modifier.fillMaxWidth().height(300.dp).background(Color.White), contentAlignment = Alignment.Center) {
+        if (bitmap == null) Box(
+            Modifier.fillMaxWidth().height(300.dp).background(StructColors.Document.paper),
+            contentAlignment = Alignment.Center
+        ) {
             CircularProgressIndicator(Modifier.size(24.dp))
         } else {
             val pageHeight = maxWidth * (bitmap.height.toFloat() / bitmap.width)
@@ -175,7 +182,9 @@ private fun PdfPageImage(document: PdfDocumentPages, page: Int, zoom: Float, vis
                 catch (_: Exception) { failed() }
             }
             val description = "${localized("PDF page")} ${page + 1}"
-            Canvas(Modifier.fillMaxWidth().height(pageHeight * zoom).clipToBounds().background(Color.White)
+            Canvas(
+                Modifier.fillMaxWidth().height(pageHeight * zoom).clipToBounds()
+                    .background(StructColors.Document.paper)
                 .semantics { contentDescription = description }
                 .transformable(transform, canPan = { zoom > 1f && abs(it.x) > abs(it.y) })
                 .pointerInput(zoom) { detectTapGestures(onDoubleTap = { changeZoom(if (zoom > 1f) 1f else 2f); offsetX = 0f }) }) {

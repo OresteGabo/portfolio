@@ -8,10 +8,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.ui.Alignment
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
@@ -29,10 +25,30 @@ import androidx.compose.ui.semantics.semantics
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
+enum class ChartPeriod(val label: String) {
+    ALL("all"),
+    YEAR("year"),
+    MONTH("month")
+}
+
+enum class StockSection(val label: String) {
+    SHARES("Shares"),
+    BONDS("Bonds");
+
+    override fun toString(): String = label
+}
 @Composable
 private fun CompanyPriceChart(
-    symbol: String, name: String, quote: JsonRecord?, quotes: JsonRecord?, history: JsonRecord?,
-    failed: Boolean, loading: Boolean, period: String, onPeriod: (String) -> Unit, onRetry: () -> Unit,
+    symbol: String,
+    name: String,
+    quote: JsonRecord?,
+    quotes: JsonRecord?,
+    history: JsonRecord?,
+    failed: Boolean,
+    loading: Boolean,
+    period: ChartPeriod = ChartPeriod.ALL,
+    onPeriod: (ChartPeriod) -> Unit,
+    onRetry: () -> Unit,
 ) {
     val observations = stockPriceHistory(history, quotes, symbol, period, Today)
     Panel(Modifier.smoothContentSize()) {
@@ -45,7 +61,7 @@ private fun CompanyPriceChart(
             if (observations.isEmpty()) FinancialText(quote?.let { money(it.optDouble("closing")) } ?: "—",
                 style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         }
-        ChoiceRow(listOf("month", "year", "all"), period, onPeriod)
+        ChoiceRow(ChartPeriod.entries, period, onPeriod)
         Box(Modifier.fillMaxWidth().heightIn(min = 360.dp).clip(MaterialTheme.shapes.medium)) {
             // Decorative identity stays with each pager page, including loading and empty states.
             val logo = investmentLogoResource(symbol)
@@ -60,13 +76,14 @@ private fun CompanyPriceChart(
             }
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 AppLoadingLine(loading, reserveSpace = true)
-                if (observations.isNotEmpty()) AppFadeIn("$symbol/$period") {
+                if (observations.isNotEmpty()) AppFadeIn("$symbol/${period.name.lowercase()}") {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         InvestmentChart(observations.map { it.price }, observations.map { it.date.toString() },
                             notes = observations.map { it.note }, sparse = observations.any { it.contract },
-                            dateRange = if (period == "year") yearlyPriceChartRange(Today) else null)
+                            dateRange = if (period == ChartPeriod.YEAR) yearlyPriceChartRange(Today) else null
+                        )
                         AppText(if (observations.any { it.contract }) "Closes & trades · known dates only"
-                            else "Exchange closes · known dates only",
+                        else "Exchange closes · known dates only",
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         if (history != null && !history.optBoolean("tradeHistoryAvailable")) AppText("Contract prices unavailable",
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -85,9 +102,9 @@ private fun CompanyPriceChart(
 @Composable
 fun StocksScreen(model: PortfolioModel, openShare: (JsonRecord) -> Unit) {
     val reducedMotion = LocalReducedMotion.current
-    var section by rememberSaveable { mutableStateOf("shares") }
+    var section by rememberSaveable { mutableStateOf(StockSection.SHARES) }
     var search by rememberSaveable { mutableStateOf("") }
-    var period by rememberSaveable { mutableStateOf("year") }
+    var period by rememberSaveable { mutableStateOf(ChartPeriod.ALL) } // Default to ALL as requested
     val histories = remember { mutableStateMapOf<String, JsonRecord>() }
     val failedHistories = remember { mutableStateMapOf<String, Boolean>() }
     val loadedRevisions = remember { mutableStateMapOf<String, Int>() }
@@ -98,19 +115,22 @@ fun StocksScreen(model: PortfolioModel, openShare: (JsonRecord) -> Unit) {
     val pager = rememberPagerState(pageCount = { watchlist.size })
     val scope = rememberCoroutineScope()
     val ticker = watchlist[pager.currentPage].first
+
     fun selectCompany(symbol: String) {
         val page = watchlist.indexOfFirst { it.first == symbol }
         if (page >= 0) scope.launch {
             if (reducedMotion) pager.scrollToPage(page) else pager.animateScrollToPage(page)
         }
     }
+
     LaunchedEffect(Unit) { if (model.quotes == null || model.market == null) model.loadMarket() }
+
     // Fetch only the settled company. Captured keys keep rapid swipes from
     // displaying a previous company's response, and cached pages reopen instantly.
     LaunchedEffect(pager.settledPage, period, section, refreshRevision) {
-        if (model.isGuest || section != "shares") return@LaunchedEffect
+        if (model.isGuest || section != StockSection.SHARES) return@LaunchedEffect
         val symbol = watchlist[pager.settledPage].first
-        val selectedPeriod = period
+        val selectedPeriod = period.name.lowercase()
         val key = "$symbol/$selectedPeriod"
         val revision = refreshRevision
         if (histories.containsKey(key) && loadedRevisions[key] == revision) return@LaunchedEffect
@@ -127,43 +147,73 @@ fun StocksScreen(model: PortfolioModel, openShare: (JsonRecord) -> Unit) {
             if (loadingRevisions[key] == revision) loadingRevisions.remove(key)
         }
     }
+
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (model.isGuest) item { DetailNote(if (model.sampleGuest) "Fictional sample records never use real market quotations." else "Market quotes are currently unavailable. Your local portfolio works offline.") }
         item { Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { ChoiceRow(listOf("shares", "bonds"), section) { section = it } }
+            Box(Modifier.weight(1f)) { ChoiceRow(StockSection.entries, section) { section = it } }
             model.quotes?.optJSONObject("source")?.let { source -> AppText(if (source.optBoolean("stale")) "Stale prices" else source.text("publishedAt").take(10), style = MaterialTheme.typography.labelSmall, color = if (source.optBoolean("stale")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant) }
             IconButton(enabled = !model.busy, onClick = { failedHistories.clear(); refreshRevision++; model.loadMarket(true) }) { AppIcon(Icons.Outlined.Refresh, "Refresh prices") }
         } }
-        if (section == "shares") {
+
+        if (section == StockSection.SHARES) {
             if (!model.isGuest) {
-            item {
-                SecondaryScrollableTabRow(selectedTabIndex = pager.currentPage, edgePadding = 0.dp, divider = {}) {
-                    watchlist.forEachIndexed { index, (symbol, _) ->
-                        Tab(selected = pager.currentPage == index, onClick = { selectCompany(symbol) }, text = { AppText(symbol) })
+                item {
+                    SecondaryScrollableTabRow(
+                        selectedTabIndex = pager.currentPage,
+                        edgePadding = 0.dp,
+                        divider = {}) {
+                        watchlist.forEachIndexed { index, (symbol, _) ->
+                            Tab(
+                                selected = pager.currentPage == index,
+                                onClick = { selectCompany(symbol) },
+                                text = { AppText(symbol) })
+                        }
                     }
                 }
-            }
-            item {
-                HorizontalPager(state = pager, key = { watchlist[it].first }, pageSpacing = 12.dp,
-                    verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()) { page ->
-                    val (symbol, name) = watchlist[page]
-                    val key = "$symbol/$period"
-                    CompanyPriceChart(symbol, name, quoteRows.find { it.text("ticker") == symbol }, model.quotes,
-                        histories[key], failedHistories[key] == true,
-                        loading = loadingRevisions.containsKey(key) || histories[key] == null && failedHistories[key] != true, period = period,
-                        onPeriod = { period = it }, onRetry = { failedHistories.remove(key); refreshRevision++ })
-                }
-            }
-            item {
-                Row(Modifier.fillMaxWidth().semantics { contentDescription = localized("Company ${pager.currentPage + 1} of ${watchlist.size}") },
-                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
-                    watchlist.indices.forEach { page ->
-                        Surface(Modifier.size(width = if (page == pager.currentPage) 16.dp else 5.dp, height = 5.dp),
-                            shape = MaterialTheme.shapes.small,
-                            color = if (page == pager.currentPage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant) {}
+                item {
+                    HorizontalPager(
+                        state = pager, key = { watchlist[it].first }, pageSpacing = 12.dp,
+                        verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()
+                    ) { page ->
+                        val (symbol, name) = watchlist[page]
+                        val key = "$symbol/${period.name.lowercase()}"
+                        CompanyPriceChart(
+                            symbol,
+                            name,
+                            quoteRows.find { it.text("ticker") == symbol },
+                            model.quotes,
+                            histories[key],
+                            failedHistories[key] == true,
+                            loading = loadingRevisions.containsKey(key) || histories[key] == null && failedHistories[key] != true,
+                            period = period,
+                            onPeriod = { period = it },
+                            onRetry = { failedHistories.remove(key); refreshRevision++ })
                     }
                 }
-            }
+                item {
+                    Row(
+                        Modifier.fillMaxWidth().semantics {
+                            contentDescription =
+                                localized("Company ${pager.currentPage + 1} of ${watchlist.size}")
+                        },
+                        horizontalArrangement = Arrangement.spacedBy(
+                            6.dp,
+                            Alignment.CenterHorizontally
+                        )
+                    ) {
+                        watchlist.indices.forEach { page ->
+                            Surface(
+                                Modifier.size(
+                                    width = if (page == pager.currentPage) 16.dp else 5.dp,
+                                    height = 5.dp
+                                ),
+                                shape = MaterialTheme.shapes.small,
+                                color = if (page == pager.currentPage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                            ) {}
+                        }
+                    }
+                }
             }
             val positions = model.portfolio.valuedShares(Today, model.quotes)
             item { AppText("Your holdings", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
@@ -211,7 +261,6 @@ fun StocksScreen(model: PortfolioModel, openShare: (JsonRecord) -> Unit) {
         }
     }
 }
-
 @Composable
 fun HistoryGraph(values: List<Double>, title: String = "Saved closing prices") {
     Panel {

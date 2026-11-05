@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.StructColors
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -35,7 +37,8 @@ fun InvestmentLogo(ticker: String = "", bond: Boolean = false, modifier: Modifie
     val symbol = ticker.trim().uppercase()
     val resource = investmentLogoResource(ticker, bond)
     Surface(modifier.size(if (prominent) 76.dp else 44.dp), shape = if (prominent) RoundedCornerShape(16.dp) else CircleShape,
-        color = if (resource != null) Color.White else MaterialTheme.colorScheme.primaryContainer) {
+        color = if (resource != null) StructColors.Document.issuerLogoBacking else MaterialTheme.colorScheme.primaryContainer
+    ) {
         Box(contentAlignment = Alignment.Center) {
             if (resource != null) Image(painterResource(resource), null,
                 Modifier.fillMaxSize().padding(if (prominent) 8.dp else if (compact || bond || symbol in listOf("KCB", "MTNR", "MTN")) 3.dp else 7.dp), contentScale = ContentScale.Fit)

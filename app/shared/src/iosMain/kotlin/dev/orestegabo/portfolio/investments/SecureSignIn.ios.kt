@@ -1,6 +1,9 @@
 @file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.StructColors
+import dev.orestegabo.portfolio.design.uiColor
+
 import androidx.compose.runtime.*
 import kotlinx.cinterop.*
 import kotlinx.coroutines.*
@@ -145,7 +148,7 @@ private class IosSecureSignIn : SecureSignIn {
             val window = UIApplication.sharedApplication.windows.filterIsInstance<UIWindow>().firstOrNull { it.isKeyWindow() }
             if (window != null && cover == null) {
                 cover = UIView(frame = window.bounds).apply {
-                    backgroundColor = UIColor(red = 0.98, green = 0.97, blue = 0.95, alpha = 1.0)
+                    backgroundColor = StructColors.Brand.canvas.uiColor()
                     autoresizingMask = UIViewAutoresizingFlexibleWidth or UIViewAutoresizingFlexibleHeight
                     isAccessibilityElement = true
                     accessibilityLabel = "Gabo"

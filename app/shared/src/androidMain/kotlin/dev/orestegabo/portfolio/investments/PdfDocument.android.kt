@@ -1,7 +1,9 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.StructColors
+import androidx.compose.ui.graphics.toArgb
+
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
@@ -56,7 +58,7 @@ class AndroidPdfDocument(bytes: ByteArray, cache: File) : PdfDocumentPages {
                 val (w, h) = pdfPageRenderSize(width, page.width * region.width, page.height * region.height)
                 val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
                 try {
-                    bitmap.eraseColor(Color.WHITE)
+                    bitmap.eraseColor(StructColors.Document.paper.toArgb())
                     val matrix = Matrix().apply {
                         setScale((w / (page.width * region.width)).toFloat(), (h / (page.height * region.height)).toFloat())
                         postTranslate((-region.left * w / region.width).toFloat(), (-region.top * h / region.height).toFloat())

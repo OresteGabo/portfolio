@@ -17,6 +17,12 @@ The missing transparent reversed variants were derived directly from the SVG mas
 
 ## App integration
 
+Authored runtime colors now live in the shared `dev.orestegabo.portfolio.design` package. Run
+`python3 scripts/sync-design-colors.py` after changing brand colors to update derived Android
+resources and Compose mark colors. See [the color-system guide](../docs/design/COLORS.md). Source
+artwork and raster exports remain separate assets and require their own regeneration for a visual
+rebrand.
+
 `StructBrand.kt` uses portable Compose XML vectors (`struct_mark_light.xml` / `struct_mark_dark.xml`) generated from the supplied symbol paths. It selects contrast from the active app theme; fixed light surfaces request the olive version explicitly. Sign-in, unlock, navigation, dashboard and privacy cover use the same mark.
 
 Android adaptive launchers center the mark in the safe area on olive. Android 13+ also includes a monochrome themed launcher; price notifications use the white symbol as their small icon. iOS includes light and dark 1024px launcher assets.

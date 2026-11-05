@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.StructColors
+
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -240,7 +242,8 @@ private fun DocumentCard(model: PortfolioModel, document: JsonRecord, expanded: 
     val logo = remember(document) { documentInvestmentLogo(document) }
     val shares = category.contains("share", true) || category.contains("equity", true) || (logo != null && !logo.bond)
     val dark = colours.surface.luminance() < .5f
-    val accent = if (shares) (if (dark) Color(0xFF9CCBBA) else Color(0xFF397562)) else colours.primary
+    val accent =
+        if (shares) (StructColors.Financial.shareDocument.resolve(dark)) else colours.primary
     val title = if (generated) "${localized("Annual report")} · $annualYear" else document.text("label").ifBlank { document.text("originalFileName").ifBlank { "PDF" } }
     val date = calendarDate(document.text("documentDate"))
     val detailsDescription = "${localized("Details")}: ${privateFinancialValue(title)}"

@@ -1,6 +1,9 @@
 @file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlinx.cinterop.BetaInteropApi::class)
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.StructColors
+import dev.orestegabo.portfolio.design.uiColor
+
 import kotlinx.cinterop.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
@@ -119,7 +122,7 @@ class IosInvestmentEngine : InvestmentEngine {
         val renderer = UIGraphicsImageRenderer(size = CGSizeMake(dimensions.first * scale, dimensions.second * scale), format = format)
         val image = renderer.imageWithActions { output ->
             val cg = output!!.CGContext
-            UIColor.whiteColor.setFill()
+            StructColors.Document.paper.uiColor().setFill()
             CGContextFillRect(cg, CGRectMake(0.0, 0.0, dimensions.first * scale, dimensions.second * scale))
             CGContextTranslateCTM(cg, 0.0, dimensions.second * scale)
             CGContextScaleCTM(cg, scale, -scale)

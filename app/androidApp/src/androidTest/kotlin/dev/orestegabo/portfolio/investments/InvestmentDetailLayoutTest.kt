@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.structCapitalColorScheme
+
 import android.graphics.Rect
 import android.view.MotionEvent
 import android.view.WindowManager
@@ -157,7 +159,9 @@ class InvestmentDetailLayoutTest {
                                         contentColor = MaterialTheme.colorScheme.onBackground,
                                         topBar = { TopAppBar(title = { AppText(if (share.value) "Share details" else "Bond details") },
                                             colors = TopAppBarDefaults.topAppBarColors(containerColor = androidx.compose.ui.graphics.Color.Transparent)) }) { padding ->
-                                        Box(Modifier.fillMaxSize().padding(padding)) { key(composition.intValue) {
+                                        Box(Modifier
+                                            .fillMaxSize()
+                                            .padding(padding)) { key(composition.intValue) {
                                             if (share.value) ShareDetailsScreen(model, JsonRecord().put("ticker", ticker).put("currency", "RWF"))
                                             else BondDetailsScreen(model, bond, engine, {}, {}, { edits.incrementAndGet() })
                                         } }

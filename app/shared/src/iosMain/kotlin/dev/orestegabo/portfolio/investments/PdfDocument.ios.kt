@@ -1,10 +1,14 @@
 @file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.StructColors
+import dev.orestegabo.portfolio.design.uiColor
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
+import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.useContents
 import kotlinx.cinterop.autoreleasepool
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +35,8 @@ internal class IosPdfDocument(bytes: ByteArray) : PdfDocumentPages {
         require(!pdf.isLocked() && pdf.pageCount in 1uL..500uL)
         pageCount = pdf.pageCount.toInt()
     }
+
+    @OptIn(BetaInteropApi::class)
     override suspend fun renderPage(index: Int, width: Int, region: PdfPageRegion): ImageBitmap = withContext(Dispatchers.Default) { autoreleasepool {
         lock.lock()
         try {
@@ -47,7 +53,7 @@ internal class IosPdfDocument(bytes: ByteArray) : PdfDocumentPages {
             val thumbnail = renderer.imageWithActions { output ->
                 val context = output!!.CGContext
                 val target = CGRectMake(0.0, 0.0, w.toDouble(), h.toDouble())
-                UIColor.whiteColor.setFill()
+                StructColors.Document.paper.uiColor().setFill()
                 CGContextFillRect(context, target)
                 CGContextTranslateCTM(context, 0.0, h.toDouble())
                 CGContextScaleCTM(context, 1.0, -1.0)

@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio
 
+import dev.orestegabo.portfolio.design.StructColors
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
@@ -56,7 +58,10 @@ fun App() {
         CaptureBackdropHost(enabled = model.captureProtectionEnabled) {
             Box(Modifier.fillMaxSize()) {
                 Box(if (privacyCover) Modifier.semantics { hideFromAccessibility() } else Modifier) { InvestmentApp(model) }
-                if (privacyCover) Surface(Modifier.fillMaxSize(), color = Color(0xFFFAF8F2)) {
+                if (privacyCover) Surface(
+                    Modifier.fillMaxSize(),
+                    color = StructColors.Brand.canvas
+                ) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { StructMark(Modifier.size(64.dp), onDark = false) }
                 }
             }

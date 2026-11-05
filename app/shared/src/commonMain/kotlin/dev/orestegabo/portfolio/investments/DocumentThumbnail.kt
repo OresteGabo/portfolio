@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.StructColors
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -97,7 +99,7 @@ internal fun DocumentThumbnail(model: PortfolioModel, document: JsonRecord, titl
     @Composable fun preview() {
         val bitmap = image
         if (hidden || bitmap == null) placeholder()
-        else Box(Modifier.fillMaxSize().background(Color.White)) {
+        else Box(Modifier.fillMaxSize().background(StructColors.Document.paper)) {
             Image(bitmap, "${localized("PDF preview")}: ${privateFinancialValue(title)}", Modifier.fillMaxSize(),
                 contentScale = ContentScale.FillWidth, alignment = Alignment.TopCenter)
         }
@@ -105,7 +107,8 @@ internal fun DocumentThumbnail(model: PortfolioModel, document: JsonRecord, titl
     Box(Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp).drawWithCache {
         val depth = 6.dp.toPx()
         val inset = 13.dp.toPx()
-        val shadow = Brush.verticalGradient(listOf(Color.Black.copy(alpha = .14f), Color.Transparent),
+        val shadow = Brush.verticalGradient(
+            listOf(StructColors.Document.thumbnailShadow.copy(alpha = .14f), Color.Transparent),
             startY = size.height, endY = size.height + depth)
         onDrawBehind {
             // Confine the shadow below the paper; never outline its top or sides.

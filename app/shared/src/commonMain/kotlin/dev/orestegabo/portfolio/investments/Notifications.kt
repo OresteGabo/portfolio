@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.StructColors
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -91,7 +93,8 @@ fun NotificationsScreen(model: PortfolioModel, openPortfolio: () -> Unit, openNo
             }
             var expanded by rememberSaveable(item.text("id")) { mutableStateOf(false) }
             val up=item.optDouble("impact")>=0
-            val color=if(up) androidx.compose.ui.graphics.Color(0xFF32845B) else MaterialTheme.colorScheme.error
+            val color =
+                if (up) StructColors.Financial.notificationGain else MaterialTheme.colorScheme.error
             Card(onClick={ expanded=!expanded;if(expanded)model.readNotification(item.text("id")) },
                 colors=CardDefaults.cardColors(containerColor=if(item.optBoolean("read")) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.secondaryContainer)) {
                 Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
@@ -113,7 +116,10 @@ fun NotificationsScreen(model: PortfolioModel, openPortfolio: () -> Unit, openNo
                         AppText(localized("Compared with {0}").replace("{0}",item.text("previousDate")),style=MaterialTheme.typography.labelSmall)
                         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
                             AppText("Estimated total gain/loss",style=MaterialTheme.typography.bodySmall)
-                            FinancialText(money(item.optDouble("totalGain")),color=if(item.optDouble("totalGain")>=0) androidx.compose.ui.graphics.Color(0xFF32845B) else MaterialTheme.colorScheme.error)
+                            FinancialText(
+                                money(item.optDouble("totalGain")),
+                                color = if (item.optDouble("totalGain") >= 0) StructColors.Financial.notificationGain else MaterialTheme.colorScheme.error
+                            )
                         }
                         AppText("Based on your holdings at this market date. Unrealised, before selling costs.",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
                     }

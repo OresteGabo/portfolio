@@ -5,6 +5,7 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
 
@@ -14,7 +15,7 @@ internal fun yearlyPriceChartRange(today: LocalDate) = (today - DatePeriod(years
 
 internal fun chartMonthTicks(range: ClosedRange<LocalDate>): List<Pair<LocalDate, String>> {
     val names = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-    var month = LocalDate(range.start.year, range.start.monthNumber, 1)
+    var month = LocalDate(range.start.year, range.start.month.number, 1)
     if (month < range.start) month += DatePeriod(months = 1)
     return buildList {
         while (month <= range.endInclusive) {
@@ -25,10 +26,16 @@ internal fun chartMonthTicks(range: ClosedRange<LocalDate>): List<Pair<LocalDate
 }
 
 /** Only actual dated observations. Contracts never replace an official close on the same day. */
-internal fun stockPriceHistory(history: JsonRecord?, quotes: JsonRecord?, ticker: String, period: String, today: LocalDate): List<StockPricePoint> {
+internal fun stockPriceHistory(
+    history: JsonRecord?,
+    quotes: JsonRecord?,
+    ticker: String,
+    period: ChartPeriod,
+    today: LocalDate
+): List<StockPricePoint> {
     val start = when (period) {
-        "month" -> today - DatePeriod(months = 1)
-        "year" -> yearlyPriceChartRange(today).start
+        ChartPeriod.MONTH -> today - DatePeriod(months = 1)
+        ChartPeriod.YEAR -> yearlyPriceChartRange(today).start
         else -> LocalDate(1900, 1, 1)
     }
     val points = mutableMapOf<LocalDate, StockPricePoint>()

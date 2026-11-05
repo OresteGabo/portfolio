@@ -50,7 +50,7 @@ internal fun annualReportScope(data: PortfolioReportData, year: Int): AnnualRepo
 
 /** Last official exchange close within this calendar year; never a future quote or a contract price. */
 internal fun annualClosingPrice(history: JsonRecord?, quotes: JsonRecord?, ticker: String, scope: AnnualReportScope): StockPricePoint? =
-    stockPriceHistory(history, quotes, ticker, "all", scope.cutoff)
+    stockPriceHistory(history, quotes, ticker, ChartPeriod.ALL, scope.cutoff)
         .lastOrNull { !it.contract && it.date >= scope.start }
 
 internal fun generateAnnualReport(data: PortfolioReportData, year: Int, histories: Map<String, JsonRecord> = emptyMap()): ByteArray {

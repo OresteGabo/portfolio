@@ -15,24 +15,44 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun InvestmentHistoryScreen(model: PortfolioModel, openShare: (JsonRecord) -> Unit, detail: (JsonRecord) -> Unit) {
-    var kind by rememberSaveable { mutableStateOf("all") }
+    var kind by rememberSaveable { mutableStateOf(InvestmentKind.ALL) }
     var search by rememberSaveable { mutableStateOf("") }
     var year by rememberSaveable { mutableStateOf("all") }
+
     LaunchedEffect(model.historyComplete, model.busy) {
         if (!model.historyComplete && !model.busy && model.error == null) model.loadInvestmentHistory()
     }
+
     val years = (model.purchases.map { it.text("purchaseDate").take(4) } + model.holdings.map { it.text("tradeDate").take(4) })
         .filter { it.toIntOrNull() != null }.distinct().sortedDescending()
+
     fun matches(row: JsonRecord, dateKey: String, nameKey: String) =
         (year == "all" || row.text(dateKey).startsWith(year)) &&
-            listOf(nameKey, "ticker", "isin", "broker").any { row.text(it).contains(search, true) }
-    val bonds = if (kind == "shares") emptyList() else model.purchases.filter { matches(it, "purchaseDate", "bondName") }
+                listOf(nameKey, "ticker", "isin", "broker").any {
+                    row.text(it).contains(search, true)
+                }
+
+    val bonds = if (kind == InvestmentKind.SHARES) emptyList() else model.purchases.filter {
+        matches(
+            it,
+            "purchaseDate",
+            "bondName"
+        )
+    }
         .sortedByDescending { it.text("purchaseDate") }
-    val shares = if (kind == "bonds") emptyList() else model.holdings.filter { matches(it, "tradeDate", "securityName") }
+
+    val shares = if (kind == InvestmentKind.BONDS) emptyList() else model.holdings.filter {
+        matches(
+            it,
+            "tradeDate",
+            "securityName"
+        )
+    }
         .sortedByDescending { it.text("tradeDate") }
+
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { ChoiceRow(listOf("all", "shares", "bonds"), kind) { kind = it } }
+            Box(Modifier.weight(1f)) { ChoiceRow(InvestmentKind.entries, kind) { kind = it } }
             IconButton(enabled = !model.busy, onClick = { model.loadInvestmentHistory(force = true) }) { AppIcon(Icons.Outlined.Refresh, "Refresh investment history") }
         } }
         if (!model.historyComplete) item {
@@ -45,7 +65,10 @@ fun InvestmentHistoryScreen(model: PortfolioModel, openShare: (JsonRecord) -> Un
             if (bonds.isEmpty() && shares.isEmpty()) item {
                 EmptyState("No investments found", EmptyArtwork.SEARCH, compact = true,
                     actionLabel = if (search.isNotBlank() || year != "all") "Clear filters" else null,
-                    onAction = if (search.isNotBlank() || year != "all") ({ search = ""; year = "all"; kind = "all" }) else null)
+                    onAction = if (search.isNotBlank() || year != "all") ({
+                        search = ""; year = "all"; kind = InvestmentKind.ALL
+                    }) else null
+                )
             }
             if (bonds.isNotEmpty()) item { AppText("Bonds", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold) }
             items(bonds, key = { "bond:${it.text("id")}" }) { BondPurchaseTile(model, it) { detail(it) } }

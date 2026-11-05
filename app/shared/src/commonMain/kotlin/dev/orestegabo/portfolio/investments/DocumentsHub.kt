@@ -15,6 +15,7 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -23,6 +24,57 @@ import androidx.compose.ui.unit.dp
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
+
+@Composable
+fun ChatActionRow(
+    actions: List<ChatActionItem>,
+    modifier: Modifier = Modifier
+) {
+    if (actions.isEmpty()) return
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        actions.forEach { action ->
+            Surface(
+                onClick = action.onClick,
+                enabled = action.enabled,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = action.icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    AppText(
+                        text = action.label,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+    }
+}
+
+data class ChatActionItem(
+    val label: String,
+    val icon: ImageVector,
+    val enabled: Boolean = true,
+    val onClick: () -> Unit
+)
 
 @Composable
 internal fun DocumentHeader(section: String, account: String) {
@@ -40,9 +92,19 @@ internal fun DocumentHeader(section: String, account: String) {
 
 @Composable
 internal fun DocumentsHub(model: PortfolioModel, engine: InvestmentEngine, review: JsonRecord?, target: JsonRecord?,
-    section: String, changeSection: (String) -> Unit, showHint: Boolean, dismissHint: () -> Unit, beginImport: () -> Unit, reviewed: (JsonRecord) -> Unit, done: () -> Unit,
-    openPurchase: (String) -> Unit, openMissing: () -> Unit,
-    openBond: (JsonRecord) -> Unit = {}, openShare: (JsonRecord) -> Unit = {}, openDetails: (JsonRecord) -> Unit = {}) {
+                          section: String,
+                          changeSection: (String) -> Unit,
+                          showHint: Boolean,
+                          dismissHint: () -> Unit,
+                          beginImport: () -> Unit,
+                          reviewed: (JsonRecord) -> Unit,
+                          done: () -> Unit,
+                          openPurchase: (String) -> Unit,
+                          openMissing: () -> Unit,
+                          openBond: (JsonRecord) -> Unit = {},
+                          openShare: (JsonRecord) -> Unit = {},
+                          openDetails: (JsonRecord) -> Unit = {}
+) {
     val account = model.user?.text("id").orEmpty()
     var focusDocument by rememberSaveable(account) { mutableStateOf<String?>(null) }
     var pendingDocument by rememberSaveable(account) { mutableStateOf<String?>(null) }
@@ -82,8 +144,15 @@ internal fun DocumentsHub(model: PortfolioModel, engine: InvestmentEngine, revie
 
 @Composable
 private fun ImportConversation(model: PortfolioModel, engine: InvestmentEngine, review: JsonRecord?, target: JsonRecord?,
-    beginImport: () -> Unit, reviewed: (JsonRecord) -> Unit, done: () -> Unit,
-    showHint: Boolean, dismissHint: () -> Unit, openDocument: (String) -> Unit, openPurchase: (String) -> Unit, openMissing: () -> Unit) {
+                               beginImport: () -> Unit,
+                               reviewed: (JsonRecord) -> Unit,
+                               done: () -> Unit,
+                               showHint: Boolean,
+                               dismissHint: () -> Unit,
+                               openDocument: (String) -> Unit,
+                               openPurchase: (String) -> Unit,
+                               openMissing: () -> Unit
+) {
     val entries = model.importHistory
     val scroll = rememberLazyListState()
     val actions = LocalNativeActions.current
@@ -93,7 +162,6 @@ private fun ImportConversation(model: PortfolioModel, engine: InvestmentEngine, 
     LaunchedEffect(entries.size, active, activeEntry?.state) {
         if (entries.isNotEmpty()) {
             val index = entries.indexOfFirst { it.id == active }.takeIf { it >= 0 } ?: entries.lastIndex
-            // The reading card is short. Scroll again when it grows into review or a final receipt.
             scroll.animateScrollToItem(index)
         }
     }
@@ -191,9 +259,45 @@ private fun ImportConversation(model: PortfolioModel, engine: InvestmentEngine, 
                                         }, style = MaterialTheme.typography.bodySmall)
                                     }
                                 }
-                                if (entry.documentId.isNotBlank()) TextButton(enabled = !model.busy, onClick = { openDocument(entry.documentId) }) { AppText("Open document") }
-                                if (entry.purchaseId.isNotBlank() && entry.kind in listOf("bond", "bond-issuance"))
-                                    TextButton(enabled = !model.busy, onClick = { openPurchase(entry.purchaseId) }) { AppText("View purchase") }
+
+                                // Tonal Action Pills
+                                val chatActions = remember(
+                                    entry.documentId,
+                                    entry.purchaseId,
+                                    entry.kind,
+                                    model.busy
+                                ) {
+                                    buildList {
+                                        if (entry.documentId.isNotBlank()) {
+                                            add(
+                                                ChatActionItem(
+                                                    label = "Open document",
+                                                    icon = Icons.Outlined.Description,
+                                                    enabled = !model.busy,
+                                                    onClick = { openDocument(entry.documentId) }
+                                                )
+                                            )
+                                        }
+                                        if (entry.purchaseId.isNotBlank() && entry.kind in listOf(
+                                                "bond",
+                                                "bond-issuance"
+                                            )
+                                        ) {
+                                            add(
+                                                ChatActionItem(
+                                                    label = "View purchase",
+                                                    icon = Icons.Outlined.ReceiptLong,
+                                                    enabled = !model.busy,
+                                                    onClick = { openPurchase(entry.purchaseId) }
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                                if (chatActions.isNotEmpty()) {
+                                    Spacer(Modifier.height(4.dp))
+                                    ChatActionRow(actions = chatActions)
+                                }
                             }
                         }
                     }

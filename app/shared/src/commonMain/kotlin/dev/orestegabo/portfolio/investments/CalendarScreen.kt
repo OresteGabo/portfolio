@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.StructColors
+
 import androidx.compose.animation.*
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
@@ -252,8 +254,8 @@ private fun SubscriptionTodayCard(ranges: List<CalendarSubscriptionRange>, today
 private fun SubscriptionStatusBadge(status: SubscriptionStatus) {
     val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
     val color = when (status) {
-        SubscriptionStatus.OPEN -> if (dark) Color(0xFF8DDBB7) else Color(0xFF22705D)
-        SubscriptionStatus.CLOSING_TODAY -> if (dark) Color(0xFFFFD180) else Color(0xFF875000)
+        SubscriptionStatus.OPEN -> StructColors.Calendar.open.resolve(dark)
+        SubscriptionStatus.CLOSING_TODAY -> StructColors.Calendar.closingToday.resolve(dark)
         SubscriptionStatus.UPCOMING -> MaterialTheme.colorScheme.primary
         SubscriptionStatus.CLOSED -> MaterialTheme.colorScheme.onSurfaceVariant
     }
@@ -421,8 +423,8 @@ private fun CalendarEventTile(event: InvestmentCalendarEvent, expanded: Boolean,
 
 @Composable private fun CalendarCategory.color(): Color = when (this) {
     CalendarCategory.ISSUANCE -> MaterialTheme.colorScheme.primary
-    CalendarCategory.COUPON -> if (MaterialTheme.colorScheme.surface.luminance() < .5f) Color(0xFF9DCBFD) else Color(0xFF246C9F)
-    CalendarCategory.MATURITY -> if (MaterialTheme.colorScheme.surface.luminance() < .5f) Color(0xFF8DDBB7) else Color(0xFF22705D)
+    CalendarCategory.COUPON -> StructColors.Calendar.coupon.resolve(MaterialTheme.colorScheme.surface.luminance() < .5f)
+    CalendarCategory.MATURITY -> StructColors.Calendar.maturity.resolve(MaterialTheme.colorScheme.surface.luminance() < .5f)
 }
 @Composable private fun EventDot(color: Color, size: Int = 6) {
     Canvas(Modifier.size(size.dp)) { drawCircle(color) }

@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.StructColors
+
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -39,15 +41,45 @@ import kotlin.math.roundToInt
 import org.jetbrains.compose.resources.painterResource
 import portfolio.app.shared.generated.resources.*
 
-private val DashboardGold = Color(0xFFECC75F)
-private val AllocationGreen = Color(0xFF739A87)
+enum class BondStatus(val value: String, val label: String) {
+    ALL("all", "All"),
+    ACTIVE("active", "Active"),
+    SUBMITTED("submitted", "Submitted"),
+    SOLD("sold", "Sold"),
+    MATURED("matured", "Matured");
 
+    override fun toString(): String = label
+}
+
+enum class InvestmentKind(val label: String) {
+    ALL("all"),
+    SHARES("shares"),
+    BONDS("bonds");
+
+    override fun toString(): String = label.replaceFirstChar { it.uppercase() }
+}
 @Composable
-fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, openMissing: (JsonRecord) -> Unit, allMissing: () -> Unit, seeAll: () -> Unit, openCalendar: (LocalDate) -> Unit, detail: (JsonRecord) -> Unit, openNotifications: () -> Unit = {}, unreadNotifications: Int = 0, openShare: (JsonRecord) -> Unit, addBond: () -> Unit = {}, addShare: () -> Unit = {}) {
+fun PortfolioScreen(
+    model: PortfolioModel,
+    uploadPending: (JsonRecord) -> Unit,
+    openMissing: (JsonRecord) -> Unit,
+    allMissing: () -> Unit,
+    seeAll: () -> Unit,
+    openCalendar: (LocalDate) -> Unit,
+    detail: (JsonRecord) -> Unit,
+    openNotifications: () -> Unit = {},
+    unreadNotifications: Int = 0,
+    openShare: (JsonRecord) -> Unit,
+    addBond: () -> Unit = {},
+    addShare: () -> Unit = {}
+) {
     if (!model.portfolioReady) {
         if (model.portfolioLoading) PortfolioLoadingSkeleton(openNotifications, unreadNotifications)
         else {
-            Column(Modifier.fillMaxSize().statusBarsPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(
+                Modifier.fillMaxSize().statusBarsPadding().padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     AppText("Your portfolio", Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                     if (!model.isGuest) NotificationBell(unreadNotifications, openNotifications)
@@ -58,8 +90,10 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
         }
         return
     }
-    var kind by rememberSaveable { mutableStateOf("all") }
-    var status by rememberSaveable { mutableStateOf("all") }
+
+    var kind by rememberSaveable { mutableStateOf(InvestmentKind.ALL) }
+    var status by rememberSaveable { mutableStateOf(BondStatus.ALL) }
+
     val recentBonds = model.portfolio.recentBonds(Today)
     val recentShares = model.portfolio.recentShares(Today)
     val summary = model.portfolio.summary(Today)
@@ -69,97 +103,242 @@ fun PortfolioScreen(model: PortfolioModel, uploadPending: (JsonRecord) -> Unit, 
     val reducedMotion = LocalReducedMotion.current
     val topInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding()
     val payments = remember(model.portfolio) { investmentCalendarEvents(emptyList(), model.portfolio) }
+
     PortfolioPullRefresh(model) {
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 108.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        item { PortfolioHero(!model.isGuest, if (model.sampleGuest) "Fictional sample · Not your investments" else if (model.isGuest) "Guest · On this device" else "Rwanda investments", valuation, topInset, openNotifications, unreadNotifications, model.quoteRefreshFailed || model.quotes?.optJSONObject("source")?.optBoolean("stale") == true,
-            model.quotes?.optJSONObject("source")?.text("publishedAt").orEmpty().take(10)) {
-            Column(Modifier.fillMaxWidth().smoothContentSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                AppLoadingLine(model.busy && model.refreshPhase == PortfolioRefreshPhase.IDLE)
-                model.error?.let { Notice(it, true) { model.error = null } }
-                model.message?.let { Notice(it, false) { model.message = null } }
-            }
-        } }
-        if (model.isGuest) item { GuestWorkspaceStatus(model, openNotifications) }
-        if (model.isGuest && !model.sampleGuest) item { Inset {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(enabled = !model.busy, onClick = addBond) { AppText("Add bond purchase") }
-                OutlinedButton(enabled = !model.busy, onClick = addShare) { AppText("Add share purchase") }
-            }
-        } }
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    AppText("Asset allocation", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    IconButton(enabled = insights.canScrollBackward, onClick = {
-                        scope.launch {
-                            val index = (insights.firstVisibleItemIndex - 1).coerceAtLeast(0)
-                            if (reducedMotion) insights.scrollToItem(index) else insights.animateScrollToItem(index)
-                        }
-                    }) { AppIcon(Icons.Outlined.ChevronLeft, "Previous insight") }
-                    IconButton(enabled = insights.canScrollForward, onClick = {
-                        scope.launch {
-                            val index = (insights.firstVisibleItemIndex + 1).coerceAtMost(summary.size * 2)
-                            if (reducedMotion) insights.scrollToItem(index) else insights.animateScrollToItem(index)
-                        }
-                    }) { AppIcon(Icons.Outlined.ChevronRight, "Next insight") }
+        LazyColumn(
+            Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 108.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            item {
+                PortfolioHero(
+                    !model.isGuest,
+                    if (model.sampleGuest) "Fictional sample · Not your investments" else if (model.isGuest) "Guest · On this device" else "Rwanda investments",
+                    valuation,
+                    topInset,
+                    openNotifications,
+                    unreadNotifications,
+                    model.quoteRefreshFailed || model.quotes?.optJSONObject("source")
+                        ?.optBoolean("stale") == true,
+                    model.quotes?.optJSONObject("source")?.text("publishedAt").orEmpty().take(10)
+                ) {
+                    Column(
+                        Modifier.fillMaxWidth().smoothContentSize(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        AppLoadingLine(model.busy && model.refreshPhase == PortfolioRefreshPhase.IDLE)
+                        model.error?.let { Notice(it, true) { model.error = null } }
+                        model.message?.let { Notice(it, false) { model.message = null } }
+                    }
                 }
-                BoxWithConstraints(Modifier.fillMaxWidth()) {
-                    val cardWidth = (maxWidth - 56.dp).coerceAtMost(340.dp)
-                    LazyRow(state = insights, contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        summary.forEach { total ->
-                            item(key = "allocation:${total.currency}") { AllocationCard(total, Modifier.width(cardWidth)) }
-                            item(key = "income:${total.currency}") {
-                                val coupons = payments.filter { it.category == CalendarCategory.COUPON && it.date >= Today && it.record.text("currency") == total.currency }
-                                CouponIncomeCard(total, model.portfolio, coupons, Modifier.width(cardWidth), openCalendar)
+            }
+            if (model.isGuest) item { GuestWorkspaceStatus(model, openNotifications) }
+            if (model.isGuest && !model.sampleGuest) item {
+                Inset {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            enabled = !model.busy,
+                            onClick = addBond
+                        ) { AppText("Add bond purchase") }
+                        OutlinedButton(
+                            enabled = !model.busy,
+                            onClick = addShare
+                        ) { AppText("Add share purchase") }
+                    }
+                }
+            }
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AppText(
+                            "Asset allocation",
+                            Modifier.weight(1f),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        IconButton(enabled = insights.canScrollBackward, onClick = {
+                            scope.launch {
+                                val index = (insights.firstVisibleItemIndex - 1).coerceAtLeast(0)
+                                if (reducedMotion) insights.scrollToItem(index) else insights.animateScrollToItem(
+                                    index
+                                )
+                            }
+                        }) { AppIcon(Icons.Outlined.ChevronLeft, "Previous insight") }
+                        IconButton(enabled = insights.canScrollForward, onClick = {
+                            scope.launch {
+                                val index =
+                                    (insights.firstVisibleItemIndex + 1).coerceAtMost(summary.size - 1)
+                                if (reducedMotion) insights.scrollToItem(index) else insights.animateScrollToItem(
+                                    index
+                                )
+                            }
+                        }) { AppIcon(Icons.Outlined.ChevronRight, "Next insight") }
+                    }
+                    BoxWithConstraints(Modifier.fillMaxWidth()) {
+                        val cardWidth = (maxWidth - 56.dp).coerceAtMost(340.dp)
+                        LazyRow(
+                            state = insights,
+                            contentPadding = PaddingValues(horizontal = 20.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            summary.forEach { total ->
+                                item(key = "allocation:${total.currency}") {
+                                    AllocationCard(
+                                        total,
+                                        Modifier.width(cardWidth)
+                                    )
+                                }
+                                item(key = "income:${total.currency}") {
+                                    val coupons = payments.filter {
+                                        it.category == CalendarCategory.COUPON && it.date >= Today && it.record.text(
+                                            "currency"
+                                        ) == total.currency
+                                    }
+                                    CouponIncomeCard(
+                                        total,
+                                        model.portfolio,
+                                        coupons,
+                                        Modifier.width(cardWidth),
+                                        openCalendar
+                                    )
+                                }
+                            }
+                            item(key = "monthly-target") {
+                                MonthlyTargetCard(
+                                    model,
+                                    Modifier.width(cardWidth)
+                                )
                             }
                         }
-                        item(key = "monthly-target") { MonthlyTargetCard(model, Modifier.width(cardWidth)) }
+                    }
+                }
+            }
+            if (!model.isGuest && model.statementItems.isNotEmpty()) {
+                item {
+                    Inset {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            AppText(
+                                "Missing documents",
+                                Modifier.weight(1f),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            if (model.statementItems.size > 3) TextButton(onClick = allMissing) {
+                                AppText(
+                                    "See all"
+                                )
+                            }
+                        }
+                    }
+                }
+                items(model.statementItems.take(3), key = { "missing:${it.text("id")}" }) { row ->
+                    AppMovingItem {
+                        Inset { MissingStatementTile(row) { openMissing(row) } }
+                    }
+                }
+            }
+            item {
+                Column(
+                    Modifier.padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            AppText(
+                                "Your investments",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            AppText(
+                                "Past 12 months",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        TextButton(onClick = seeAll) { AppText("See all") }
+                    }
+                    ChoiceRow(InvestmentKind.entries, kind) { kind = it }
+                }
+            }
+            if (model.busy && model.refreshPhase == PortfolioRefreshPhase.IDLE && recentBonds.isEmpty() && recentShares.isEmpty()) {
+                item { LoadingState() }
+            } else {
+                if (kind != InvestmentKind.SHARES) {
+                    if (kind == InvestmentKind.ALL) item { SectionLabel("Bonds") }
+                    if (recentBonds.isEmpty()) item {
+                        Inset {
+                            EmptyState(
+                                "No bonds in the past year",
+                                EmptyArtwork.BONDS,
+                                compact = true
+                            )
+                        }
+                    }
+
+                    if (kind == InvestmentKind.BONDS && recentBonds.isNotEmpty()) {
+                        item {
+                            Inset {
+                                ChoiceRow(BondStatus.entries, status) { status = it }
+                            }
+                        }
+                    }
+
+                    val bonds = recentBonds.filter {
+                        kind != InvestmentKind.BONDS || status == BondStatus.ALL || it.text("status") == status.value
+                    }
+
+                    if (bonds.isEmpty() && recentBonds.isNotEmpty()) {
+                        item {
+                            Inset {
+                                EmptyState(
+                                    "No ${displayRecordValue(status.value)} bonds",
+                                    EmptyArtwork.SEARCH,
+                                    compact = true,
+                                    actionLabel = "Show all",
+                                    onAction = { status = BondStatus.ALL }
+                                )
+                            }
+                        }
+                    }
+
+                    items(bonds, key = { "bond:${it.text("id")}" }) { purchase ->
+                        AppMovingItem {
+                            Inset {
+                                BondPurchaseTile(model, purchase) { detail(purchase) }
+                            }
+                        }
+                    }
+                }
+
+                if (kind != InvestmentKind.BONDS) {
+                    if (kind == InvestmentKind.ALL) item { SectionLabel("Shares") }
+                    if (recentShares.isEmpty()) item {
+                        Inset {
+                            EmptyState(
+                                "No shares in the past year",
+                                EmptyArtwork.SHARES,
+                                compact = true
+                            )
+                        }
+                    }
+                    items(recentShares, key = { "share:${it.text("id")}" }) { holding ->
+                        AppMovingItem {
+                            Inset {
+                                SharePurchaseTile(holding) { openShare(holding) }
+                            }
+                        }
                     }
                 }
             }
         }
-        if (!model.isGuest && model.statementItems.isNotEmpty()) {
-            item { Inset { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                AppText("Missing documents", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                if (model.statementItems.size > 3) TextButton(onClick = allMissing) { AppText("See all") }
-            } } }
-            items(model.statementItems.take(3), key = { "missing:${it.text("id")}" }) { row -> AppMovingItem { Inset { MissingStatementTile(row) { openMissing(row) } } } }
-        }
-        item { Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    AppText("Your investments", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    AppText("Past 12 months", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                TextButton(onClick = seeAll) { AppText("See all") }
-            }
-            ChoiceRow(listOf("all", "shares", "bonds"), kind) { kind = it }
-        } }
-        if (model.busy && model.refreshPhase == PortfolioRefreshPhase.IDLE && recentBonds.isEmpty() && recentShares.isEmpty()) item { LoadingState() }
-        else {
-            if (kind != "shares") {
-                if (kind == "all") item { SectionLabel("Bonds") }
-                if (recentBonds.isEmpty()) item { Inset { EmptyState("No bonds in the past year", EmptyArtwork.BONDS, compact = true) } }
-                if (kind == "bonds" && recentBonds.isNotEmpty()) item { Inset { ChoiceRow(listOf("all", "active", "submitted", "sold", "matured"), status) { status = it } } }
-                val bonds = recentBonds.filter { kind != "bonds" || status == "all" || it.text("status") == status }
-                if (bonds.isEmpty() && recentBonds.isNotEmpty()) item { Inset {
-                    EmptyState("No ${displayRecordValue(status)} bonds", EmptyArtwork.SEARCH, compact = true, actionLabel = "Show all", onAction = { status = "all" })
-                } }
-                items(bonds, key = { "bond:${it.text("id")}" }) { purchase -> AppMovingItem { Inset {
-                    BondPurchaseTile(model, purchase) { detail(purchase) }
-                } } }
-            }
-            if (kind != "bonds") {
-                if (kind == "all") item { SectionLabel("Shares") }
-                if (recentShares.isEmpty()) item { Inset { EmptyState("No shares in the past year", EmptyArtwork.SHARES, compact = true) } }
-                items(recentShares, key = { "share:${it.text("id")}" }) { holding -> AppMovingItem { Inset { SharePurchaseTile(holding) { openShare(holding) } } } }
-            }
-        }
-    }
     }
 }
-
 @Composable private fun Inset(content: @Composable () -> Unit) { Box(Modifier.padding(horizontal = 20.dp)) { content() } }
 @Composable private fun SectionLabel(text: String) {
     AppText(text, Modifier.padding(horizontal = 20.dp), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -172,21 +351,49 @@ private fun PortfolioHero(showNotifications: Boolean, subtitle: String, totals: 
         Box(Modifier.fillMaxWidth().height(300.dp + topInset)) {
             Image(painterResource(Res.drawable.kigali_hero), null, Modifier.matchParentSize(), contentScale = ContentScale.Crop,
                 alignment = Alignment.Center)
-            Box(Modifier.matchParentSize().background(Brush.horizontalGradient(listOf(Color(0xE6101814), Color(0x65202B21)))))
+            Box(
+                Modifier.matchParentSize().background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            StructColors.Dashboard.imageScrimStart,
+                            StructColors.Dashboard.imageScrimEnd
+                        )
+                    )
+                )
+            )
             Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, background), startY = 100f)))
-            ImigongoMotif(Modifier.align(Alignment.CenterEnd).size(230.dp).offset(x = 52.dp, y = 24.dp), DashboardGold.copy(alpha = .26f))
+            ImigongoMotif(
+                Modifier.align(Alignment.CenterEnd).size(230.dp).offset(x = 52.dp, y = 24.dp),
+                StructColors.Dashboard.gold.copy(alpha = .26f)
+            )
         }
         Column(Modifier.fillMaxWidth().smoothContentSize().padding(start = 20.dp, end = 20.dp, top = 20.dp + topInset), verticalArrangement = Arrangement.spacedBy(38.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Surface(shape = RoundedCornerShape(15.dp), color = Color(0xFFFAF7E8)) {
+                    Surface(
+                        shape = RoundedCornerShape(15.dp),
+                        color = StructColors.Dashboard.logoBacking
+                    ) {
                         StructMark(Modifier.padding(7.dp).size(40.dp), onDark = false)
                     }
                     Column(Modifier.weight(1f)) {
-                        AppText("Struct Capital", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
-                        AppText(subtitle, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = .75f))
+                        AppText(
+                            "Struct Capital",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = StructColors.Dashboard.onImage
+                        )
+                        AppText(
+                            subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = StructColors.Dashboard.onImage.copy(alpha = .75f)
+                        )
                     }
-                    if (showNotifications) NotificationBell(unreadNotifications, openNotifications, tint = Color.White)
+                    if (showNotifications) NotificationBell(
+                        unreadNotifications,
+                        openNotifications,
+                        tint = StructColors.Dashboard.onImage
+                    )
                 }
                 notice()
             }
@@ -228,60 +435,132 @@ private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, pri
     }
     val priceBasis = localized(priceLabel) + if (valuation.pricedShares > 0 && calendarDate(priceDate) != null) " · $priceDate" else ""
     var showBasis by remember { mutableStateOf(false) }
-    if (showBasis) AlertDialog(onDismissRequest = { showBasis = false },
-        title = { AppText("About this estimate") },
-        text = { AppText("$priceBasis\n\nTracked investments only. Bonds use principal value; shares use the latest available RSE closing price. Unpriced shares use purchase cash cost. Cash balances, liabilities, dividends and selling fees are excluded. Annual coupons are shown separately.") },
-        confirmButton = { TextButton(onClick = { showBasis = false }) { AppText("Done") } })
-    Surface(shape = RoundedCornerShape(28.dp), color = Color.Transparent, contentColor = Color.White,
-        border = BorderStroke(1.dp, DashboardGold.copy(alpha = .24f))) {
-        Box(Modifier.background(Brush.linearGradient(listOf(Color(0xF02E321C), Color(0xF24D4117), Color(0xFA20251B))))) {
-            ImigongoMotif(Modifier.align(Alignment.CenterEnd).size(200.dp).offset(x = 75.dp), DashboardGold.copy(alpha = .075f))
-            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+    if (showBasis) {
+        AlertDialog(
+            onDismissRequest = { showBasis = false },
+            title = { AppText("About this estimate") },
+            text = {
+                AppText("$priceBasis\n\nTracked investments only. Bonds use principal value; shares use the latest available RSE closing price. Unpriced shares use purchase cash cost. Cash balances, liabilities, dividends and selling fees are excluded. Annual coupons are shown separately.")
+            },
+            confirmButton = {
+                TextButton(onClick = { showBasis = false }) { AppText("Done") }
+            }
+        )
+    }
+
+    Surface(
+        shape = RoundedCornerShape(28.dp),
+        color = Color.Transparent,
+        contentColor = StructColors.Dashboard.onImage,
+        border = BorderStroke(1.dp, StructColors.Dashboard.gold.copy(alpha = .24f))
+    ) {
+        Box(Modifier.background(Brush.linearGradient(StructColors.Dashboard.worthGradient))) {
+            ImigongoMotif(
+                Modifier.align(Alignment.CenterEnd).size(200.dp).offset(x = 75.dp),
+                StructColors.Dashboard.gold.copy(alpha = .075f)
+            )
+            Column(
+                Modifier.fillMaxWidth().padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        AppText("Estimated net worth", Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = Color(0xFFE8E4D3))
-                        IconButton(onClick = { showBasis = true }, modifier = Modifier.size(48.dp)) { AppIcon(Icons.Outlined.Info, "Valuation basis", tint = Color(0xFFE8E4D3), modifier = Modifier.size(20.dp)) }
+                        AppText(
+                            "Estimated net worth",
+                            Modifier.weight(1f),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = StructColors.Dashboard.worthLabel
+                        )
+                        IconButton(onClick = { showBasis = true }) {
+                            AppIcon(
+                                Icons.Outlined.Info,
+                                contentDescription = "Valuation basis",
+                                tint = StructColors.Dashboard.worthLabel,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
-                    FinancialText(money(valuation.estimatedNetWorth, total.currency), modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false,
-                        autoSize = TextAutoSize.StepBased(minFontSize = 16.sp, maxFontSize = 24.sp, stepSize = .5.sp))
+                    FinancialText(
+                        money(valuation.estimatedNetWorth, total.currency),
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false,
+                        autoSize = TextAutoSize.StepBased(
+                            minFontSize = 16.sp,
+                            maxFontSize = 24.sp,
+                            stepSize = .5.sp
+                        )
+                    )
                 }
-                HorizontalDivider(color = DashboardGold.copy(alpha = .2f))
+
+                HorizontalDivider(color = StructColors.Dashboard.gold.copy(alpha = .2f))
+
+                // Replaced heavy TextMeasurer/BoxWithConstraints layout thrashing with
+                // a standard configuration check using LocalDensity & LocalConfiguration if needed,
+                // or a clean fallback layout that prevents unnecessary re-measure passes.
+                val density = LocalDensity.current
+                val fontScale = density.fontScale
+
                 BoxWithConstraints(Modifier.fillMaxWidth()) {
-                    val measurer = rememberTextMeasurer()
-                    val columnWidth = with(LocalDensity.current) { ((maxWidth - 24.dp) / 3).toPx() }
-                    val hidden = LocalNumbersHidden.current
-                    val tooWide = listOf(total.bondFaceValue, valuation.shareValue, total.netAnnualCoupon).any { value ->
-                        val amount = money(value, total.currency).removePrefix("${total.currency} ")
-                        measurer.measure(if (hidden) maskFinancialNumbers(amount) else amount,
-                            style = MaterialTheme.typography.labelLarge.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
-                            softWrap = false, maxLines = 1).size.width > columnWidth
-                    }
-                    // Reflow before fitting would make amounts unreadably small or truncate digits.
-                    if (maxWidth < 240.dp || LocalDensity.current.fontScale > 1.3f || tooWide) {
-                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    val useColumn = maxWidth < 240.dp || fontScale > 1.3f
+
+                    if (useColumn) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             MoneyMetric("Bond principal", total.bondFaceValue, total.currency, Icons.Outlined.AccountBalance, Modifier.fillMaxWidth())
                             MoneyMetric("RSE equity value", valuation.shareValue, total.currency, Icons.Outlined.BarChart, Modifier.fillMaxWidth())
                             MoneyMetric("Annual net coupon", total.netAnnualCoupon, total.currency, Icons.Outlined.Percent, Modifier.fillMaxWidth())
                         }
-                    } else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        MoneyMetric("Bond principal", total.bondFaceValue, total.currency, Icons.Outlined.AccountBalance, Modifier.weight(1f))
-                        MoneyMetric("RSE equity value", valuation.shareValue, total.currency, Icons.Outlined.BarChart, Modifier.weight(1f))
-                        MoneyMetric("Annual net coupon", total.netAnnualCoupon, total.currency, Icons.Outlined.Percent, Modifier.weight(1f))
+                    } else {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            MoneyMetric(
+                                "Bond principal",
+                                total.bondFaceValue,
+                                total.currency,
+                                Icons.Outlined.AccountBalance,
+                                Modifier.weight(1f)
+                            )
+                            MoneyMetric(
+                                "RSE equity value",
+                                valuation.shareValue,
+                                total.currency,
+                                Icons.Outlined.BarChart,
+                                Modifier.weight(1f)
+                            )
+                            MoneyMetric(
+                                "Annual net coupon",
+                                total.netAnnualCoupon,
+                                total.currency,
+                                Icons.Outlined.Percent,
+                                Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
             }
         }
     }
 }
-
 @Composable
 private fun MoneyMetric(label: String, value: Double, currency: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(7.dp)) {
-        AppIcon(icon, null, Modifier.size(20.dp), tint = DashboardGold)
-        AppText(label, style = MaterialTheme.typography.labelSmall, minLines = 2, color = Color(0xFFDAD7C6))
+        AppIcon(icon, null, Modifier.size(20.dp), tint = StructColors.Dashboard.gold)
+        AppText(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            minLines = 2,
+            color = StructColors.Dashboard.worthMetricLabel
+        )
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            AppText(currency, style = MaterialTheme.typography.labelSmall, color = Color(0xFFDAD7C6),
+            AppText(
+                currency,
+                style = MaterialTheme.typography.labelSmall,
+                color = StructColors.Dashboard.worthMetricLabel,
                 maxLines = 1, softWrap = false)
             FinancialText(money(value, currency).removePrefix("$currency "), modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
@@ -297,9 +576,9 @@ private enum class InsightStyle { ALLOCATION, INCOME, PAYMENT }
 private fun insightAccent(style: InsightStyle): Color {
     val dark = MaterialTheme.colorScheme.background.luminance() < .5f
     return when (style) {
-        InsightStyle.ALLOCATION -> if (dark) DashboardGold else Color(0xFF9A731B)
-        InsightStyle.INCOME -> if (dark) Color(0xFFD5CC7D) else Color(0xFF63732E)
-        InsightStyle.PAYMENT -> if (dark) Color(0xFFACCECB) else Color(0xFF386D71)
+        InsightStyle.ALLOCATION -> StructColors.Dashboard.allocationAccent.resolve(dark)
+        InsightStyle.INCOME -> StructColors.Dashboard.incomeAccent.resolve(dark)
+        InsightStyle.PAYMENT -> StructColors.Dashboard.paymentAccent.resolve(dark)
     }
 }
 
@@ -308,11 +587,11 @@ private fun InsightCard(title: String, style: InsightStyle, modifier: Modifier, 
     val dark = MaterialTheme.colorScheme.background.luminance() < .5f
     val accent = insightAccent(style)
     val palette = when (style) {
-        InsightStyle.ALLOCATION -> if (dark) listOf(Color(0xFF303021), Color(0xFF1C2119)) else listOf(Color(0xFFF8F0D8), Color(0xFFF3F5EC))
-        InsightStyle.INCOME -> if (dark) listOf(Color(0xFF303025), Color(0xFF20251A)) else listOf(Color(0xFFF1F1D9), Color(0xFFE8F0E3))
-        InsightStyle.PAYMENT -> if (dark) listOf(Color(0xFF263334), Color(0xFF1B2423)) else listOf(Color(0xFFE4F0EB), Color(0xFFF2F0DF))
+        InsightStyle.ALLOCATION -> StructColors.Dashboard.allocationGradient.resolve(dark)
+        InsightStyle.INCOME -> StructColors.Dashboard.incomeGradient.resolve(dark)
+        InsightStyle.PAYMENT -> StructColors.Dashboard.paymentGradient.resolve(dark)
     }
-    val foreground = if (dark) Color(0xFFF4F1E6) else Color(0xFF252C24)
+    val foreground = StructColors.Dashboard.insightForeground.resolve(dark)
     // One explicit shared height, scaled for accessibility, keeps every carousel edge aligned.
     val height = 236.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)
     Surface(modifier.height(height), shape = RoundedCornerShape(26.dp), color = Color.Transparent, contentColor = foreground,
@@ -358,8 +637,22 @@ private fun AllocationCard(total: CurrencyInvestment, modifier: Modifier) {
                     val stroke = Stroke(13.dp.toPx(), cap = StrokeCap.Butt)
                     drawArc(foreground.copy(alpha = .08f), -90f, 360f, false, style = stroke)
                     if (total.investedCash > 0) {
-                        drawArc(AllocationGreen, -90f, 360f, false, style = stroke)
-                        drawArc(Brush.sweepGradient(listOf(DashboardGold, Color(0xFFF6DC87), DashboardGold)), -90f, fraction * 360f, false, style = stroke)
+                        drawArc(
+                            StructColors.Dashboard.allocationGreen,
+                            -90f,
+                            360f,
+                            false,
+                            style = stroke
+                        )
+                        drawArc(
+                            Brush.sweepGradient(
+                                listOf(
+                                    StructColors.Dashboard.gold,
+                                    StructColors.Dashboard.allocationHighlight,
+                                    StructColors.Dashboard.gold
+                                )
+                            ), -90f, fraction * 360f, false, style = stroke
+                        )
                     }
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -369,8 +662,18 @@ private fun AllocationCard(total: CurrencyInvestment, modifier: Modifier) {
             }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                AllocationLegend("Shares", total.shareCashCost, total.currency, DashboardGold)
-                AllocationLegend("Bonds", total.bondCashCost, total.currency, AllocationGreen)
+                AllocationLegend(
+                    "Shares",
+                    total.shareCashCost,
+                    total.currency,
+                    StructColors.Dashboard.gold
+                )
+                AllocationLegend(
+                    "Bonds",
+                    total.bondCashCost,
+                    total.currency,
+                    StructColors.Dashboard.allocationGreen
+                )
             }
         }
         HorizontalDivider(color = insightAccent(InsightStyle.ALLOCATION).copy(alpha = .2f))

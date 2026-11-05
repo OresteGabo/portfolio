@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.StructColors
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.rememberScrollState
@@ -15,6 +17,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.automirrored.outlined.ShowChart
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -188,7 +192,11 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 SettingsDivider()
                 SettingsRow(Icons.Outlined.Calculate, "Investment simulator", onClick = openSimulator)
                 SettingsDivider()
-                SettingsRow(Icons.Outlined.MenuBook, "Bond education", onClick = openEducation)
+                SettingsRow(
+                    Icons.AutoMirrored.Outlined.MenuBook,
+                    "Bond education",
+                    onClick = openEducation
+                )
                 SettingsDivider()
                 SettingsRow(Icons.Outlined.Search, "Find bond purchases", onClick = { ownerSection = "bonds" })
             } }
@@ -214,7 +222,14 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 links.forEachIndexed { index, (url, title, icon) ->
                     if (index > 0) SettingsDivider()
                     SettingsRow(icon, title, onClick = { actions.openUrl(url) },
-                        trailing = { AppIcon(Icons.Outlined.OpenInNew, "Opens in browser", Modifier.size(19.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) })
+                        trailing = {
+                            AppIcon(
+                                Icons.AutoMirrored.Outlined.OpenInNew,
+                                "Opens in browser",
+                                Modifier.size(19.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        })
                 }
             } }
             if (owner) item { SettingsSection("Administration") {
@@ -400,9 +415,9 @@ private fun AppearanceOptions(selected: String, choose: (String) -> Unit) {
                 Column(Modifier.padding(horizontal = 8.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Canvas(Modifier.size(width = 44.dp, height = 62.dp)) {
-                        val cream = Color(0xFFF8F5E9)
-                        val ink = Color(0xFF242A20)
-                        val accent = Color(0xFFE1C76B)
+                        val cream = StructColors.AppearancePreview.cream
+                        val ink = StructColors.AppearancePreview.ink
+                        val accent = StructColors.AppearancePreview.accent
                         drawRoundRect(if (value == "dark") ink else cream, cornerRadius = CornerRadius(7.dp.toPx()))
                         if (value == "system") drawRoundRect(ink, topLeft = Offset(size.width / 2, 0f),
                             size = Size(size.width / 2, size.height), cornerRadius = CornerRadius(5.dp.toPx()))

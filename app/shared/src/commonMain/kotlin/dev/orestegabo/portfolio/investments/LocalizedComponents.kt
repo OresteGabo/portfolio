@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.StructColors
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material3.*
@@ -84,11 +86,11 @@ private fun LanguageFlagSwitch() {
     val selectionFeedback = LocalSelectionFeedback.current
     val french = AppLanguage.code == "fr"
     val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
-    val track = if (dark) Color(0xFF181A1D) else Color(0xFFF0F1F3)
-    val selection = if (dark) Color(0xFF35383D) else Color.White
-    val outline = if (dark) Color(0xFF484C52) else Color(0xFFD8DBE0)
-    val selectedText = if (dark) Color(0xFFF5F6F7) else Color(0xFF20242A)
-    val inactiveText = if (dark) Color(0xFFADB2BA) else Color(0xFF666D77)
+    val track = StructColors.LanguageSelector.track.resolve(dark)
+    val selection = StructColors.LanguageSelector.selection.resolve(dark)
+    val outline = StructColors.LanguageSelector.outline.resolve(dark)
+    val selectedText = StructColors.LanguageSelector.selectedText.resolve(dark)
+    val inactiveText = StructColors.LanguageSelector.inactiveText.resolve(dark)
     val position by animateDpAsState(if (french) 0.dp else 76.dp, animationSpec = if (reducedMotion) snap() else spring(), label = "Language selection")
     Surface(shape = RoundedCornerShape(12.dp), color = track,
         border = BorderStroke(1.dp, outline.copy(alpha = .65f))) {
@@ -130,19 +132,31 @@ private fun LanguageFlag(code: String, selected: Boolean) {
                 canvas.restore()
             }
         }
-    }, shape = RoundedCornerShape(3.dp), border = BorderStroke(0.5.dp, Color.Black.copy(alpha = .12f))) {
+    },
+        shape = RoundedCornerShape(3.dp),
+        border = BorderStroke(0.5.dp, StructColors.Flag.border.copy(alpha = .12f))
+    ) {
         Canvas(Modifier.size(width = 24.dp, height = 18.dp).clearAndSetSemantics {}) {
-            drawRect(Color.White)
+            drawRect(StructColors.Flag.white)
             if (code == "fr") {
-                drawRect(Color(0xFF002395), size = Size(size.width / 3f, size.height))
-                drawRect(Color(0xFFED2939), topLeft = Offset(size.width * 2f / 3f, 0f), size = Size(size.width / 3f, size.height))
+                drawRect(StructColors.Flag.franceBlue, size = Size(size.width / 3f, size.height))
+                drawRect(
+                    StructColors.Flag.franceRed,
+                    topLeft = Offset(size.width * 2f / 3f, 0f),
+                    size = Size(size.width / 3f, size.height)
+                )
             } else {
-                val red = Color(0xFFC8102E)
+                val red = StructColors.Flag.unitedKingdomRed
                 val width = size.width
                 val height = size.height
-                drawRect(Color(0xFF012169))
-                drawLine(Color.White, Offset.Zero, Offset(width, height), height / 5f)
-                drawLine(Color.White, Offset(width, 0f), Offset(0f, height), height / 5f)
+                drawRect(StructColors.Flag.unitedKingdomBlue)
+                drawLine(StructColors.Flag.white, Offset.Zero, Offset(width, height), height / 5f)
+                drawLine(
+                    StructColors.Flag.white,
+                    Offset(width, 0f),
+                    Offset(0f, height),
+                    height / 5f
+                )
                 // Counterchanged red diagonals preserve the Union Jack's asymmetric saltires.
                 val diagonalHalves = Path().apply {
                     moveTo(width / 2f, height / 2f); lineTo(width, height / 2f); lineTo(width, height); close()
@@ -154,8 +168,12 @@ private fun LanguageFlag(code: String, selected: Boolean) {
                     drawLine(red, Offset.Zero, Offset(width, height), height * 2f / 15f)
                     drawLine(red, Offset(width, 0f), Offset(0f, height), height * 2f / 15f)
                 }
-                drawRect(Color.White, Offset(width * 5f / 12f, 0f), Size(width / 6f, height))
-                drawRect(Color.White, Offset(0f, height / 3f), Size(width, height / 3f))
+                drawRect(
+                    StructColors.Flag.white,
+                    Offset(width * 5f / 12f, 0f),
+                    Size(width / 6f, height)
+                )
+                drawRect(StructColors.Flag.white, Offset(0f, height / 3f), Size(width, height / 3f))
                 drawRect(red, Offset(width * .45f, 0f), Size(width / 10f, height))
                 drawRect(red, Offset(0f, height * .4f), Size(width, height / 5f))
             }

@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.structCapitalColorScheme
+
 import android.os.Bundle
 import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo

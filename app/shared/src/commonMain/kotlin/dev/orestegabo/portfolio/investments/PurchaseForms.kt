@@ -11,6 +11,30 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.LocalDate
 
+enum class BondInstrument(val value: String) {
+    TREASURY("treasury"),
+    GOVERNMENT("government"),
+    CORPORATE("corporate"),
+    MUNICIPAL("municipal"),
+    OTHER("other");
+
+    override fun toString(): String = value.replaceFirstChar { it.uppercase() }
+}
+
+enum class BondMarket(val value: String) {
+    PRIMARY("primary"),
+    SECONDARY("secondary"),
+    OTHER("other");
+
+    override fun toString(): String = value.replaceFirstChar { it.uppercase() }
+}
+
+enum class ScheduleConfidence(val value: String) {
+    ESTIMATED("estimated"),
+    CONFIRMED("confirmed");
+
+    override fun toString(): String = value.replaceFirstChar { it.uppercase() }
+}
 private data class FormField(val key: String, val label: String, val initial: String = "", val numeric: Boolean = false)
 private val bondFields = listOf(
     FormField("bondName", "Bond name"), FormField("issuer", "Issuer", "Government of Rwanda"), FormField("isin", "ISIN"),
@@ -41,23 +65,64 @@ fun PurchaseEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit
             }
         }
     }
-    var instrument by rememberSaveable { mutableStateOf(existing.text("instrumentType").ifBlank { "treasury" }) }
-    var market by rememberSaveable { mutableStateOf(existing.text("market").ifBlank { "primary" }) }
-    var status by rememberSaveable { mutableStateOf(existing.text("status").ifBlank { "active" }) }
-    var confidence by rememberSaveable { mutableStateOf(existing.text("scheduleConfidence").ifBlank { "estimated" }) }
+
+    var instrument by rememberSaveable {
+        mutableStateOf(BondInstrument.entries.find { it.value == existing.text("instrumentType") }
+            ?: BondInstrument.TREASURY)
+    }
+    var market by rememberSaveable {
+        mutableStateOf(BondMarket.entries.find { it.value == existing.text("market") }
+            ?: BondMarket.PRIMARY)
+    }
+    var status by rememberSaveable {
+        mutableStateOf(BondStatus.entries.find { it.value == existing.text("status") }
+            ?: BondStatus.ACTIVE)
+    }
+    var confidence by rememberSaveable {
+        mutableStateOf(ScheduleConfidence.entries.find { it.value == existing.text("scheduleConfidence") }
+            ?: ScheduleConfidence.ESTIMATED)
+    }
+
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { TextButton(enabled = !model.guestStorageLoading, onClick = back) { AppText("← Cancel") }; PageTitle("Record keeping", if (id == null) "Add bond purchase" else "Edit purchase", if (model.isGuest) "Saved privately on this device. No account upload." else "Save the broker-confirmed terms. This updates the same portfolio as your web app.") }
+        item {
+            TextButton(enabled = !model.guestStorageLoading, onClick = back) { AppText("← Cancel") }
+            PageTitle(
+                "Record keeping",
+                if (id == null) "Add bond purchase" else "Edit purchase",
+                if (model.isGuest) "Saved privately on this device. No account upload." else "Save the broker-confirmed terms. This updates the same portfolio as your web app."
+            )
+        }
         imported?.let { item { PdfReviewNotice(it) } }
-        item { AppText("Instrument", fontWeight = FontWeight.Bold); ChoiceRow(listOf("treasury", "government", "corporate", "municipal", "other"), instrument) { instrument = it } }
-        item { AppText("Market", fontWeight = FontWeight.Bold); ChoiceRow(listOf("primary", "secondary", "other"), market) { market = it } }
+
+        item {
+            AppText("Instrument", fontWeight = FontWeight.Bold)
+            ChoiceRow(BondInstrument.entries, instrument) { instrument = it }
+        }
+        item {
+            AppText("Market", fontWeight = FontWeight.Bold)
+            ChoiceRow(BondMarket.entries, market) { market = it }
+        }
+
         bondFields.forEach { field -> item {
             Field(field.label, values[field.key].orEmpty(), { values[field.key] = it }, if (field.numeric) KeyboardType.Decimal else KeyboardType.Text,
-                when (field.key) { "faceValue" -> if (instrument == "treasury") "Treasury minimum: 100,000, in multiples of 100,000." else null
-                    "withholdingTaxRate" -> if (instrument == "treasury") "Use the withholding rate applicable to your investment; the default is 5%." else null
-                    "couponDates" -> "Required for confirmed schedules. Leave empty for an estimated schedule."; else -> null })
+                when (field.key) {
+                    "faceValue" -> if (instrument == BondInstrument.TREASURY) "Treasury minimum: 100,000, in multiples of 100,000." else null
+                    "withholdingTaxRate" -> if (instrument == BondInstrument.TREASURY) "Use the withholding rate applicable to your investment; the default is 5%." else null
+                    "couponDates" -> "Required for confirmed schedules. Leave empty for an estimated schedule."
+                    else -> null
+                }
+            )
         } }
-        item { AppText("Schedule", fontWeight = FontWeight.Bold); ChoiceRow(listOf("estimated", "confirmed"), confidence) { confidence = it } }
-        item { AppText("Status", fontWeight = FontWeight.Bold); ChoiceRow(listOf("submitted", "active", "sold", "matured"), status) { status = it } }
+
+        item {
+            AppText("Schedule", fontWeight = FontWeight.Bold)
+            ChoiceRow(ScheduleConfidence.entries, confidence) { confidence = it }
+        }
+        item {
+            AppText("Status", fontWeight = FontWeight.Bold)
+            ChoiceRow(BondStatus.entries, status) { status = it }
+        }
+
         item {
             val face = values["faceValue"]?.toInputNumberOrNull() ?: 0.0
             val price = values["pricePercent"]?.toInputNumberOrNull() ?: 0.0
@@ -65,36 +130,64 @@ fun PurchaseEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit
             val fees = values["feesPaid"]?.toInputNumberOrNull() ?: 0.0
             Panel { Fact("Total cash cost", money(face * price / 100 + accrued + fees, values["currency"].orEmpty())) }
         }
-        item { Button(enabled = !model.busy && !model.guestStorageLoading && (model.guestImport?.review == null || model.guestImport.confirmed), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), onClick = {
-            runCatching {
-                val body = JsonRecord()
-                bondFields.forEach { field ->
-                    val raw = values[field.key].orEmpty().trim()
-                    when {
-                        field.key == "couponDates" -> {
-                            val dates = raw.split(',').map { it.trim() }.filter { it.isNotBlank() }.distinct().sorted()
-                            dates.forEach(LocalDate::parse)
-                            body.put(field.key, JsonList(dates))
+
+        item {
+            Button(
+                enabled = !model.busy && !model.guestStorageLoading && (model.guestImport?.review == null || model.guestImport.confirmed),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                onClick = {
+                    runCatching {
+                        val body = JsonRecord()
+                        bondFields.forEach { field ->
+                            val raw = values[field.key].orEmpty().trim()
+                            when {
+                                field.key == "couponDates" -> {
+                                    val dates =
+                                        raw.split(',').map { it.trim() }.filter { it.isNotBlank() }
+                                            .distinct().sorted()
+                                    dates.forEach(LocalDate::parse)
+                                    body.put(field.key, JsonList(dates))
+                                }
+
+                                field.numeric -> {
+                                    val number = raw.toInputNumberOrNull()?.takeIf { it.isFinite() }
+                                        ?: error("Enter a valid ${localized(field.label)}.")
+                                    body.put(
+                                        field.key,
+                                        if (field.key.endsWith("Rate")) number / 100 else number
+                                    )
+                                }
+
+                                else -> body.put(field.key, raw)
+                            }
                         }
-                        field.numeric -> {
-                            val number = raw.toInputNumberOrNull()?.takeIf { it.isFinite() } ?: error("Enter a valid ${localized(field.label)}.")
-                            body.put(field.key, if (field.key.endsWith("Rate")) number / 100 else number)
-                        }
-                        else -> body.put(field.key, raw)
+                        listOf(
+                            "purchaseDate",
+                            "settlementDate",
+                            "maturityDate"
+                        ).forEach { LocalDate.parse(body.getString(it)) }
+                        if (body.text("firstCouponDate")
+                                .isNotBlank()
+                        ) LocalDate.parse(body.text("firstCouponDate"))
+                        require(body.text("bondName").isNotBlank()) { "Enter the bond name." }
+                        require(body.getDouble("faceValue") > 0) { "Face value must be positive." }
+
+                        // Save enum string values back into the payload record
+                        body.put("instrumentType", instrument.value)
+                            .put("market", market.value)
+                            .put("status", status.value)
+                            .put("scheduleConfidence", confidence.value)
+
+                        body.put("currency", body.text("currency").uppercase())
+                            .put("isin", body.text("isin").uppercase())
+                        model.savePurchase(body, id, back)
+                    }.onFailure {
+                        model.error = userErrorMessage(it, "Check the purchase details.")
                     }
-                }
-                listOf("purchaseDate", "settlementDate", "maturityDate").forEach { LocalDate.parse(body.getString(it)) }
-                if (body.text("firstCouponDate").isNotBlank()) LocalDate.parse(body.text("firstCouponDate"))
-                require(body.text("bondName").isNotBlank()) { "Enter the bond name." }
-                require(body.getDouble("faceValue") > 0) { "Face value must be positive." }
-                body.put("instrumentType", instrument).put("market", market).put("status", status).put("scheduleConfidence", confidence)
-                body.put("currency", body.text("currency").uppercase()).put("isin", body.text("isin").uppercase())
-                model.savePurchase(body, id, back)
-            }.onFailure { model.error = userErrorMessage(it, "Check the purchase details.") }
-        }) { AppText(if (model.busy) "Saving…" else "Save purchase") } }
+                }) { AppText(if (model.busy) "Saving…" else "Save purchase") }
+        }
     }
 }
-
 private val equityFields = listOf(
     FormField("securityName", "Security name"), FormField("ticker", "Ticker"), FormField("isin", "ISIN"),
     FormField("tradeDate", "Trade date · YYYY-MM-DD", Today.toString()), FormField("settlementDate", "Settlement date · YYYY-MM-DD", Today.toString()),

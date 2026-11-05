@@ -1,15 +1,17 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.ReportColors
+
 /** Small, shared vector PDF renderer. All layout and pagination are identical on Android and iOS. */
 internal class ReportPdf(private val title: String, private val footer: String, private val french: Boolean = false) {
     private val pages = mutableListOf<StringBuilder>()
     private val content get() = pages.last()
     var y = 0.0
         private set
-    private val ink = "0.13 0.16 0.14"
-    private val muted = "0.38 0.42 0.39"
-    private val gold = "0.43 0.37 0.06"
-    private val cream = "0.98 0.97 0.94"
+    private val ink = ReportColors.ink
+    private val muted = ReportColors.muted
+    private val gold = ReportColors.accent
+    private val cream = ReportColors.sectionBacking
     private var section = 0
     init { newPage() }
     fun newPage() {
@@ -18,7 +20,7 @@ internal class ReportPdf(private val title: String, private val footer: String, 
         logo(36.0, 23.0, 42.0)
         text("STRUCT CAPITAL", 91.0, 42.0, 17.0, true)
         text(title.removePrefix("STRUCT CAPITAL / "), 91.0, 58.0, 8.0, color = muted)
-        rect(36.0, 80.0, 523.0, 0.6, "0.85 0.84 0.77")
+        rect(36.0, 80.0, 523.0, 0.6, ReportColors.headingRule)
         y = 113.0
     }
     fun ensure(height: Double) { if (y + height > 780) newPage() }
@@ -50,18 +52,27 @@ internal class ReportPdf(private val title: String, private val footer: String, 
         val lines = wrap(value, 475.0, 30.0, true)
         val height = 50.0 + lines.size * 35
         ensure(height + 20)
-        roundedRect(36.0, y - 8, 523.0, height, 14.0, "0.14 0.19 0.16")
+        roundedRect(36.0, y - 8, 523.0, height, 14.0, ReportColors.banner)
         // Restrained diamond linework echoes the Rwandan pattern used in the app's hero.
         content.append("q\n")
         roundedPath(36.0, y - 8, 523.0, height, 14.0)
-        content.append("W n 0.28 0.31 0.20 RG 0.65 w\n")
+        content.append("W n ${ReportColors.bannerMotif} RG 0.65 w\n")
         for (center in listOf(438.0, 493.0, 548.0)) for (radius in listOf(16.0, 25.0, 34.0, 43.0)) {
             val cy = 842 - y - 36
             content.append("${n(center)} ${n(cy + radius)} m ${n(center + radius)} ${n(cy)} l ${n(center)} ${n(cy - radius)} l ${n(center - radius)} ${n(cy)} l h S\n")
         }
         content.append("Q\n")
-        text(label, 54.0, y + 14, 10.0, color = "0.83 0.79 0.56")
-        lines.forEachIndexed { index, line -> text(line, 54.0, y + 49 + index * 35, 30.0, true, "1 1 1") }
+        text(label, 54.0, y + 14, 10.0, color = ReportColors.bannerLabel)
+        lines.forEachIndexed { index, line ->
+            text(
+                line,
+                54.0,
+                y + 49 + index * 35,
+                30.0,
+                true,
+                ReportColors.onBanner
+            )
+        }
         y += height + 8
     }
     fun summaryMetrics(metrics: List<ReportMetric>) {
@@ -86,8 +97,15 @@ internal class ReportPdf(private val title: String, private val footer: String, 
         ensure(78.0)
         text(label, 36.0, y, 10.0, true)
         val fraction = (bonds / (bonds + shares)).coerceIn(0.0, 1.0)
-        roundedRect(36.0, y + 13, 523.0, 9.0, 4.5, "0.25 0.38 0.30")
-        if (fraction > 0) roundedRect(36.0, y + 13, 523.0 * fraction, 9.0, 4.5, "0.65 0.55 0.22")
+        roundedRect(36.0, y + 13, 523.0, 9.0, 4.5, ReportColors.progressTrack)
+        if (fraction > 0) roundedRect(
+            36.0,
+            y + 13,
+            523.0 * fraction,
+            9.0,
+            4.5,
+            ReportColors.progressFill
+        )
         val bondTenths = kotlin.math.round(fraction * 1000).toInt()
         fun percentage(tenths: Int) = (tenths / 10.0).toString().let { if (french) it.replace('.', ',') + " %" else "$it%" }
         text("$bondLabel  ${percentage(bondTenths)}", 36.0, y + 42, 9.0, color = muted)
@@ -120,8 +138,8 @@ internal class ReportPdf(private val title: String, private val footer: String, 
         }
         ensure(height + 15)
         val top = y - 13
-        roundedRect(36.0, top, 523.0, height, 11.0, "0.975 0.977 0.965")
-        roundedRect(36.0, top, 4.0, height, 2.0, "0.68 0.60 0.30")
+        roundedRect(36.0, top, 523.0, height, 11.0, ReportColors.metricBacking)
+        roundedRect(36.0, top, 4.0, height, 2.0, ReportColors.metricAccent)
         titleLines.forEachIndexed { index, line -> text(line, 54.0, y + 4 + index * 16, 12.0, true) }
         var baseline = y + titleLines.size * 16 + 19
         factRows.forEachIndexed { rowIndex, row ->
@@ -146,7 +164,7 @@ internal class ReportPdf(private val title: String, private val footer: String, 
             val lines = cells.mapIndexed { index, value -> wrap(value, widths[index] - 16, 9.0) }
             val height = lines.maxOf { it.size }.coerceAtLeast(1) * 13.0 + 15
             if (y + height > 780) { newPage(); rowHeader(headers, widths) }
-            if (rowIndex % 2 == 0) rect(36.0, y - 11, 523.0, height, "0.965 0.968 0.951")
+            if (rowIndex % 2 == 0) rect(36.0, y - 11, 523.0, height, ReportColors.alternateRow)
             var x = 36.0
             lines.forEachIndexed { index, cell ->
                 cell.forEachIndexed { line, value ->
@@ -161,12 +179,12 @@ internal class ReportPdf(private val title: String, private val footer: String, 
     }
     private fun rowHeader(headers: List<String>, widths: List<Double>) {
         val height = headers.mapIndexed { index, h -> wrap(h, widths[index] - 16, 8.0, true).size }.max() * 12.0 + 16
-        roundedRect(36.0, y - 12, 523.0, height, 5.0, "0.18 0.23 0.19")
+        roundedRect(36.0, y - 12, 523.0, height, 5.0, ReportColors.tableHeader)
         var x = 36.0
         headers.forEachIndexed { index, header ->
             wrap(header, widths[index] - 16, 8.0, true).forEachIndexed { line, value ->
                 val tx = if (index == 0) x + 8 else x + widths[index] - 8 - width(value, 8.0, true)
-                text(value, tx, y + line * 12, 8.0, true, "1 1 1")
+                text(value, tx, y + line * 12, 8.0, true, ReportColors.onBanner)
             }
             x += widths[index]
         }
@@ -178,8 +196,15 @@ internal class ReportPdf(private val title: String, private val footer: String, 
         text(label, 43.0, y, 10.0, true, gold)
         val size = fit(value, 465.0, 10.0, 8.0)
         text(value, 559 - width(value, size), y, size)
-        roundedRect(36.0, y + 14, 523.0, 7.0, 3.5, "0.93 0.93 0.89")
-        if (maximum > 0 && amount > 0) roundedRect(36.0, y + 14, (amount / maximum).coerceIn(0.0, 1.0) * 523, 7.0, 3.5, "0.59 0.48 0.14")
+        roundedRect(36.0, y + 14, 523.0, 7.0, 3.5, ReportColors.barTrack)
+        if (maximum > 0 && amount > 0) roundedRect(
+            36.0,
+            y + 14,
+            (amount / maximum).coerceIn(0.0, 1.0) * 523,
+            7.0,
+            3.5,
+            ReportColors.barFill
+        )
         y += 48
     }
     private fun fit(value: String, maxWidth: Double, initial: Double, min: Double): Double {
@@ -189,8 +214,8 @@ internal class ReportPdf(private val title: String, private val footer: String, 
     }
     private fun gainColor(gain: Double?) = when {
         gain == null || gain == 0.0 -> ink
-        gain > 0 -> "0.08 0.43 0.27"
-        else -> "0.71 0.18 0.18"
+        gain > 0 -> ReportColors.gain
+        else -> ReportColors.loss
     }
     private fun roundedRect(x: Double, top: Double, w: Double, h: Double, radius: Double, color: String) {
         content.append("$color rg ")
@@ -209,7 +234,7 @@ internal class ReportPdf(private val title: String, private val footer: String, 
     /** Exact Struct Capital source paths; SVG quadratic curves converted to PDF cubic curves. */
     private fun logo(x: Double, top: Double, size: Double) {
         content.append("q ${n(size/512)} 0 0 ${n(-size/512)} ${n(x)} ${n(842-top)} cm 1 0 0 1 -248 -183 cm\n")
-        content.append("0.42745 0.36863 0.05882 rg 0.42745 0.36863 0.05882 RG 8 w 1 j\n")
+        content.append("${ReportColors.logoInk} rg ${ReportColors.logoInk} RG 8 w 1 j\n")
         content.append("488 222 m 498.00000 216.00000 508.00000 216.00000 518 222 c 684 318 l 694.00000 324.00000 699.00000 332.66667 699 344 c 699 536 l 699.00000 547.33333 694.00000 556.00000 684 562 c 518 658 l 508.00000 664.00000 498.00000 664.00000 488 658 c 324 562 l 314.00000 556.00000 309.00000 547.33333 309 536 c 309 344 l 309.00000 332.66667 314.00000 324.00000 324 318 c h S\n")
         content.append("565 312 m 425 392 l 548 463 l 558.00000 469.00000 563.00000 477.66667 563 489 c 563 560 l 563.00000 571.33333 558.00000 580.00000 548 586 c 516 598 l 507.33333 602.66667 498.66667 602.66667 490 598 c 375 532 l 365.66667 526.66667 361.00000 518.66667 361 508 c 361 456 l 502 537 l 502 511 l 376 439 l 366.00000 433.66667 361.00000 425.66667 361 415 c 361 373 l 361.00000 363.00000 365.66667 355.33333 375 350 c 489 284 l 497.66667 278.66667 506.33333 278.66667 515 284 c h f\n")
         content.append("566 326 m 574.66667 320.66667 583.33333 320.66667 592 326 c 635 351 l 644.33333 356.33333 649.00000 364.33333 649 375 c 649 423 l 582 385 l 576.66667 382.33333 571.66667 382.66667 567 386 c 564.33333 388.00000 563.00000 391.00000 563 395 c 563 459 l 502 424 l 502 375 l 502.00000 364.33333 506.66667 356.33333 516 351 c h f\n")
@@ -217,7 +242,7 @@ internal class ReportPdf(private val title: String, private val footer: String, 
         content.append("Q\n")
     }
     private fun rule() {
-        content.append("0.87 0.88 0.84 RG 0.4 w 36 ${n(842 - y + 7)} m 559 ${n(842 - y + 7)} l S\n")
+        content.append("${ReportColors.rule} RG 0.4 w 36 ${n(842 - y + 7)} m 559 ${n(842 - y + 7)} l S\n")
     }
     private fun rect(x: Double, top: Double, w: Double, h: Double, color: String) {
         content.append("$color rg ${n(x)} ${n(842 - top - h)} ${n(w)} ${n(h)} re f\n")
@@ -245,10 +270,10 @@ internal class ReportPdf(private val title: String, private val footer: String, 
 
     fun finish(attachment: String): ByteArray {
         pages.forEachIndexed { index, page ->
-            page.append("0.87 0.88 0.84 RG 0.4 w 36 39 m 559 39 l S\n")
+            page.append("${ReportColors.rule} RG 0.4 w 36 39 m 559 39 l S\n")
             page.append("BT /F1 8 Tf $muted rg 1 0 0 1 36 25 Tm (${escaped(footer)}) Tj ET\n")
-            page.append("0.43 0.37 0.06 rg 511 17 48 17 re f\n")
-            page.append("BT /F2 8 Tf 1 1 1 rg 1 0 0 1 520 23 Tm (${index + 1} / ${pages.size}) Tj ET\n")
+            page.append("${ReportColors.accent} rg 511 17 48 17 re f\n")
+            page.append("BT /F2 8 Tf ${ReportColors.onBanner} rg 1 0 0 1 520 23 Tm (${index + 1} / ${pages.size}) Tj ET\n")
         }
         val objects = mutableListOf<String>()
         val firstPage = 7

@@ -1,3 +1,4 @@
+<!-- Generated colors: scripts/sync-design-colors.py; edit design/StructColors.kt. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="100dp" android:height="100dp" android:viewportWidth="512" android:viewportHeight="512">
     <group android:translateX="-248" android:translateY="-183">
         <path android:fillColor="#00000000" android:strokeColor="#6D5E0F" android:strokeWidth="8" android:strokeLineJoin="round" android:pathData="M488 222 Q503 213 518 222 L684 318 Q699 327 699 344 V536 Q699 553 684 562 L518 658 Q503 667 488 658 L324 562 Q309 553 309 536 V344 Q309 327 324 318 Z" />
