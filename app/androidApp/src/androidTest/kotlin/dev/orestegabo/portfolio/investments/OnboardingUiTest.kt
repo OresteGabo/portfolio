@@ -59,6 +59,7 @@ class OnboardingUiTest {
             override fun readScreenCaptureAllowed() = true
         }
         fun nodes(): List<AccessibilityNodeInfo> {
+            if (android.os.Build.VERSION.SDK_INT >= 33) instrumentation.uiAutomation.clearCache()
             val result = mutableListOf<AccessibilityNodeInfo>()
             fun walk(node: AccessibilityNodeInfo) {
                 result += node
@@ -302,9 +303,13 @@ class OnboardingUiTest {
             launch().use {
                 tap("Settings")
                 await("Notifications")
-                repeat(12) {
-                    if (nodes().none { node -> node.isVisibleToUser && node.text?.toString() == "Replay introduction" }) {
-                        scrollSettings()
+                for (direction in listOf(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD, AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
+                    repeat(16) {
+                        if (nodes().none { node -> node.isVisibleToUser && node.text?.toString() == "Replay introduction" }) {
+                            nodes().firstOrNull { node -> node.isVisibleToUser && node.isScrollable }
+                                ?.performAction(direction)
+                            instrumentation.waitForIdleSync(); Thread.sleep(150)
+                        }
                     }
                 }
                 tap("Replay introduction")

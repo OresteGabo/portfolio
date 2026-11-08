@@ -1,10 +1,15 @@
-@file:OptIn(androidx.compose.ui.InternalComposeUiApi::class)
+@file:OptIn(androidx.compose.ui.InternalComposeUiApi::class, kotlinx.cinterop.ExperimentalForeignApi::class)
 package dev.orestegabo.portfolio.investments
 
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.cinterop.get
+import platform.CoreFoundation.*
+import platform.CoreGraphics.*
 import kotlin.test.*
 
 class CaptureBackdropLayerTest {
@@ -27,6 +32,18 @@ class CaptureBackdropLayerTest {
             assertEquals(Color.Red, parent.toImageBitmap().toPixelMap()[4, 4])
             // Restoring the live renderer cannot mutate a previously produced capture bitmap.
             assertEquals(Color.Blue, capture.toPixelMap()[4, 4])
+            // The worker receives only immutable masked pixels, after the live layers are restored.
+            val preview = withContext(Dispatchers.Default) { assertNotNull(capture.toBackdropImage()) }
+            val cgImage = assertNotNull(preview.CGImage)
+            val data = assertNotNull(CGDataProviderCopyData(assertNotNull(CGImageGetDataProvider(cgImage))))
+            try {
+                val bytes = assertNotNull(CFDataGetBytePtr(data))
+                val offset = 4 * CGImageGetBytesPerRow(cgImage).toInt() + 4 * 4
+                assertEquals(0u.toUByte(), bytes[offset])
+                assertEquals(0u.toUByte(), bytes[offset + 1])
+                assertEquals(255u.toUByte(), bytes[offset + 2])
+                assertEquals(255u.toUByte(), bytes[offset + 3])
+            } finally { CFRelease(data) }
         } finally {
             context.releaseGraphicsLayer(parent)
             context.releaseGraphicsLayer(masked)

@@ -14,36 +14,36 @@ class StockPriceHistoryTest {
         .put("quotes", JsonList(listOf(JsonRecord().put("ticker", "IMR").put("closing", 115))))
 
     @Test fun imrContractAt90AndLatestCloseAt115ProduceRealDatedMovement() {
-        val result = stockPriceHistory(history(trades = listOf(point("2026-07-22", 90.0))), quote(), "IMR", "year", today)
+        val result = stockPriceHistory(history(trades = listOf(point("2026-07-22", 90.0))), quote(), "IMR", ChartPeriod.YEAR, today)
         assertEquals(listOf(90.0, 115.0), result.map { it.price })
         assertEquals(listOf(LocalDate(2026, 7, 22), LocalDate(2026, 10, 23)), result.map { it.date })
         assertTrue(result.first().contract)
         assertFalse(result.last().contract)
         assertEquals("Contract trade", result.first().note)
         // No fabricated January or today's point, and July isn't part of a one-month view.
-        assertEquals(1, stockPriceHistory(history(trades = listOf(point("2026-07-22", 90.0))), quote(), "IMR", "month", today).size)
+        assertEquals(1, stockPriceHistory(history(trades = listOf(point("2026-07-22", 90.0))), quote(), "IMR", ChartPeriod.MONTH, today).size)
     }
     @Test fun officialClosesWinOverExecutionsWithoutChangingQuoteObjects() {
         val trades = point("2026-10-23", 90.0).put("low", 80).put("high", 100)
         val quotes = quote()
-        val result = stockPriceHistory(history(listOf(point("2026-10-23", 110.0)), listOf(trades)), quotes, "IMR", "all", today)
+        val result = stockPriceHistory(history(listOf(point("2026-10-23", 110.0)), listOf(trades)), quotes, "IMR", ChartPeriod.ALL, today)
         assertEquals(115.0, result.single().price)
         assertFalse(result.single().contract)
         assertEquals(115.0, quotes.rows("quotes").single().optDouble("closing"))
-        val stored = stockPriceHistory(history(listOf(point("2026-10-23", 110.0)), listOf(trades)), quote(true), "IMR", "all", today)
+        val stored = stockPriceHistory(history(listOf(point("2026-10-23", 110.0)), listOf(trades)), quote(true), "IMR", ChartPeriod.ALL, today)
         assertEquals(110.0, stored.single().price)
     }
     @Test fun invalidForeignFutureAndStalePointsCannotInventHistory() {
         val data = history(trades = listOf(point("2026-02-30", 90.0), point("2027-01-01", 90.0),
             point("2026-07-22", -1.0), point("2026-07-22", 90.0, "BOK")))
-        assertTrue(stockPriceHistory(data, quote(true), "IMR", "year", today).isEmpty())
-        assertTrue(stockPriceHistory(null, null, "IMR", "year", today).isEmpty())
+        assertTrue(stockPriceHistory(data, quote(true), "IMR", ChartPeriod.YEAR, today).isEmpty())
+        assertTrue(stockPriceHistory(null, null, "IMR", ChartPeriod.YEAR, today).isEmpty())
         val missingPrice = quote().put("quotes", JsonList(listOf(JsonRecord().put("ticker", "IMR"))))
-        assertTrue(stockPriceHistory(null, missingPrice, "IMR", "year", today).isEmpty())
+        assertTrue(stockPriceHistory(null, missingPrice, "IMR", ChartPeriod.YEAR, today).isEmpty())
     }
     @Test fun differingDailyContractPricesKeepTheRangeVisible() {
         val data = history(trades = listOf(point("2026-07-22", 90.0).put("low", 90).put("high", 95)))
-        val result = stockPriceHistory(data, null, "IMR", "all", today).single()
+        val result = stockPriceHistory(data, null, "IMR", ChartPeriod.ALL, today).single()
         assertTrue(result.note.contains("median"))
         assertTrue(result.note.contains("95"))
     }

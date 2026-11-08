@@ -54,6 +54,7 @@ class SettingsTargetEditorTest {
             override fun writeMonthlyTarget(account: String, amount: Long) { storedTarget = amount }
         }
         fun visibleNode(predicate: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo? {
+            if (android.os.Build.VERSION.SDK_INT >= 33) instrumentation.uiAutomation.clearCache()
             fun visit(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
                 val bounds = Rect().also(node::getBoundsInScreen)
                 if (node.isVisibleToUser && !bounds.isEmpty && predicate(node)) return node
@@ -162,6 +163,7 @@ class SettingsTargetEditorTest {
                 assertTrue(input.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,
                     Bundle().apply { putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "450000") }))
                 instrumentation.waitForIdleSync()
+                awaitNamed("450000")
                 click("Save")
                 scenario.onActivity { assertEquals(450_000L, model.monthlyInvestmentTarget) }
                 assertEquals(450_000L, storedTarget)

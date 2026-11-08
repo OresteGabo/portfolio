@@ -9,6 +9,8 @@ Android and iPhone investment journal built with shared Compose Multiplatform sc
 
 For Android, open this folder in Android Studio, sync Gradle, select `app.androidApp`, and run on Android 7.0 / API 24 or newer. For iPhone, open `app/iosApp/iosApp.xcodeproj` in Xcode and run the `iosApp` scheme. Both hosts call the same shared `App()`; the old starter screen has been removed.
 
+For everyday iPhone UI checks, select the **iosApp Fast Run** scheme. It builds the same Debug app and launches without attaching LLDB, avoiding debugger launch overhead. Use **iosApp** when you need breakpoints or debugger inspection. Compare startup by force-quitting and opening the installed app from the home screen; Xcode build, install and debugger attachment time are separate from app startup.
+
 ```sh
 ./gradlew :app:androidApp:assembleDebug
 ./gradlew :core:jvmTest :core:iosSimulatorArm64Test

@@ -81,7 +81,7 @@ fun LanguageOptions() {
 
 /** Two explicit choices; until chosen, the selection follows the supported system language. */
 @Composable
-private fun LanguageFlagSwitch() {
+internal fun LanguageFlagSwitch(compact: Boolean = false) {
     val reducedMotion = LocalReducedMotion.current
     val selectionFeedback = LocalSelectionFeedback.current
     val french = AppLanguage.code == "fr"
@@ -91,11 +91,12 @@ private fun LanguageFlagSwitch() {
     val outline = StructColors.LanguageSelector.outline.resolve(dark)
     val selectedText = StructColors.LanguageSelector.selectedText.resolve(dark)
     val inactiveText = StructColors.LanguageSelector.inactiveText.resolve(dark)
-    val position by animateDpAsState(if (french) 0.dp else 76.dp, animationSpec = if (reducedMotion) snap() else spring(), label = "Language selection")
+    val choiceWidth = if (compact) 64.dp else 76.dp
+    val position by animateDpAsState(if (french) 0.dp else choiceWidth, animationSpec = if (reducedMotion) snap() else spring(), label = "Language selection")
     Surface(shape = RoundedCornerShape(12.dp), color = track,
         border = BorderStroke(1.dp, outline.copy(alpha = .65f))) {
-        Box(Modifier.width(160.dp).height(52.dp).selectableGroup()) {
-            Surface(Modifier.padding(4.dp).offset(x = position).width(76.dp).fillMaxHeight(),
+        Box(Modifier.width(choiceWidth * 2 + 8.dp).height(52.dp).selectableGroup()) {
+            Surface(Modifier.padding(4.dp).offset(x = position).width(choiceWidth).fillMaxHeight(),
                 shape = RoundedCornerShape(8.dp), color = selection,
                 border = BorderStroke(1.dp, outline),
                 shadowElevation = 2.dp) {}

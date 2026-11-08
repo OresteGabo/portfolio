@@ -47,10 +47,14 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
     var showInfo by rememberSaveable { mutableStateOf(false) }
     val selected = calendarDate(selectedValue) ?: today
     var historyRequested by remember(model.user?.text("id")) { mutableStateOf(false) }
+    var formsRequested by remember(model.user?.text("id")) { mutableStateOf(false) }
     LaunchedEffect(model.busy, model.historyComplete) {
         if (!model.busy && !model.historyComplete && !historyRequested) {
             historyRequested = true
             model.loadInvestmentHistory()
+        } else if (!model.busy && !model.isGuest && !formsRequested) {
+            formsRequested = true
+            model.refreshBondApplicationForms()
         }
     }
     val events = remember(model.calendar, model.portfolio) { investmentCalendarEvents(model.calendar, model.portfolio) }
@@ -149,6 +153,11 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
                         }
                     }
                 }
+            }
+        }
+        if (!model.isGuest) {
+            items(subscriptionRangesInMonth(ranges, selected), key = { "application:${it.id}" }) { range ->
+                BondApplicationFormCard(model, range.record, today)
             }
         }
         item {

@@ -925,6 +925,51 @@ class PortfolioModel(
         }
     }
 
+    var applicationFormsError by mutableStateOf<String?>(null)
+        private set
+
+    private suspend fun fetchBondApplicationForms() {
+        val forms = api.request("/api/bonds/application-forms").rows("forms")
+        portfolio = portfolio.copy(documents = portfolio.documents.filterNot { it.text("category") == BOND_APPLICATION_CATEGORY } + forms)
+        applicationFormsError = null
+    }
+
+    fun refreshBondApplicationForms() = action {
+        try { fetchBondApplicationForms() }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (failure: Exception) {
+            if (failure is ApiException && failure.status == 401) throw failure
+            applicationFormsError = "Application forms could not be loaded. Try again."
+        }
+    }
+
+    fun publishBondApplicationForm(issue: JsonRecord, bytes: ByteArray, completed: () -> Unit) = action {
+        require(mayUploadBondApplication(user)) { "Only the owner can upload bond application forms." }
+        validatePdfEnvelope(bytes)
+        val metadata = JsonRecord().put("category", BOND_APPLICATION_CATEGORY).put("visibility", "shared")
+            .put("calendarId", issue.text("id")).put("documentDate", issue.text("closingBookDate"))
+            .put("label", "Bond application form").put("instrumentName", issue.text("title")).put("issuer", "BNR")
+        val uploadId = Random.nextBytes(16).joinToString("") { (it.toInt() and 255).toString(16).padStart(2, '0') }
+        val chunkSize = 512 * 1024
+        val count = (bytes.size + chunkSize - 1) / chunkSize
+        var saved = false
+        for (index in 0 until count) {
+            val response = api.request("/api/bonds/documents", "POST", JsonRecord()
+                .put("uploadId", uploadId).put("index", index).put("count", count).put("metadata", metadata)
+                .put("content", Base64.encode(bytes.copyOfRange(index * chunkSize, minOf(bytes.size, (index + 1) * chunkSize)))))
+            if (response.text("documentId").isNotBlank()) { saved = true; break }
+        }
+        require(saved) { "The application form could not be saved. Try again." }
+        completed()
+        message = "Shared application form saved."
+        try { fetchBondApplicationForms() }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (failure: Exception) {
+            if (failure is ApiException && failure.status == 401) throw failure
+            applicationFormsError = "The form was saved. Reload application forms to see it."
+        }
+    }
+
     fun loadInvestmentHistory(force: Boolean = false) {
         if (isGuest) { if (!sampleGuest && (!portfolioReady || force)) loadGuestPortfolio(); return }
         if (historyComplete && !force) return
@@ -1528,6 +1573,7 @@ class PortfolioModel(
     override fun onCleared() { closeGuestMigration(); stopGuestQuotes(); guestJob?.cancel(); guestImport?.clear(); guestPortfolio = null; documentThumbnails.clear(); backgroundLockJob?.cancel(); documentPreview = null; importedPdf = null; importedReview = null; retryPdf = null; vault?.lock(); activeApi?.close() }
 
     private fun clearPrivateData() {
+        applicationFormsError = null
         closeGuestMigration()
         ++startupSyncRevision
         startupSyncJob?.cancel(); startupSyncJob = null

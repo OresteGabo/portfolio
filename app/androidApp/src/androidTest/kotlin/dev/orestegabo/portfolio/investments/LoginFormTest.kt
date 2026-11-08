@@ -165,11 +165,11 @@ class LoginFormTest {
                 assertTrue(submitted.contains("demo@example.test"))
                 assertTrue(submitted.contains("synthetic-demo-password"))
                 // A rejected login stays on the form, with the password still hidden.
-                await("Use an invitation")
-                click("Use an invitation")
+                await("Have an invitation code? Create account")
+                click("Have an invitation code? Create account")
                 await("Confirm password")
                 assertEquals(4, nodes().count { it.isEditable })
-                click("Back to sign in")
+                click("Already have an account? Sign in")
                 await("Welcome back")
                 scenario.onActivity { AppLanguage.select("fr") }
                 await("Bon retour")

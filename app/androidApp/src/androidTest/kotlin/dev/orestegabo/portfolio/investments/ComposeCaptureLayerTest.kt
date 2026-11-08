@@ -48,6 +48,8 @@ class ComposeCaptureLayerTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val prefs = instrumentation.targetContext.getSharedPreferences("connection", 0)
         val oldOrigin = prefs.getString("origin", null)
+        val hadExperiment = prefs.contains("experimentalCaptureLayer")
+        val oldExperiment = prefs.getBoolean("experimentalCaptureLayer", false)
         val previousLanguage = AppLanguage.preference
         val server = ServerSocket(0)
         val worker = Executors.newSingleThreadExecutor()
@@ -80,7 +82,8 @@ class ComposeCaptureLayerTest {
             throw AssertionError(description)
         }
         try {
-            prefs.edit().putString("origin", "http://127.0.0.1:${server.localPort}").commit()
+            prefs.edit().putString("origin", "http://127.0.0.1:${server.localPort}")
+                .putBoolean("experimentalCaptureLayer", true).commit()
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                 val manualMask = mutableStateOf(false)
                 val protect = mutableStateOf(true)
@@ -312,6 +315,9 @@ class ComposeCaptureLayerTest {
         } finally {
             AppLanguage.select(previousLanguage)
             prefs.edit().apply { if (oldOrigin == null) remove("origin") else putString("origin", oldOrigin) }.commit()
+            prefs.edit().apply {
+                if (hadExperiment) putBoolean("experimentalCaptureLayer", oldExperiment) else remove("experimentalCaptureLayer")
+            }.commit()
             server.close(); worker.shutdownNow()
         }
     }

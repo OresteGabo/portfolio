@@ -7,6 +7,10 @@ internal const val CONNECTION_ERROR_MESSAGE = "Could not connect. Check your con
 private val approvedErrorMessages = setOf(
     PDF_READ_ERROR,
     PUBLIC_DATA_PERMISSION_ERROR,
+    "Only the owner can upload bond application forms.",
+    "The application form could not be saved. Try again.",
+    "Choose a published calendar issuance for this application form.",
+    "A different application form is already saved for this issuance, or this PDF belongs to another issuance.",
     "This PDF could not be displayed.",
     "Statement PDF saved and records checked. Could not refresh the portfolio. Pull down on Home to update; do not submit it again.",
     "Finish or cancel the current import first.",

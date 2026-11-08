@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -154,20 +155,22 @@ internal fun SignInScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Floating Curved Logo Card (Top Right)
+            // Keep the brand on the left; wrap language choices on narrow screens or large text.
             item {
-                Box(
+                FlowRow(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 4.dp),
-                    contentAlignment = Alignment.CenterEnd
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    itemVerticalAlignment = Alignment.CenterVertically
                 ) {
                     Surface(
                         shape = RoundedCornerShape(
                             topStart = 24.dp,
-                            bottomStart = 24.dp,
+                            bottomStart = 8.dp,
                             topEnd = 24.dp,
-                            bottomEnd = 8.dp
+                            bottomEnd = 24.dp
                         ),
                         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
                         tonalElevation = 6.dp,
@@ -196,6 +199,7 @@ internal fun SignInScreen(
                             }
                         }
                     }
+                    LanguageFlagSwitch(compact = true)
                 }
             }
 

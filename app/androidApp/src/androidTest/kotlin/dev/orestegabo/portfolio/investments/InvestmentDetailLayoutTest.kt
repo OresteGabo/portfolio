@@ -112,6 +112,7 @@ class InvestmentDetailLayoutTest {
         val dark = mutableStateOf(false)
         val composition = mutableIntStateOf(0)
         fun visible(predicate: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo? {
+            if (android.os.Build.VERSION.SDK_INT >= 33) instrumentation.uiAutomation.clearCache()
             fun visit(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
                 if (node.isVisibleToUser && predicate(node)) return node
                 for (i in 0 until node.childCount) node.getChild(i)?.let { visit(it)?.let { found -> return found } }
@@ -125,15 +126,24 @@ class InvestmentDetailLayoutTest {
             throw AssertionError("Missing visible control: $label ($profile/$mode/$language)")
         }
         fun scrollTo(label: String) {
-            repeat(20) {
-                if (find(label) != null) return
-                visible { it.isScrollable }?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
-                instrumentation.waitForIdleSync(); Thread.sleep(150)
+            for (direction in listOf(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD, AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
+                repeat(20) {
+                    if (find(label) != null) return
+                    visible { it.isScrollable && !it.isEditable }?.performAction(direction)
+                    instrumentation.waitForIdleSync(); Thread.sleep(150)
+                }
             }
             await(label)
         }
         fun tap(label: String) {
-            val bounds = Rect().also(await(label)::getBoundsInScreen)
+            val target = await(label)
+            var clickable: AccessibilityNodeInfo? = target
+            while (clickable != null && !clickable.isClickable) clickable = clickable.parent
+            if (clickable?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true) {
+                instrumentation.waitForIdleSync(); Thread.sleep(200)
+                return
+            }
+            val bounds = Rect().also(target::getBoundsInScreen)
             val down = android.os.SystemClock.uptimeMillis()
             for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) MotionEvent.obtain(down, android.os.SystemClock.uptimeMillis(), action, bounds.exactCenterX(), bounds.exactCenterY(), 0).also {
                 instrumentation.sendPointerSync(it); it.recycle()
@@ -214,6 +224,7 @@ class InvestmentDetailLayoutTest {
                     tap("Documents")
                     scrollTo("Past"); tap("Past"); scrollTo("Marked automatically")
                     capture("bond-receipt-ledger")
+                    scrollTo("Confirm received 1 Jul 2026")
                     tap("Confirm received 1 Jul 2026")
                     repeat(50) { if (couponWrites.get() < 1) Thread.sleep(100) }
                     scenario.onActivity { assertEquals("manual", model.couponReceipt("layout-bond", "2026-07-01")?.text("method")) }
