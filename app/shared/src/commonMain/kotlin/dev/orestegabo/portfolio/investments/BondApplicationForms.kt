@@ -73,7 +73,7 @@ internal fun BondApplicationFormCard(model: PortfolioModel, issue: JsonRecord, t
             title = { AppText("Publish application form?") },
             text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 AppText(issue.text("title"), fontWeight = FontWeight.SemiBold)
-                AppText("${localized("Settlement")} · ${issue.text("settlementDate")}")
+                AppText("${localized("Settlement")} · ${displayDate(issue.text("settlementDate"))}")
                 AppText(draftName)
                 AppText("Confirm this is the blank form for this issuance, with no personal details. One shared copy will be available to all users.")
             } },

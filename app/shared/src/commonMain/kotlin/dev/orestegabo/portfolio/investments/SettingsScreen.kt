@@ -145,6 +145,12 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                     onClick = { dialog = "chartStyle" })
             } }
             item { SettingsSection("Investing") {
+                SettingsRow(Icons.Outlined.AccountBalanceWallet, "Cash & transactions", "Sales, dividends, deposits and withdrawals", onClick = { model.openCashLedger() })
+                SettingsDivider()
+                if (model.isGuest && !model.sampleGuest) {
+                    SettingsRow(Icons.Outlined.Lock, "Encrypted backup", "Back up or restore your private guest workspace", onClick = { model.backupRequested = true })
+                    SettingsDivider()
+                }
                 Column(if (LocalReducedMotion.current) Modifier else Modifier.animateContentSize()) {
                     SettingsRow(Icons.Outlined.Flag, "Monthly investment target", privateFinancialValue(money(model.monthlyInvestmentTarget.toDouble(), "RWF")),
                         onClick = { targetExpanded = !targetExpanded },

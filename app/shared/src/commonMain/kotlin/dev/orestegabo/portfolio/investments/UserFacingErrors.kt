@@ -5,6 +5,14 @@ internal const val CONNECTION_ERROR_MESSAGE = "Could not connect. Check your con
 
 /** Exact, app-authored messages only. Never trust free-form exception or server response text. */
 private val approvedErrorMessages = setOf(
+    "You cannot sell more shares than remain.",
+    "Sale charges cannot exceed proceeds.",
+    "Remove linked transactions before editing this purchase.",
+    "Remove linked transactions before deleting this purchase.",
+    "Invalid transaction identity.",
+    "This transaction identity is already in use.",
+    "Transaction not found.",
+    "Use the purchase currency and a date on or after purchase.",
     PDF_READ_ERROR,
     PUBLIC_DATA_PERMISSION_ERROR,
     "Only the owner can upload bond application forms.",

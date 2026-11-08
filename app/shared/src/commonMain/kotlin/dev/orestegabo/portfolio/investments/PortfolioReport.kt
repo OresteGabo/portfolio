@@ -14,6 +14,7 @@ internal data class PortfolioReportData(
     val today: LocalDate,
     val language: String,
     val couponReceipts: List<JsonRecord>? = null,
+    val ledgerEntries: List<JsonRecord> = emptyList(),
 )
 
 /** Uses the same valuation and contribution rules as the dashboard; never a truncated preview. */
@@ -42,7 +43,7 @@ internal fun generatePortfolioReport(data: PortfolioReportData): ByteArray {
     }
     val pdf = ReportPdf(t("STRUCT CAPITAL / PORTFOLIO REPORT", "STRUCT CAPITAL / RAPPORT DE PORTEFEUILLE"),
         t("Private financial report - All years", "Rapport financier privé - Toutes les années"), french = french)
-    val snapshot = data.snapshot
+    val snapshot = data.snapshot.copy(holdings = shareBalances(data.snapshot.holdings, data.ledgerEntries.filter { it.text("date") <= data.today.toString() }))
     pdf.heading(t("Your investment record", "Vos investissements"), large = true)
     pdf.paragraph("${data.email}  |  ${data.today}")
     pdf.paragraph(t("All saved bond and share purchases, current holdings and target progress. Amounts are grouped by currency; currencies are never added together.",
@@ -68,7 +69,7 @@ internal fun generatePortfolioReport(data: PortfolioReportData): ByteArray {
         pdf.gap()
     }
     val quoteDate = data.quotes?.optJSONObject("source")?.text("publishedAt").orEmpty().take(10)
-    pdf.paragraph(t("Quote date: ${quoteDate.ifBlank { "unavailable" }}. These are unrealized changes since purchase, after recorded buying costs. Sale proceeds, realized gains, dividends, cash balances, liabilities and future selling fees are not calculated. Coupons are annual estimates, not income received. Bond principal is not a market valuation.",
+    pdf.paragraph(t("Quote date: ${quoteDate.ifBlank { "unavailable" }}. These are unrealized changes since purchase, after recorded buying costs. The main valuation excludes cash, dividends and realized gains; recorded cash and income appear separately below. Liabilities and future selling fees are not calculated. Coupons are annual estimates, not income received. Bond principal is not a market valuation.",
         "Date des cours : ${quoteDate.ifBlank { "indisponible" }}. Les gains latents incluent les frais d'achat enregistrés. Produits de vente, gains réalisés, dividendes, liquidités, dettes et frais de vente futurs ne sont pas calculés. Les coupons sont des estimations annuelles, pas des revenus reçus. Le capital obligataire n'est pas une valeur de marché."))
     if (data.quotes?.optJSONObject("source")?.let { it.optBoolean("stale") || it.text("status") == "error" } == true)
         pdf.paragraph(t("Available prices may be stale. Check the quote date before relying on this estimate.", "Les cours disponibles peuvent être anciens. Vérifiez leur date avant de vous fier à cette estimation."))
@@ -158,8 +159,13 @@ internal fun generatePortfolioReport(data: PortfolioReportData): ByteArray {
     data.statementItems.forEach { row -> pdf.record(row.text("title").ifBlank { t("Missing purchase contract", "Contrat d'achat manquant") }, listOf(
         t("Date", "Date") to row.text("date"), t("Amount", "Montant") to cash(row.optDouble("amount")),
         t("Contract", "Contrat") to row.text("contractNote"), t("Record ID", "Identifiant") to row.text("id"))) }
+    pdf.heading(t("Recorded cash and income", "Tresorerie et revenus enregistres"), true)
+    pdf.paragraph(t("Separate from investment worth. Reconcile opening funding, missing cash movements and manually confirmed coupons with your broker. Automatic markings are excluded. Realized gains allocate purchase costs proportionally within the selected purchase; this is not a tax calculation.", "Separe du patrimoine investi. Rapprochez le financement initial, les mouvements manquants et les coupons confirmes manuellement avec votre courtier. Les marquages automatiques sont exclus. Ce calcul ne constitue pas un calcul fiscal."))
+    recordedCash(data.snapshot, data.couponReceipts.orEmpty(), data.ledgerEntries, data.today).forEach { row ->
+        pdf.record(row.currency, listOf(t("Recorded cash", "Tresorerie enregistree") to cash(row.balance, row.currency), t("Dividends received", "Dividendes recus") to cash(row.dividends,row.currency), t("Realized gain / loss", "Gain / perte realise(e)") to cash(row.realizedGain,row.currency)))
+    }
     val archive = JsonRecord().put("format", "gabo-portfolio-report-v1").put("generatedOn", data.today.toString())
-        .put("couponReceipts", data.couponReceipts?.let(::JsonList)).put("email", data.email).put("monthlyTargetRwf", data.monthlyTarget).put("targetBasis", "current-setting-not-historical")
+        .put("cashLedger", JsonList(data.ledgerEntries)).put("couponReceipts", data.couponReceipts?.let(::JsonList)).put("email", data.email).put("monthlyTargetRwf", data.monthlyTarget).put("targetBasis", "current-setting-not-historical")
         .put("purchases", JsonList(snapshot.purchases)).put("holdings", JsonList(snapshot.holdings))
         .put("documents", JsonList(snapshot.documents)).put("missingStatementItems", JsonList(data.statementItems))
     return pdf.finish(archive.toString())

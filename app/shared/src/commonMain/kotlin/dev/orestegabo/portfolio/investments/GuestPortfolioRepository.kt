@@ -18,7 +18,7 @@ interface GuestSnapshotStorage {
 }
 const val GUEST_STORE_MAX_BYTES = 4 * 1024 * 1024
 private const val WORKSPACE = "guest-personal"
-private const val SCHEMA = 3
+private const val SCHEMA = 4
 
 /** Full history, not the server's compact overview. Copies cross the boundary, not mutable cached records. */
 data class GuestPortfolio(val portfolio: PortfolioSnapshot, val receipts: List<JsonRecord>, val metadata: JsonRecord, val revision: Int)
@@ -36,6 +36,10 @@ interface GuestPortfolioRepository {
     suspend fun documentBytes(id: String): ByteArray
     suspend fun deleteDocument(id: String): GuestPortfolio
     suspend fun load(): GuestPortfolio
+    suspend fun saveLedgerEntry(entry: JsonRecord): GuestPortfolio = error("Transactions are unavailable.")
+    suspend fun deleteLedgerEntry(id: String): GuestPortfolio = error("Transactions are unavailable.")
+    suspend fun exportBackup(): ByteArray = error("Backup is unavailable.")
+    suspend fun restoreBackup(bytes: ByteArray): GuestPortfolio = error("Restore is unavailable.")
     suspend fun saveBond(record: JsonRecord, id: String? = null): GuestPortfolio
     suspend fun saveShare(record: JsonRecord, id: String? = null): GuestPortfolio
     suspend fun deleteBond(id: String): GuestPortfolio
@@ -76,7 +80,7 @@ class LocalGuestPortfolioRepository(
     }
     /** A durable deletion intent resumes only after a valid manifest read. Batches retain v3 bounds. */
     private suspend fun erase(root: JsonRecord) {
-        root.put("metadata", JsonRecord(root.getJSONObject("metadata").toString()).put("deletionRequested", true))
+        root.put("metadata", JsonRecord(root.getJSONObject("metadata").toString()).put("cashLedger", JsonList()).put("deletionRequested", true))
         for (key in listOf("purchases", "holdings", "receipts")) root.put(key, JsonList())
         commit(root)
         while (root.rows("documents").isNotEmpty()) {
@@ -212,6 +216,85 @@ class LocalGuestPortfolioRepository(
             .put("currency", bond.text("currency")).put("createdAt", existing?.text("createdAt") ?: now()).put("updatedAt", now())
         root.put("receipts", JsonList(rows.filterNot { it.text("purchaseId") == purchaseId && it.text("dueDate") == dueDate } + receipt))
     }
+    override suspend fun saveLedgerEntry(entry: JsonRecord) = update { root ->
+        val prior = root.getJSONObject("metadata").rows("cashLedger")
+        val id = entry.text("id")
+        require(id.matches(Regex("[A-Za-z0-9-]{1,80}"))) { "Invalid transaction identity." }
+        val normalized = validateLedgerEntry(entry, root.rows("holdings"), prior.filterNot { it.text("id") == id }, today())
+            .put("id", id).put("createdAt", now())
+        val existing = prior.singleOrNull { it.text("id") == id }
+        if (existing != null) {
+            require(listOf("kind", "date", "currency", "holdingId", "shares", "price", "fees", "tax", "amount", "note").all {
+                !entry.has(it) || entry.text(it) == existing.text(it)
+            }) { "This transaction identity is already in use." }
+        } else {
+            require(prior.size < 5000) { "Local transaction storage is full." }
+            root.getJSONObject("metadata").let { root.put("metadata", JsonRecord(it.toString()).put("cashLedger", JsonList(prior + normalized))) }
+        }
+    }
+    override suspend fun deleteLedgerEntry(id: String) = update { root ->
+        val metadata = root.getJSONObject("metadata")
+        require(metadata.rows("cashLedger").any { it.text("id") == id }) { "Transaction not found." }
+        root.put("metadata", JsonRecord(metadata.toString()).put("cashLedger", JsonList(metadata.rows("cashLedger").filterNot { it.text("id") == id })))
+    }
+    override suspend fun exportBackup(): ByteArray = locked {
+        val (root, _) = read(); cleanPending(root)
+        val docs = root.rows("documents")
+        require(docs.size <= 100) { "A backup supports up to 100 PDFs." }
+        var total = root.toString().encodeToByteArray().size
+        val files = docs.distinctBy { it.text("localFileId") }.map { doc ->
+            val bytes = requireNotNull(documentStorage?.read(doc.text("localFileId"))) { "A saved PDF is missing. Repair it before creating a backup." }
+            try {
+                validatePdfEnvelope(bytes); require(importPdfDigest(bytes) == doc.text("sha256"))
+                total += ((bytes.size + 2) / 3) * 4
+                require(total < BACKUP_MAX_BYTES - 4096) { "The backup exceeds the 48 MB limit." }
+                JsonRecord().put("fileId", doc.text("localFileId")).put("content", kotlin.io.encoding.Base64.encode(bytes))
+            } finally { bytes.fill(0) }
+        }
+        JsonRecord().put("format", "StructGuestBackup").put("version", 1).put("workspace", root).put("files", JsonList(files)).toString().encodeToByteArray()
+    }
+    override suspend fun restoreBackup(bytes: ByteArray): GuestPortfolio = locked {
+        require(bytes.size in 1..BACKUP_MAX_BYTES)
+        val archive = JsonRecord(bytes.decodeToString(throwOnInvalidSequence = true))
+        require(archive.text("format") == "StructGuestBackup" && archive.optInt("version") == 1) { "Unsupported backup version." }
+        val restored = archive.getJSONObject("workspace")
+        require(restored.text("workspace") == WORKSPACE && restored.optInt("schemaVersion") == SCHEMA && restored.rows("pendingFiles").isEmpty()) { "Unsupported backup workspace." }
+        require(restored.getJSONArray("pendingFiles").length() == 0 && !restored.getJSONObject("metadata").optBoolean("deletionRequested"))
+        require(restored.toString().encodeToByteArray().size <= GUEST_STORE_MAX_BYTES) { "Backup workspace is too large." }
+        validate(restored)
+        val ledger = restored.getJSONObject("metadata").rows("cashLedger")
+        val checkedLedger = mutableListOf<JsonRecord>()
+        ledger.forEach { entry ->
+            checkedLedger += validateLedgerEntry(entry, restored.rows("holdings"), checkedLedger, today())
+                .put("id", entry.text("id")).put("createdAt", entry.text("createdAt"))
+        }
+        restored.put("metadata", JsonRecord(restored.getJSONObject("metadata").toString()).put("cashLedger", JsonList(checkedLedger)))
+        val docs = restored.rows("documents"); val files = archive.rows("files")
+        require(docs.size <= 100 && files.size <= 100 && files.size == archive.getJSONArray("files").length())
+        require(files.map { it.text("fileId") }.distinct().size == files.size && docs.map { it.text("localFileId") }.toSet() == files.map { it.text("fileId") }.toSet())
+        val decoded = mutableMapOf<String, ByteArray>()
+        try {
+            files.forEach { file ->
+                val content = kotlin.io.encoding.Base64.decode(file.text("content"))
+                decoded[file.text("fileId")] = content
+                validatePdfEnvelope(content)
+                require(docs.filter { it.text("localFileId") == file.text("fileId") }.all { it.text("sha256") == importPdfDigest(content) }) { "Backup PDF integrity check failed." }
+            }
+            val (current, _) = read(); cleanPending(current)
+            val oldFiles = current.rows("documents").map { it.text("localFileId") }.distinct()
+            require(oldFiles.size <= 100) { "Restore this backup into an empty guest workspace." }
+            val staged = files.associate { it.text("fileId") to Uuid.random().toString() }
+            current.put("pendingFiles", JsonList(staged.values.toList())); persist(current)
+            try {
+                staged.forEach { (original, target) -> requireNotNull(documentStorage).write(target, decoded.getValue(original)) }
+                restored.put("documents", JsonList(docs.map { JsonRecord(it.toString()).put("localFileId", staged.getValue(it.text("localFileId"))) }))
+                restored.put("pendingFiles", JsonList(oldFiles)).put("revision", current.getInt("revision") + 1)
+                validate(restored); persist(restored)
+            } catch (failure: Throwable) { runCatching { cleanPending(current) }; throw failure }
+            runCatching { cleanPending(restored) } // A successful restore stays successful if old-file cleanup needs a later retry.
+            view(restored)
+        } finally { decoded.values.forEach { it.fill(0) } }
+    }
     private fun id(kind: String) = "guest:$kind:${newId()}".also { require(validId(it, kind)) }
     private fun validId(id: String, kind: String) = id.startsWith("guest:$kind:") &&
         id.removePrefix("guest:$kind:").matches(Regex("[A-Za-z0-9-]{1,80}"))
@@ -234,7 +317,7 @@ class LocalGuestPortfolioRepository(
             val root = JsonRecord(bytes.decodeToString(throwOnInvalidSequence = true))
             require(root.text("workspace") == WORKSPACE) { "Wrong local workspace." }
             val version = root.getDouble("schemaVersion")
-            require(version in listOf(1.0, 2.0, SCHEMA.toDouble())) { "Unsupported local storage version. Update the app; data was not changed." }
+            require(version in listOf(1.0, 2.0, 3.0, SCHEMA.toDouble())) { "Unsupported local storage version. Update the app; data was not changed." }
             if (version == 1.0) {
                 // v1 contained purchases/holdings/metadata only; no financial fields are rewritten.
                 require(!root.has("receipts") && !root.has("documents"))
@@ -242,6 +325,7 @@ class LocalGuestPortfolioRepository(
                 if (!root.has("revision")) root.put("revision", 0)
             }
             if (version < 3) root.put("schemaVersion", SCHEMA).put("pendingFiles", JsonList())
+            root.put("schemaVersion", SCHEMA)
             validate(root)
             if (root.getJSONObject("metadata").optBoolean("deletionRequested")) {
                 try { cleanPending(root); erase(root) }
@@ -256,10 +340,11 @@ class LocalGuestPortfolioRepository(
         try { require(bytes.size <= GUEST_STORE_MAX_BYTES) { "Local portfolio storage is full." }; storage.write(bytes) }
         finally { bytes.fill(0) }
     }
-    private fun view(root: JsonRecord) = GuestPortfolio(PortfolioSnapshot(root.rows("purchases"), root.rows("holdings"), root.rows("documents")),
+    private fun view(root: JsonRecord) = GuestPortfolio(PortfolioSnapshot(root.rows("purchases"), shareBalances(root.rows("holdings"), root.getJSONObject("metadata").rows("cashLedger")), root.rows("documents")),
         root.rows("receipts"), root.getJSONObject("metadata"), root.getInt("revision"))
     private fun upsert(root: JsonRecord, key: String, kind: String, body: JsonRecord, existingId: String?) {
         val rows = root.rows(key)
+        require(existingId == null || root.getJSONObject("metadata").rows("cashLedger").none { it.text("holdingId") == existingId }) { "Remove linked transactions before editing this purchase." }
         val old = existingId?.let { target -> require(validId(target, kind)); rows.singleOrNull { it.text("id") == target } ?: error("Local record not found.") }
         val record = JsonRecord(body.toString()).put("id", existingId ?: id(kind))
             .put("createdAt", old?.text("createdAt") ?: now()).put("updatedAt", now())
@@ -268,7 +353,9 @@ class LocalGuestPortfolioRepository(
         root.put(key, JsonList(rows.filterNot { it.text("id") == existingId } + record))
     }
     private fun remove(root: JsonRecord, key: String, kind: String, id: String) {
-        require(validId(id, kind)); val rows = root.rows(key)
+        require(validId(id, kind));
+        require(root.getJSONObject("metadata").rows("cashLedger").none { it.text("holdingId") == id }) { "Remove linked transactions before deleting this purchase." }
+        val rows = root.rows(key)
         require(rows.any { it.text("id") == id }) { "Local record not found." }
         root.put(key, JsonList(rows.filterNot { it.text("id") == id }))
     }
@@ -276,6 +363,24 @@ class LocalGuestPortfolioRepository(
         require(root.getDouble("revision") in 0.0..2_000_000_000.0 && root.getDouble("revision") % 1 == 0.0)
         val metadata = root.getJSONObject("metadata")
         listOf("createdAt", "updatedAt").forEach { require(kotlin.time.Instant.parse(metadata.text(it)).toString().isNotEmpty()) }
+        val entries = metadata.rows("cashLedger")
+        if (metadata.has("cashLedger")) require(metadata.getJSONArray("cashLedger").length() == entries.size) { "Invalid cash ledger." }
+        require(entries.size <= 5000 && entries.map { it.text("id") }.distinct().size == entries.size)
+        entries.forEach { entry ->
+            require(entry.text("id").matches(Regex("[A-Za-z0-9-]{1,80}")) && calendarDate(entry.text("date")) != null && entry.getDouble("amount") >= 0)
+            require(entry.text("kind") in listOf("deposit", "withdrawal", "dividend", "sale") && entry.text("currency").matches(Regex("[A-Z]{3}")))
+            kotlin.time.Instant.parse(entry.text("createdAt"))
+        }
+        entries.filter { it.text("kind") in listOf("sale", "dividend") }.forEach { entry ->
+            val lot = root.rows("holdings").singleOrNull { it.text("id") == entry.text("holdingId") }
+            require(lot != null && lot.text("currency") == entry.text("currency"))
+        }
+        entries.filter { it.text("kind") == "sale" }.groupBy { it.text("holdingId") }.forEach { (id, sales) ->
+            val original = root.rows("holdings").single { it.text("id") == id }
+            require(sales.all { it.getDouble("shares") > 0 && it.getDouble("allocatedCost") >= 0 && it.getDouble("realizedGain").isFinite() })
+            require(sales.sumOf { it.getDouble("shares") } <= original.getDouble("shares"))
+            require(sumMoney(sales.map { it.getDouble("allocatedCost") }) <= original.getDouble("netAmountPayable"))
+        }
         val bonds = root.rows("purchases").associateBy { it.text("id") }
         for ((key, kind) in listOf("purchases" to "bond", "holdings" to "share", "documents" to "document", "receipts" to "receipt")) {
             val array = root.getJSONArray(key); val rows = array.objects()

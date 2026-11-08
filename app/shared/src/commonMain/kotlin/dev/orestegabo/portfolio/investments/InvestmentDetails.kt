@@ -78,6 +78,7 @@ fun BondDetailsScreen(model: PortfolioModel, purchase: JsonRecord, engine: Inves
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .12f))) {
                 Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     DetailHeading("Next coupon", next?.let { detailDate(it) })
+                    DetailNote(if (purchase.text("scheduleConfidence") == "confirmed") "Confirmed coupon schedule" else "Estimated coupon schedule · verify with your broker")
                     if (next != null && terms != null) {
                         DetailAmount("Expected net coupon", terms.netCouponPayment(), currency, prominent = false)
                         AppText(when (today.daysUntil(next)) { 0 -> "Due today"; 1 -> "Tomorrow"; else -> "In ${today.daysUntil(next)} days" },
@@ -171,6 +172,7 @@ fun BondDetailsScreen(model: PortfolioModel, purchase: JsonRecord, engine: Inves
                 }
             }
         }
+        item(key = "activity") { InvestmentActivityTimeline(model, listOf(purchase)) }
         item(key = "management") {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 DetailDisclosure("Purchase details", showTerms) { showTerms = !showTerms }

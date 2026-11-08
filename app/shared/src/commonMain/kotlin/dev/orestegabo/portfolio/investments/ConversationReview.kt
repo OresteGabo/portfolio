@@ -18,7 +18,7 @@ internal fun ConversationReview(model: PortfolioModel, review: JsonRecord, targe
         "bond-issuance" -> IssuanceConversationReview(model, review, related, entry, done)
         "statement" -> {
             AppText("BK Capital statement", fontWeight = FontWeight.SemiBold)
-            AppText("${review.text("fromDate")} – ${review.text("toDate")}", style = MaterialTheme.typography.bodyMedium)
+            AppText("${displayDate(review.text("fromDate"))} – ${displayDate(review.text("toDate"))}", style = MaterialTheme.typography.bodyMedium)
             Fact("Purchases", review.rows("rows").size.toString())
             Fact("Other movements", review.rows("movements").size.toString())
             if (review.optBoolean("usedOcr")) AppText("Text recognition used. Check every amount against the PDF.", style = MaterialTheme.typography.bodySmall)

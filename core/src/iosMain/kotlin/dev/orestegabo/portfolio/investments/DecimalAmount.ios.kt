@@ -16,3 +16,11 @@ internal actual fun decimalAmount(factors: List<Double>, divisor: Int, taxRate: 
     val rounding = NSDecimalNumberHandler.decimalNumberHandlerWithRoundingMode(NSRoundingMode.NSRoundPlain, 2, false, false, false, true)
     return numerator.decimalNumberByDividingBy(denominator).decimalNumberByRoundingAccordingToBehavior(rounding).doubleValue
 }
+
+internal actual fun proportionalCost(cost: Double, quantity: Double, original: Double): Double {
+    require(cost.isFinite() && quantity.isFinite() && original.isFinite() && original > 0)
+    val rounding = NSDecimalNumberHandler.decimalNumberHandlerWithRoundingMode(NSRoundingMode.NSRoundPlain, 2, false, false, false, true)
+    return NSDecimalNumber.decimalNumberWithString(cost.toString()).decimalNumberByMultiplyingBy(NSDecimalNumber.decimalNumberWithString(quantity.toString()))
+        .decimalNumberByDividingBy(NSDecimalNumber.decimalNumberWithString(original.toString()))
+        .decimalNumberByRoundingAccordingToBehavior(rounding).doubleValue
+}

@@ -122,7 +122,7 @@ class GuestPdfImportTest {
         disk.failAt = -1
         val loaded=repo(disk,files).load()
         assertEquals(first.portfolio.purchases.single().toString(),loaded.portfolio.purchases.single().toString())
-        assertEquals(3,JsonRecord(requireNotNull(disk.bytes).decodeToString()).getInt("schemaVersion"))
+        assertEquals(4,JsonRecord(requireNotNull(disk.bytes).decodeToString()).getInt("schemaVersion"))
     }
     @Test fun malformedLargeUnsupportedAndCancelledImportsNeverPersistOrEchoExtractedContent() = runTest {
         val disk=Disk(); val files=Files(); val repository=repo(disk,files)

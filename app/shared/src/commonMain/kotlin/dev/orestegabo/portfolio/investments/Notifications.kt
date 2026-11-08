@@ -22,6 +22,9 @@ object NativePushBridge {
     var platform: String=""
         private set
     fun identify(deviceId: String,platform: String) { this.deviceId=deviceId;this.platform=platform }
+    internal var deviceModel: String = ""
+    internal var osVersion: String = ""
+    internal var appVersion: String = ""
     var registration by mutableStateOf<JsonRecord?>(null)
         private set
     var available by mutableStateOf(false)
@@ -113,7 +116,7 @@ fun NotificationsScreen(model: PortfolioModel, openPortfolio: () -> Unit, openNo
                     }
                     if(expanded) {
                         HorizontalDivider()
-                        AppText(localized("Compared with {0}").replace("{0}",item.text("previousDate")),style=MaterialTheme.typography.labelSmall)
+                        AppText(localized("Compared with {0}").replace("{0}",displayDate(item.text("previousDate"))),style=MaterialTheme.typography.labelSmall)
                         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
                             AppText("Estimated total gain/loss",style=MaterialTheme.typography.bodySmall)
                             FinancialText(
@@ -135,6 +138,7 @@ fun NotificationsScreen(model: PortfolioModel, openPortfolio: () -> Unit, openNo
 
 internal fun JsonRecord.withDeviceIdentity(): JsonRecord = apply {
     if(NativePushBridge.deviceId.isNotBlank())put("deviceId",NativePushBridge.deviceId).put("platform",NativePushBridge.platform)
+        .put("deviceModel",NativePushBridge.deviceModel).put("osVersion",NativePushBridge.osVersion).put("appVersion",NativePushBridge.appVersion)
 }
 
 @Composable
@@ -178,7 +182,11 @@ private fun GeneralNotificationCard(model: PortfolioModel,item: JsonRecord,open:
             if(item.text("dueDate").isNotBlank())AppText(item.text("dueDate"),style=MaterialTheme.typography.bodyMedium)
             if(item.has("amount"))FinancialText(money(item.optDouble("amount"),item.text("currency").ifBlank { "RWF" }),style=MaterialTheme.typography.titleMedium)
             if(kind=="targets")AppText(item.text("month"),style=MaterialTheme.typography.bodySmall)
-            if(kind=="security")AppText(if(item.text("platform")=="ios") "iPhone" else "Android",style=MaterialTheme.typography.bodyMedium)
+            if(kind=="security") {
+                AppText(securityDeviceTitle(item),style=MaterialTheme.typography.bodyMedium)
+                securityDeviceSoftware(item).takeIf { it.isNotBlank() }?.let { AppText(it,style=MaterialTheme.typography.bodySmall) }
+                item.text("signedInAt").takeIf { it.isNotBlank() }?.let { AppText(displayTimestamp(it),style=MaterialTheme.typography.bodySmall) }
+            }
             if(item.optBoolean("resolved"))AppText("Resolved",style=MaterialTheme.typography.labelMedium)
             else if(kind=="coupons" && item.text("dueDate")<=model.notificationDate.toString()) {
                 if(received) {

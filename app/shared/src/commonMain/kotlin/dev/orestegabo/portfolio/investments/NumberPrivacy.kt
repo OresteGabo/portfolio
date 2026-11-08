@@ -44,7 +44,7 @@ fun FinancialText(
     autoSize: TextAutoSize? = null,
 ) {
     val hidden = LocalNumbersHidden.current
-    val translated = localized(text)
+    val translated = localized(displayDateValue(text))
     val displayed = if (hidden) maskFinancialNumbers(translated) else translated
     val privacyModifier = if (hidden && displayed != translated) Modifier.clearAndSetSemantics { contentDescription = localized("Financial numbers hidden") } else Modifier
     val softMask = if (hidden && displayed != translated && financialValueOnly.matches(translated)) Modifier.blur(1.5.dp) else Modifier

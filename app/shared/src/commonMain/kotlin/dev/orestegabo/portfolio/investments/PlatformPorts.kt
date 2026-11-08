@@ -38,6 +38,8 @@ interface NativeActions {
     suspend fun offerPasswordSave(origin: String, email: String, password: String) {}
     suspend fun pickPdf(onSelected: () -> Unit = {}): ByteArray?
     suspend fun pickPrivatePdf(onSelected: () -> Unit = {}): ByteArray? = pickPdf(onSelected)
+    suspend fun pickBackup(): ByteArray? = error("Backup file selection is unavailable.")
+    suspend fun saveBackup(fileName: String, bytes: ByteArray): Boolean = error("Backup export is unavailable.")
     suspend fun savePdf(fileName: String, bytes: ByteArray): Boolean
     /** Present native sharing, including available save/export actions. */
     suspend fun sharePdf(fileName: String, bytes: ByteArray): Boolean = savePdf(fileName, bytes)

@@ -85,9 +85,11 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, edit: (JsonR
                         AppText(when {
                             quote.price == null -> "Market price unavailable"
                             quote.cached || model.quoteRefreshFailed -> "Cached closing price"
-                            else -> "Latest available close"
+                            else -> "Official closing price"
                         }, style = MaterialTheme.typography.labelLarge)
-                        quote.date?.takeIf { quote.price != null }?.let { DetailNote(detailDate(it)) }
+                        quote.date?.takeIf { quote.price != null }?.let { DetailNote("${localized("Market date")} · ${detailDate(it)}") }
+                        if (quote.price != null) DetailNote("Source: Rwanda Stock Exchange")
+                        if (quote.cached || model.quoteRefreshFailed) DetailNote("This is a saved quote, not a live trading price.")
                     }
                     IconButton(enabled = !model.busy, onClick = { model.loadMarket(true) }) { AppIcon(Icons.Outlined.Refresh, "Refresh prices") }
                 }
@@ -124,6 +126,10 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, edit: (JsonR
                 AppText(if (allLots) "Show fewer purchases" else "Show all ${lots.size} purchases")
             }
         }
+        item(key = "share-activity") {
+            if (!model.sampleGuest) OutlinedButton(enabled = model.canEditInvestments, onClick = { model.openCashLedger(lots.firstOrNull()?.text("id")) }) { AppText("Record sale or dividend") }
+            InvestmentActivityTimeline(model, lots)
+        }
         item(key = "dividend-note") {
             DetailNote("No verified upcoming dividend is available here. Dividend income is not included in the displayed return.")
         }
@@ -146,6 +152,10 @@ private fun SharePurchaseLedgerRow(model: PortfolioModel, lot: JsonRecord, edit:
         }, second = {
             DetailStatistic("Total cash cost", if (lot.has("netAmountPayable")) money(lot.optDouble("netAmountPayable"), currency) else "—")
         })
+        if (lot.optDouble("soldShares", 0.0) > 0 || lot.optDouble("remainingShares", lot.optDouble("shares")) < lot.optDouble("shares")) {
+            DetailValueRow("Shares remaining", formatNumber(lot.optDouble("remainingShares")))
+            DetailValueRow("Remaining acquisition cost", money(lot.optDouble("remainingCost"), currency))
+        }
         if (lot.has("shares")) DetailValueRow("Shares", formatNumber(lot.optDouble("shares")))
         if (lot.has("pricePerShare")) DetailValueRow("Price per share", money(lot.optDouble("pricePerShare"), currency))
         if (lot.has("grossConsideration")) DetailValueRow("Gross consideration", money(lot.optDouble("grossConsideration"), currency))

@@ -63,7 +63,7 @@ fun AppText(
         val bounds = coordinates.boundsInRoot()
         if (position[0] != bounds) { position[0] = bounds; registry.invalidate() }
     }
-    Text(localized(text), tracked, color = color, fontSize = fontSize, fontWeight = fontWeight,
+    Text(localized(displayDateValue(text)), tracked, color = color, fontSize = fontSize, fontWeight = fontWeight,
         textAlign = textAlign, overflow = overflow, softWrap = softWrap, maxLines = maxLines, minLines = minLines, style = style, autoSize = autoSize)
 }
 

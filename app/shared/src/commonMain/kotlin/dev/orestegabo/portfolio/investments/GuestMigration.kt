@@ -81,11 +81,12 @@ internal class GuestMigration(
                     val bondName=records.purchases.firstOrNull { it.text("id")==receipt.text("purchaseId") }?.text("bondName").orEmpty()
                     MigrationRow(receipt.text("id"),"receipt","$bondName · ${receipt.text("dueDate")}",receipt,receipt.text("purchaseId"))
                 } +
-                records.documents.map { MigrationRow(it.text("id"),"document",it.text("fileName"),it) }
-            check(rows.size<=40000 && rows.all { it.id.matches(Regex("guest:(bond|share|receipt|document):[A-Za-z0-9-]{1,80}")) })
+                records.documents.map { MigrationRow(it.text("id"),"document",it.text("fileName"),it) } +
+                snapshot.metadata.rows("cashLedger").map { MigrationRow("guest:cash:${it.text("id")}", "cash", "${it.text("kind")} · ${displayDate(it.text("date"))}", it, it.text("holdingId").ifBlank { null }) }
+            check(rows.size<=40000 && rows.all { it.id.matches(Regex("guest:(bond|share|receipt|document|cash):[A-Za-z0-9-]{1,80}")) })
             val old=history.rows("items")
             previous=old.map { it.text("sourceId") }.toSet()
-            priorBonds=old.filter { it.text("kind")=="bond" }.map { it.text("sourceId") }.toSet()
+            priorBonds=old.filter { it.text("kind") in listOf("bond", "equity") }.map { it.text("sourceId") }.toSet()
             dates=rows.filter { it.kind=="document" }.associate { row -> row.id to row.record.text("documentDate").ifBlank { old.firstOrNull { it.text("sourceId")==row.id }?.text("documentDate").orEmpty() } }
             revision=snapshot.revision;selected=emptySet();results=emptyMap();consent=false;prepared=true
         } catch(cancelled: CancellationException) { throw cancelled }
@@ -100,7 +101,7 @@ internal class GuestMigration(
         consent=false
     }
     fun date(id: String,value: String) { if(!running) { dates=dates+(id to value.take(10));consent=false } }
-    fun selectable(row: MigrationRow): Boolean = row.kind!="receipt" || row.parent in selected || row.parent in priorBonds
+    fun selectable(row: MigrationRow): Boolean = row.kind !in listOf("receipt", "cash") || row.parent == null || row.parent in selected || row.parent in priorBonds
     fun documentTypeSupported(row: MigrationRow) = row.record.text("kind") in listOf("bond","equity")
     suspend fun showOriginal(row: MigrationRow) {
         authorized();closePreview()
@@ -125,7 +126,7 @@ internal class GuestMigration(
         running=true;consent=false;failure=null
         try {
             check(repository.load().revision==revision) { "Local data changed; review again" }
-            val ordered=rows.filter { it.id in selection }.sortedBy { when(it.kind) { "document"->0;"receipt"->2;else->1 } }
+            val ordered=rows.filter { it.id in selection }.sortedBy { when(it.kind) { "document"->0;"receipt"->2;"cash"->3;else->1 } }
             for((index,row) in ordered.withIndex()) {
                 authorized();progress="${index+1} / ${ordered.size}"
                 try {
@@ -134,7 +135,7 @@ internal class GuestMigration(
                         try { authorized();remote.document(account,row,requireNotNull(documentDates[row.id]),bytes) { part,count -> authorized();progress="${index+1} / ${ordered.size} · PDF $part / $count" } }
                         finally { bytes.fill(0) }
                     } else {
-                        if(row.kind=="receipt" && row.parent !in priorBonds && results[row.parent]?.target.isNullOrBlank()) {
+                        if(row.kind in listOf("receipt", "cash") && row.parent != null && row.parent !in priorBonds && results[row.parent]?.target.isNullOrBlank()) {
                             results=results+(row.id to MigrationOutcome("review",message="Transfer this receipt's bond first."));continue
                         }
                         val refs=row.record.optJSONArray("documentIds")?.let { a -> (0 until a.length()).map { a.getString(it) }.filter { it in selection } }.orEmpty()
@@ -162,6 +163,11 @@ internal class GuestMigration(
 
 /** Explicit domain fields only: no local ID, file reference, revision or workspace metadata in financial DTOs. */
 internal fun migrationRecord(row: MigrationRow): JsonRecord {
+    if (row.kind == "cash") {
+        val fields = setOf("kind", "date", "currency", "amount", "shares", "price", "fees", "tax", "note")
+        return JsonRecord(kotlinx.serialization.json.JsonObject(Json.parseToJsonElement(row.record.toString()).jsonObject.filterKeys { it in fields }).toString())
+            .apply { row.parent?.let { put("parentSourceId", it) } }
+    }
     if(row.kind=="receipt") return JsonRecord().put("parentSourceId",row.parent).put("dueDate",row.record.text("dueDate"))
         .put("amount",row.record.getDouble("amount")).put("received",row.record.optBoolean("received"))
         .put("method",row.record.text("method")).put("currency",row.record.text("currency")).put("recordedAt",row.record.text("updatedAt"))

@@ -79,7 +79,7 @@ internal fun ImportCompletionReceipt(entry: ImportReceipt, document: JsonRecord?
                 kotlin.time.Instant.parse(addedTime.at).toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
             }.getOrNull()
             if (date != null) AppText("${localized(if (addedTime.onThisDevice) "First saved on this device" else "First added")} · " +
-                "${date.date} · ${date.hour.toString().padStart(2, '0')}:${date.minute.toString().padStart(2, '0')}",
+                "${detailDate(date.date)} · ${date.hour.toString().padStart(2, '0')}:${date.minute.toString().padStart(2, '0')}",
                 style = MaterialTheme.typography.labelSmall, color = colours.onSurfaceVariant)
         }
     }

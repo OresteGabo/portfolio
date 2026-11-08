@@ -16,7 +16,9 @@ data class PortfolioSnapshot(
 
     fun activeShares(today: LocalDate) = holdings.filter {
         it.text("status") == "active" && onOrBefore(it.text("tradeDate"), today)
-    }
+    }.map { lot -> JsonRecord(lot.toString()).put("shares", lot.optDouble("remainingShares", lot.optDouble("shares", 0.0)))
+        .put("netAmountPayable", lot.optDouble("remainingCost", lot.optDouble("netAmountPayable", 0.0))) }
+        .filter { it.optDouble("shares", 0.0) > 0 }
 
     fun sharePositions(today: LocalDate): List<SharePosition> = activeShares(today)
         .groupBy { it.text("ticker") to it.text("currency") }

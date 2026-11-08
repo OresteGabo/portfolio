@@ -11,3 +11,9 @@ internal actual fun decimalAmount(factors: List<Double>, divisor: Int, taxRate: 
     numerator += addends.fold(BigDecimal.ZERO) { total, value -> total + BigDecimal.valueOf(value) } * divisor.toBigDecimal()
     return numerator.divide(divisor.toBigDecimal(), 2, RoundingMode.HALF_UP).toDouble()
 }
+
+internal actual fun proportionalCost(cost: Double, quantity: Double, original: Double): Double {
+    require(cost.isFinite() && quantity.isFinite() && original.isFinite() && original > 0)
+    return java.math.BigDecimal.valueOf(cost).multiply(java.math.BigDecimal.valueOf(quantity))
+        .divide(java.math.BigDecimal.valueOf(original), 2, java.math.RoundingMode.HALF_UP).toDouble()
+}

@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 import platform.Foundation.*
 import platform.UIKit.*
 import platform.UniformTypeIdentifiers.UTTypePDF
+import platform.UniformTypeIdentifiers.UTTypeData
 import platform.CoreGraphics.CGRectMake
 import platform.darwin.NSObject
 import platform.posix.memcpy
@@ -96,8 +97,10 @@ private class IosActions : NativeActions {
     }
     override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? = readPdf(onSelected, copy = true)
     override suspend fun pickPrivatePdf(onSelected: () -> Unit): ByteArray? = readPdf(onSelected, copy = false)
-    private suspend fun readPdf(onSelected: () -> Unit, copy: Boolean): ByteArray? = withContext(Dispatchers.Main) {
-        val url = select(UIDocumentPickerViewController(forOpeningContentTypes = listOf(UTTypePDF), asCopy = copy)) ?: return@withContext null
+    override suspend fun pickBackup(): ByteArray? = readPdf({}, copy = false, backup = true)
+    override suspend fun saveBackup(fileName: String, bytes: ByteArray): Boolean = savePdf(fileName, bytes)
+    private suspend fun readPdf(onSelected: () -> Unit, copy: Boolean, backup: Boolean = false): ByteArray? = withContext(Dispatchers.Main) {
+        val url = select(UIDocumentPickerViewController(forOpeningContentTypes = listOf(if (backup) UTTypeData else UTTypePDF), asCopy = copy)) ?: return@withContext null
         pickedPdfName = url.lastPathComponent?.take(180)
         onSelected()
         val access = url.startAccessingSecurityScopedResource()
@@ -115,7 +118,7 @@ private class IosActions : NativeActions {
                         require(count >= 0) { "Could not read the selected PDF." }
                         if (count == 0) break
                         total += count
-                        require(total <= MAX_PDF_BYTES) { "Choose a PDF of up to 10 MB." }
+                        require(total <= if (backup) BACKUP_MAX_BYTES else MAX_PDF_BYTES) { if (backup) "Choose a backup of up to 48 MB." else "Choose a PDF of up to 10 MB." }
                         chunks += buffer.copyOf(count)
                     }
                     require(total > 0) { "The selected PDF is empty." }

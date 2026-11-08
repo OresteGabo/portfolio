@@ -34,7 +34,7 @@ internal fun annualReportScope(data: PortfolioReportData, year: Int): AnnualRepo
     fun JsonRecord.during(key: String) = calendarDate(text(key))?.let { it in start..cutoff } == true
     fun JsonRecord.before(key: String) = calendarDate(text(key))?.let { it <= cutoff } == true
     val bonds = data.snapshot.purchases.filter { it.before("purchaseDate") }
-    val shares = data.snapshot.holdings.filter { it.before("tradeDate") }
+    val shares = shareBalances(data.snapshot.holdings, data.ledgerEntries.filter { it.text("date") <= cutoff.toString() }).filter { it.before("tradeDate") }
     // There is no disposal/status-change history: never invent when a sold holding left the portfolio.
     val uncertain = bonds.filter { it.text("status") !in setOf("active", "submitted", "cancelled", "matured") ||
         (it.text("status") in setOf("active", "matured") && calendarDate(it.text("maturityDate")) == null) } +
@@ -45,7 +45,7 @@ internal fun annualReportScope(data: PortfolioReportData, year: Int): AnnualRepo
         bonds.filter { it.text("status") in setOf("active", "matured") &&
             (calendarDate(it.text("settlementDate")) ?: calendarDate(it.text("purchaseDate")))?.let { it <= cutoff } == true &&
             calendarDate(it.text("maturityDate"))?.let { date -> date > cutoff } == true },
-        shares.filter { it.text("status") == "active" }, uncertain)
+        shares.filter { it.text("status") == "active" && it.optDouble("remainingShares", it.optDouble("shares")) > 0 }.map { JsonRecord(it.toString()).put("shares", it.optDouble("remainingShares", it.optDouble("shares"))).put("netAmountPayable", it.optDouble("remainingCost", it.optDouble("netAmountPayable"))) }, uncertain)
 }
 
 /** Last official exchange close within this calendar year; never a future quote or a contract price. */
@@ -134,9 +134,18 @@ internal fun generateAnnualReport(data: PortfolioReportData, year: Int, historie
             t("Amount", "Montant") to cash(row.optDouble("amount"), row.text("currency").ifBlank { "RWF" }),
             t("Receipt flag", "Reception indiquee") to if (row.optBoolean("received")) t("Recorded as received", "Reception enregistree") else t("Not received", "Non recu"))) }
     }
+    pdf.heading(t("Recorded cash and income", "Tresorerie et revenus enregistres"), true)
+    val yearEvents = data.ledgerEntries.filter { it.text("date") in scope.start.toString()..scope.cutoff.toString() }
+    recordedCash(data.snapshot, data.couponReceipts.orEmpty(), data.ledgerEntries, scope.cutoff).forEach { row ->
+        val events = yearEvents.filter { it.text("currency") == row.currency }
+        pdf.record(row.currency, listOf(t("Recorded closing cash", "Tresorerie de cloture enregistree") to cash(row.balance, row.currency),
+            t("Year dividends", "Dividendes de l'annee") to cash(sumMoney(events.filter { it.text("kind") == "dividend" }.map { it.optDouble("amount",0.0) }),row.currency),
+            t("Year realized gain / loss", "Gain / perte realise(e) de l'annee") to cash(sumMoney(events.filter { it.text("kind") == "sale" }.map { it.optDouble("realizedGain",0.0) }),row.currency)))
+    }
+    pdf.paragraph(t("Cash is reconstructed from recorded funding, purchases, transactions and manually confirmed coupons. Missing opening funding can produce a negative balance. Sales use proportional purchase-cost allocation, not tax accounting.", "La tresorerie est reconstituee a partir des mouvements enregistres. Un financement initial manquant peut produire un solde negatif. Les ventes utilisent une repartition proportionnelle du cout, hors calcul fiscal."))
     val archive = JsonRecord().put("format", "struct-capital-annual-report-v1").put("year", year)
         .put("periodStart", scope.start.toString()).put("periodEnd", scope.end.toString()).put("valuationDate", scope.cutoff.toString())
-        .put("generatedOn", data.today.toString()).put("purchases", JsonList(scope.bonds)).put("holdings", JsonList(scope.shares))
+        .put("cashLedger", JsonList(yearEvents)).put("generatedOn", data.today.toString()).put("purchases", JsonList(scope.bonds)).put("holdings", JsonList(scope.shares))
         .put("closingBonds", JsonList(scope.closingBonds)).put("closingShares", JsonList(scope.closingShares))
         .put("uncertainPositions", JsonList(scope.uncertain)).put("prices", JsonList(priceArchive)).put("couponReceipts", JsonList(scope.receipts))
     return pdf.finish(archive.toString())

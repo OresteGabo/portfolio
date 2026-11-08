@@ -39,7 +39,7 @@ internal fun GuestMigrationScreen(model: PortfolioModel,transfer: GuestMigration
             if(!transfer.prepared) TextButton(onClick=model::reviewGuestMigration) { AppText("Try again") }
         } }
         if(transfer.prepared && transfer.rows.isEmpty()) item { EmptyState("No personal guest data on this device",EmptyArtwork.PORTFOLIO,compact=true) }
-        listOf("bond" to "Bonds","equity" to "Shares","receipt" to "Coupon receipts","document" to "Original PDFs").forEach { (kind,title) ->
+        listOf("bond" to "Bonds","equity" to "Shares","receipt" to "Coupon receipts","cash" to "Cash transactions","document" to "Original PDFs").forEach { (kind,title) ->
             val group=transfer.rows.filter { it.kind==kind }
             if(group.isNotEmpty()) item { DetailHeading(title) }
             items(group,key={it.id}) { row ->
@@ -50,7 +50,7 @@ internal fun GuestMigrationScreen(model: PortfolioModel,transfer: GuestMigration
                     Checkbox(row.id in transfer.selected,onCheckedChange=null,enabled=!transfer.running && transfer.selectable(row) && supported)
                     Spacer(Modifier.width(8.dp))
                     Column(Modifier.weight(1f).padding(vertical=12.dp)) {
-                        FinancialText(row.title,style=MaterialTheme.typography.titleSmall)
+                        FinancialText(if (kind == "receipt") row.title.substringBeforeLast(" · ") + " · " + displayDate(row.record.text("dueDate")) else row.title,style=MaterialTheme.typography.titleSmall)
                         if(row.id in transfer.previous) DetailNote("Transferred previously to this account")
                         val r=row.record
                         if(kind=="bond") FinancialText(money(r.optDouble("faceValue"),r.text("currency")))

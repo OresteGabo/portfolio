@@ -59,18 +59,32 @@ private class AndroidActions(private val context: Context) : NativeActions {
     override val interactingWithSystem get() = picked != null || saved != null || shared != null
     override var pickedPdfName: String? = null
         private set
+    var pickTypes = arrayOf("application/pdf")
     var pickLauncher: () -> Unit = {}
     var saveLauncher: (String) -> Unit = {}
     var shareLauncher: (Intent) -> Unit = {}
     var shared: CompletableDeferred<Unit>? = null
     var picked: CompletableDeferred<Uri?>? = null
     var saved: CompletableDeferred<Uri?>? = null
-    override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? {
+    override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? = readFile(onSelected, false)
+    override suspend fun pickBackup(): ByteArray? = readFile({}, true)
+    override suspend fun saveBackup(fileName: String, bytes: ByteArray): Boolean {
+        val request = CompletableDeferred<Uri?>(); check(saved == null); saved = request
+        try {
+            backupSaveLauncher(fileName)
+            val uri = request.await() ?: return false
+            withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) } ?: error("Unable to save backup.") }
+            return true
+        } finally { saved = null }
+    }
+    var backupSaveLauncher: (String) -> Unit = {}
+    private suspend fun readFile(onSelected: () -> Unit, backup: Boolean): ByteArray? {
         val request = CompletableDeferred<Uri?>()
         check(picked == null) { "A file picker is already open." }
         picked = request
         pickedPdfName = null
         try {
+            pickTypes = if (backup) arrayOf("application/octet-stream", "application/x-struct-backup", "*/*") else arrayOf("application/pdf")
             pickLauncher()
             val uri = request.await() ?: return null
             onSelected()
@@ -85,7 +99,7 @@ private class AndroidActions(private val context: Context) : NativeActions {
                         ensureActive()
                         val count = input.read(buffer)
                         if (count < 0) break
-                        require(output.size() + count <= MAX_PDF_BYTES) { "Choose a PDF of up to 10 MB." }
+                        require(output.size() + count <= if (backup) BACKUP_MAX_BYTES else MAX_PDF_BYTES) { if (backup) "Choose a backup of up to 48 MB." else "Choose a PDF of up to 10 MB." }
                         output.write(buffer, 0, count)
                     }
                     output.toByteArray()
@@ -148,9 +162,11 @@ actual fun rememberNativeActions(): NativeActions {
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { actions.picked?.complete(it) }
     val share = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { actions.shared?.complete(Unit) }
     val save = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { actions.saved?.complete(it) }
+    val backupSave = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { actions.saved?.complete(it) }
     SideEffect {
+        actions.backupSaveLauncher = { backupSave.launch(it) }
         actions.shareLauncher = { share.launch(it) }
-        actions.pickLauncher = { pick.launch(arrayOf("application/pdf")) }
+        actions.pickLauncher = { pick.launch(actions.pickTypes) }
         actions.saveLauncher = { save.launch(it) }
     }
     DisposableEffect(actions) { onDispose { actions.picked?.cancel(); actions.saved?.cancel(); actions.shared?.cancel() } }

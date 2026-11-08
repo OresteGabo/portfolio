@@ -37,7 +37,7 @@ fun statementConfirmationMatches(item: JsonRecord, review: JsonRecord): Boolean 
 fun MissingStatementTile(item: JsonRecord, open: () -> Unit) {
     Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .45f)) {
         ListItem(headlineContent = { AppText(item.text("title"), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-            supportingContent = { FinancialText("${if (item.text("state") == "review-required") "Review required" else "Missing PDF"} · ${item.text("date")} · ${money(item.optDouble("amount"), "RWF")}") },
+            supportingContent = { FinancialText("${if (item.text("state") == "review-required") "Review required" else "Missing PDF"} · ${displayDate(item.text("date"))} · ${money(item.optDouble("amount"), "RWF")}") },
             leadingContent = { AppIcon(Icons.Outlined.Description, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
             trailingContent = { AppIcon(Icons.Outlined.UploadFile, "Upload missing confirmation") },
             colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
@@ -57,14 +57,14 @@ fun StatementReviewScreen(model: PortfolioModel, review: JsonRecord, open: (Json
     }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { AppText("BK Capital statement", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            AppText("${review.text("fromDate")} – ${review.text("toDate")}", style = MaterialTheme.typography.bodySmall) }
+            AppText("${displayDate(review.text("fromDate"))} – ${displayDate(review.text("toDate"))}", style = MaterialTheme.typography.bodySmall) }
         if (rows == null) item {
             if (model.busy) LoadingState() else Button(onClick = { attempted = false }) { AppText("Check again") }
         } else {
             item { FinancialText("${rows!!.count { it.text("state") == "recorded" }} recorded · ${rows!!.count { it.text("state") in listOf("missing", "review-required") }} missing PDFs", style = MaterialTheme.typography.labelLarge) }
             items(rows!!.withIndex().toList(), key = { it.index }) { (_, row) ->
                 if (row.text("state") == "missing") MissingStatementTile(row) { if (row.text("state") == "review-required") model.showStatementRecordReview(row) else open(row) }
-                else ListItem(headlineContent = { AppText(row.text("title")) }, supportingContent = { AppText("Recorded · ${row.text("date")}") },
+                else ListItem(headlineContent = { AppText(row.text("title")) }, supportingContent = { AppText("Recorded · ${displayDate(row.text("date"))}") },
                     leadingContent = { AppIcon(Icons.Outlined.CheckCircle, null, tint = MaterialTheme.colorScheme.primary) })
             }
             if (rows!!.any { it.text("state") == "missing" }) item {
@@ -110,7 +110,7 @@ internal fun StatementReconciliationDialog(model: PortfolioModel, upload: (JsonR
             items(rows, key = { it.text("id") }) { row ->
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     AppText(row.text("title"), fontWeight = FontWeight.Bold)
-                    FinancialText("${row.text("date")} · ${money(row.optDouble("amount"))}")
+                    FinancialText("${displayDate(row.text("date"))} · ${money(row.optDouble("amount"))}")
                     AppText(when (statementReconciliationStatus(row)) {
                         "matched" -> if (row.text("matchMethod") == "manual") "Matched · confirmed by you" else "Matched · reference and figures agree"
                         "review-required" -> "Review required · verify the source before linking"
@@ -133,7 +133,7 @@ internal fun StatementReconciliationDialog(model: PortfolioModel, upload: (JsonR
                             model.openDocumentPreview(JsonRecord().put("id", proof).put("label", "Purchase confirmation").put("downloadUrl", "/api/bonds/documents/$proof"))
                         }) { AppText("View purchase proof") }
                         TextButton(enabled = !model.busy && (!purchase.has("canLink") || purchase.optBoolean("canLink")), onClick = { reason = ""; deciding = row to purchase.text("id") }) {
-                            FinancialText("Link ${purchase.text("bondName").ifBlank { purchase.text("securityName").ifBlank { purchase.text("ticker") } }} · ${purchase.text("settlementDate").ifBlank { purchase.text("tradeDate") }}")
+                            FinancialText("Link ${purchase.text("bondName").ifBlank { purchase.text("securityName").ifBlank { purchase.text("ticker") } }} · ${displayDate(purchase.text("settlementDate").ifBlank { purchase.text("tradeDate") })}")
                         }
                     }
                     if (statementReconciliationStatus(row) == "unmatched" && row.rows("bondOptions").isNotEmpty()) {
@@ -180,7 +180,7 @@ private fun StatementBondDialog(model: PortfolioModel, row: JsonRecord, dismiss:
                     Column {
                         FinancialText(instrument.text("bondName"), fontWeight = FontWeight.SemiBold)
                         FinancialText("${instrument.text("isin")} · ${percent(instrument.optDouble("couponRate"))}", style = MaterialTheme.typography.bodySmall)
-                        FinancialText("${instrument.text("settlementDate")} – ${instrument.text("maturityDate")}", style = MaterialTheme.typography.bodySmall)
+                        FinancialText("${displayDate(instrument.text("settlementDate"))} – ${displayDate(instrument.text("maturityDate"))}", style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }

@@ -31,6 +31,13 @@ fun App() {
     val vault = rememberSecureSignIn()
     val guestRepository = rememberGuestPortfolioRepository()
     val guestMarketData = rememberGuestMarketData()
+    val version = rememberAppVersion()
+    remember(version) {
+        NativePushBridge.deviceModel = securityDeviceModel()
+        NativePushBridge.osVersion = issueReportPlatform()
+        NativePushBridge.appVersion = version?.let { it.name + (it.build?.let { build -> " ($build)" } ?: "") }.orEmpty()
+        true
+    }
     val model = viewModel {
         val timing = UnlockPerformance.begin("viewmodel_initialization")
         PortfolioModel(settings, guestMarketData = guestMarketData, guestRepository = guestRepository, deferAccountStartup = !settings.readOnboardingCompleted(), vault = vault, initialOrigin = developmentApiOrigin()).also { timing?.end() }

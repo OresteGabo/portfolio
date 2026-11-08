@@ -153,7 +153,7 @@ fun BondPurchaseFacts(purchase: JsonRecord) {
 @Composable
 fun SharePurchaseTile(holding: JsonRecord, open: () -> Unit) {
     InvestmentEntry(holding.text("securityName").ifBlank { holding.text("ticker") },
-        "${holding.text("shares")} shares · Total cost ${money(holding.optDouble("netAmountPayable"), holding.text("currency"))}",
+        "${formatNumber(holding.optDouble("remainingShares", holding.optDouble("shares")))} shares · ${money(holding.optDouble("remainingCost", holding.optDouble("netAmountPayable")), holding.text("currency"))}",
         bond = false, ticker = holding.text("ticker"), open = open)
 }
 

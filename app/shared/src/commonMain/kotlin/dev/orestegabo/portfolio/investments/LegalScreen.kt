@@ -107,7 +107,7 @@ internal fun LegalScreen(route: String, open: (String) -> Unit) {
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         AppText(doc.summary.display(), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        AppText("${localized("Updated")} · $LEGAL_VERSION", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        AppText("${localized("Updated")} · ${displayDate(LEGAL_VERSION)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 items(doc.sections) { section ->

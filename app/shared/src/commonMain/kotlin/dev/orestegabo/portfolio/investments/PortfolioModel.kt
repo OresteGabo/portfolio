@@ -286,6 +286,51 @@ class PortfolioModel(
     var message: String?
         get() = messageText
         set(value) { messageText = value; messageRevision++ }
+    var cashLedgerRequested by mutableStateOf(false)
+    var backupRequested by mutableStateOf(false)
+    var ledgerHoldingId by mutableStateOf<String?>(null)
+    fun openCashLedger(holdingId: String? = null) { ledgerHoldingId = holdingId; cashLedgerRequested = true }
+    private var accountLedger by mutableStateOf<List<JsonRecord>>(emptyList())
+    var ledgerAvailable by mutableStateOf(false); private set
+    private val guestLedger by derivedStateOf { guestPortfolio?.metadata?.rows("cashLedger").orEmpty() }
+    val ledgerEntries get() = if (isGuest) guestLedger else accountLedger
+    var ledgerError by mutableStateOf<String?>(null); private set
+    suspend fun reloadLedger() {
+        if (isGuest) return
+        try {
+            val response = api.request("/api/bonds/cash-ledger")
+            ledgerError = null
+            ledgerAvailable = response.has("entries")
+            accountLedger = response.rows("entries")
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (failure: ApiException) {
+            if (failure.status == 401) throw failure
+            ledgerAvailable = false
+            if (failure.status in listOf(404, 405)) { accountLedger = emptyList(); ledgerError = "Cash activity is currently unavailable. Your investments remain available." }
+            else ledgerError = "Cash activity could not be refreshed. Try again."
+        } catch (failure: Exception) {
+            ledgerAvailable = false; ledgerError = "Cash activity could not be refreshed. Try again."
+        }
+    }
+    fun saveLedgerEntry(entry: JsonRecord, completed: () -> Unit) {
+        if (sampleGuest) return
+        if (isGuest) guestWrite({ requireNotNull(guestRepository).saveLedgerEntry(entry) }, completed)
+        else action {
+            api.request("/api/bonds/cash-ledger", "POST", entry)
+            reloadLedger(); loadPrivateData(force = true); completed()
+        }
+    }
+    fun deleteLedgerEntry(id: String) {
+        if (sampleGuest) return
+        if (isGuest) guestWrite({ requireNotNull(guestRepository).deleteLedgerEntry(id) })
+        else action { api.request("/api/bonds/cash-ledger/$id", "DELETE"); reloadLedger(); loadPrivateData(force = true) }
+    }
+    suspend fun exportGuestBackup(): ByteArray = requireNotNull(guestRepository).exportBackup()
+    fun restoreGuestBackup(bytes: ByteArray, completed: () -> Unit) {
+        check(isGuest && !sampleGuest)
+        val owned = bytes.copyOf()
+        guestWrite({ try { requireNotNull(guestRepository).restoreBackup(owned) } finally { owned.fill(0) } }, completed)
+    }
     private var accountPortfolio by mutableStateOf<PortfolioSnapshot>(PortfolioSnapshot())
     var portfolio: PortfolioSnapshot
         get() = if (isGuest) guestViewPortfolio(guestPath, guestPortfolio, samplePortfolio) else accountPortfolio
@@ -840,6 +885,7 @@ class PortfolioModel(
         fun ids(key: String): Set<String>? = overview?.optJSONArray(key)?.let { rows -> (0 until rows.length()).map { rows.getString(it) }.toSet() }
         portfolio = PortfolioSnapshot(purchases, holdings, if (deferSupplementary) portfolio.documents else documents, ids("recentPurchaseIds"), ids("recentHoldingIds"),
             monthlyTotals)
+        reloadLedger()
         privateDataAvailable = true
         reconcileImportHistory()
         historyComplete = overview == null
@@ -1445,10 +1491,11 @@ class PortfolioModel(
             val receipts=try { api.request("/api/bonds/notifications/coupons").let { if(it.has("receipts")) it.rows("receipts") else null } }
             catch(cancelled: CancellationException) { throw cancelled }
             catch(_: Exception) { null }
+            reloadLedger()
             reportProgress = "Building your report…"
             val bytes = withContext(Dispatchers.Default) {
                 generatePortfolioReport(PortfolioReportData(PortfolioSnapshot(bonds, shares, files), latestQuotes,
-                    missing, account.text("email"), target, date, language, receipts))
+                    missing, account.text("email"), target, date, language, receipts, ledgerEntries))
             }
             reportProgress = "Choose where to share the PDF"
             if (actions.sharePdf("Struct-Capital-$date.pdf", bytes)) {
@@ -1474,8 +1521,9 @@ class PortfolioModel(
             reportProgress = "Loading annual investment records…"
             val bonds = api.request("/api/bonds/purchases").rows("purchases")
             val shares = api.request("/api/bonds/equities").rows("holdings")
+            reloadLedger()
             val data = PortfolioReportData(PortfolioSnapshot(bonds, shares), null, emptyList(), account.text("email"),
-                monthlyInvestmentTarget, date, language)
+                monthlyInvestmentTarget, date, language, ledgerEntries = ledgerEntries)
             val scope = annualReportScope(data, year)
             val histories = mutableMapOf<String, JsonRecord>()
             scope.closingShares.filter { it.text("currency") == "RWF" }.map { it.text("ticker") }.distinct().forEach { ticker ->
@@ -1595,6 +1643,9 @@ class PortfolioModel(
         refreshPhase = PortfolioRefreshPhase.IDLE
         monthlyInvestmentTarget = DEFAULT_MONTHLY_INVESTMENT_TARGET
         user = null
+        ledgerError = null
+        cashLedgerRequested = false; backupRequested = false; ledgerHoldingId = null
+        accountLedger = emptyList(); ledgerAvailable = false
         portfolio = PortfolioSnapshot()
         sharedCouponTerms = emptyList()
         statementItems = emptyList()
