@@ -142,10 +142,26 @@ fun PortfolioScreen(
     var kind by rememberSaveable { mutableStateOf(InvestmentKind.ALL) }
     var status by rememberSaveable { mutableStateOf(BondStatus.ALL) }
 
-    val recentBonds = model.portfolio.recentBonds(Today)
-    val recentShares = model.portfolio.recentShares(Today)
-    val summary = model.portfolio.summary(Today)
-    val valuation = model.portfolio.valuation(Today, model.quotes)
+    val today = Today;
+    val recentBonds = remember(model.portfolio, today) {
+        model.portfolio.recentBonds(today)
+    }
+
+    val recentShares = remember(model.portfolio, today) {
+        model.portfolio.recentShares(today)
+    }
+
+    val summary = remember(model.portfolio, today) {
+        model.portfolio.summary(today)
+    }
+
+    val valuation = remember(model.portfolio, model.quotes, today) {
+        model.portfolio.valuation(today, model.quotes)
+    }
+    //val recentBonds = model.portfolio.recentBonds(Today)
+    //val recentShares = model.portfolio.recentShares(Today)
+    //val summary = model.portfolio.summary(Today)
+    //val valuation = model.portfolio.valuation(Today, model.quotes)
     val insights = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val reducedMotion = LocalReducedMotion.current
@@ -358,7 +374,9 @@ fun PortfolioScreen(
                     items(bonds, key = { "bond:${it.text("id")}" }) { purchase ->
                         AppMovingItem {
                             Inset {
-                                BondPurchaseTile(model, purchase) { detail(purchase) }
+                                BondPurchaseTile(model, purchase) {
+                                    detail(purchase)
+                                }
                             }
                         }
                     }
