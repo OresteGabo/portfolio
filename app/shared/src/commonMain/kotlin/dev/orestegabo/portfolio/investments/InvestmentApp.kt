@@ -2,6 +2,7 @@ package dev.orestegabo.portfolio.investments
 
 import dev.orestegabo.portfolio.design.structCapitalColorScheme
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -232,12 +233,12 @@ fun InvestmentApp(model: PortfolioModel) {
             return@MaterialTheme
         }
         val guestImportActive = model.isGuest && (model.guestImport?.review != null || model.guestImport?.previewBytes != null)
-        val childScreen = model.cashLedgerRequested || model.backupRequested || model.guestMigration != null || guestImportActive || couponList || documentDetail != null || model.documentPreview != null || notificationPanel == "security" || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || shareDetail != null || editor != null || equityEditor != null || simulator || investmentTools || education
+        val childScreen = model.applicationBidForm != null || model.cashLedgerRequested || model.backupRequested || model.guestMigration != null || guestImportActive || couponList || documentDetail != null || model.documentPreview != null || notificationPanel == "security" || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || shareDetail != null || editor != null || equityEditor != null || simulator || investmentTools || education
         val nested = childScreen || tab == "Notifications"
         val documentsHome = (model.user != null || model.isGuest) && !model.locked && !nested && tab == "Documents"
         val importChat = !model.isGuest && documentsHome && documentSection == "Import"
         val back = {
-            if (model.cashLedgerRequested) { model.cashLedgerRequested = false } else if (model.backupRequested) { model.backupRequested = false } else if (model.guestMigration != null) { if (model.guestMigration?.preview != null) { model.guestMigration?.closePreview(); Unit } else model.closeGuestMigration() } else if (guestImportActive) { if (model.guestImport?.previewBytes != null) model.guestImport.closePreview() else model.cancelGuestImport() } else if (model.documentPreview != null) { model.closeDocumentPreview() } else if (importChat) { documentSection = "Library" } else if (notificationPanel == "security") { notificationPanel=null;securityNotificationId=null } else if (legalRoute != null) {
+            if (model.applicationBidForm != null) { model.closeApplicationBid() } else if (model.cashLedgerRequested) { model.cashLedgerRequested = false } else if (model.backupRequested) { model.backupRequested = false } else if (model.guestMigration != null) { if (model.guestMigration?.preview != null) { model.guestMigration?.closePreview(); Unit } else model.closeGuestMigration() } else if (guestImportActive) { if (model.guestImport?.previewBytes != null) model.guestImport.closePreview() else model.cancelGuestImport() } else if (model.documentPreview != null) { model.closeDocumentPreview() } else if (importChat) { documentSection = "Library" } else if (notificationPanel == "security") { notificationPanel=null;securityNotificationId=null } else if (legalRoute != null) {
                 legalRoute = legalHistory.lastOrNull()
                 legalHistory = legalHistory.dropLast(1)
             } else if (couponList && detail == null && shareDetail == null && editor == null && equityEditor == null && model.documentPreview == null) { couponList = false
@@ -256,6 +257,7 @@ fun InvestmentApp(model: PortfolioModel) {
             if (tab != "Settings") PortfolioReportProgressDialog(model)
         }
         val screenTitle = when {
+            model.applicationBidForm != null -> "Record bid"
             model.cashLedgerRequested -> "Cash & transactions"
             model.backupRequested -> "Encrypted backup"
             model.guestMigration != null -> "Transfer Guest Data"
@@ -310,6 +312,12 @@ fun InvestmentApp(model: PortfolioModel) {
                         if (model.documentPreview?.source?.text("category") == "Statement" && !model.locked) IconButton(enabled = !model.busy, onClick = {
                             model.showStatementDocumentReview(model.documentPreview!!.source.text("id"))
                         }) { AppIcon(Icons.Outlined.FactCheck, "Review statement records") }
+                        model.documentPreview?.source?.takeIf { it.text("category") == BOND_APPLICATION_CATEGORY }?.let { form ->
+                            val issue = model.calendar.firstOrNull { it.text("id") == form.optJSONObject("applicationForm")?.text("calendarId") }
+                            if (issue != null && applicationBidAllowed(form, issue, bondSubscriptionDate(kotlin.time.Clock.System.now()))) {
+                                TextButton(enabled = !model.busy, onClick = { model.startApplicationBid(form) }) { AppText("Record bid") }
+                            }
+                        }
                         if (model.documentPreview?.bytes != null) IconButton(enabled = !model.busy, onClick = {
                             val preview = model.documentPreview!!
                             model.documentAction { actions.sharePdf(preview.fileName, preview.bytes!!) }
@@ -407,6 +415,12 @@ fun InvestmentApp(model: PortfolioModel) {
                     }
                 }
                 when {
+                    model.applicationBidForm != null -> CompositionLocalProvider(LocalNumbersHidden provides model.numbersRevealBlocked) {
+                        ApplicationBidScreen(model, model.applicationBidForm!!) {
+                            tab = "Portfolio"; pendingEntry = false; pendingIssueId = null
+                            documentDetail = null; detail = null; shareDetail = null; investmentHistory = false; couponList = false
+                        }
+                    }
                     model.cashLedgerRequested -> CashLedgerScreen(model)
                     model.backupRequested -> EncryptedBackupScreen(model)
                     model.documentPreview != null && (model.user != null || model.isGuest) && !model.locked -> PdfViewerScreen(model, model.documentPreview!!)
@@ -440,7 +454,9 @@ fun InvestmentApp(model: PortfolioModel) {
                         }
                     })
                     missingDocuments -> MissingDocumentsScreen(model, ::uploadMissing)
-                    pendingEntry -> PendingBondScreen(model, pendingIssueId) { pendingEntry = false; pendingIssueId = null }
+                    pendingEntry -> CompositionLocalProvider(LocalNumbersHidden provides model.numbersRevealBlocked) {
+                        PendingBondScreen(model, pendingIssueId) { pendingEntry = false; pendingIssueId = null; tab = "Portfolio" }
+                    }
                     tab == "Settings" && !childScreen -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
                         chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
                         openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { replayIntroduction = true; introductionRequested = true }, openInvestmentTools = { investmentTools = true }, openSignInActivity = { securityNotificationId = null; notificationPanel = "security" }, openGuest = { showGuestChoice = true }, openIssueReport = { issueReportSource = "Settings" })
@@ -461,9 +477,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     investmentHistory -> InvestmentHistoryScreen(model, openShare = { shareDetail = it }) { detail = it }
                     tab == "Portfolio" -> PortfolioScreen(model, openNotifications = { if (model.isGuest) openGuestSettings() else openNotificationInbox() }, unreadNotifications = model.unreadNotifications, openShare = { shareDetail = it }, uploadPending = ::uploadPendingPurchase, openMissing = ::uploadMissing, allMissing = { missingDocuments = true }, seeAll = { investmentHistory = true },
                         openCalendar = ::openCalendarAt, detail = { detail = it }, addBond = { editor = JsonRecord() }, addShare = { equityEditor = JsonRecord() })
-                    tab == "Calendar" -> calendarUi.SaveableStateProvider(calendarStateKey) { CalendarScreen(model, initialDate = calendarFocus?.let(::calendarDate), addPending = { issue, date ->
-                        pendingIssueId = issue.text("id"); calendarFocus = date.toString(); confirmationTarget = null; pendingEntry = true
-                    }) }
+                    tab == "Calendar" -> calendarUi.SaveableStateProvider(calendarStateKey) { CalendarScreen(model, initialDate = calendarFocus?.let(::calendarDate), addTemporaryPurchase = { issue -> pendingIssueId = issue.text("id"); pendingEntry = true }) }
                     tab == "Documents" && model.isGuest -> DocumentsScreen(model, openBond = { detail = it }, openShare = { shareDetail = it }, openDetails = { documentDetail = it })
                     tab == "Documents" -> documentUi.SaveableStateProvider("documents:${model.origin}|${model.user?.text("id")}|${model.guestPath}|${model.guestViewRevision}") { DocumentsHub(model, engine, importReview, confirmationTarget,
                         section = documentSection, changeSection = { documentSection = it },
@@ -527,23 +541,31 @@ fun Fact(label: String, value: String) {
 
 
 @Composable
-fun Field(label: String, value: String, change: (String) -> Unit, keyboard: KeyboardType = KeyboardType.Text, helper: String? = null, autofill: ContentType? = null, enabled: Boolean = true) {
-    if (keyboard in listOf(KeyboardType.Number, KeyboardType.Decimal) && LocalCaptureBackdropRegistry.current != null && !LocalNumbersHidden.current) {
+fun Field(label: String, value: String, change: (String) -> Unit, keyboard: KeyboardType = KeyboardType.Text, helper: String? = null, autofill: ContentType? = null, enabled: Boolean = true,
+    numbersHidden: Boolean? = null, trailingIcon: (@Composable () -> Unit)? = null) {
+    val hidden = numbersHidden ?: LocalNumbersHidden.current
+    if (keyboard in listOf(KeyboardType.Number, KeyboardType.Decimal) && LocalCaptureBackdropRegistry.current != null) {
         CaptureRedactionRegion(Modifier.fillMaxWidth(), masked = {
-            OutlinedTextField("••••", {}, Modifier.fillMaxWidth(), enabled = false, singleLine = true,
-                label = { AppText(label) }, supportingText = helper?.let { { AppText(it) } },
-                colors = OutlinedTextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    disabledBorderColor = MaterialTheme.colorScheme.outline))
-        }) { FieldContent(label, value, change, keyboard, helper, autofill, enabled) }
-    } else FieldContent(label, value, change, keyboard, helper, autofill, enabled)
+            // A disabled TextField still intercepts taps. Capture masks must contain no input nodes.
+            Column(Modifier.fillMaxSize()) {
+                Column(Modifier.weight(1f).fillMaxWidth().border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.extraSmall)
+                    .padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.Center) {
+                    AppText(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    AppText("••••", style = MaterialTheme.typography.bodyLarge)
+                }
+                helper?.let { AppText(it, Modifier.padding(start = 16.dp, top = 4.dp), style = MaterialTheme.typography.bodySmall) }
+            }
+        }) { FieldContent(label, value, change, keyboard, helper, autofill, enabled, hidden, trailingIcon) }
+    } else FieldContent(label, value, change, keyboard, helper, autofill, enabled, hidden, trailingIcon)
 }
 
 @Composable
-private fun FieldContent(label: String, value: String, change: (String) -> Unit, keyboard: KeyboardType, helper: String?, autofill: ContentType?, enabled: Boolean) {
+private fun FieldContent(label: String, value: String, change: (String) -> Unit, keyboard: KeyboardType, helper: String?, autofill: ContentType?, enabled: Boolean,
+    numbersHidden: Boolean, trailingIcon: (@Composable () -> Unit)?) {
     val focus = LocalFocusManager.current
     OutlinedTextField(value, change, Modifier.fillMaxWidth().then(if (autofill != null) Modifier.semantics { contentType = autofill } else Modifier), label = { AppText(label) }, singleLine = true, enabled = enabled,
-        visualTransformation = if (LocalNumbersHidden.current && keyboard in listOf(KeyboardType.Number, KeyboardType.Decimal)) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
+        visualTransformation = if (numbersHidden && keyboard in listOf(KeyboardType.Number, KeyboardType.Decimal)) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
+        trailingIcon = trailingIcon,
         keyboardActions = KeyboardActions(onDone = { focus.clearFocus() }, onNext = { focus.moveFocus(FocusDirection.Next) }),
         keyboardOptions = KeyboardOptions(keyboardType = keyboard, imeAction = if (autofill == ContentType.Username) ImeAction.Next else ImeAction.Done, platformImeOptions = if (autofill == ContentType.Username) credentialImeOptions(CredentialInput.USERNAME) else null), supportingText = helper?.let { { AppText(it) } })
 }

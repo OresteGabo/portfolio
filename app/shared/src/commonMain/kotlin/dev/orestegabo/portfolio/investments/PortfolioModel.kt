@@ -286,6 +286,24 @@ class PortfolioModel(
     var message: String?
         get() = messageText
         set(value) { messageText = value; messageRevision++ }
+    internal var applicationBidForm by mutableStateOf<JsonRecord?>(null); private set
+    internal fun startApplicationBid(form: JsonRecord) {
+        val issue = calendar.firstOrNull { it.text("id") == form.optJSONObject("applicationForm")?.text("calendarId") } ?: return
+        if (!isGuest && !busy && applicationBidAllowed(form,issue,bondSubscriptionDate(kotlin.time.Clock.System.now()))) {
+            closeDocumentPreview(); applicationBidForm = form
+        }
+    }
+    internal fun closeApplicationBid() { applicationBidForm = null }
+    internal fun saveApplicationBid(form: JsonRecord, amount: Double, bidId: String, completed: () -> Unit) = action {
+        val issue = calendar.firstOrNull { it.text("id") == form.optJSONObject("applicationForm")?.text("calendarId") }
+        require(issue != null && applicationBidAllowed(form,issue,bondSubscriptionDate(kotlin.time.Clock.System.now()))) { "Bids are unavailable for this form or the subscription window has closed." }
+        val response = api.request("/api/bonds/application-forms/${form.text("id")}/bids", "POST", JsonRecord().put("amount", amount).put("bidId",bidId))
+        require(response.optJSONObject("purchase")?.text("id")?.isNotBlank() == true) { "The bid could not be verified. Refresh your portfolio before retrying." }
+        loadPrivateData(force = true)
+        applicationBidForm = null
+        message = "Bid saved. Awaiting BNR results and allocation confirmation."
+        completed()
+    }
     var cashLedgerRequested by mutableStateOf(false)
     var backupRequested by mutableStateOf(false)
     var ledgerHoldingId by mutableStateOf<String?>(null)
@@ -580,10 +598,6 @@ class PortfolioModel(
     var education by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
 
-    init { if (isGuest) { loadGuestPortfolio(); refreshGuestQuotes() } else runAction(allowLocked = true, failureMessage = CONNECTION_ERROR_MESSAGE) {
-        UnlockPerformance.measure("public_assets") { loadPublicData() }
-        if (!locked && !deferAccountStartup && entryChoice != MANUAL_ACCOUNT_ENTRY) checkSession()
-    } }
 
     private suspend fun loadPublicData() {
         publishedCalendar = JsonList(assets("issuance-calendar.json").decodeToString()).objects()
@@ -1643,6 +1657,7 @@ class PortfolioModel(
         refreshPhase = PortfolioRefreshPhase.IDLE
         monthlyInvestmentTarget = DEFAULT_MONTHLY_INVESTMENT_TARGET
         user = null
+        applicationBidForm = null
         ledgerError = null
         cashLedgerRequested = false; backupRequested = false; ledgerHoldingId = null
         accountLedger = emptyList(); ledgerAvailable = false
@@ -1657,6 +1672,13 @@ class PortfolioModel(
         quotes = null
         quoteRefreshFailed = false
     }
+    // Main.immediate may execute startup (and its failure cleanup) inside this constructor.
+    // Keep startup after every state delegate and cache has been initialized.
+    init { if (isGuest) { loadGuestPortfolio(); refreshGuestQuotes() } else runAction(allowLocked = true, failureMessage = CONNECTION_ERROR_MESSAGE) {
+        UnlockPerformance.measure("public_assets") { loadPublicData() }
+        if (!locked && !deferAccountStartup && entryChoice != MANUAL_ACCOUNT_ENTRY) checkSession()
+    } }
+
 }
 
 internal const val SESSION_BACKGROUND_GRACE_MILLIS = 30_000L

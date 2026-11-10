@@ -44,7 +44,7 @@ fun BondPurchaseTile(model: PortfolioModel, purchase: JsonRecord, manage: () -> 
         Column {
             ListItem(
                 headlineContent = { AppText(purchase.text("bondName"), fontWeight = FontWeight.SemiBold) },
-                supportingContent = { FinancialText("${money(purchase.optDouble("faceValue"), purchase.text("currency"))} · ${localized(purchase.text("status"))}",
+                supportingContent = { FinancialText("${money(purchase.optDouble("faceValue"), purchase.text("currency"))} · ${localized(if (pending) "Awaiting BNR confirmation" else purchase.text("status"))}",
                     style = MaterialTheme.typography.bodySmall) },
                 leadingContent = { InvestmentLogo(bond = true) },
                 trailingContent = { AppIcon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null) },

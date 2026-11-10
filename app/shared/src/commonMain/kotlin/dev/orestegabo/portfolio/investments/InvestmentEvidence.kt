@@ -9,12 +9,13 @@ internal data class InvestmentEvidence(val label: String, val document: JsonReco
 internal fun investmentEvidence(record: JsonRecord, documents: List<JsonRecord>): List<InvestmentEvidence> =
     (documents.filter { it.text("id").startsWith("guest:document:") && record.hasDocument(it.text("id")) }.map { InvestmentEvidence(if (it.text("kind") == "bond") "View allocation confirmation" else "View share contract", it) } +
     listOf("confirmationDocumentId" to "View allocation confirmation", "contractDocumentId" to "View share contract",
-        "issuanceDocumentId" to "View issuance results", "statementDocumentId" to "View source statement").mapNotNull { (key, label) ->
+        "applicationFormDocumentId" to "Open application form", "issuanceDocumentId" to "View issuance results", "statementDocumentId" to "View source statement").mapNotNull { (key, label) ->
         val id = record.text(key).takeIf { it.matches(Regex("[A-Za-z0-9_-]{1,128}")) } ?: return@mapNotNull null
         val metadata = documents.firstOrNull { it.text("id") == id }
         val document = JsonRecord(metadata?.toString() ?: "{}").put("id", id)
             .put("downloadUrl", "/api/bonds/documents/$id")
         if (document.text("label").isBlank()) document.put("label", when (key) {
+            "applicationFormDocumentId" -> "Bond application form"
             "confirmationDocumentId" -> "Bond confirmation"
             "contractDocumentId" -> "Share contract"
             "statementDocumentId" -> "BK Capital statement"

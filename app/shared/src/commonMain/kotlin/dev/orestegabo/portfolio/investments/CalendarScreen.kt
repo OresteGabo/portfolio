@@ -36,7 +36,7 @@ import kotlin.time.Clock
 import kotlinx.datetime.LocalDate
 
 @Composable
-fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPending: (JsonRecord, LocalDate) -> Unit) {
+fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addTemporaryPurchase: (JsonRecord) -> Unit) {
     val reducedMotion = LocalReducedMotion.current
     val selectionFeedback = LocalSelectionFeedback.current
     val today = rememberBondCalendarToday()
@@ -62,9 +62,6 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
     val ranges = remember(model.calendar) { calendarSubscriptionRanges(model.calendar) }
     val monthEvents = calendarMonthEvents(events, selected)
     val next = events.firstOrNull { it.date > selected && (it.date.year != selected.year || it.date.month != selected.month) }
-    val availableIssues = subscriptionRangesInMonth(ranges, selected).filter { (calendarDate(it.record.text("maturityDate")) ?: today) > today }
-    val preferred = preferredSubscriptionRange(availableIssues, selected)
-    var chooseIssue by remember { mutableStateOf(false) }
     fun select(date: LocalDate) {
         if (date != selected) selectionFeedback()
         followingToday = date == today
@@ -157,7 +154,7 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
         }
         if (!model.isGuest) {
             items(subscriptionRangesInMonth(ranges, selected), key = { "application:${it.id}" }) { range ->
-                BondApplicationFormCard(model, range.record, today)
+                BondApplicationFormCard(model, range.record, today, addTemporaryPurchase)
             }
         }
         item {
@@ -191,18 +188,7 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addPen
             }
         }
     }
-    if (preferred != null) ExtendedFloatingActionButton(
-        onClick = { if (!model.busy) { if (availableIssues.size == 1) addPending(preferred.record, selected) else chooseIssue = true } },
-        modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).semantics { contentDescription = localized("Record pending bond purchase") },
-        icon = { AppIcon(Icons.Outlined.Add, null) }, text = { AppText("Record purchase") })
     }
-    if (chooseIssue) AlertDialog(onDismissRequest = { chooseIssue = false }, title = { AppText("Choose a bond") }, text = {
-        Column { availableIssues.forEach { range ->
-            ListItem(headlineContent = { AppText(range.record.text("title")) },
-                supportingContent = { AppText("${range.start.day}–${range.end.day} ${range.end.monthLabel()}") },
-                modifier = Modifier.clickable { chooseIssue = false; addPending(range.record, selected) })
-        } }
-    }, confirmButton = { TextButton(onClick = { chooseIssue = false }) { AppText("Cancel") } })
 
     if (showInfo) AlertDialog(onDismissRequest = { showInfo = false }, title = { AppText("About this calendar") }, text = {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

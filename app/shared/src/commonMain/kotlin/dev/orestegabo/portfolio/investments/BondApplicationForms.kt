@@ -33,7 +33,7 @@ internal fun bondApplicationFor(issue: JsonRecord, documents: List<JsonRecord>):
 }
 
 @Composable
-internal fun BondApplicationFormCard(model: PortfolioModel, issue: JsonRecord, today: LocalDate) {
+internal fun BondApplicationFormCard(model: PortfolioModel, issue: JsonRecord, today: LocalDate, addTemporaryPurchase: (JsonRecord) -> Unit) {
     val actions = LocalNativeActions.current
     val form = bondApplicationFor(issue, model.documents)
     val available = bondApplicationAvailable(issue, today)
@@ -48,6 +48,12 @@ internal fun BondApplicationFormCard(model: PortfolioModel, issue: JsonRecord, t
             }
             if (!available) AppText("Available from the issuance month", style = MaterialTheme.typography.bodySmall)
         } else if (model.applicationFormsError == null) AppText(if (model.busy) "Loading…" else "Application form not published yet", style = MaterialTheme.typography.bodySmall)
+        if (calendarTemporaryPurchaseAllowed(issue, today)) {
+            OutlinedButton(enabled = !model.busy, onClick = {
+                if (form != null && applicationBidAllowed(form, issue, today)) model.startApplicationBid(form)
+                else addTemporaryPurchase(issue)
+            }, modifier = Modifier.fillMaxWidth()) { AppText("Add temporary purchase") }
+        }
         model.applicationFormsError?.let {
             AppText(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             TextButton(enabled = !model.busy, onClick = model::refreshBondApplicationForms) { AppText("Try again") }
@@ -82,4 +88,21 @@ internal fun BondApplicationFormCard(model: PortfolioModel, issue: JsonRecord, t
             }) { AppText("Publish shared form") } },
             dismissButton = { TextButton(enabled = !model.busy, onClick = { draft = null }) { AppText("Cancel") } })
     }
+}
+
+/** Uses the real Rwanda date, not whichever historical calendar day is selected. Early-month bids are allowed. */
+internal fun applicationBidAllowed(form: JsonRecord, issue: JsonRecord, today: LocalDate): Boolean {
+    val terms = form.optJSONObject("bidTerms") ?: return false
+    val close = calendarDate(issue.text("closingBookDate")) ?: return false
+    return bondApplicationAvailable(issue,today) && today <= close &&
+        terms.text("issuanceDate") == issue.text("closingBookDate") && terms.text("settlementDate") == issue.text("settlementDate") && terms.text("maturityDate") == issue.text("maturityDate") &&
+        terms.optInt("tenorYears") == issue.optInt("tenorYears") && terms.text("bondName").isNotBlank()
+}
+
+/** Early applications are allowed during the issuance month, through the published closing date. */
+internal fun calendarTemporaryPurchaseAllowed(issue: JsonRecord, today: LocalDate): Boolean {
+    val close = calendarDate(issue.text("closingBookDate")) ?: return false
+    return today.year == close.year && today.month == close.month && today <= close &&
+        calendarDate(issue.text("settlementDate")) != null && calendarDate(issue.text("maturityDate")) != null &&
+        issue.text("title").isNotBlank() && issue.optInt("tenorYears") > 0
 }

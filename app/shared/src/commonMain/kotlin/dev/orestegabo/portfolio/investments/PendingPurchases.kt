@@ -66,7 +66,7 @@ fun completePendingPurchase(review: JsonRecord, pending: JsonRecord?): JsonRecor
     val confirmed = importedPurchaseInput(review)
     if (pending != null) {
         require(pendingMatchesConfirmation(pending, confirmed)) { "This PDF does not match the pending purchase." }
-        confirmed.put("feesPaid", pending.optDouble("feesPaid", 0.0))
+        if (pending.text("applicationFormDocumentId").isBlank()) confirmed.put("feesPaid", pending.optDouble("feesPaid", 0.0))
         // Confirmation PDFs do not currently state investor-specific tax. Keep the saved choice.
         if (pending.has("withholdingTaxRate") && review.optJSONObject("fields")?.has("withholdingTaxRate") != true) {
             val tax = pending.optDouble("withholdingTaxRate")

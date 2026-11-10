@@ -6,7 +6,8 @@ import kotlin.math.floor
 import kotlin.math.roundToLong
 import kotlin.time.Clock
 
-val Today: LocalDate get() = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+/** Financial date follows Rwanda, matching the calendar and API; timestamp presentation remains local. */
+val Today: LocalDate get() = bondSubscriptionDate(Clock.System.now())
 fun formatNumber(value: Double): String {
     if (!value.isFinite()) return localized("Unavailable")
     val rounded = roundedMoney(value)

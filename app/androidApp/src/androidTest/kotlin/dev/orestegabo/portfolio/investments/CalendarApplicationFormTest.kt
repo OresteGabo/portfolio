@@ -1,6 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
 import android.graphics.Rect
+import io.ktor.http.content.OutgoingContent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.CompositionLocalProvider
@@ -19,7 +20,10 @@ import org.junit.Test
 
 /** Calendar -> actual Android PDF reader -> explicit sharing, using synthetic data only. */
 class CalendarApplicationFormTest {
-    @Test fun calendarPreviewsTheSharedFormBeforeExplicitSharingAndRestoresTheMonth() {
+    @Test fun calendarPreviewsTheSharedFormBeforeExplicitSharingAndRestoresTheMonth() = calendarJourney(parsedTerms = true)
+    @Test fun calendarTemporaryPurchaseAutomaticallySelectsBondWithoutParsedFormTerms() = calendarJourney(parsedTerms = false)
+
+    private fun calendarJourney(parsedTerms: Boolean) {
         val i = InstrumentationRegistry.getInstrumentation()
         val prefs = i.targetContext.getSharedPreferences("connection", 0)
         val hadOnboarding = prefs.contains("onboardingCompleted")
@@ -38,15 +42,19 @@ class CalendarApplicationFormTest {
             .put("category", "Bond application").put("visibility", "shared")
             .put("originalFileName", "synthetic-application.pdf").put("downloadUrl", "/api/bonds/documents/shared-application")
             .put("applicationForm", JsonRecord(issue.toString()).put("calendarId", issue.text("id")))
+        if (parsedTerms) form.put("bidTerms", JsonRecord(issue.toString()).put("bondName", "FXD SYNTHETIC 5YRS").put("issuanceDate", closing.toString()))
         val pdf = readerFixturePdf(pageCount = 1)
         val shares = AtomicInteger()
         val downloads = AtomicInteger()
+        val bids = AtomicInteger()
+        var savedBid: JsonRecord? = null
         val settings = object : ServerSettings {
             override fun readOrigin() = "https://android-forms.example.test"
             override fun writeOrigin(origin: String) {}
             override fun readOnboardingCompleted() = true
             override fun readLanguage() = "en"
             override fun readScreenCaptureAllowed() = true
+            override fun readNumbersHidden() = true
         }
         val actions = object : NativeActions {
             override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? = null
@@ -101,6 +109,7 @@ class CalendarApplicationFormTest {
             }
             throw AssertionError("Control has no click action: $text")
         }
+        ExperimentalCaptureBackdrop.attach { true }
         try {
             prefs.edit().putBoolean("onboardingCompleted", true).commit()
             ActivityScenario.launch(GuestExperienceHostActivity::class.java).use { scenario ->
@@ -116,6 +125,30 @@ class CalendarApplicationFormTest {
                         } else {
                             val response = when (request.url.encodedPath) {
                                 "/api/bonds/auth/session" -> """{"authenticated":true,"user":{"id":"synthetic-forms-user","isOwner":false}}"""
+                                "/api/bonds/application-forms/shared-application/bids" -> {
+                                    val payload=JsonRecord((request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString())
+                                    assertEquals(1000000.0,payload.optDouble("amount"),0.0)
+                                    bids.incrementAndGet()
+                                    savedBid=JsonRecord().put("id","synthetic-bid").put("bondName","FXD SYNTHETIC 5YRS").put("instrumentType","treasury").put("issuer","Government of Rwanda")
+                                        .put("status","submitted").put("purchaseDate",today.toString()).put("settlementDate",issue.text("settlementDate")).put("maturityDate",issue.text("maturityDate"))
+                                        .put("tenorYears",5).put("faceValue",1000000).put("pricePercent",100).put("feesPaid",0).put("accruedInterestPaid",0).put("couponRate",0).put("couponFrequency",2)
+                                        .put("withholdingTaxRate",.05).put("scheduleConfidence","estimated").put("currency","RWF").put("market","primary").put("applicationFormDocumentId",form.text("id"))
+                                    JsonRecord().put("purchase",savedBid).toString()
+                                }
+                                "/api/bonds/purchases" -> {
+                                    if (request.method == HttpMethod.Post) {
+                                        assertFalse(parsedTerms)
+                                        val payload = JsonRecord((request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString())
+                                        assertEquals(issue.text("title"), payload.text("bondName"))
+                                        assertEquals(issue.text("settlementDate"), payload.text("settlementDate"))
+                                        assertEquals("submitted", payload.text("status"))
+                                        assertEquals(1000000.0, payload.optDouble("faceValue"), 0.0)
+                                        savedBid = payload.put("id", "synthetic-bid")
+                                        bids.incrementAndGet()
+                                    }
+                                    JsonRecord().put("purchases",JsonList(listOfNotNull(savedBid))).toString()
+                                }
+                                "/api/bonds/equities" -> """{"holdings":[]}"""
                                 "/api/bonds/documents" -> JsonRecord().put("documents", JsonList(listOf(form))).toString()
                                 "/api/bonds/application-forms" -> JsonRecord().put("forms", JsonList(listOf(form))).toString()
                                 else -> "{}"
@@ -126,8 +159,11 @@ class CalendarApplicationFormTest {
                     host.viewModelStore.put("calendar-application-test", model)
                     AppLanguage.initialize(settings)
                     host.setContent {
-                        CompositionLocalProvider(LocalNativeActions provides actions, LocalImportEngine provides engine) {
-                            InvestmentApp(model)
+                        // Exercise the same redaction overlays used on iPhone while checking draft and saved privacy.
+                        AndroidCaptureBackdropHost(true) {
+                            CompositionLocalProvider(LocalNativeActions provides actions, LocalImportEngine provides engine) {
+                                InvestmentApp(model)
+                            }
                         }
                     }
                 }
@@ -144,8 +180,36 @@ class CalendarApplicationFormTest {
                 click("Back"); await("Open application form")
                 assertNull(find("Upload application form"))
                 readerFixtureScreenshot(window, File(i.targetContext.filesDir, "calendar-application-return.png"))
+                click("Add temporary purchase")
+                await(if (parsedTerms) "Bid amount (RWF)" else "Amount applied (RWF)")
+                assertNull("Calendar has already chosen the bond", find("Choose bond"))
+                assertNull(find("Choose a bond"))
+                assertFalse("Amount selection must not open a keyboard", nodes().any { it.isEditable })
+                assertNull(find("Hide amount")); assertNull(find("Show amount"))
+                fun awaitAmount(value: String) {
+                    val until = android.os.SystemClock.uptimeMillis() + 5_000
+                    while (android.os.SystemClock.uptimeMillis() < until) {
+                        val count = nodes().count { it.text?.toString() == value }
+                        if (count >= if (value == "100,000") 3 else 1) return
+                        Thread.sleep(100)
+                    }
+                    throw AssertionError("Formatted draft amount missing: $value")
+                }
+                awaitAmount("100,000")
+                click("Increase amount"); awaitAmount("200,000")
+                click("Decrease amount"); awaitAmount("100,000")
+                repeat(9) { index -> click("Increase amount"); awaitAmount(formatNumber((index + 2) * 100000.0)) }
+                awaitAmount("1,000,000")
+                readerFixtureScreenshot(window, File(i.targetContext.filesDir, "calendar-amount-selector.png"))
+                click(if (parsedTerms) "Save bid" else "Save pending purchase")
+                await("Calendar");click(if (parsedTerms) "FXD SYNTHETIC 5YRS" else issue.text("title"))
+                assertEquals(1,bids.get())
+                await("Awaiting BNR confirmation")
+                assertFalse("Saved purchase must respect number hiding", nodes().any { it.text?.toString()?.contains("1,000,000") == true })
+                readerFixtureScreenshot(window,File(i.targetContext.filesDir,"calendar-bid-home.png"))
             }
         } finally {
+            ExperimentalCaptureBackdrop.detach()
             prefs.edit().apply {
                 if (hadOnboarding) putBoolean("onboardingCompleted", oldOnboarding) else remove("onboardingCompleted")
             }.commit()

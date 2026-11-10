@@ -5,6 +5,11 @@ internal const val CONNECTION_ERROR_MESSAGE = "Could not connect. Check your con
 
 /** Exact, app-authored messages only. Never trust free-form exception or server response text. */
 private val approvedErrorMessages = setOf(
+    "Bids are unavailable for this form or the subscription window has closed.",
+    "This subscription window is closed or its issuance month has not started.",
+    "The application form details could not be verified. Open the form or contact the owner.",
+    "The bid could not be verified. Refresh your portfolio before retrying.",
+    "This bid identity is already in use.",
     "You cannot sell more shares than remain.",
     "Sale charges cannot exceed proceeds.",
     "Remove linked transactions before editing this purchase.",

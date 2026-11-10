@@ -12,32 +12,30 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PendingBondScreen(model: PortfolioModel, initialIssueId: String? = null, done: () -> Unit) {
-    val choices = model.calendar.filter { calendarDate(it.text("settlementDate")) != null && (calendarDate(it.text("maturityDate")) ?: Today) > Today }
+    val today = rememberBondCalendarToday()
+    val choices = model.calendar.filter { calendarTemporaryPurchaseAllowed(it, today) }
     var selectedId by rememberSaveable(initialIssueId) { mutableStateOf(initialIssueId ?: choices.lastOrNull { it.text("settlementDate") <= Today.toString() }?.text("id") ?: choices.firstOrNull()?.text("id")) }
     val issue = choices.find { it.text("id") == selectedId }
-    var amount by rememberSaveable { mutableStateOf("") }
+    var amount by rememberSaveable(initialIssueId) { mutableStateOf(ApplicationAmountStep.toString()) }
     var choosing by remember { mutableStateOf(false) }
-    val draft = issue?.let { runCatching { pendingBondInput(it, amount.toInputNumberOrNull() ?: 0.0, Today) }.getOrNull() }
+    val draft = issue?.let { runCatching { pendingBondInput(it, amount.toInputNumberOrNull() ?: 0.0, today) }.getOrNull() }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { AppText("Pending bond", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
-        item { AppText("No file needed. Confirm later with your PDF or published issuance terms.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         if (choices.isEmpty()) item { EmptyState("No published bonds", EmptyArtwork.BONDS, compact = true) }
         else {
-            item { ListItem(headlineContent = { AppText(issue?.text("title") ?: "Choose a bond") },
-                supportingContent = { AppText(issue?.text("settlementDate").orEmpty()) },
-                trailingContent = { AppIcon(Icons.Outlined.ArrowDropDown, "Choose bond") }, modifier = Modifier.clickable { choosing = true }) }
-            item { Field("Amount applied (RWF)", amount, { amount = it.filter(Char::isDigit).take(15) }, KeyboardType.Number, "In RWF 100,000 increments") }
-            item { Panel {
-                Fact("Commission", money(PendingBondCommission, "RWF"))
-                Fact("Total paid", money((amount.toInputNumberOrNull() ?: 0.0) + PendingBondCommission, "RWF"))
-            } }
-            item { Button(enabled = draft != null && !model.busy, onClick = { draft?.let { model.savePurchase(it, null, done) } }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { AppText("Save pending purchase") } }
+            item { PendingBondHeader(issue?.text("title") ?: "Choose a bond", issue?.text("settlementDate").orEmpty(),
+                issue?.text("maturityDate").orEmpty(), choose = if (initialIssueId == null) ({ choosing = true }) else null) }
+            item { PendingPurchaseNotice() }
+            item { ApplicationAmountSelector("Amount applied (RWF)", amount, { amount = it }, enabled = issue != null && !model.busy) }
+            item { PendingPurchaseSummary(amount.toInputNumberOrNull() ?: 0.0) }
+            item { Button(enabled = draft != null && !model.busy, onClick = { draft?.let { purchase ->
+                if (issue != null && calendarTemporaryPurchaseAllowed(issue, Today)) model.savePurchase(purchase, null, done)
+            } }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { AppText("Save pending purchase") } }
+            item { PendingPurchaseDisclaimer() }
         }
     }
     if (choosing) ModalBottomSheet(onDismissRequest = { choosing = false }) {

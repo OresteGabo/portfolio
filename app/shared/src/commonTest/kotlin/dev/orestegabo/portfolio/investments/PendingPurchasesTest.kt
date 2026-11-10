@@ -63,6 +63,11 @@ class PendingPurchasesTest {
         assertEquals(0.0, completePendingPurchase(review, null).optDouble("feesPaid"))
         assertFailsWith<IllegalArgumentException> { completePendingPurchase(review, pending.put("maturityDate", "2040-01-01")) }
     }
+    @Test fun formBidDoesNotReplaceVerifiedConfirmationFeesWithAnUnknownPlaceholder() {
+        val pending=pendingBondInput(issue(),1_000_000.0,today).put("applicationFormDocumentId","shared-form").put("feesPaid",0)
+        val review=confirmation().let { it.put("fields",it.getJSONObject("fields").put("feesPaid",12500)) }
+        assertEquals(12500.0,completePendingPurchase(review,pending).optDouble("feesPaid"))
+    }
     @Test fun unreadableOrInconsistentPdfsCannotFallBackToManualOrInventedDetails() {
         assertFailsWith<IllegalArgumentException> { importedPurchaseInput(confirmation().put("missingFields", JsonList("[\"Executed price\"]"))) }
         assertFailsWith<IllegalArgumentException> { importedPurchaseInput(confirmation().put("warnings", JsonList("[\"Settlement amount differs from principal × price.\"]"))) }

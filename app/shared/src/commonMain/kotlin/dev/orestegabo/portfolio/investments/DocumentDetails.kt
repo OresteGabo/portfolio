@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.dp
 
 /** Navigation follows owned persisted evidence, never a guessed company name or document title. */
 internal fun documentBonds(document: JsonRecord, purchases: List<JsonRecord>) = purchases.filter { purchase ->
-    document.text("id").isNotBlank() && (purchase.hasDocument(document.text("id")) || listOf("confirmationDocumentId", "issuanceDocumentId", "statementDocumentId").any {
+    document.text("id").isNotBlank() && (purchase.hasDocument(document.text("id")) || listOf("confirmationDocumentId", "issuanceDocumentId", "statementDocumentId", "applicationFormDocumentId").any {
         purchase.text(it) == document.text("id")
     })
 }
