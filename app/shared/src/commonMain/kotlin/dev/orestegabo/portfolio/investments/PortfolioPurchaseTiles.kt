@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -32,6 +33,21 @@ private fun InvestmentEntry(title: String, subtitle: String, bond: Boolean, tick
     }
 }
 
+/** Neutral status stays distinct from active holdings without looking like a disabled control. */
+@Composable
+private fun PendingBondStatusBadge() {
+    val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
+    val background = if (dark) Color(0xFF2B2E33) else Color(0xFFF0F1F3)
+    val foreground = if (dark) Color(0xFFC4C8CF) else Color(0xFF5C626B)
+    Surface(shape = RoundedCornerShape(8.dp), color = background, contentColor = foreground) {
+        Row(Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            AppIcon(Icons.Outlined.Schedule, null, Modifier.size(14.dp))
+            AppText("Pending", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
 @Composable
 fun BondPurchaseTile(model: PortfolioModel, purchase: JsonRecord, manage: () -> Unit) {
     var expanded by rememberSaveable(purchase.text("id")) { mutableStateOf(false) }
@@ -44,8 +60,14 @@ fun BondPurchaseTile(model: PortfolioModel, purchase: JsonRecord, manage: () -> 
         Column {
             ListItem(
                 headlineContent = { AppText(purchase.text("bondName"), fontWeight = FontWeight.SemiBold) },
-                supportingContent = { FinancialText("${money(purchase.optDouble("faceValue"), purchase.text("currency"))} · ${localized(if (pending) "Awaiting BNR confirmation" else purchase.text("status"))}",
-                    style = MaterialTheme.typography.bodySmall) },
+                supportingContent = {
+                    if (pending) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
+                        itemVerticalAlignment = Alignment.CenterVertically) {
+                        FinancialText(money(purchase.optDouble("faceValue"), purchase.text("currency")), style = MaterialTheme.typography.bodySmall)
+                        PendingBondStatusBadge()
+                    } else FinancialText("${money(purchase.optDouble("faceValue"), purchase.text("currency"))} · ${localized(purchase.text("status"))}",
+                        style = MaterialTheme.typography.bodySmall)
+                },
                 leadingContent = { InvestmentLogo(bond = true) },
                 trailingContent = { AppIcon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null) },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
@@ -55,19 +77,16 @@ fun BondPurchaseTile(model: PortfolioModel, purchase: JsonRecord, manage: () -> 
             AppAnimatedVisibility(expanded) {
                 Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = .055f)) {
+                    Surface(shape = RoundedCornerShape(16.dp), color = if (pending) MaterialTheme.colorScheme.onSurface.copy(alpha = .035f) else MaterialTheme.colorScheme.primary.copy(alpha = .055f)) {
                         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                            if (pending) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                AppIcon(Icons.Outlined.Schedule, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                                AppText("Awaiting BNR confirmation", style = MaterialTheme.typography.bodySmall)
-                            } else {
+                            if (!pending) {
                                 FlowRow(horizontalArrangement = Arrangement.spacedBy(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                     next?.let { BondPreviewMetric("Next coupon", it.toString()) }
                                     if (purchase.has("couponRate")) BondPreviewMetric("Coupon rate", percent(purchase.optDouble("couponRate")))
                                 }
                             }
                             if (purchase.text("maturityDate").isNotBlank()) {
-                                HorizontalDivider(color = MaterialTheme.colorScheme.primary.copy(alpha = .12f))
+                                if (!pending) HorizontalDivider(color = MaterialTheme.colorScheme.primary.copy(alpha = .12f))
                                 Fact("Maturity", purchase.text("maturityDate"))
                             }
                         }

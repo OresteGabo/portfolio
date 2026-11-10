@@ -204,7 +204,7 @@ class CalendarApplicationFormTest {
                 click(if (parsedTerms) "Save bid" else "Save pending purchase")
                 await("Calendar");click(if (parsedTerms) "FXD SYNTHETIC 5YRS" else issue.text("title"))
                 assertEquals(1,bids.get())
-                await("Awaiting BNR confirmation")
+                await("Pending")
                 assertFalse("Saved purchase must respect number hiding", nodes().any { it.text?.toString()?.contains("1,000,000") == true })
                 readerFixtureScreenshot(window,File(i.targetContext.filesDir,"calendar-bid-home.png"))
             }
