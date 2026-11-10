@@ -39,11 +39,12 @@ private fun PendingBondStatusBadge() {
     val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
     val background = if (dark) Color(0xFF2B2E33) else Color(0xFFF0F1F3)
     val foreground = if (dark) Color(0xFFC4C8CF) else Color(0xFF5C626B)
-    Surface(shape = RoundedCornerShape(8.dp), color = background, contentColor = foreground) {
-        Row(Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically,
+    Surface(shape = RoundedCornerShape(5.dp), color = background, contentColor = foreground) {
+        Row(Modifier.padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            AppIcon(Icons.Outlined.Schedule, null, Modifier.size(14.dp))
-            AppText("Pending", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium)
+            AppIcon(Icons.Outlined.Schedule, null, Modifier.size(12.dp))
+            AppText("Pending", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium,
+                maxLines = 1, softWrap = false)
         }
     }
 }
@@ -61,9 +62,10 @@ fun BondPurchaseTile(model: PortfolioModel, purchase: JsonRecord, manage: () -> 
             ListItem(
                 headlineContent = { AppText(purchase.text("bondName"), fontWeight = FontWeight.SemiBold) },
                 supportingContent = {
-                    if (pending) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
-                        itemVerticalAlignment = Alignment.CenterVertically) {
-                        FinancialText(money(purchase.optDouble("faceValue"), purchase.text("currency")), style = MaterialTheme.typography.bodySmall)
+                    if (pending) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        FinancialText(money(purchase.optDouble("faceValue"), purchase.text("currency")),
+                            Modifier.weight(1f, fill = false), style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
                         PendingBondStatusBadge()
                     } else FinancialText("${money(purchase.optDouble("faceValue"), purchase.text("currency"))} · ${localized(purchase.text("status"))}",
                         style = MaterialTheme.typography.bodySmall)
