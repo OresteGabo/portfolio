@@ -12,7 +12,7 @@ fun pendingBondInput(issue: JsonRecord, amount: Double, recorded: LocalDate): Js
     require(maturity > recorded && maturity > settlement) { "Choose a bond that has not matured." }
     require(issue.text("title").isNotBlank() && issue.optDouble("tenorYears", 0.0) > 0) { "Choose a published bond." }
     return JsonRecord().put("instrumentType", "treasury").put("issuer", "Government of Rwanda").put("currency", "RWF")
-        .put("market", "primary").put("bondName", issue.text("title")).put("isin", issue.text("isin"))
+        .put("market", "primary").put("bondName", calendarBondName(issue)).put("isin", issue.text("isin"))
         .put("purchaseDate", recorded.toString()).put("settlementDate", settlement.toString()).put("maturityDate", maturity.toString())
         .put("tenorYears", issue.optDouble("tenorYears")).put("faceValue", amount)
         // Required legacy storage defaults, never presented as executed terms or counted in active totals.
@@ -75,4 +75,22 @@ fun completePendingPurchase(review: JsonRecord, pending: JsonRecord?): JsonRecor
         }
     }
     return confirmed
+}
+
+
+/** Published security identity takes precedence over a calendar's descriptive auction title. */
+internal fun calendarBondName(issue: JsonRecord): String = issue.text("bondName").ifBlank { issue.text("title") }
+
+/** Resolve old descriptive pending names without rewriting saved allocations or confirmed records. */
+internal fun pendingBondDisplayName(purchase: JsonRecord, calendar: List<JsonRecord>): String {
+    val saved = purchase.text("bondName")
+    if (purchase.text("status") != "submitted" || purchase.text("issuer") != "Government of Rwanda" || purchase.text("currency") != "RWF") return saved
+    val issue = calendar.singleOrNull {
+        it.text("settlementDate").isNotBlank() && it.text("settlementDate") == purchase.text("settlementDate") &&
+            it.text("maturityDate").isNotBlank() && it.text("maturityDate") == purchase.text("maturityDate") &&
+            it.optDouble("tenorYears") == purchase.optDouble("tenorYears")
+    } ?: return saved
+    val descriptive = saved.isBlank() || saved == issue.text("title") ||
+        saved.startsWith("New ", ignoreCase = true) || saved.startsWith("Reopen ", ignoreCase = true)
+    return if (descriptive) issue.text("bondName").ifBlank { saved } else saved
 }

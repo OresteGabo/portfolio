@@ -72,4 +72,21 @@ class BondIssuanceTest {
         assertEquals(0.0, pending.optDouble("couponRate"))
         assertTrue(mergeBondIssuances(listOf(published), emptyList()).single().text("isin").isBlank())
     }
+    @Test fun calendarTakesIdentityFromTheMatchingSharedFormWithoutTakingAuctionPrices() {
+        val row = JsonRecord().put("id", "november").put("title", "New 5-year bond").put("tenorYears", 5)
+            .put("closingBookDate", "2026-11-11").put("settlementDate", "2026-11-13").put("maturityDate", "2031-11-07")
+        val terms = JsonRecord(row.toString()).put("issuanceDate", "2026-11-11").put("bondName", "FXD 6/2026/5YRS").put("pricePercent", 99)
+        val form = JsonRecord().put("category", BOND_APPLICATION_CATEGORY).put("applicationForm", row).put("bidTerms", terms)
+        val merged = mergeBondIssuances(listOf(row), listOf(form)).single()
+        assertEquals("FXD 6/2026/5YRS", calendarBondName(merged))
+        assertFalse(merged.has("pricePercent"))
+        assertFalse(row.has("bondName"))
+        val reopen = JsonRecord(row.toString()).put("id", "reopen").put("kind", "reopen").put("reopensIssueId", "november")
+            .put("settlementDate", "2027-05-21").put("closingBookDate", "2027-05-19")
+        assertEquals("FXD 6/2026/5YRS", calendarBondName(mergeBondIssuances(listOf(row, reopen), listOf(form)).last()))
+        assertFalse(mergeBondIssuances(listOf(row, reopen), listOf(form)).last().has("pricePercent"))
+        form.put("bidTerms", JsonRecord(terms.toString()).put("settlementDate", "2026-12-01"))
+        assertEquals("New 5-year bond", calendarBondName(mergeBondIssuances(listOf(row), listOf(form)).single()))
+    }
+
 }

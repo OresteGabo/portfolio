@@ -23,6 +23,7 @@ import kotlinx.datetime.daysUntil
 fun BondDetailsScreen(model: PortfolioModel, purchase: JsonRecord, engine: InvestmentEngine,
     imported: (JsonRecord) -> Unit, back: () -> Unit, edit: () -> Unit) {
     val currency = purchase.text("currency")
+    val displayBondName = pendingBondDisplayName(purchase, model.calendar)
     val today = Today
     val terms = bondDetailTerms(purchase)
     val tracking = terms?.let { trackBond(it, today) }
@@ -39,7 +40,7 @@ fun BondDetailsScreen(model: PortfolioModel, purchase: JsonRecord, engine: Inves
     }
     if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false },
         title = { AppText("Delete purchase?") },
-        text = { AppText(if (model.isGuest) "This removes the local investment and its receipt states. Saved PDFs stay in Documents." else "This removes ${purchase.text("bondName")} from your synchronized portfolio.") },
+        text = { AppText(if (model.isGuest) "This removes the local investment and its receipt states. Saved PDFs stay in Documents." else "This removes ${displayBondName} from your synchronized portfolio.") },
         confirmButton = { TextButton(enabled = model.canEditInvestments, onClick = {
             model.deletePurchase(purchase.text("id"), back); confirmDelete = false
         }) { AppText("Delete", color = MaterialTheme.colorScheme.error) } },
@@ -57,7 +58,7 @@ fun BondDetailsScreen(model: PortfolioModel, purchase: JsonRecord, engine: Inves
                             style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     }
                 }
-                FinancialText(purchase.text("bondName"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium,
+                FinancialText(displayBondName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium,
                     modifier = Modifier.semantics { heading() })
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     FinancialText(purchase.text("isin"), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

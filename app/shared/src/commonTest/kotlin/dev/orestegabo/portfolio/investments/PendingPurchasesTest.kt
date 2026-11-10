@@ -130,4 +130,18 @@ class PendingPurchasesTest {
         assertEquals(.10, importedPurchaseInput(review).optDouble("withholdingTaxRate"))
     }
 
+    @Test fun officialCodeIsUsedForNewBidsAndExistingDescriptivePendingNames() {
+        val calendar = issue().put("title", "New 5-year bond").put("bondName", "FXD 6/2026/5YRS")
+            .put("tenorYears", 5).put("settlementDate", "2026-11-13").put("maturityDate", "2031-11-07")
+        val pending = pendingBondInput(calendar, 100000.0, today)
+        assertEquals("FXD 6/2026/5YRS", pending.text("bondName"))
+        val old = JsonRecord(pending.toString()).put("bondName", "New 5-year bond")
+        assertEquals("FXD 6/2026/5YRS", pendingBondDisplayName(old, listOf(calendar)))
+        assertEquals("New 5-year bond", old.text("bondName"), "Display resolution must not mutate saved records")
+        assertEquals("New 5-year bond", pendingBondDisplayName(old, listOf(calendar, calendar)))
+        assertEquals("New 5-year bond", pendingBondDisplayName(old, listOf(JsonRecord(calendar.toString()).put("settlementDate", "2099-01-01"))))
+        assertEquals("New 5-year bond", pendingBondDisplayName(JsonRecord(old.toString()).put("status", "active"), listOf(calendar)))
+        assertEquals("FXD SAVED", pendingBondDisplayName(JsonRecord(old.toString()).put("bondName", "FXD SAVED"), listOf(calendar)))
+    }
+
 }

@@ -130,19 +130,32 @@ fun mergeBondIssuances(published: List<JsonRecord>, documents: List<JsonRecord>,
         val index = result.indexOfFirst { it.text("settlementDate") == issue.text("settlementDate") &&
             it.text("maturityDate") == issue.text("maturityDate") }
         val row = if (index >= 0) JsonRecord(result[index].toString()) else JsonRecord().put("id", "issuance:${document.text("id")}")
-        row.put("title", issue.text("bondName")).put("isin", issue.text("isin"))
+        row.put("title", issue.text("bondName")).put("bondName", issue.text("bondName")).put("isin", issue.text("isin"))
             .put("tenorYears", issue.optDouble("tenorYears")).put("settlementDate", issue.text("settlementDate"))
             .put("maturityDate", issue.text("maturityDate")).put("issuance", issue)
         if (index >= 0) result[index] = row else result += row
     }
     // Calendar identity hints only: unique public security terms, never investor records or auction prices.
     for (index in result.indices) {
-        val row=result[index]
-        if (row.text("isin").isBlank()) {
+        var row=result[index]
+        val formTerms = bondApplicationFor(row, documents)?.optJSONObject("bidTerms")
+        if (formTerms != null && formTerms.text("issuanceDate") == row.text("closingBookDate") &&
+            formTerms.text("settlementDate") == row.text("settlementDate") && formTerms.text("maturityDate") == row.text("maturityDate") &&
+            formTerms.optInt("tenorYears") == row.optInt("tenorYears") && formTerms.text("bondName").isNotBlank()) {
+            row = JsonRecord(row.toString()).put("bondName", formTerms.text("bondName"))
+            result[index] = row
+        }
+        if (row.text("isin").isBlank() || row.text("bondName").isBlank()) {
             val candidates=couponTerms.filter { it.text("maturityDate")==row.text("maturityDate") &&
                 it.optDouble("tenorYears",Double.NaN)==row.optDouble("tenorYears",Double.NaN) &&
-                it.text("issuer")=="Government of Rwanda" && it.text("currency")=="RWF" }
-            candidates.singleOrNull()?.let { result[index]=JsonRecord(row.toString()).put("isin",it.text("isin")) }
+                it.text("issuer")=="Government of Rwanda" && it.text("currency")=="RWF" &&
+                (row.text("isin").isBlank() || row.text("isin").uppercase().removeSuffix("/MN") == it.text("isin").uppercase().removeSuffix("/MN")) }
+            candidates.singleOrNull()?.let {
+                val enriched = JsonRecord(row.toString())
+                if (row.text("isin").isBlank()) enriched.put("isin", it.text("isin"))
+                if (row.text("bondName").isBlank() && it.text("bondName").isNotBlank()) enriched.put("bondName", it.text("bondName"))
+                result[index] = enriched
+            }
         }
     }
     // The published calendar explicitly names the original auction. Inherit only its security
@@ -150,9 +163,12 @@ fun mergeBondIssuances(published: List<JsonRecord>, documents: List<JsonRecord>,
     return result.map { row ->
         val original = result.singleOrNull { it.text("id") == row.text("reopensIssueId") && row.text("reopensIssueId").isNotBlank() }
         val verified = original?.optJSONObject("issuance")
-        if (row.text("kind") == "reopen" && row.text("isin").isBlank() && verified != null &&
-            row.text("maturityDate") == verified.text("maturityDate"))
-            JsonRecord(row.toString()).put("isin",verified.text("isin")) else row
+        if (row.text("kind") == "reopen" && original != null && row.text("maturityDate") == original.text("maturityDate")) {
+            val enriched = JsonRecord(row.toString())
+            if (row.text("bondName").isBlank() && original.text("bondName").isNotBlank()) enriched.put("bondName", original.text("bondName"))
+            if (row.text("isin").isBlank() && verified != null) enriched.put("isin", verified.text("isin"))
+            enriched
+        } else row
     }
 }
 

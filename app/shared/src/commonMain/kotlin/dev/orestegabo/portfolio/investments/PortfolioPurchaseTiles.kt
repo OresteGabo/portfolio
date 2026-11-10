@@ -24,7 +24,7 @@ private fun InvestmentEntry(title: String, subtitle: String, bond: Boolean, tick
     Surface(onClick = open, shape = RoundedCornerShape(22.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .4f))) {
         ListItem(
-            headlineContent = { AppText(title, fontWeight = FontWeight.SemiBold) },
+            headlineContent = { AppText(title, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis) },
             supportingContent = { FinancialText(subtitle, style = MaterialTheme.typography.bodySmall) },
             leadingContent = { InvestmentLogo(bond = bond, ticker = ticker) },
             trailingContent = { AppIcon(Icons.Outlined.ChevronRight, "Details") },
@@ -35,11 +35,11 @@ private fun InvestmentEntry(title: String, subtitle: String, bond: Boolean, tick
 
 /** Neutral status stays distinct from active holdings without looking like a disabled control. */
 @Composable
-private fun PendingBondStatusBadge() {
+private fun PendingBondStatusBadge(modifier: Modifier = Modifier) {
     val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
     val background = if (dark) Color(0xFF2B2E33) else Color(0xFFF0F1F3)
     val foreground = if (dark) Color(0xFFC4C8CF) else Color(0xFF5C626B)
-    Surface(shape = RoundedCornerShape(5.dp), color = background, contentColor = foreground) {
+    Surface(modifier = modifier, shape = RoundedCornerShape(5.dp), color = background, contentColor = foreground) {
         Row(Modifier.padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             AppIcon(Icons.Outlined.Schedule, null, Modifier.size(12.dp))
@@ -60,13 +60,15 @@ fun BondPurchaseTile(model: PortfolioModel, purchase: JsonRecord, manage: () -> 
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .4f))) {
         Column {
             ListItem(
-                headlineContent = { AppText(purchase.text("bondName"), fontWeight = FontWeight.SemiBold) },
+                headlineContent = { AppText(pendingBondDisplayName(purchase, model.calendar), fontWeight = FontWeight.SemiBold) },
                 supportingContent = {
+                    // ListItem detects multiline supporting content from its first/last baselines.
+                    // Align the badge and amount so it keeps the same two-line layout as active bonds.
                     if (pending) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         FinancialText(money(purchase.optDouble("faceValue"), purchase.text("currency")),
-                            Modifier.weight(1f, fill = false), style = MaterialTheme.typography.bodySmall,
+                            Modifier.weight(1f, fill = false).alignByBaseline(), style = MaterialTheme.typography.bodySmall,
                             maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
-                        PendingBondStatusBadge()
+                        PendingBondStatusBadge(Modifier.alignByBaseline())
                     } else FinancialText("${money(purchase.optDouble("faceValue"), purchase.text("currency"))} · ${localized(purchase.text("status"))}",
                         style = MaterialTheme.typography.bodySmall)
                 },

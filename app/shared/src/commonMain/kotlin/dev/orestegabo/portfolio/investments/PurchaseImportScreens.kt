@@ -27,7 +27,7 @@ fun PendingBondScreen(model: PortfolioModel, initialIssueId: String? = null, don
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (choices.isEmpty()) item { EmptyState("No published bonds", EmptyArtwork.BONDS, compact = true) }
         else {
-            item { PendingBondHeader(issue?.text("title") ?: "Choose a bond", issue?.text("settlementDate").orEmpty(),
+            item { PendingBondHeader(issue?.let(::calendarBondName) ?: "Choose a bond", issue?.text("settlementDate").orEmpty(),
                 issue?.text("maturityDate").orEmpty(), choose = if (initialIssueId == null) ({ choosing = true }) else null) }
             item { PendingPurchaseNotice() }
             item { ApplicationAmountSelector("Amount applied (RWF)", amount, { amount = it }, enabled = issue != null && !model.busy) }

@@ -49,6 +49,7 @@
   },
   {
     "id": "2026-11-5y-new",
+    "bondName": "FXD 6/2026/5YRS",
     "kind": "new",
     "title": "New 5-year bond",
     "tenorYears": 5,
