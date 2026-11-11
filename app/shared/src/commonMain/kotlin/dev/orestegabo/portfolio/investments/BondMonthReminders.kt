@@ -1,16 +1,19 @@
 package dev.orestegabo.portfolio.investments
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material3.*
+import androidx.compose.material.icons.outlined.NotificationAdd
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.LocalDate
 
@@ -39,7 +42,11 @@ internal fun BondMonthReminderButton(model: PortfolioModel, selected: LocalDate,
         label = { AppText(if(active) "Reminder set" else "Set reminder", style = MaterialTheme.typography.labelMedium) },
         leadingIcon = {
             if(busy) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-            else AppIcon(if(active) Icons.Default.Check else Icons.Outlined.Notifications, null, Modifier.size(16.dp))
+            else AppIcon(
+                if (active) Icons.Default.Check else Icons.Outlined.NotificationAdd,
+                null,
+                Modifier.size(16.dp)
+            )
         },
         enabled = !busy && !model.locked,
         modifier = Modifier.semantics { contentDescription = label; stateDescription = localized(if(active) "Reminder on" else "Reminder off") },
