@@ -1,3 +1,3 @@
 <resources>
-    <string name="app_name">Struct Capital</string>
+    <string name="app_name" translatable="false">Struct Capital</string>
 </resources>

@@ -23,6 +23,7 @@ class PriceMessagingService : FirebaseMessagingService() {
         if (getSharedPreferences("connection", MODE_PRIVATE).getString("sessionChoice", null)?.startsWith("guest-") == true) return
         Handler(Looper.getMainLooper()).post { NativePushBridge.priceUpdate() }
         if(message.data["kind"] == "subscriptions") {
+            NextWidgetStore.onPush(this,message.data)
             BondReminderNotifications.receive(this,message.data)
             return
         }

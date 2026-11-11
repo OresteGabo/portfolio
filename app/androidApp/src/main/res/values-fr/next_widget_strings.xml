@@ -1,0 +1,12 @@
+<resources>
+    <string name="next_widget_heading">À venir</string>
+    <string name="next_widget_small_name">À venir · Petit</string>
+    <string name="next_widget_medium_name">À venir · Moyen</string>
+    <string name="next_widget_description">Souscriptions obligataires et paiements prévus. Sans montants personnels.</string>
+    <string name="next_widget_preview_status">Prochaine souscription</string>
+    <string name="next_widget_preview_title">Votre prochain événement</string>
+    <string name="next_widget_preview_date">Calendrier</string>
+    <string name="next_widget_preview_detail">Ouvrir l’application pour actualiser</string>
+    <string name="next_widget_after">ÉGALEMENT À VENIR</string>
+    <string name="next_widget_preview_second">Paiements prévus</string>
+</resources>

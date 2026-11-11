@@ -22,6 +22,14 @@
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="price_changes" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_price_notification" />
         <receiver android:name=".BondReminderDismissReceiver" android:exported="false" />
+        <receiver android:name=".NextSmallWidget" android:exported="false" android:label="@string/next_widget_small_name">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/next_widget_small_info" />
+        </receiver>
+        <receiver android:name=".NextMediumWidget" android:exported="false" android:label="@string/next_widget_medium_name">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/next_widget_medium_info" />
+        </receiver>
         <service android:name=".PriceMessagingService" android:exported="false">
             <intent-filter><action android:name="com.google.firebase.MESSAGING_EVENT" /></intent-filter>
         </service>
