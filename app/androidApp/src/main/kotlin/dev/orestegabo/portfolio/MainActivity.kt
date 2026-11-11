@@ -22,9 +22,11 @@ import dev.orestegabo.portfolio.investments.applyInitialCaptureProtection
 class MainActivity : FragmentActivity() {
     private val pushPermission=registerForActivityResult(ActivityResultContracts.RequestPermission()) { installPush() }
     private fun installPush() {
+        NativePushBridge.installAccountRefresh { installPush() }
         val prefs=getSharedPreferences("portfolio.push",MODE_PRIVATE)
         val id=prefs.getString("deviceId",null) ?: UUID.randomUUID().toString().also { prefs.edit().putString("deviceId",it).apply() }
         NativePushBridge.identify(id,"android")
+        NativePushBridge.installReminderCleanup { months -> BondReminderNotifications.reconcile(this,months) }
         // Also override an SDK preference retained from an older installation. Never enable auto-init.
         if (FirebaseApp.getApps(this).isNotEmpty()) FirebaseMessaging.getInstance().isAutoInitEnabled = false
         val entry = getSharedPreferences("connection", MODE_PRIVATE)

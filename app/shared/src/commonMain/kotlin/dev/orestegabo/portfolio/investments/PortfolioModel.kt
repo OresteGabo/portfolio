@@ -353,6 +353,69 @@ class PortfolioModel(
     var portfolio: PortfolioSnapshot
         get() = if (isGuest) guestViewPortfolio(guestPath, guestPortfolio, samplePortfolio) else accountPortfolio
         private set(value) { accountPortfolio = value }
+    var bondReminderFeedback by mutableStateOf<String?>(null)
+        private set
+    fun dismissBondReminderFeedback() { bondReminderFeedback = null }
+    private var bondReminderRevision = 0
+    var bondReminderMonths by mutableStateOf<Set<String>>(emptySet())
+        private set
+    var bondRemindersLoaded by mutableStateOf(false)
+        private set
+    var bondRemindersLoading by mutableStateOf(false)
+        private set
+    var bondReminderSaving by mutableStateOf<String?>(null)
+        private set
+    var bondRemindersError by mutableStateOf<String?>(null)
+        private set
+    fun loadBondReminders() {
+        if (isGuest || user == null || locked || bondRemindersLoading || bondReminderSaving != null) return
+        val revision = notificationGeneration
+        bondRemindersLoading = true
+        val readRevision = ++bondReminderRevision
+        viewModelScope.launch {
+            try {
+                val result = api.request("/api/bonds/notifications/bond-reminders")
+                if (revision == notificationGeneration && readRevision == bondReminderRevision) {
+                    require(result.has("months"))
+                    bondReminderMonths = result.optJSONArray("months")?.let { values ->
+                        (0 until values.length()).map { values.getString(it) }.toSet()
+                    }.orEmpty()
+                    bondRemindersLoaded = true; bondRemindersError = null
+                    NativePushBridge.reconcileReminders(bondReminderMonths.joinToString(","))
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { if (revision == notificationGeneration && readRevision == bondReminderRevision) { bondRemindersError = "Bond reminders could not be loaded. Try again."; bondReminderFeedback = bondRemindersError } }
+            finally { if (revision == notificationGeneration) bondRemindersLoading = false }
+        }
+    }
+    fun setBondMonthReminder(month: String, enabled: Boolean) {
+        if (user == null || locked || !bondRemindersLoaded || bondReminderSaving != null || !validBondReminderMonth(month)) return
+        val revision = notificationGeneration
+        bondReminderSaving = month
+        ++bondReminderRevision // An earlier refresh must not overwrite this acknowledged choice.
+        viewModelScope.launch {
+            try {
+                val result = api.request("/api/bonds/notifications/bond-reminders/$month", "PUT", JsonRecord().put("enabled", enabled))
+                require(result.has("months"))
+                if (revision == notificationGeneration) {
+                    val values = result.optJSONArray("months")
+                    bondReminderMonths = if(values == null) emptySet() else (0 until values.length()).map { values.getString(it) }.toSet()
+                    bondRemindersError = null
+                    NativePushBridge.reconcileReminders(bondReminderMonths.joinToString(","))
+                    if(enabled && NativePushBridge.available && !NativePushBridge.allowed) NativePushBridge.requestPermission()
+                    bondReminderFeedback = when {
+                        !enabled -> "Reminder removed."
+                        !NativePushBridge.available -> "Reminder saved. Phone alerts need setup."
+                        !NativePushBridge.allowed -> "Reminder saved. Enable phone notifications."
+                        else -> "Reminder saved. We’ll alert you when the form is ready."
+                    }
+                    if(enabled) fetchNotificationSettings()
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { if (revision == notificationGeneration) { bondRemindersError = "Bond reminder could not be saved. Try again."; bondReminderFeedback = bondRemindersError } }
+            finally { if (revision == notificationGeneration) bondReminderSaving = null }
+        }
+    }
     var notificationPreferences by mutableStateOf(JsonRecord())
         private set
     var notificationSettingsAvailable by mutableStateOf(false)
@@ -502,14 +565,18 @@ class PortfolioModel(
     } }
     suspend fun syncPushDevice() {
         if(user==null || locked)return
+        if(!bondRemindersLoaded) loadBondReminders()
         try {
             if(NativePushBridge.deviceId.isNotBlank())api.request("/api/bonds/notifications/session-device","POST",JsonRecord().withDeviceIdentity())
         } catch(cancelled: CancellationException) { throw cancelled }
         catch(_: Exception) { }
         val registration=NativePushBridge.registration ?: return
         try {
-            if(NativePushBridge.allowed) api.request("/api/bonds/notifications/devices","POST",JsonRecord(registration.toString()).put("language",AppLanguage.code))
+            if(NativePushBridge.allowed) api.request("/api/bonds/notifications/devices","POST",JsonRecord(registration.toString()).put("language",AppLanguage.code).put("liveStartToken",NativePushBridge.liveStartToken))
             else api.request("/api/bonds/notifications/devices/${registration.text("deviceId")}","DELETE")
+            if(NativePushBridge.allowed) for (activity in NativePushBridge.liveActivities) {
+                api.request("/api/bonds/notifications/bond-live-activities", "POST", JsonRecord(activity.toString()).put("deviceId",registration.text("deviceId")))
+            }
         } catch(cancelled: CancellationException) { throw cancelled }
         catch(_: Exception) { /* A provider or older API must not block the portfolio. */ }
     }
@@ -1635,6 +1702,9 @@ class PortfolioModel(
     override fun onCleared() { closeGuestMigration(); stopGuestQuotes(); guestJob?.cancel(); guestImport?.clear(); guestPortfolio = null; documentThumbnails.clear(); backgroundLockJob?.cancel(); documentPreview = null; importedPdf = null; importedReview = null; retryPdf = null; vault?.lock(); activeApi?.close() }
 
     private fun clearPrivateData() {
+        NativePushBridge.reconcileReminders("")
+        bondReminderMonths = emptySet(); bondRemindersLoaded = false; bondRemindersLoading = false
+        bondReminderSaving = null; bondRemindersError = null; bondReminderFeedback = null
         applicationFormsError = null
         closeGuestMigration()
         ++startupSyncRevision

@@ -22,6 +22,10 @@ class PriceMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         if (getSharedPreferences("connection", MODE_PRIVATE).getString("sessionChoice", null)?.startsWith("guest-") == true) return
         Handler(Looper.getMainLooper()).post { NativePushBridge.priceUpdate() }
+        if(message.data["kind"] == "subscriptions") {
+            BondReminderNotifications.receive(this,message.data)
+            return
+        }
         if(!NotificationManagerCompat.from(this).areNotificationsEnabled())return
         val open=Intent(this,MainActivity::class.java).putExtra("stockNotifications",true)
             .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)

@@ -32,11 +32,21 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filterNotNull
 import kotlin.time.Clock
 import kotlinx.datetime.LocalDate
 
 @Composable
 fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addTemporaryPurchase: (JsonRecord) -> Unit) {
+    val reminderToast = remember { SnackbarHostState() }
+    RefreshCapturedUi(reminderToast.currentSnackbarData)
+    LaunchedEffect(model) {
+        snapshotFlow { model.bondReminderFeedback }.filterNotNull().collectLatest { text ->
+            model.dismissBondReminderFeedback()
+            reminderToast.showSnackbar(localized(text), duration = SnackbarDuration.Short)
+        }
+    }
     val reducedMotion = LocalReducedMotion.current
     val selectionFeedback = LocalSelectionFeedback.current
     val today = rememberBondCalendarToday()
@@ -57,6 +67,7 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addTem
             model.refreshBondApplicationForms()
         }
     }
+    LaunchedEffect(model.user?.text("id")) { model.loadBondReminders() }
     val events = remember(model.calendar, model.portfolio) { investmentCalendarEvents(model.calendar, model.portfolio) }
     val byDate = remember(events) { events.groupBy { it.date } }
     val ranges = remember(model.calendar) { calendarSubscriptionRanges(model.calendar) }
@@ -120,7 +131,8 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addTem
                         val focusedRange = preferredSubscriptionRange(monthRanges, selected)
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             focusedRange?.let { range ->
-                                SubscriptionRangeHeader(range, today, calendarCouponRate(range.record, model.documents, model.sharedCouponTerms)) { select(range.start) }
+                                SubscriptionRangeHeader(range, today, calendarCouponRate(range.record, model.documents, model.sharedCouponTerms),
+                                    reminder = { if (!model.isGuest) BondMonthReminderButton(model, selected, today) }) { select(range.start) }
 
                             }
                             Row(Modifier.fillMaxWidth()) {
@@ -188,6 +200,7 @@ fun CalendarScreen(model: PortfolioModel, initialDate: LocalDate? = null, addTem
             }
         }
     }
+    SnackbarHost(reminderToast, Modifier.align(Alignment.BottomCenter).padding(start = 16.dp, end = 16.dp, bottom = 16.dp))
     }
 
     if (showInfo) AlertDialog(onDismissRequest = { showInfo = false }, title = { AppText("About this calendar") }, text = {
@@ -264,10 +277,11 @@ private fun SubscriptionStatusBadge(status: SubscriptionStatus) {
 }
 
 @Composable
-private fun SubscriptionRangeHeader(range: CalendarSubscriptionRange, today: LocalDate, couponRate: Double?, choose: () -> Unit) {
+private fun SubscriptionRangeHeader(range: CalendarSubscriptionRange, today: LocalDate, couponRate: Double?,
+    reminder: @Composable () -> Unit = {}, choose: () -> Unit) {
     val accessibleRate = couponRate?.let { privateFinancialValue(percent(it)) }
     val colors = MaterialTheme.colorScheme
-    Surface(Modifier.fillMaxWidth().padding(horizontal = 8.dp).clickable(onClick = choose).clearAndSetSemantics {
+    Surface(Modifier.fillMaxWidth().padding(horizontal = 8.dp).clickable(onClick = choose).semantics(mergeDescendants = true) {
         contentDescription = "${localized(range.record.text("title"))}, ${localized(range.statusOn(today).label)}. " +
             localized("subscriptions open ${range.start.calendarLabel()}, close ${range.end.calendarLabel()}") +
             (accessibleRate?.let { ", ${localized("Annual coupon rate")} $it" } ?: "")
@@ -276,7 +290,10 @@ private fun SubscriptionRangeHeader(range: CalendarSubscriptionRange, today: Loc
     },
         shape = RoundedCornerShape(20.dp), color = colors.primaryContainer.copy(alpha = .4f)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            SubscriptionStatusBadge(range.statusOn(today))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                SubscriptionStatusBadge(range.statusOn(today))
+                reminder()
+            }
             AppText(range.record.text("title"), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
             couponRate?.let { FinancialText("${localized("Annual coupon rate")} · ${percent(it)}", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant) }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

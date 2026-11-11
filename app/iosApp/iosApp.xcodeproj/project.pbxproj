@@ -6,8 +6,30 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		16FA422429EB8BDDC8B31938 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 41211EB35BE020B656AA18EC /* Foundation.framework */; };
+		245A00AAEC197EA67CDC68F2 /* BondLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5E73C945083BC7E6227FFE3 /* BondLiveActivity.swift */; };
+		C84FFD7926FA37B127717F75 /* BondSubscriptionAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6220EDEB136E060E005C215 /* BondSubscriptionAttributes.swift */; };
+		F9CF97C0C1A4D706AB49BB56 /* BondSubscriptionAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6220EDEB136E060E005C215 /* BondSubscriptionAttributes.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1317132D1AC02FB105FDE942 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1AEC0F5B3F8C71D9BA4E9C0A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2EF39030A424ECBBF6425419;
+			remoteInfo = BondLiveActivity;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		41211EB35BE020B656AA18EC /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		456B8935A0C8FB8FDFC41EB9 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		4A8DEDE0DCAA16D4C4B44544 /* BondLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BondLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		5DE88718697D52672D90ED4F /* Portfolio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Portfolio.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A6220EDEB136E060E005C215 /* BondSubscriptionAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BondSubscriptionAttributes.swift; sourceTree = "<group>"; };
+		F5E73C945083BC7E6227FFE3 /* BondLiveActivity.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BondLiveActivity.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -26,17 +48,35 @@
 			exceptions = (
 				A17F3DA676FFC1A6720B4957 /* Exceptions for "iosApp" folder in "iosApp" target */,
 			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
 			path = iosApp;
 			sourceTree = "<group>";
 		};
 		757AA941E1AF2ADAB74928B9 /* Configuration */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
 			path = Configuration;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		2580A2440BA0F5EF8AD1C0DF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				16FA422429EB8BDDC8B31938 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DE960628A30CCA61CEC953E8 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -51,8 +91,19 @@
 			isa = PBXGroup;
 			children = (
 				5DE88718697D52672D90ED4F /* Portfolio.app */,
+				4A8DEDE0DCAA16D4C4B44544 /* BondLiveActivity.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		73DF6357D93CC29166988FDE /* BondLiveActivity */ = {
+			isa = PBXGroup;
+			children = (
+				F5E73C945083BC7E6227FFE3 /* BondLiveActivity.swift */,
+				456B8935A0C8FB8FDFC41EB9 /* Info.plist */,
+			);
+			name = BondLiveActivity;
+			path = BondLiveActivity;
 			sourceTree = "<group>";
 		};
 		A853C0979C60723555382E6C = {
@@ -61,12 +112,57 @@
 				757AA941E1AF2ADAB74928B9 /* Configuration */,
 				620B67F21FA9B10FF5538524 /* iosApp */,
 				73C4AE587BBD2167DC775F22 /* Products */,
+				F8EC82C2A55EFE9732D1B7E0 /* Frameworks */,
+				E775B5DFF5F6A05F2634F7A6 /* BondActivityShared */,
+				73DF6357D93CC29166988FDE /* BondLiveActivity */,
 			);
+			sourceTree = "<group>";
+		};
+		B026ED94874319062C1719C6 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				41211EB35BE020B656AA18EC /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		E775B5DFF5F6A05F2634F7A6 /* BondActivityShared */ = {
+			isa = PBXGroup;
+			children = (
+				A6220EDEB136E060E005C215 /* BondSubscriptionAttributes.swift */,
+			);
+			name = BondActivityShared;
+			path = BondActivityShared;
+			sourceTree = "<group>";
+		};
+		F8EC82C2A55EFE9732D1B7E0 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				B026ED94874319062C1719C6 /* iOS */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		2EF39030A424ECBBF6425419 /* BondLiveActivity */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1F0FB9D5D4A40252AB706A99 /* Build configuration list for PBXNativeTarget "BondLiveActivity" */;
+			buildPhases = (
+				E81896085F05ADEEC1B4FD3B /* Sources */,
+				2580A2440BA0F5EF8AD1C0DF /* Frameworks */,
+				D18A2D356F4E9F411031409E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BondLiveActivity;
+			productName = BondLiveActivity;
+			productReference = 4A8DEDE0DCAA16D4C4B44544 /* BondLiveActivity.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		44D31B2F5BB5AA6ED2592907 /* iosApp */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 0578857A0E52C9723AFB73AA /* Build configuration list for PBXNativeTarget "iosApp" */;
@@ -75,17 +171,17 @@
 				C6D3E1FFADF779EEF12AC832 /* Sources */,
 				DE960628A30CCA61CEC953E8 /* Frameworks */,
 				20EF011632FFDF0D77681F7A /* Resources */,
+				2FE532E1254D14AEF078068B /* Embed Optional Live Activity */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				DD56CC6D71A14AF52E5DD16F /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				620B67F21FA9B10FF5538524 /* iosApp */,
 			);
 			name = iosApp;
-			packageProductDependencies = (
-			);
 			productName = iosApp;
 			productReference = 5DE88718697D52672D90ED4F /* Portfolio.app */;
 			productType = "com.apple.product-type.application";
@@ -121,6 +217,7 @@
 			projectRoot = "";
 			targets = (
 				44D31B2F5BB5AA6ED2592907 /* iosApp */,
+				2EF39030A424ECBBF6425419 /* BondLiveActivity */,
 			);
 		};
 /* End PBXProject section */
@@ -133,9 +230,35 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D18A2D356F4E9F411031409E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		2FE532E1254D14AEF078068B /* Embed Optional Live Activity */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Embed Optional Live Activity";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/../../scripts/embed-bond-live-activity.sh\"";
+		};
 		7E20CE8563C79072A01E5DE1 /* Compile Kotlin Framework */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -162,10 +285,29 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F9CF97C0C1A4D706AB49BB56 /* BondSubscriptionAttributes.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E81896085F05ADEEC1B4FD3B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C84FFD7926FA37B127717F75 /* BondSubscriptionAttributes.swift in Sources */,
+				245A00AAEC197EA67CDC68F2 /* BondLiveActivity.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		DD56CC6D71A14AF52E5DD16F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = BondLiveActivity;
+			target = 2EF39030A424ECBBF6425419 /* BondLiveActivity */;
+			targetProxy = 1317132D1AC02FB105FDE942 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		02243F5A67F8E2890C95945E /* Release */ = {
@@ -196,6 +338,32 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		33E9A53F77984DC7244E0C8C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGNING_ALLOWED = "$(GABO_PUSH_ENABLED)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = X5HS2K2N42;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BondLiveActivity/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.orestegabo.portfolio.Portfolio.BondLiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -261,6 +429,31 @@
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		8211A148B91178660E60D81D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGNING_ALLOWED = "$(GABO_PUSH_ENABLED)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = X5HS2K2N42;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BondLiveActivity/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.orestegabo.portfolio.Portfolio.BondLiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -361,6 +554,15 @@
 			buildConfigurations = (
 				9EF74B33302862F98BB4D2B4 /* Debug */,
 				02243F5A67F8E2890C95945E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1F0FB9D5D4A40252AB706A99 /* Build configuration list for PBXNativeTarget "BondLiveActivity" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				33E9A53F77984DC7244E0C8C /* Release */,
+				8211A148B91178660E60D81D /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

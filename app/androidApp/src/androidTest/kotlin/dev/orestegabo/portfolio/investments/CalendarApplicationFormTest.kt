@@ -32,6 +32,7 @@ class CalendarApplicationFormTest {
         val marketDate = java.time.LocalDate.now(java.time.ZoneId.of("Africa/Kigali"))
         val today = LocalDate(marketDate.year, marketDate.monthValue, marketDate.dayOfMonth)
         val month = LocalDate(today.year, today.month, 1)
+        val reminderMonthLabel = marketDate.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ENGLISH) + " ${marketDate.year}"
         val closing = month.plus(DatePeriod(months = 1)).minus(DatePeriod(days = 1))
         val issue = JsonRecord().put("id", "synthetic-application").put("title", "Synthetic five-year issuance")
             .put("tenorYears", 5).put("announcementDate", month.toString())
@@ -47,6 +48,8 @@ class CalendarApplicationFormTest {
         val shares = AtomicInteger()
         val downloads = AtomicInteger()
         val bids = AtomicInteger()
+        val reminderWrites = AtomicInteger()
+        val reminderMonths = linkedSetOf<String>()
         var savedBid: JsonRecord? = null
         val settings = object : ServerSettings {
             override fun readOrigin() = "https://android-forms.example.test"
@@ -123,6 +126,15 @@ class CalendarApplicationFormTest {
                             downloads.incrementAndGet()
                             respond(pdf, headers = headersOf(HttpHeaders.ContentType, "application/pdf"))
                         } else {
+                            if(request.url.encodedPath.startsWith("/api/bonds/notifications/bond-reminders")) {
+                                if(request.method == HttpMethod.Put) {
+                                    val enabled=JsonRecord((request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString()).optBoolean("enabled")
+                                    val key=request.url.encodedPath.substringAfterLast('/')
+                                    if(enabled) reminderMonths+=key else reminderMonths-=key
+                                    reminderWrites.incrementAndGet()
+                                }
+                                return@MockEngine respond(JsonRecord().put("months",JsonList(reminderMonths)).toString(), headers=headersOf(HttpHeaders.ContentType,"application/json"))
+                            }
                             val response = when (request.url.encodedPath) {
                                 "/api/bonds/auth/session" -> """{"authenticated":true,"user":{"id":"synthetic-forms-user","isOwner":false}}"""
                                 "/api/bonds/application-forms/shared-application/bids" -> {
@@ -167,7 +179,24 @@ class CalendarApplicationFormTest {
                         }
                     }
                 }
-                await("Calendar"); click("Calendar"); click("Open application form")
+                await("Calendar"); click("Calendar")
+                await("Set reminder for $reminderMonthLabel")
+                val enabledDeadline=android.os.SystemClock.uptimeMillis()+5000
+                while(find("Set reminder for $reminderMonthLabel")?.isEnabled != true && android.os.SystemClock.uptimeMillis()<enabledDeadline) Thread.sleep(50)
+                click("Set reminder for $reminderMonthLabel")
+                val reminderDeadline=android.os.SystemClock.uptimeMillis()+5000
+                while(reminderWrites.get()<1 && android.os.SystemClock.uptimeMillis()<reminderDeadline) Thread.sleep(50)
+                assertEquals(1,reminderWrites.get())
+                assertTrue(month.toString().take(7) in reminderMonths)
+                fun reminderIsOn() = find("Remove reminder for $reminderMonthLabel") != null
+                val checkedDeadline=android.os.SystemClock.uptimeMillis()+5000
+                while(!reminderIsOn() && android.os.SystemClock.uptimeMillis()<checkedDeadline) Thread.sleep(50)
+                assertTrue("Saved reminder must display an active bell",reminderIsOn())
+                await("Reminder saved. Phone alerts need setup.")
+                assertNull(find("Remind me about bonds"))
+                Thread.sleep(300) // Let the protected renderer finish its icon/toast transition.
+                readerFixtureScreenshot(window, File(i.targetContext.filesDir, "calendar-month-reminder.png"))
+                click("Open application form")
                 await("Share PDF"); await("1 / 1")
                 assertEquals("Opening must not share automatically", 0, shares.get())
                 assertEquals(1, downloads.get())

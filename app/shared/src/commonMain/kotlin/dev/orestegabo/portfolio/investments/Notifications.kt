@@ -17,6 +17,22 @@ import androidx.compose.ui.unit.dp
 
 /** Native delivery only; accounts, unread state and all financial calculations live in Spring. */
 object NativePushBridge {
+    var liveStartToken by mutableStateOf("")
+        private set
+    var liveActivities by mutableStateOf<List<JsonRecord>>(emptyList())
+        private set
+    fun liveStartTokenChanged(token: String) { liveStartToken = token }
+    fun liveActivityTokenChanged(activityId: String, calendarId: String, month: String, token: String) {
+        liveActivities = liveActivities.filter { it.text("activityId") != activityId } +
+            JsonRecord().put("activityId",activityId).put("calendarId",calendarId).put("month",month).put("token",token)
+    }
+    private var reminderCleanup: ((String) -> Unit)? = null
+    fun installReminderCleanup(cleanup: (String) -> Unit) { reminderCleanup = cleanup }
+    fun reconcileReminders(months: String) {
+        val selected = months.split(',').toSet()
+        liveActivities = liveActivities.filter { it.text("month") in selected }
+        reminderCleanup?.invoke(months)
+    }
     var deviceId: String=""
         private set
     var platform: String=""
@@ -36,6 +52,9 @@ object NativePushBridge {
     var updateRevision by mutableIntStateOf(0)
         private set
     fun priceUpdate() { updateRevision++ }
+    private var accountRefresh: (() -> Unit)? = null
+    fun installAccountRefresh(refresh: () -> Unit) { accountRefresh = refresh }
+    fun accountReady() { accountRefresh?.invoke() }
     private var permissionAction: (() -> Unit)? = null
     fun install(available: Boolean, allowed: Boolean, requestPermission: () -> Unit) {
         this.available=available;this.allowed=allowed;permissionAction=requestPermission
@@ -149,7 +168,12 @@ private fun GeneralNotificationCard(model: PortfolioModel,item: JsonRecord,open:
     val title=when(kind) {
         "coupons" -> if(received && automatic) "Coupon marked automatically" else if(received) "Coupon received" else if(item.text("stage")=="soon") "Upcoming coupon" else "Coupon due"
         "maturities" -> "Bond maturity"
-        "subscriptions" -> if(item.text("stage")=="closing") "Subscriptions closing" else "Subscriptions open"
+        "subscriptions" -> when(item.text("stage")) {
+            "form" -> "Application form available"
+            "closing" -> "Subscriptions closing"
+            "closed" -> "Subscriptions closed"
+            else -> "Subscriptions open"
+        }
         "pending" -> if(item.text("stage")=="issuance") "Bond terms are now available" else "Purchase awaiting confirmation"
         "documents" -> if(item.text("stage")=="issuance") "Issuance results linked" else "Missing purchase document"
         "targets" -> "Monthly target reached"

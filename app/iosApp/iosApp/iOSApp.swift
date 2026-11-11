@@ -6,7 +6,10 @@ struct iOSApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .onOpenURL { url in IosPdfReceiver.shared.receive(url: url.absoluteString) }
+                .onOpenURL { url in
+                    if url.scheme == "structcapital", url.host == "notifications" { NativePushBridge.shared.openInbox() }
+                    else { IosPdfReceiver.shared.receive(url: url.absoluteString) }
+                }
         }
     }
 }
@@ -23,6 +26,8 @@ final class PricePushDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
         defaults.set(id, forKey: "portfolio.push.deviceId")
         NativePushBridge.shared.identify(deviceId: id, platform: "ios")
         guard enabled else { return true }
+        BondLiveActivityMonitor.shared.start()
+        NativePushBridge.shared.installAccountRefresh { [weak self] in self?.refreshPermission() }
         UNUserNotificationCenter.current().delegate = self
         refreshPermission()
         NotificationCenter.default.addObserver(self, selector: #selector(refreshPermission), name: UIApplication.didBecomeActiveNotification, object: nil)

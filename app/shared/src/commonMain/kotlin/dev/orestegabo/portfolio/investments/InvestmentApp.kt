@@ -128,9 +128,10 @@ fun InvestmentApp(model: PortfolioModel) {
         if (model.user != null && !model.locked) {
             withFrameNanos { }
             model.dashboardPresented()
+            NativePushBridge.accountReady()
         }
     }
-    LaunchedEffect(model.user, model.locked, NativePushBridge.registration, NativePushBridge.allowed, AppLanguage.code) {
+    LaunchedEffect(model.user, model.locked, NativePushBridge.registration, NativePushBridge.allowed, NativePushBridge.liveStartToken, NativePushBridge.liveActivities, AppLanguage.code) {
         model.syncPushDevice()
     }
     LaunchedEffect(NativePushBridge.inboxRequest, model.user, model.locked) {
