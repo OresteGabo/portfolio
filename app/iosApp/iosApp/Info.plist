@@ -29,6 +29,8 @@
     <string>$(GABO_PASSWORD_SHARING_ENABLED)</string>
     <key>GaboPushEnabled</key>
     <string>$(GABO_PUSH_ENABLED)</string>
+    <key>GaboWidgetsEnabled</key><string>$(GABO_WIDGETS_ENABLED)</string>
+    <key>GaboWidgetAppGroup</key><string>$(GABO_WIDGET_APP_GROUP)</string>
     <key>GaboPushEnvironment</key>
     <string>$(GABO_PUSH_ENVIRONMENT)</string>
     <key>NSFaceIDUsageDescription</key>

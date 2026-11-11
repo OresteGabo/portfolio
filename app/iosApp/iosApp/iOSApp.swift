@@ -8,6 +8,11 @@ struct iOSApp: App {
             ContentView()
                 .onOpenURL { url in
                     if url.scheme == "structcapital", url.host == "notifications" { NativePushBridge.shared.openInbox() }
+                    else if url.scheme == "structcapital", url.host == "calendar" {
+                        if let date = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "date" })?.value {
+                            HomeWidgetBridge.shared.openCalendar(date: date)
+                        }
+                    }
                     else { IosPdfReceiver.shared.receive(url: url.absoluteString) }
                 }
         }
@@ -21,6 +26,7 @@ import Shared
 final class PricePushDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     private var enabled: Bool { (Bundle.main.object(forInfoDictionaryKey: "GaboPushEnabled") as? String) == "YES" }
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        HomeWidgetHost.install()
         let defaults = UserDefaults.standard
         let id = defaults.string(forKey: "portfolio.push.deviceId") ?? UUID().uuidString.lowercased()
         defaults.set(id, forKey: "portfolio.push.deviceId")
