@@ -8,6 +8,9 @@ struct iOSApp: App {
             ContentView()
                 .onOpenURL { url in
                     if url.scheme == "structcapital", url.host == "notifications" { NativePushBridge.shared.openInbox() }
+                    else if url.scheme == "structcapital", url.host == "action", let action = url.pathComponents.last {
+                        _ = NativeAppActions.shared.request(action: action)
+                    }
                     else if url.scheme == "structcapital", url.host == "calendar" {
                         if let date = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "date" })?.value {
                             HomeWidgetBridge.shared.openCalendar(date: date)
@@ -26,6 +29,7 @@ import Shared
 final class PricePushDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     private var enabled: Bool { (Bundle.main.object(forInfoDictionaryKey: "GaboPushEnabled") as? String) == "YES" }
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        AppIconActions.install()
         HomeWidgetHost.install()
         let defaults = UserDefaults.standard
         let id = defaults.string(forKey: "portfolio.push.deviceId") ?? UUID().uuidString.lowercased()
@@ -38,6 +42,11 @@ final class PricePushDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
         refreshPermission()
         NotificationCenter.default.addObserver(self, selector: #selector(refreshPermission), name: UIApplication.didBecomeActiveNotification, object: nil)
         return true
+    }
+    func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
+        let configuration = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
+        configuration.delegateClass = AppActionSceneDelegate.self
+        return configuration
     }
     @objc private func refreshPermission() {
         let entry = UserDefaults.standard

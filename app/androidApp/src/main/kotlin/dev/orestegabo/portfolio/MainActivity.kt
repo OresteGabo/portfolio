@@ -52,10 +52,11 @@ class MainActivity : FragmentActivity() {
         }
     }
     override fun onResume() { super.onResume();installPush() }
-    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent);setIntent(intent);receivePdf(intent);intent.getStringExtra("widgetDate")?.let { dev.orestegabo.portfolio.investments.HomeWidgetBridge.openCalendar(it) };if(intent.getBooleanExtra("stockNotifications",false) || intent.getStringExtra("route")=="stock-notifications")NativePushBridge.openInbox() }
+    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent);setIntent(intent);receivePdf(intent);receiveAppAction(intent);intent.getStringExtra("widgetDate")?.let { dev.orestegabo.portfolio.investments.HomeWidgetBridge.openCalendar(it) };if(intent.getBooleanExtra("stockNotifications",false) || intent.getStringExtra("route")=="stock-notifications")NativePushBridge.openInbox() }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         NextWidgetStore.install(this)
+        receiveAppAction(intent)
         intent.getStringExtra("widgetDate")?.let { dev.orestegabo.portfolio.investments.HomeWidgetBridge.openCalendar(it) }
         applyInitialCaptureProtection(this)
         PlatformBuild.debug = BuildConfig.DEBUG

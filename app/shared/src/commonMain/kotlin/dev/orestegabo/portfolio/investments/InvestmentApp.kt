@@ -185,6 +185,21 @@ fun InvestmentApp(model: PortfolioModel) {
         confirmationTarget = null
         model.importPurchasePdf(actions, engine, completed = ::imported)
     }
+    LaunchedEffect(NativeAppActions.pending, model.user, model.isGuest, model.portfolioReady, model.locked,
+        model.busy, introductionRequested, brandIntroRequested, importReview, editor, equityEditor, pendingEntry, model.documentPreview) {
+        val requested = NativeAppActions.pending
+        val ready = model.user != null || (model.isGuest && !model.sampleGuest && model.portfolioReady)
+        if (requested != null && ready && !model.locked && !model.busy && !introductionRequested && !brandIntroRequested &&
+            importReview == null && editor == null && equityEditor == null && !pendingEntry && model.documentPreview == null && NativePdfInbox.pending == null) {
+            NativeAppActions.take()
+            openNotificationInbox() // Close nested screens before selecting a new destination.
+            when (requested) {
+                "calendar" -> openCalendarAt(bondSubscriptionDate(kotlin.time.Clock.System.now()))
+                "add-purchase" -> { tab = "Portfolio"; editor = JsonRecord() }
+                "import-pdf" -> { showImportConversation(); beginDocumentImport() }
+            }
+        }
+    }
     var handledImportSelection by remember(model) { mutableIntStateOf(model.importSelectionRevision) }
     LaunchedEffect(model.importSelectionRevision) {
         if (model.importSelectionRevision != handledImportSelection) {

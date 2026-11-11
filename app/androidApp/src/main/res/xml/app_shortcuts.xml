@@ -1,0 +1,11 @@
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="import-pdf" android:icon="@drawable/ic_price_notification" android:shortcutShortLabel="@string/shortcut_import">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="dev.orestegabo.portfolio" android:targetClass="dev.orestegabo.portfolio.MainActivity" android:data="structcapital://action/import-pdf" />
+    </shortcut>
+    <shortcut android:shortcutId="add-purchase" android:icon="@drawable/ic_price_notification" android:shortcutShortLabel="@string/shortcut_purchase">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="dev.orestegabo.portfolio" android:targetClass="dev.orestegabo.portfolio.MainActivity" android:data="structcapital://action/add-purchase" />
+    </shortcut>
+    <shortcut android:shortcutId="calendar" android:icon="@drawable/ic_price_notification" android:shortcutShortLabel="@string/shortcut_calendar">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="dev.orestegabo.portfolio" android:targetClass="dev.orestegabo.portfolio.MainActivity" android:data="structcapital://action/calendar" />
+    </shortcut>
+</shortcuts>

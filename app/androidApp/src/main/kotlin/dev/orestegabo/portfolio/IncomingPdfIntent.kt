@@ -15,6 +15,7 @@ import java.util.UUID
 /** Copy granted content while the sending app's temporary URI permission is alive. */
 internal fun FragmentActivity.receivePdf(intent: Intent) {
     if (intent.action !in listOf(Intent.ACTION_SEND, Intent.ACTION_VIEW)) return
+    if (intent.action == Intent.ACTION_VIEW && intent.data?.scheme == "structcapital") return
     val uri = runCatching {
         if (intent.action == Intent.ACTION_SEND) {
             @Suppress("DEPRECATION")

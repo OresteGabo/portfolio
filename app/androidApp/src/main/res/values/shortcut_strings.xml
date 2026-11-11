@@ -1,0 +1,5 @@
+<resources>
+    <string name="shortcut_import">Import PDF</string>
+    <string name="shortcut_purchase">Add purchase</string>
+    <string name="shortcut_calendar">Open calendar</string>
+</resources>

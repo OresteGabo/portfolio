@@ -41,10 +41,17 @@
             android:exported="true"
             android:launchMode="singleTask"
             android:name=".MainActivity">
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/app_shortcuts" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="structcapital" android:host="action" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
