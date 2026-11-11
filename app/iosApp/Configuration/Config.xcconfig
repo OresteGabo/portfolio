@@ -3,8 +3,8 @@ TEAM_ID=
 PRODUCT_NAME=Portfolio
 PRODUCT_BUNDLE_IDENTIFIER=dev.orestegabo.portfolio.Portfolio
 
-// Android Studio prebuilds Kotlin and skips Xcode's Gradle phase. Its separate
-// build-products directory may not contain the symlink created by that phase.
+// Both IDEs use the framework prepared by build-ios-framework.sh, including
+// recovery after a clean removes Android Studio's previously generated framework.
 FRAMEWORK_SEARCH_PATHS = $(inherited) "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
 
 #include "../../../Version.xcconfig"
