@@ -17,9 +17,15 @@ Users without a selected month receive only the inbox entries. Existing category
 - iPhone: the embedded BondLiveActivity WidgetKit extension supports Lock Screen and Dynamic Island presentations. ActivityKit push-to-start tokens and activity update tokens are registered separately from ordinary APNs tokens. Opening/closing starts an activity or updates an existing active one. Each activity uses the system's maximum eight active hours, with up to four further hours of Lock Screen retention. Closing can start another activity when the earlier one has expired; the app does not continuously restart activities to bypass the limit. English and French text are supported. ActivityKit requires user/system permission and remote start support (the app's existing iOS minimum is 18.2).
 - Removal/logout clears local live status. Server delivery rechecks account ownership, category permission and selected month; activity tokens belong to registered account devices. Content contains public bond details, never balances or holdings.
 
-## Activation still required
+## Activation status
 
-Neither Firebase nor Apple push is configured in this checkout/account. A successful local build does **not** enable real remote delivery.
+Android Firebase and the production reminder backend were activated on 2026-11-11. Firebase project `gabo-portfolio-api` contains Android app `dev.orestegabo.portfolio`. The ignored local `app/androidApp/google-services.json` is included by Android builds; server credentials are never bundled in the APK. The runtime service account has the Firebase messaging sender role.
+
+Cloud Run serves backend commit `66f0f51` as revision `gabo-portfolio-api-firebase-66f0f51`, with existing settings preserved and `GABO_PUSH_FIREBASE_PROJECT=gabo-portfolio-api` added. Cloud Scheduler job `struct-capital-bond-reminders` calls the authenticated reminder worker every 15 minutes in `Africa/Kigali`. The production health check and an authenticated worker invocation succeeded.
+
+iPhone remote push and Live Activities still require Apple Developer/APNs configuration. Android provider delivery was verified on a fresh API 36 Google Play emulator: a real FCM HTTP v1 data message reached `PriceMessagingService` and displayed the bond notification. The test used only a disposable emulator token and no portfolio account. An older emulator failed Google Play registration with `AUTHENTICATION_FAILED`; the fresh emulator passed.
+
+For another environment:
 
 1. Deploy the companion `gabo-portfolio-api` changes, including Flyway V17, after its existing V16 changes. The sample Ktor `server` module is unrelated.
 2. Android: register application ID `dev.orestegabo.portfolio` in Firebase, supply `app/androidApp/google-services.json`, and configure the server's `GABO_PUSH_FIREBASE_PROJECT` with an authorized server identity. Never bundle server credentials in the APK.
@@ -27,8 +33,8 @@ Neither Firebase nor Apple push is configured in this checkout/account. A succes
 4. Schedule authenticated `GET /api/bonds/notifications/bond-reminders/dispatch` every 15 minutes, including weekends, using the existing `CRON_SECRET` as its Bearer credential. Unlike an app refresh, this worker detects published forms while phones are closed. The existing market daily job also runs the milestone sync.
 5. Grant notifications on each phone. Verify delivery while backgrounded, after normal app dismissal, and while locked. Android force-stop, iOS notification/Live Activity settings, Focus and vendor restrictions can affect presentation.
 
-No live provider delivery, deployment, Apple account change, or cloud scheduler creation was performed as part of local implementation. No email delivery was added.
+The Firebase setup did not configure Apple credentials or add email delivery. Previously shared APKs need to be replaced with a Firebase-enabled build.
 
 ## Verification
 
-Tests cover actual-form readiness, Rwanda date boundaries, open/closing/closed milestones, expired delivery suppression, stable inbox events, month/account push opt-in, outbox idempotency, month persistence, failed saves, logout cleanup, and Android ongoing-card transitions/expiry/opt-out. Backend integration uses only disposable loopback PostgreSQL databases. Provider-delivered APNs/FCM still requires the activation above.
+Tests cover actual-form readiness, Rwanda date boundaries, open/closing/closed milestones, expired delivery suppression, stable inbox events, month/account push opt-in, outbox idempotency, month persistence, failed saves, logout cleanup, and Android ongoing-card transitions/expiry/opt-out. Backend integration uses only disposable loopback PostgreSQL databases. Provider-delivered APNs still requires Apple activation above. Android real-delivery check passed on 2026-11-11 using the opt-in `FirebaseDeliverySetupTest` (`firebaseSetupCheck=true`), with an external sender targeting only its temporary emulator token. The test restores preferences, cancels the test notification and deletes the token. Normal test runs skip this operator check. Physical locked-phone presentation and Android 16.1 promotion remain device-specific checks.
