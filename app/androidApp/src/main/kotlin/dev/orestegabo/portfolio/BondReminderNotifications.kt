@@ -44,21 +44,28 @@ internal object BondReminderNotifications {
         val pending = PendingIntent.getActivity(context,liveId(issue),open,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val dismiss = PendingIntent.getBroadcast(context,liveId(issue),Intent(context,BondReminderDismissReceiver::class.java)
             .putExtra("calendarId",issue),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val text = data["body"].orEmpty() + if(live) "\n${if(context.resources.configuration.locales[0].language == "fr") "Clôture" else "Closes"} ${data["dueDate"].orEmpty()}" else ""
+        val presentation = BondReminderPresentation.from(data, context.resources.configuration.locales[0])
+        val text = data["body"].orEmpty() + if(live) "\n${presentation.deadline}" else ""
         val builder = NotificationCompat.Builder(context,CHANNEL).setSmallIcon(R.drawable.ic_price_notification)
             .setContentTitle(data["title"].orEmpty()).setContentText(text).setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setColor(context.getColor(R.color.bond_timeline_accent))
+            .setSubText(presentation.status).setShowWhen(false)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE).setContentIntent(pending)
             .setAutoCancel(!live).setOngoing(live).setOnlyAlertOnce(false)
             .setTimeoutAfter(if(live) (end-now).coerceAtLeast(1) else 86400000)
-        if(live) builder.setDeleteIntent(dismiss).addAction(0,if(context.resources.configuration.locales[0].language == "fr") "Masquer le suivi" else "Stop live status",dismiss)
-        var notification = builder.build()
-        if(live && Build.VERSION.SDK_INT >= 36) notification = Notification.Builder.recoverBuilder(context,notification)
-            // Public API 36.1 extra: ignored by Android versions that do not support promotion.
-            .addExtras(android.os.Bundle().apply { putBoolean("android.requestPromotedOngoing",true) }).setShortCriticalText(if(stage == "closing") "Closing" else "Open").build()
-        val id = if(live) liveId(issue) else data["notificationId"].orEmpty().hashCode()
-        runCatching { manager.notify(id,notification) }.onSuccess {
-            if(live) prefs.edit().putString("bond.card.$issue",month).apply()
+        if(live) {
+            builder.setDeleteIntent(dismiss)
+                .addAction(0,if(presentation.french) "Voir les mises à jour" else "View updates",pending)
+                .addAction(0,if(presentation.french) "Masquer le suivi" else "Stop live status",dismiss)
+            if(Build.VERSION.SDK_INT < 36) presentation.decorateLegacy(context,builder,data["title"].orEmpty())
+            else builder.setContentText(listOf(presentation.remaining,presentation.deadline).filter(String::isNotBlank).joinToString(" · "))
         }
+        var notification = builder.build()
+        if(live && Build.VERSION.SDK_INT >= 36) notification = presentation.decorateNative(context,notification)
+        val id = if(live) liveId(issue) else data["notificationId"].orEmpty().hashCode()
+        // Permission may be revoked after areNotificationsEnabled() was checked.
+        try { manager.notify(id,notification) } catch (_: SecurityException) { return }
+        if(live) prefs.edit().putString("bond.card.$issue",month).apply()
     }
     fun dismiss(context: Context, issue: String) {
         context.getSharedPreferences("portfolio.push", Context.MODE_PRIVATE).edit().putBoolean("bond.dismissed.$issue",true).apply()

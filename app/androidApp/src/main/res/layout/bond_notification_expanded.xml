@@ -1,0 +1,30 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+    android:paddingTop="2dp" android:paddingBottom="4dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
+        <TextView android:id="@+id/bond_status" style="@style/TextAppearance.Compat.Notification.Line2"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:background="@drawable/bond_status_badge" android:textColor="@color/bond_timeline_accent"
+            android:textSize="11sp" android:textStyle="bold" android:maxLines="1" />
+        <TextView android:id="@+id/bond_remaining" style="@style/TextAppearance.Compat.Notification.Line2"
+            android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+            android:gravity="end" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+    </LinearLayout>
+    <TextView android:id="@+id/bond_title" style="@style/TextAppearance.Compat.Notification.Title"
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="9dp"
+        android:maxLines="2" android:ellipsize="end" />
+    <TextView android:id="@+id/bond_deadline" style="@style/TextAppearance.Compat.Notification.Line2"
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp"
+        android:maxLines="1" android:ellipsize="end" />
+    <ProgressBar android:id="@+id/bond_progress" style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent" android:layout_height="6dp" android:layout_marginTop="14dp"
+        android:progressDrawable="@drawable/bond_timeline_progress" android:max="1000" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp">
+        <TextView android:id="@+id/bond_form_step" style="@style/TextAppearance.Compat.Notification.Line2"
+            android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="11sp" />
+        <TextView android:id="@+id/bond_open_step" style="@style/TextAppearance.Compat.Notification.Line2"
+            android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="center" android:textSize="11sp" />
+        <TextView android:id="@+id/bond_close_step" style="@style/TextAppearance.Compat.Notification.Line2"
+            android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end" android:textSize="11sp" />
+    </LinearLayout>
+</LinearLayout>

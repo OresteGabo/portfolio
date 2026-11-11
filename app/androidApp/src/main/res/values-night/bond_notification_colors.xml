@@ -1,0 +1,5 @@
+<resources>
+    <color name="bond_timeline_accent">#F2E6A7</color>
+    <color name="bond_timeline_track">#514D38</color>
+    <color name="bond_badge_background">#454129</color>
+</resources>
