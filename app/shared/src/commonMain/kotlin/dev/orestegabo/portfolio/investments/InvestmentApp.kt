@@ -54,6 +54,11 @@ private val destinations = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InvestmentApp(model: PortfolioModel) {
+    // Each native host persists only a safe projection; widgets need no signed-in API session.
+    LaunchedEffect(model.user, model.portfolioReady, model.calendar, model.portfolio, model.documents, model.couponReceipts, model.bondReminderMonths, AppLanguage.code) {
+        if (HomeWidgetBridge.available && !model.isGuest && model.user != null && model.portfolioReady)
+            HomeWidgetBridge.publish(homeWidgetSnapshot(model))
+    }
     val selectionFeedback = LocalSelectionFeedback.current
     var notificationPurchase by remember { mutableStateOf<JsonRecord?>(null) }
     var notificationPanel by rememberSaveable { mutableStateOf<String?>(null) }
@@ -91,6 +96,13 @@ fun InvestmentApp(model: PortfolioModel) {
     fun openCalendarAt(date: kotlinx.datetime.LocalDate?) {
         calendarUi.removeState(calendarStateKey)
         calendarFocus = date?.toString(); tab = "Calendar"
+    }
+    var handledWidgetRoute by remember { mutableIntStateOf(0) }
+    LaunchedEffect(HomeWidgetBridge.routeRevision, model.user, model.locked) {
+        if (HomeWidgetBridge.routeRevision > handledWidgetRoute && model.user != null && !model.locked) {
+            openCalendarAt(calendarDate(HomeWidgetBridge.requestedDate.orEmpty()))
+            handledWidgetRoute = HomeWidgetBridge.routeRevision
+        }
     }
     val preferences = rememberServerSettings()
     var showImportHint by rememberSaveable { mutableStateOf(!preferences.readImportHintDismissed()) }

@@ -1889,4 +1889,9 @@ internal val frenchStrings: Map<String, String> = mapOf(
     "Reminder saved. We’ll alert you when the form is ready." to "Rappel enregistré. Vous serez averti dès que le formulaire sera prêt.",
     "Set reminder" to "Activer le rappel",
     "Reminder set" to "Rappel activé",
+    "Home screen widgets" to "Widgets de l’écran d’accueil",
+    "What’s next · Small" to "À venir · Petit",
+    "What’s next · Medium" to "À venir · Moyen",
+    "One upcoming event · no amounts" to "Un événement à venir · sans montants",
+    "Two upcoming events · no amounts" to "Deux événements à venir · sans montants",
 )

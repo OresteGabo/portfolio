@@ -744,7 +744,9 @@ class PortfolioModel(
         activeJob?.cancel(); activeJob = null; busy = false
         vault?.lock()
         api.close(); api = apiFactory(origin)
-        clearPrivateData()
+        // Keep the explicitly added home widget useful while the app locks in the background.
+        // Its projection contains only public issuances and generic payment dates, never amounts.
+        clearPrivateData(clearWidgets = false)
         locked = true
         error = null; message = null
     }
@@ -1701,7 +1703,8 @@ class PortfolioModel(
 
     override fun onCleared() { closeGuestMigration(); stopGuestQuotes(); guestJob?.cancel(); guestImport?.clear(); guestPortfolio = null; documentThumbnails.clear(); backgroundLockJob?.cancel(); documentPreview = null; importedPdf = null; importedReview = null; retryPdf = null; vault?.lock(); activeApi?.close() }
 
-    private fun clearPrivateData() {
+    private fun clearPrivateData(clearWidgets: Boolean = true) {
+        if (clearWidgets) HomeWidgetBridge.clear()
         NativePushBridge.reconcileReminders("")
         bondReminderMonths = emptySet(); bondRemindersLoaded = false; bondRemindersLoading = false
         bondReminderSaving = null; bondRemindersError = null; bondReminderFeedback = null

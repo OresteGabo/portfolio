@@ -112,6 +112,11 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                     SettingsRow(Icons.Outlined.PhoneIphone, "Phone notifications",if(NativePushBridge.allowed) "Enabled" else "Disabled",onClick=NativePushBridge::requestPermission)
                 }
             } }
+            if (HomeWidgetBridge.available && !model.isGuest) item { SettingsSection("Home screen widgets") {
+                SettingsRow(Icons.Outlined.CalendarMonth, "What’s next · Small", "One upcoming event · no amounts", onClick = { HomeWidgetBridge.requestPin(false) })
+                SettingsDivider()
+                SettingsRow(Icons.Outlined.CalendarMonth, "What’s next · Medium", "Two upcoming events · no amounts", onClick = { HomeWidgetBridge.requestPin(true) })
+            } }
             item { SettingsSection("Privacy") {
                 SettingsRow(Icons.Outlined.ScreenLockPortrait, "Protect screenshots & recordings",
                     captureProtectionDescription,
