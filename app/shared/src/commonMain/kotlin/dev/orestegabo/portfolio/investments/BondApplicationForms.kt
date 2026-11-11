@@ -21,6 +21,14 @@ internal fun bondApplicationAvailable(issue: JsonRecord, today: LocalDate): Bool
     return today >= LocalDate(issuance.year, issuance.month, 1)
 }
 
+/** Owner upload controls follow the real auction month and stop after settlement. */
+internal fun bondApplicationUploadAllowed(issue: JsonRecord, today: LocalDate): Boolean {
+    val issuance = calendarDate(issue.text("closingBookDate")) ?: return false
+    val settlement = calendarDate(issue.text("settlementDate")) ?: return false
+    val monthsAhead = (issuance.year - today.year) * 12 + issuance.month.ordinal - today.month.ordinal
+    return monthsAhead in 0..1 && settlement >= today
+}
+
 internal fun bondApplicationFor(issue: JsonRecord, documents: List<JsonRecord>): JsonRecord? {
     if (calendarDate(issue.text("settlementDate")) == null || calendarDate(issue.text("maturityDate")) == null || issue.optInt("tenorYears") <= 0) return null
     return documents.singleOrNull { doc ->
@@ -37,6 +45,7 @@ internal fun BondApplicationFormCard(model: PortfolioModel, issue: JsonRecord, t
     val actions = LocalNativeActions.current
     val form = bondApplicationFor(issue, model.documents)
     val available = bondApplicationAvailable(issue, today)
+    val uploadAllowed = bondApplicationUploadAllowed(issue, today)
     var draft by remember(issue.text("id")) { mutableStateOf<ByteArray?>(null) }
     var draftName by remember(issue.text("id")) { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -58,7 +67,7 @@ internal fun BondApplicationFormCard(model: PortfolioModel, issue: JsonRecord, t
             AppText(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             TextButton(enabled = !model.busy, onClick = model::refreshBondApplicationForms) { AppText("Try again") }
         }
-        if (mayUploadBondApplication(model.user) && form == null) {
+        if (mayUploadBondApplication(model.user) && form == null && uploadAllowed) {
             OutlinedButton(enabled = !model.busy, onClick = {
                 model.action {
                     require(mayUploadBondApplication(model.user)) { "Only the owner can upload bond application forms." }
@@ -83,7 +92,7 @@ internal fun BondApplicationFormCard(model: PortfolioModel, issue: JsonRecord, t
                 AppText(draftName)
                 AppText("Confirm this is the blank form for this issuance, with no personal details. One shared copy will be available to all users.")
             } },
-            confirmButton = { Button(enabled = !model.busy, onClick = {
+            confirmButton = { Button(enabled = !model.busy && uploadAllowed, onClick = {
                 model.publishBondApplicationForm(issue, bytes) { draft = null }
             }) { AppText("Publish shared form") } },
             dismissButton = { TextButton(enabled = !model.busy, onClick = { draft = null }) { AppText("Cancel") } })

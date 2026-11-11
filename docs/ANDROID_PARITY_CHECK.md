@@ -1,53 +1,83 @@
 # Android stability and iPhone feature parity
 
-Checked 8 November 2026 against the current working tree. Android runtime checks used a dedicated Pixel 8 Pro emulator, Android API 36.1, arm64, 1080 × 2400. Tests used synthetic documents/accounts and local mock servers; they did not authenticate to production accounts.
+Checked 10 November 2026 against app commit `2e82fed`. Tests used isolated emulators, synthetic accounts/documents, local mock servers and offline guest workspaces. No production account was authenticated, no production data was changed, and no email or push notification was sent.
 
 ## Result
 
-The tested Android feature flows pass. This establishes emulator coverage, not certification of every Android device or complete iPhone parity. Remote push is currently unconfigured, and capture protection has a deliberate platform-specific presentation difference.
+No blocking app failures were observed in the tested Android flows. Debug and release builds pass. This is broad emulator and automated coverage, not certification of every feature against the production backend or every physical Android device.
+
+Remote push remains unconfigured. Capture protection deliberately presents differently on Android: the normal implementation masks financial numbers on screen as well as in captures. These limits prevent claiming complete iPhone parity.
+
+## Validation results
 
 | Check | Result |
 | --- | --- |
-| Core JVM tests | 65 passed |
-| Shared Android host tests | 365 passed, no test exclusions |
+| Core JVM tests | 70 passed; no failures, errors or skips |
+| Shared Android host tests | 384 passed; no failures, errors or skips |
 | Parser JavaScript tests | 81 passed |
 | Python release/tooling checks | 9 passed |
-| Native Android instrumentation | 28 distinct feature tests passed across the suite and targeted reruns |
-| Optional startup measurement fixture | Not invoked; requires explicit benchmark setup |
-| Release lint | 0 errors/fatals, 65 warnings |
-| Debug app and instrumentation APKs | Built successfully |
-| Release app bundle | Built successfully; store signing/publication not verified |
+| Complete native Android suite | 31 listed: 29 passed, 2 opt-in fixtures skipped; no failures |
+| Explicit encrypted persistence fixture | Write, force-stop/read, and reboot/read/cleanup all passed; covers the feature fixture skipped in the ordinary suite |
+| Native checks on a 16 KB device | 7 passed: local PDF parsing/calculation, native rendering/zoom/damaged-file cleanup, encrypted storage, and private PDF/OCR import |
+| Debug/release builds | Both APK variants built successfully |
+| Full debug lint | 0 errors/fatals, 63 warnings |
+| Full release lint | 0 errors/fatals, 65 warnings |
+| Release native-library alignment | All packaged ELF load segments have at least 16 KB alignment; APK `zipalign -c -P 16 4` passes |
+| Release startup | Home rendered successfully on both tested OS/page-size configurations |
+| Release backup via native document picker | Encrypted export, file selection, decryption, explicit replacement confirmation and restore passed |
 
-The initial native suite ran 29 tests: 21 passed, six failed, and two opt-in fixtures were skipped. After correcting stale fixture assumptions, all six failing tests passed targeted reruns. The guest persistence fixture was then explicitly run through write, force-stop/read, and reboot/read/cleanup stages, bringing coverage to 28 distinct native tests. The remaining skipped item is a startup benchmark preparation fixture, not a feature assertion.
+The full native suite took approximately 329 seconds. Its two ordinary-suite skips are intentional: the staged restart/reboot persistence fixture and the disposable-device startup preparation fixture. Persistence was explicitly exercised afterward. Startup preparation was explicitly invoked only as setup for the release checks. In total, 30 distinct feature tests were exercised, with seven overlapping native checks additionally repeated on the 16 KB device.
 
-Native coverage includes login/invitation/password visibility, French and theme switching, onboarding, guest entry and CRUD, encrypted persistence and corruption/key-loss handling, explicit guest migration, document import/review/retry, local PDF extraction and renderer recovery, library navigation, PDF rendering/zoom/sharing, cancellation, target settings and notification editing, issue-report review, bond/share details in both themes, receipt confirmation/reversal, yearly coupons, and capture protection.
+The release APK is unsigned by the project when upload-signing credentials are absent. Runtime testing used a temporary copy signed with the existing local Android debug key. This is a local QA artifact, not a store-signed release or a publication check.
 
-The new calendar test verifies that a non-owner can open the shared application form during the issuance month before the bid window opens, view the PDF in-app, and return to the calendar. It asserts one download, no automatic sharing, and explicit sharing of the original bytes without downloading again. The owner upload control is absent for that non-owner. Owner authorization and shared-form matching/upload behavior also have shared test coverage.
+## Environments
 
-## Corrections made during this check
+| Environment | Configuration |
+| --- | --- |
+| Main feature-suite emulator | Pixel 6 profile, Android 16 / API 36 (36.1 image), arm64, 4,096-byte pages, 1080 × 2400 |
+| Additional native/release emulator | Pixel 6 profile, Android 17 / API 37 `google_apis_ps16k` image, arm64, 16,384-byte pages, 1080 × 2400 |
 
-- Updated stock history tests to use the current `ChartPeriod` enum, restoring six tests to the Android host run.
-- Updated login labels and explicitly initialized/restored onboarding state in the calendar fixture.
-- Made the optional capture experiment test explicitly opt in and restore its preference.
-- Refreshed accessibility caches and used accessibility clicks/scrolling in UI fixtures; waited for edited target text before saving. Receipt confirmation and reversal assertions remain intact.
-- Added the native calendar application-form preview/share regression test.
+The Android 17 image is additional compatibility coverage, not a claim of broad device certification. The app still targets API 36 and declares minimum API 24.
 
-These corrections affect tests only; this audit did not change production Android runtime behavior.
+`am start -W` reported cold Activity launch times of 1,177 ms and 998 ms respectively. These are emulator Activity-launch measurements, not physical-device scrolling benchmarks, authentication timings, or time-to-complete-network-sync guarantees.
 
-## Parity limits and remaining checks
+## Feature coverage
 
-- **Remote push:** `app/androidApp/google-services.json` is absent. The Google Services plugin is conditional, and `MainActivity` safely reports push unavailable when Firebase is unconfigured. In-app inbox and notification settings are covered; Android remote delivery needs Firebase setup and a real-device end-to-end test.
-- **Capture protection:** the normal Android implementation masks financial figures on the screen as well as in screenshots/recordings. Protected original PDF windows use secure-window protection. iPhone's secure canvas can retain readable on-screen figures while protecting captures. Android's capture-only surface experiment is debug-only and opt-in; its test passing does not make it the release implementation.
-- **Hardware and OS coverage:** physical biometric enrollment/unlock, hardware-backed Keystore behavior across vendors, real-device scroll frame timing, older supported Android releases (minimum API 24), and background push delivery were not certified by this emulator run.
-- **PDF/OCR:** native rendering/import fixtures passed. Android uses a different renderer/OCR stack from iPhone; arbitrary scanned document quality still needs representative device testing.
-- **Lint warnings:** primarily dependency-update suggestions and launcher/icon/build configuration hygiene. No dependency or SDK upgrade was bundled into this audit.
+| Area | Coverage |
+| --- | --- |
+| Sign-in and onboarding | Login/invitation form, password reveal, translated copy, onboarding completion/restart, English/French and theme switching |
+| Portfolio and calculations | Bond/share valuation, acquisition costs, monthly goals, charts/history data, portfolio/annual-report generation and financial references through core/shared/parser tests; native projection engine and detail layouts in both themes |
+| Calendar and pending purchases | Form preview before explicit sharing, non-owner upload control, both parsed-form and older-server bid paths, formatted 100,000-step amounts, automatic bond selection, pending Home visibility, and saved-purchase privacy |
+| Purchases and documents | Import/review/retry, duplicate handling, links between records and library, document grouping/filter/expand/download, PDF rendering and zoom, malformed-PDF cleanup, cold/warm incoming PDF intents, read-only share grants, local renderer recovery and cancellation |
+| Scanned PDFs | A synthetic image-only equity PDF was imported through the native private flow with `usedOcr` verified; arbitrary real-world scan quality is not certified |
+| Guest mode | Entry/switching, CRUD/deletion, offline interaction, encryption/tampering/key-loss handling, explicit migration review/transfer and original-data retention |
+| Persistence | Synthetic bonds, shares and coupon receipt states survived a process restart and emulator reboot |
+| Cash and share sales | Native sale review, remaining-share updates and correction; core/shared ledger, deposits/withdrawals/dividends and backup restoration checks |
+| Notifications and settings | In-app target notification editor, settings target editor, coupon confirmation/reversal and yearly coupon navigation; shared notification/device activity/preferences coverage |
+| Privacy | Foreground/background capture behavior, protected PDFs, experimental capture-only path, number hiding, and private local document processing |
+| Reports and support | Shared report/annual-report generation checks, PDF sharing infrastructure, issue-report review/fallback/discard without sending mail |
+| Portable backup | Shared crypto/reference-envelope and nonempty restore/integrity tests, plus actual release UI export/restore of an empty synthetic workspace through Android's Save/Open dialogs |
+
+The native release backup export produced a 373-byte `SCBK1` encrypted envelope. It did not contain the plaintext `workspace` marker. The restore returned the visible `Backup restored.` success state. This verifies the Android document-provider lifecycle and native crypto path; an actual Android-to-iPhone file transfer was not performed during this audit.
+
+## Remaining limits
+
+- **Remote push:** `app/androidApp/google-services.json` is absent. Firebase configuration is conditional, and the app reports remote push unavailable without it. In-app notifications are covered; actual foreground/background/terminated FCM delivery needs Firebase configuration and end-to-end testing.
+- **Capture presentation:** release Android financial values are masked on the live screen when protection is enabled. Protected original PDFs use secure-window protection. iPhone's secure canvas can keep live figures readable while protecting captures. Android's capture-only experiment is debug-only and opt-in; its test result does not make it the release implementation.
+- **Physical hardware:** enrolled biometrics/device-credential authentication, vendor Keystore behavior, actual shake gestures and scrolling frame timing were not certified on a physical Android phone.
+- **Older OS versions:** minimum-supported API 24/25 devices were not available in this run. Compile/lint guards and crypto fallback checks do not replace physical/runtime coverage there.
+- **Production integration:** authenticated account flows use controlled mock servers. Production backend rollout, live account operations, broker/BNR submissions, live remote notifications and store-delivered upgrades were not tested. Recording a bid remains a personal record, not a broker submission.
+- **Lint:** outstanding warnings concern dependency/build/target-SDK suggestions, launcher-icon shape/monochrome assets, resource hygiene and KTX suggestions. No runtime API or permission errors failed lint. No dependency/SDK upgrade was bundled into this audit.
+
+No production runtime code needed changing during this audit. The temporary test stores, reboot fixture and emulators were cleaned up.
 
 ## Reproduction
 
 ```sh
 ./gradlew :core:jvmTest :app:shared:testAndroidHostTest \
-  :app:androidApp:lintRelease :app:androidApp:assembleDebug \
-  :app:androidApp:assembleDebugAndroidTest :app:androidApp:bundleRelease
+  :app:androidApp:lintDebug :app:androidApp:lintRelease \
+  :app:androidApp:assembleDebug :app:androidApp:assembleDebugAndroidTest \
+  :app:androidApp:assembleRelease
 node --test tests/*.test.mjs
 python3 -m unittest discover -s scripts/tests -p 'test_*.py'
 adb -s DEVICE install -r app/androidApp/build/outputs/apk/debug/androidApp-debug.apk
@@ -56,6 +86,6 @@ adb -s DEVICE shell am instrument -w -r \
   dev.orestegabo.portfolio.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
-The staged persistence test accepts `-e guestPersistenceStage write`, `read`, or `cleanup` with class `dev.orestegabo.portfolio.investments.GuestPersistenceTest#guestInvestmentsSurviveProcessRestartAndReboot`. Run the stages in separate test processes, force-stop before `read`, reboot before `cleanup`. It uses only its dedicated synthetic store.
+For the dedicated persistence method, pass `-e class dev.orestegabo.portfolio.investments.GuestPersistenceTest#guestInvestmentsSurviveProcessRestartAndReboot` with `-e guestPersistenceStage write`, `read`, or `cleanup`. Run stages in separate test processes, force-stop before `read`, reboot before `cleanup`. It uses only its dedicated synthetic store.
 
-Build/run logs and synthetic screenshots for this session are under `/private/tmp/struct-android-*`; temporary files are not durable project artifacts.
+Logs are under `/private/tmp/struct-android-full-audit-*` and `/private/tmp/struct-android-16k-audit-*`. They are temporary local evidence, not durable project artifacts. The native Save/Open backup check was performed interactively on the isolated release app; it is not an additional JUnit test.

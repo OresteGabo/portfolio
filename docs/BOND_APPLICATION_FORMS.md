@@ -68,3 +68,6 @@ The iPhone startup crash was traced to failure cleanup accessing uninitialized s
 
 
 Bond identities: November 2026 uses `FXD 6/2026/5YRS`, verified from the supplied shared application form (issuance 11 November, settlement 13 November, maturity 7 November 2031). The bundled calendar carries this published identity while retaining its descriptive auction title. New temporary purchases save the official code. Home, history and details resolve existing descriptive pending names using a unique settlement/maturity/tenor match without rewriting saved records; confirmed or already-coded names are retained. Verified shared-form terms and public issuance/security data can supply codes for other auctions. Explicit calendar reopenings inherit only the matching original security identity, never its auction price or allocation.
+
+
+Owner upload controls are visible only for auctions in the current or next calendar month, using the real Rwanda date, while the settlement date has not passed. Settlement day is included. The publish confirmation is also disabled if this window expires while a draft is open. This UI rule does not change owner authorization or access to previously published forms.

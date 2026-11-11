@@ -66,4 +66,18 @@ class BondApplicationFormsTest {
         assertEquals("submitted", pending.text("status"))
     }
 
+    @Test fun ownerUploadWindowAllowsOnlyCurrentAndNextMonthUntilSettlement() {
+        val november = issue()
+        assertFalse(bondApplicationUploadAllowed(november, LocalDate.parse("2026-09-30")))
+        assertTrue(bondApplicationUploadAllowed(november, LocalDate.parse("2026-10-01")))
+        assertTrue(bondApplicationUploadAllowed(november, LocalDate.parse("2026-11-01")))
+        assertTrue(bondApplicationUploadAllowed(november, LocalDate.parse("2026-11-13")))
+        assertFalse(bondApplicationUploadAllowed(november, LocalDate.parse("2026-11-14")))
+        assertFalse(bondApplicationUploadAllowed(november, LocalDate.parse("2026-12-01")))
+        val january = issue().put("closingBookDate", "2027-01-13").put("settlementDate", "2027-01-15")
+        assertTrue(bondApplicationUploadAllowed(january, LocalDate.parse("2026-12-10")))
+        assertFalse(bondApplicationUploadAllowed(january, LocalDate.parse("2026-11-30")))
+        assertFalse(bondApplicationUploadAllowed(JsonRecord(), LocalDate.parse("2026-11-10")))
+    }
+
 }
