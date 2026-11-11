@@ -6,7 +6,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -33,7 +32,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -41,9 +39,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import org.jetbrains.compose.resources.DrawableResource
-import org.jetbrains.compose.resources.painterResource
-import portfolio.app.shared.generated.resources.*
 
 internal enum class IntroductionStep(val eyebrow: String, val title: String, val body: String) {
     OVERVIEW("A LITTLE STRUCTURE", "Your portfolio.\nA clearer picture.",
@@ -125,6 +120,7 @@ internal fun OnboardingScreen(
                                     .background(Brush.radialGradient(listOf(colors.primary.copy(alpha = .06f), artworkSurface))),
                                     contentAlignment = Alignment.Center) {
                                     IntroductionArtwork(step, dark,
+                                        active = !animateBrand && pager.settledPage == index,
                                         hideOverviewMark = animateBrand && !reducedMotion,
                                         markPlaced = { markBounds = it })
                                 }
@@ -202,6 +198,7 @@ private fun IntroductionCopy(step: IntroductionStep, compact: Boolean) {
 private fun IntroductionArtwork(
     step: IntroductionStep,
     dark: Boolean,
+    active: Boolean = false,
     hideOverviewMark: Boolean = false,
     markPlaced: (Rect) -> Unit = {},
 ) {
@@ -216,21 +213,8 @@ private fun IntroductionArtwork(
                 markPlaced(Rect(position.x, position.y, position.x + it.size.width, position.y + it.size.height))
             }.graphicsLayer { alpha = if (hideOverviewMark) 0f else 1f })
         }
-        IntroductionStep.IMPORT -> ImportFlowDiagram(dark)
-        IntroductionStep.CALENDAR -> IntroductionImage(if (dark) Res.drawable.onboarding_calendar_dark else Res.drawable.onboarding_calendar_light)
-        IntroductionStep.REPORTS -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            IntroductionImage(if (dark) Res.drawable.onboarding_reports_dark else Res.drawable.onboarding_reports_light)
-            Surface(Modifier.align(Alignment.BottomEnd).padding(end = 24.dp, bottom = 8.dp), shape = RoundedCornerShape(15.dp),
-                color = StructColors.Onboarding.artworkSurface.resolve(dark),
-                border = BorderStroke(1.dp, primary.copy(alpha = .2f))
-            ) {
-                StructMark(Modifier.padding(8.dp).size(40.dp))
-            }
-        }
+        IntroductionStep.IMPORT -> ImportFlowDiagram(dark, active)
+        IntroductionStep.CALENDAR -> CalendarReminderArtwork(dark, active)
+        IntroductionStep.REPORTS -> ReportAssemblyArtwork(dark, active)
     }
-}
-
-@Composable
-private fun IntroductionImage(resource: DrawableResource) {
-    Image(painterResource(resource), null, Modifier.fillMaxSize().padding(10.dp), contentScale = ContentScale.Fit)
 }
