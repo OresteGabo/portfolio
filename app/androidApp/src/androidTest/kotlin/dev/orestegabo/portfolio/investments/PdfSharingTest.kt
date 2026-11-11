@@ -41,6 +41,8 @@ class PdfSharingTest {
         try {
             clearInbox()
             prefs.edit().putString("origin", "http://127.0.0.1:${server.localPort}")
+                // Keep the shared PDF waiting at sign-in instead of letting a restored guest UI consume it.
+                .putString("sessionChoice", "account-manual-v1")
                 .putBoolean("onboardingCompleted", true).commit()
             val outgoing = pdfShareIntent(context, "../../statement.pdf", bytes)
             assertEquals(Intent.ACTION_SEND, outgoing.action)

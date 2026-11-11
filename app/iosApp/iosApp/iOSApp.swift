@@ -31,6 +31,7 @@ final class PricePushDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         AppIconActions.install()
         HomeWidgetHost.install()
+        SharedPdfImportHost.shared.start()
         let defaults = UserDefaults.standard
         let id = defaults.string(forKey: "portfolio.push.deviceId") ?? UUID().uuidString.lowercased()
         defaults.set(id, forKey: "portfolio.push.deviceId")

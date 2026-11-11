@@ -7,6 +7,20 @@ import platform.Foundation.*
 
 /** Open In uses a system-provided local URL; never fetch arbitrary remote URLs. */
 object IosPdfReceiver {
+    /** A share extension's private staged file is removed only after it reaches the normal inbox. */
+    fun receiveQueued(url: String, deliveryId: String, fileName: String, completed: (Boolean) -> Unit) {
+        val file = NSURL.URLWithString(url)
+        if (file == null || !file.fileURL) { completed(true); return }
+        scope.launch {
+            var remove = false
+            try {
+                val bytes = readIosSharedPdf(file)
+                remove = NativePdfInbox.offer(bytes, deliveryId, fileName)
+            } catch (cancelled: CancellationException) { throw cancelled }
+              catch (failure: Exception) { NativePdfInbox.reject(userErrorMessage(failure, "Could not open the selected PDF.")); remove = true }
+            finally { completed(remove) }
+        }
+    }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     fun receive(url: String) {
         val file = NSURL.URLWithString(url)
