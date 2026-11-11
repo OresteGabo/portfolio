@@ -9,14 +9,9 @@ import struct
 ROOT = Path(__file__).resolve().parents[1]
 DEST = ROOT / 'app/shared/src/commonMain/composeResources/drawable'
 PACKS = ROOT / 'branding/struct-capital'
-SOURCES = {
-    'processor': ('data-processing', 'processor-core'),
-    'reports': ('data-processing', 'document-stack'),
-    'allocation': ('data-processing', 'allocation-chart'),
-    'value': ('data-processing', 'value-chart'),
-    'event': ('data-processing', 'event-calendar'),
-    'calendar': ('calendar', 'calendar-notifications'),
-}
+# Animated chip/calendar layers come from generate-onboarding-motion-art.py;
+# output charts are native Canvas paths. Only the document source is still used.
+SOURCES = {'reports': ('data-processing', 'document-stack')}
 
 
 def dimensions(data):

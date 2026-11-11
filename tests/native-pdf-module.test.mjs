@@ -25,3 +25,20 @@ test('native extraction still uses the existing shared financial parser',()=>{
   assert.equal(nativePdfModuleOutput('import { parsePurchasePdfText } from "./equity-pdf-parser.js";'),
     'const parsePurchasePdfText = (text, usedOcr) => PortfolioLogic.parse(text, usedOcr);');
 });
+
+test('offline OCR retains accelerated LSTM engines and no redundant standalone WebAssembly', () => {
+  const base = new URL('../app/shared/src/androidMain/assets/engine/bond-import/', import.meta.url);
+  assert.deepEqual(fs.readdirSync(new URL('tesseract/', base)).sort(), [
+    'tesseract-core-lstm.wasm.js',
+    'tesseract-core-relaxedsimd-lstm.wasm.js',
+    'tesseract-core-simd-lstm.wasm.js',
+  ]);
+  // OEM 1 guarantees that the worker never requests the removed legacy cores.
+  const importer = fs.readFileSync(new URL('../app/shared/src/androidMain/assets/engine/pdf-import.js', import.meta.url), 'utf8');
+  assert.match(importer, /createWorker\("eng", 1,/);
+  assert.ok(fs.statSync(new URL('eng.traineddata.gz', base)).size > 0);
+  // These builds embed their own Wasm module (base64 starts with the Wasm magic).
+  for (const name of fs.readdirSync(new URL('tesseract/', base))) {
+    assert.match(fs.readFileSync(new URL(`tesseract/${name}`, base), 'utf8'), /AGFzbQ/);
+  }
+});

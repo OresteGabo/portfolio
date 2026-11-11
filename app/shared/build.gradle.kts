@@ -41,8 +41,6 @@ kotlin {
     
     sourceSets {
         androidMain.dependencies {
-            implementation(libs.compose.uiToolingPreview)
-            implementation(libs.compose.uiTooling)
             implementation(libs.androidx.activity.compose)
             implementation("androidx.biometric:biometric:1.1.0")
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
@@ -52,10 +50,9 @@ kotlin {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
-            implementation(libs.compose.materialIconsExtended)
+            implementation(libs.compose.materialIconsCore)
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
-            implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
         }
@@ -67,9 +64,6 @@ kotlin {
     }
 }
 
-dependencies {
-    androidRuntimeClasspath(libs.compose.uiTooling)
-}
 // Vision needs the simulator's normal OS services; simctl --standalone returns no OCR observations.
 // Boot an iPhone simulator first, or choose one with -PiosTestDevice=<UDID>.
 tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest>().configureEach {

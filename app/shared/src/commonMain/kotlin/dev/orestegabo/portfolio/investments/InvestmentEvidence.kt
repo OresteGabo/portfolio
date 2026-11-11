@@ -1,7 +1,5 @@
 package dev.orestegabo.portfolio.investments
 
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
 
 internal data class InvestmentEvidence(val label: String, val document: JsonRecord)
 
@@ -23,15 +21,6 @@ internal fun investmentEvidence(record: JsonRecord, documents: List<JsonRecord>)
         })
         InvestmentEvidence(label, document)
     }).distinctBy { it.document.text("id") }
-
-@Composable
-internal fun InvestmentEvidenceActions(model: PortfolioModel, record: JsonRecord) {
-    investmentEvidence(record, model.documents).forEach { evidence ->
-        TextButton(enabled = !model.busy, onClick = { model.openDocumentPreview(evidence.document) }) {
-            AppText(evidence.label)
-        }
-    }
-}
 
 /** Same authenticated download and native share/save behavior as the document library. */
 internal suspend fun shareInvestmentDocument(api: PortfolioApi, actions: NativeActions, document: JsonRecord): Boolean {

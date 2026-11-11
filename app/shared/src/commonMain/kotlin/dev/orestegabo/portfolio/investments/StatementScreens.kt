@@ -46,35 +46,6 @@ fun MissingStatementTile(item: JsonRecord, open: () -> Unit) {
 }
 
 @Composable
-fun StatementReviewScreen(model: PortfolioModel, review: JsonRecord, open: (JsonRecord) -> Unit) {
-    var rows by remember(review) { mutableStateOf<List<JsonRecord>?>(null) }
-    var attempted by remember(review) { mutableStateOf(false) }
-    LaunchedEffect(review, model.busy) {
-        if (!attempted && !model.busy) {
-            attempted = true
-            model.checkStatement(review) { rows = it }
-        }
-    }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { AppText("BK Capital statement", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            AppText("${displayDate(review.text("fromDate"))} – ${displayDate(review.text("toDate"))}", style = MaterialTheme.typography.bodySmall) }
-        if (rows == null) item {
-            if (model.busy) LoadingState() else Button(onClick = { attempted = false }) { AppText("Check again") }
-        } else {
-            item { FinancialText("${rows!!.count { it.text("state") == "recorded" }} recorded · ${rows!!.count { it.text("state") in listOf("missing", "review-required") }} missing PDFs", style = MaterialTheme.typography.labelLarge) }
-            items(rows!!.withIndex().toList(), key = { it.index }) { (_, row) ->
-                if (row.text("state") == "missing") MissingStatementTile(row) { if (row.text("state") == "review-required") model.showStatementRecordReview(row) else open(row) }
-                else ListItem(headlineContent = { AppText(row.text("title")) }, supportingContent = { AppText("Recorded · ${displayDate(row.text("date"))}") },
-                    leadingContent = { AppIcon(Icons.Outlined.CheckCircle, null, tint = MaterialTheme.colorScheme.primary) })
-            }
-            if (rows!!.any { it.text("state") == "missing" }) item {
-                AppText("Missing PDFs stay in your portfolio as reminders. Amounts are added to totals after confirmation.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-    }
-}
-
-@Composable
 fun MissingDocumentsScreen(model: PortfolioModel, open: (JsonRecord) -> Unit) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (model.statementItems.isEmpty()) item { EmptyState("No missing documents", EmptyArtwork.DOCUMENTS, compact = true) }

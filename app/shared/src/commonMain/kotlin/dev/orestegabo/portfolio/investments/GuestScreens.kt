@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -107,32 +106,5 @@ private fun GuestStorageNotice(model: PortfolioModel) {
             }
         }
 
-    }
-}
-@Composable
-private fun GuestRecordActions(model: PortfolioModel, edit: () -> Unit, delete: () -> Unit) {
-    Row {
-        TextButton(enabled = !model.guestStorageLoading, onClick = edit) { AppText("Edit") }
-        TextButton(enabled = !model.guestStorageLoading, onClick = delete) { AppText("Delete", color = MaterialTheme.colorScheme.error) }
-    }
-}
-@Composable
-private fun GuestBondReceipt(model: PortfolioModel, bond: JsonRecord, receipts: List<JsonRecord>) {
-    val terms = bond.terms() ?: return
-    val schedule = couponSchedule(terms)
-    val next = schedule.firstOrNull { it > Today }
-    if (next != null) DetailValueRow("Next coupon", detailDate(next))
-    if (bond.text("status") !in listOf("active", "matured")) return
-    val due = schedule.lastOrNull { it <= Today } ?: return
-    val receipt = receipts.firstOrNull { it.text("purchaseId") == bond.text("id") && it.text("dueDate") == due.toString() }
-    DetailValueRow("Latest due coupon", detailDate(due))
-    DetailValueRow("Expected net payment", money(terms.netCouponPayment(), bond.text("currency")))
-    AppText(couponReceiptState(due, Today, true, receipt).label, style = MaterialTheme.typography.bodySmall)
-    recordedCouponAmount(receipt, bond.text("currency"))?.let { amount ->
-        DetailValueRow("Recorded received amount", money(amount, bond.text("currency")))
-    }
-    Row {
-        TextButton(enabled = !model.guestStorageLoading, onClick = { model.confirmCoupon(bond.text("id"), due.toString(), true) }) { AppText("Mark received") }
-        TextButton(enabled = !model.guestStorageLoading, onClick = { model.confirmCoupon(bond.text("id"), due.toString(), false) }) { AppText("Mark not received") }
     }
 }

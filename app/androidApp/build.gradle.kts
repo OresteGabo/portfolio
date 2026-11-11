@@ -54,8 +54,6 @@ dependencies {
     androidTestImplementation(libs.compose.material3)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 
-    implementation(libs.compose.uiToolingPreview)
-    debugImplementation(libs.compose.uiTooling)
     // Experimental capture-layer exclusion is available only in local debug builds.
     debugImplementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
 }
@@ -93,7 +91,8 @@ android {
         release {
             if (hasUploadSigning) signingConfig = signingConfigs.getByName("upload")
             buildConfigField("String", "DEVELOPMENT_API_ORIGIN", "\"\"")
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

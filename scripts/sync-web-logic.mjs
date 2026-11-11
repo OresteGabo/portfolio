@@ -24,7 +24,16 @@ for (const name of modules) {
 }
 fs.copyFileSync(path.join(web, 'node_modules/pdfjs-dist/legacy/build/pdf.mjs'), path.join(assets, 'pdf.mjs'));
 fs.copyFileSync(path.join(web, 'node_modules/tesseract.js/dist/tesseract.esm.min.js'), path.join(assets, 'tesseract.mjs'));
-fs.cpSync(path.join(web, 'public/bond-import'), path.join(assets, 'bond-import'), { recursive: true, filter: p => !p.endsWith('pdf.worker.min.mjs') });
+// The importer uses OEM 1 (LSTM only). Keep accelerated and baseline embedded
+// cores; raw .wasm files and legacy OCR engines are never loaded by this app.
+const ocrCores = new Set(['tesseract-core-lstm.wasm.js', 'tesseract-core-simd-lstm.wasm.js', 'tesseract-core-relaxedsimd-lstm.wasm.js']);
+const importAssets = path.join(assets, 'bond-import');
+fs.rmSync(importAssets, {recursive: true, force: true});
+fs.cpSync(path.join(web, 'public/bond-import'), importAssets, {
+  recursive: true,
+  filter: p => !p.endsWith('pdf.worker.min.mjs') &&
+    (!path.basename(p).startsWith('tesseract-core') || ocrCores.has(path.basename(p))),
+});
 for (const [name, target] of [['pdfjs-dist', 'pdfjs-LICENSE'], ['tesseract.js', 'tesseract-LICENSE'], ['tesseract.js-core', 'tesseract-core-LICENSE']]) {
   const license = path.join(web, 'node_modules', name, 'LICENSE');
   if (fs.existsSync(license)) fs.copyFileSync(license, path.join(assets, target));

@@ -21,7 +21,13 @@ node --test tests/*.test.mjs
 
 Boot an iPhone simulator before running shared iOS tests; they use native Vision services. Select a specific booted device with `-PiosTestDevice=<UDID>`.
 
-APK: `app/androidApp/build/outputs/apk/debug/androidApp-debug.apk`.
+Debug APK: `app/androidApp/build/outputs/apk/debug/androidApp-debug.apk`.
+
+For a smaller distribution build, run `./gradlew :app:androidApp:assembleRelease`
+and sign the release artifact through the normal upload-key/Android Studio workflow.
+Release builds enable R8 code and resource shrinking. After removing assets, clean
+`:app:shared` and `:app:androidApp` first so stale generated Compose copies are not
+packaged. See the [APK size audit and package verifier](docs/APK_SIZE_AUDIT.md).
 
 The project uses Gradle **9.1.0**, Android Gradle Plugin **9.0.0**, Kotlin **2.3.21**, Compose Multiplatform **1.11.1**, Material 3 **1.11.0-alpha07**, and Lifecycle **2.10.0**. AGP is pinned to the maximum version supported by the installed Android Studio. Compose 1.12.1 requires AGP 9.1 and SDK 37, and Lifecycle 2.11.0 has the same requirements. Compose, Lifecycle, and the compile/target SDK were aligned to the compatible SDK 36 baseline. See the [AGP 9.0 compatibility requirements](https://developer.android.com/build/releases/agp-9-0-0-release-notes).
 

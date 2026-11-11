@@ -32,17 +32,6 @@ fun PdfImportButton(model: PortfolioModel, engine: InvestmentEngine, imported: (
 }
 
 @Composable
-fun PurchaseEntryScreen(model: PortfolioModel, engine: InvestmentEngine, imported: (JsonRecord) -> Unit, openPrivacy: () -> Unit = {}) {
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        item { PdfImportButton(model, engine, imported) }
-        item {
-            AppText("Contract prices appear only in your account’s charts. Public price history uses exchange observations, not private purchase contracts.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            TextButton(onClick = openPrivacy) { AppText("Privacy Policy") }
-        }
-    }
-}
-
-@Composable
 fun SimulatorScreen(model: PortfolioModel, engine: InvestmentEngine, back: () -> Unit) {
     val fields = remember {
         mutableStateMapOf("monthlyContribution" to "300000", "horizonYears" to "20", "startMonth" to "7", "startYear" to "2026",

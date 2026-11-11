@@ -3,12 +3,9 @@ package dev.orestegabo.portfolio.investments
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 fun importedIssuanceInput(review: JsonRecord): JsonRecord {
@@ -169,55 +166,6 @@ fun mergeBondIssuances(published: List<JsonRecord>, documents: List<JsonRecord>,
             if (row.text("isin").isBlank() && verified != null) enriched.put("isin", verified.text("isin"))
             enriched
         } else row
-    }
-}
-
-@Composable
-fun BondIssuanceReview(model: PortfolioModel, review: JsonRecord, target: JsonRecord? = null, done: () -> Unit) {
-    DisposableEffect(review) { onDispose { model.discardImportedPdf(review) } }
-    if (!model.canPublishPublicData) { AppText(PUBLIC_DATA_PERMISSION_ERROR); return }
-    var sharingConfirmed by rememberSaveable(review) { mutableStateOf(false) }
-    val parsed = remember(review) { runCatching { importedIssuanceInput(review) } }
-    val p = review.optJSONObject("fields") ?: JsonRecord()
-    val confirmation = remember(review, target) { target?.let { runCatching { pendingIssuanceConfirmation(review, it) } } }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { AppText(if (target == null) "Review bond issuance" else "Review purchase", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
-        item { AppText("This public report and its bond details will be available to all invited users.", style = MaterialTheme.typography.bodySmall) }
-        item { PublicIssuanceConsent(sharingConfirmed) { sharingConfirmed = it } }
-        if (target == null) item { AppText("Matching pending purchases receive these terms. Your allocation stays unconfirmed.") }
-        else item { Panel {
-            AppText("Confirm purchase", fontWeight = FontWeight.Bold)
-            AppText("Confirm that your full applied amount was allocated and these figures are correct.")
-            Fact("Amount applied", money(target.optDouble("faceValue"), target.text("currency")))
-            Fact("Commission", money(target.optDouble("feesPaid", 0.0), target.text("currency")))
-            confirmation?.getOrNull()?.let { Fact("Total cash cost", money(it.optDouble("amountInvested"), "RWF")) }
-            AppText("The public report supplies the bond terms. Your recorded amount is used for this purchase.", style = MaterialTheme.typography.bodySmall)
-        } }
-        item { Panel {
-            AppText(p.text("bondName"), fontWeight = FontWeight.Bold)
-            Fact("Tenor (years)", p.text("tenorYears")); Fact("Security code", p.text("isin")); Fact("Issuance date", p.text("issuanceDate"))
-            Fact("Settlement", p.text("settlementDate")); Fact("Maturity", p.text("maturityDate"))
-            Fact("Price", "${p.text("pricePercent")}%"); Fact("Coupon", percent(p.optDouble("couponRate")))
-            Fact("Yield", percent(p.optDouble("yieldRate")))
-            listOf("amountOffered" to "Amount offered", "appliedAmount" to "Applied amount", "amountSold" to "Amount sold").forEach { (key, label) ->
-                Fact(label, money(p.optDouble(key), "RWF"))
-            }
-            Fact("Bids", p.text("bidCount"))
-        } }
-        item { Panel {
-            AppText("Coupon payment dates", fontWeight = FontWeight.SemiBold)
-            val dates = p.optJSONArray("couponDates") ?: JsonList()
-            for (i in 0 until dates.length()) Fact("${i + 1}", dates.getString(i))
-        } }
-        val warnings = review.optJSONArray("warnings") ?: JsonList()
-        for (i in 0 until warnings.length()) item { AppText(warnings.getString(i), style = MaterialTheme.typography.bodySmall) }
-        if (parsed.isFailure) item { AppText(parsed.exceptionOrNull()?.message.orEmpty(), color = MaterialTheme.colorScheme.error) }
-        item { AppText("Repeated uploads reuse the saved issuance. Different figures require review.", style = MaterialTheme.typography.bodySmall) }
-        if (confirmation?.isFailure == true) item { AppText(confirmation.exceptionOrNull()?.message.orEmpty(), color = MaterialTheme.colorScheme.error) }
-        item { Button(enabled = sharingConfirmed && parsed.isSuccess && (target == null || confirmation?.isSuccess == true) && !model.busy,
-            onClick = { model.saveImportedIssuance(review, target, sharingConfirmed, done) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
-            AppText(if (target == null) "Save bond issuance" else "Save PDF and confirm purchase")
-        } }
     }
 }
 
