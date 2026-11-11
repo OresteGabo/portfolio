@@ -10,6 +10,8 @@ interface ServerSettings {
     fun writeSessionChoice(value: String?) {}
     fun readImportHintDismissed(): Boolean = false
     fun writeImportHintDismissed(dismissed: Boolean) {}
+    fun readBrandIntroCompleted(): Boolean = false
+    fun writeBrandIntroCompleted(completed: Boolean) {}
     fun readOnboardingCompleted(): Boolean = false
     fun writeOnboardingCompleted(completed: Boolean) {}
     fun readLanguage(): String? = null

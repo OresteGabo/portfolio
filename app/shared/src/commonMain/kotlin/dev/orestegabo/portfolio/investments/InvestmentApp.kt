@@ -95,6 +95,7 @@ fun InvestmentApp(model: PortfolioModel) {
     val preferences = rememberServerSettings()
     var showImportHint by rememberSaveable { mutableStateOf(!preferences.readImportHintDismissed()) }
     var introductionRequested by rememberSaveable { mutableStateOf(!preferences.readOnboardingCompleted() && !model.locked && !model.isGuest) }
+    var brandIntroRequested by rememberSaveable { mutableStateOf(introductionRequested && !preferences.readBrandIntroCompleted()) }
     var replayIntroduction by rememberSaveable { mutableStateOf(false) }
     fun finishIntroduction() {
         preferences.writeOnboardingCompleted(true)
@@ -228,6 +229,11 @@ fun InvestmentApp(model: PortfolioModel) {
         if (shouldShowIntroduction(introductionRequested, model.locked)) {
             PlatformSystemBarAppearance(dark)
             OnboardingScreen(replay = replayIntroduction,
+                animateBrand = brandIntroRequested,
+                brandFinished = {
+                    preferences.writeBrandIntroCompleted(true)
+                    brandIntroRequested = false
+                },
                 continueAsGuest = if (model.user == null) ({ showGuestChoice = true }) else null,
                 finish = { finishIntroduction(); model.startAccountSession() })
             return@MaterialTheme
@@ -459,7 +465,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     }
                     tab == "Settings" && !childScreen -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
                         chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
-                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { replayIntroduction = true; introductionRequested = true }, openInvestmentTools = { investmentTools = true }, openSignInActivity = { securityNotificationId = null; notificationPanel = "security" }, openGuest = { showGuestChoice = true }, openIssueReport = { issueReportSource = "Settings" })
+                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { brandIntroRequested = true; replayIntroduction = true; introductionRequested = true }, openInvestmentTools = { investmentTools = true }, openSignInActivity = { securityNotificationId = null; notificationPanel = "security" }, openGuest = { showGuestChoice = true }, openIssueReport = { issueReportSource = "Settings" })
                     editor != null -> PurchaseEditor(model, editor!!, { editor = null })
                     equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null })
                     investmentTools -> InvestmentToolsScreen(model, openCalendar = { date -> investmentTools = false; openCalendarAt(date) },

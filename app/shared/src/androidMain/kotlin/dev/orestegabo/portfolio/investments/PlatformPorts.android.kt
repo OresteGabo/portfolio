@@ -32,6 +32,8 @@ actual fun rememberServerSettings(): ServerSettings {
         override fun writeSessionChoice(value: String?) { check(prefs.edit().putString("sessionChoice", value).commit()) { "Could not save session choice." } }
         override fun readImportHintDismissed() = prefs.getBoolean("importHintDismissed", false)
         override fun writeImportHintDismissed(dismissed: Boolean) { prefs.edit().putBoolean("importHintDismissed", dismissed).apply() }
+        override fun readBrandIntroCompleted() = prefs.getBoolean("brandIntroClarityCompleted", false)
+        override fun writeBrandIntroCompleted(completed: Boolean) { prefs.edit().putBoolean("brandIntroClarityCompleted", completed).apply() }
         override fun readOnboardingCompleted() = prefs.getBoolean("onboardingCompleted", false)
         override fun writeOnboardingCompleted(completed: Boolean) { prefs.edit().putBoolean("onboardingCompleted", completed).apply() }
         override fun readScreenCaptureAllowed() = prefs.getBoolean(SCREEN_CAPTURE_ALLOWED_KEY, false)
