@@ -4,10 +4,10 @@ import android.app.Activity
 import android.view.WindowManager
 
 actual val captureProtectionRequiresMaskedNumbers: Boolean
-    get() = !ExperimentalCaptureBackdrop.ready
+    get() = false
 actual val captureProtectionDescription: String
-    get() = if (ExperimentalCaptureBackdrop.ready) "Masks financial numbers only in captures (experimental)"
-        else "Masks numbers on screen and in screenshots and recordings"
+    get() = if (ExperimentalCaptureBackdrop.ready) "Masks financial numbers only in screenshots and recordings"
+        else "Blocks screenshots and recordings; numbers stay readable"
 internal const val SCREEN_CAPTURE_ALLOWED_KEY = "screenCaptureAllowed"
 
 /** Apply before Compose draws any financial content, including on a cold start. */

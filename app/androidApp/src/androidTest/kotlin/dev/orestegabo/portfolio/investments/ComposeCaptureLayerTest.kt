@@ -83,7 +83,7 @@ class ComposeCaptureLayerTest {
         }
         try {
             prefs.edit().putString("origin", "http://127.0.0.1:${server.localPort}")
-                .putBoolean("experimentalCaptureLayer", true).commit()
+                .remove("experimentalCaptureLayer").commit()
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                 val manualMask = mutableStateOf(false)
                 val protect = mutableStateOf(true)
@@ -199,6 +199,13 @@ class ComposeCaptureLayerTest {
                 scenario.onActivity { protect.value = false }
                 Thread.sleep(500)
                 val ordinaryTab = capture()
+                File(instrumentation.targetContext.cacheDir, "ordinary-tab.png").outputStream().use {
+                    ordinaryTab.compress(Bitmap.CompressFormat.PNG, 100, it)
+                }
+                scenario.onActivity { activity ->
+                    assertEquals("Disabled capture protection must clear the window flag", 0,
+                        activity.window.attributes.flags and android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                }
                 val bandHeight = 400
                 val bandWidth = ordinaryTab.width
                 val bottomY = ordinaryTab.height - 80
@@ -300,7 +307,13 @@ class ComposeCaptureLayerTest {
                 Thread.sleep(500)
                 val allowedCapture = capture()
                 assertTrue("Opting out must capture visible digits", difference(maskedCapture, allowedCapture) > 100)
-                scenario.onActivity { protect.value = true }
+                scenario.onActivity { manualMask.value = true }
+                Thread.sleep(500)
+                val manuallyHiddenAllowedCapture = capture()
+                assertTrue("Manual hiding must still mask numbers when capture protection is off",
+                    difference(maskedCapture, manuallyHiddenAllowedCapture) < 20)
+                manuallyHiddenAllowedCapture.recycle()
+                scenario.onActivity { manualMask.value = false; protect.value = true }
                 val protectedAgain = awaitCapture("Re-enabling protection did not restore the masked capture") {
                     difference(maskedCapture, it) < 20
                 }

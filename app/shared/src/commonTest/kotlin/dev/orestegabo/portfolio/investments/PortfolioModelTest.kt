@@ -494,21 +494,31 @@ class PortfolioModelTest {
             assertTrue(allowed.numbersHidden)
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
-    @Test fun androidAllowsForegroundCapturesWithEnforcedNumberMasking() = runTest {
-        val scenario = Scenario().apply { captureMaskRequired = true }
+    @Test fun captureShieldKeepsManualNumberVisibilityIndependentAcrossAllCombinations() = runTest {
+        val scenario = Scenario().apply { captureMaskRequired = false }
         val model = model(scenario)
         try {
-            assertTrue(model.captureProtectionEnabled)
-            assertFalse(protectCaptureWindow(inBackground = false))
-            assertTrue(model.numbersConcealed)
-            assertFalse(model.numbersHidden)
             advanceUntilIdle()
-            model.updateScreenCapturePermission(true)
-            assertFalse(protectCaptureWindow(inBackground = false))
-            assertTrue(protectCaptureWindow(inBackground = true))
-            assertFalse(model.numbersConcealed)
-            model.toggleNumberVisibility()
-            assertTrue(model.numbersConcealed)
+            for (captureAllowed in listOf(false, true, false)) {
+                model.updateScreenCapturePermission(captureAllowed)
+                assertEquals(!captureAllowed, model.captureProtectionEnabled)
+                assertFalse(model.numbersRevealBlocked)
+                assertFalse(model.numbersConcealed)
+                model.toggleNumberVisibility()
+                assertTrue(model.numbersHidden)
+                assertTrue(model.numbersConcealed)
+                model.updateScreenCapturePermission(!captureAllowed)
+                assertTrue(model.numbersHidden)
+                assertTrue(model.numbersConcealed)
+                model.toggleNumberVisibility()
+                assertFalse(model.numbersConcealed)
+            }
+            model.updateScreenCapturePermission(false)
+            scenario.store.clear()
+            val reopened = model(scenario)
+            assertTrue(reopened.captureProtectionEnabled)
+            assertFalse(reopened.numbersConcealed)
+            assertFalse(reopened.numbersRevealBlocked)
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
 

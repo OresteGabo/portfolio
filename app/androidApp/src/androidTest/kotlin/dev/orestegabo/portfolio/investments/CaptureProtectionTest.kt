@@ -14,7 +14,7 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CaptureProtectionTest {
-    @Test fun foregroundScreenshotsSaveWithEitherPreferenceAndBackgroundRemainsSecure() {
+    @Test fun unavailableCaptureLayerBlocksCapturesWithoutForcingNumbersHidden() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val prefs = instrumentation.targetContext.getSharedPreferences("connection", 0)
         val oldOrigin = prefs.getString("origin", null)
@@ -58,6 +58,7 @@ class CaptureProtectionTest {
             assertTrue(prefs.edit().putString("origin", "http://127.0.0.1:${server.localPort}").remove("screenCaptureAllowed").commit())
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                 awaitFlag(scenario, false)
+                scenario.onActivity { ExperimentalCaptureBackdrop.detach() }
                 val protect = mutableStateOf(true)
                 val document = mutableStateOf(false)
                 scenario.onActivity { activity ->
@@ -65,8 +66,8 @@ class CaptureProtectionTest {
                     activity.findViewById<android.view.View>(android.R.id.content).setBackgroundColor(Color.MAGENTA)
                     activity.setContent { NativePrivacyCover(protectCaptures = protect.value, protectDocument = document.value) }
                 }
-                awaitFlag(scenario, false)
-                awaitScreenshotColor(Color.MAGENTA)
+                awaitFlag(scenario, true)
+                assertFalse(captureProtectionRequiresMaskedNumbers)
                 scenario.onActivity { protect.value = false }
                 awaitFlag(scenario, false)
                 awaitScreenshotColor(Color.MAGENTA)
@@ -75,8 +76,7 @@ class CaptureProtectionTest {
                 scenario.moveToState(Lifecycle.State.RESUMED)
                 awaitFlag(scenario, false)
                 scenario.onActivity { protect.value = true }
-                awaitFlag(scenario, false)
-                awaitScreenshotColor(Color.MAGENTA)
+                awaitFlag(scenario, true)
                 scenario.onActivity { document.value = true }
                 awaitFlag(scenario, true)
                 scenario.onActivity { protect.value = false }
@@ -85,7 +85,7 @@ class CaptureProtectionTest {
                 scenario.onActivity { protect.value = true }
                 awaitFlag(scenario, true)
                 scenario.onActivity { document.value = false }
-                awaitFlag(scenario, false)
+                awaitFlag(scenario, true)
             }
             // A saved Settings override applies on a new Activity, rather than requiring another toggle.
             assertTrue(prefs.edit().putBoolean("screenCaptureAllowed", true).commit())

@@ -199,10 +199,11 @@ private class AndroidSecureSignIn(private val application: Context) : SecureSign
 @Composable actual fun NativePrivacyCover(protectCaptures: Boolean, protectDocument: Boolean) {
     val window = LocalContext.current.host().window
     var inactive by remember(window) { mutableStateOf(false) }
+    val captureLayerReady = ExperimentalCaptureBackdrop.ready
     fun updateProtection() {
-        // Foreground protection is shared number masking, so normal screenshots can save.
+        // Keep the live number preference independent. Block captures until exclusion is ready.
         // Original PDF pixels also need the full window shield while capture protection is enabled.
-        if (protectCaptureWindow(inactive) || protectCaptures && protectDocument) window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        if (protectCaptureWindow(inactive) || protectCaptures && (protectDocument || !captureLayerReady)) window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
         else window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
     }
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_PAUSE) {

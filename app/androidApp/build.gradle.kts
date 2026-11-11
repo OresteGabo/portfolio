@@ -54,8 +54,8 @@ dependencies {
     androidTestImplementation(libs.compose.material3)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 
-    // Experimental capture-layer exclusion is available only in local debug builds.
-    debugImplementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
+    // Capture-only exclusion is needed in both APK variants; unsupported devices use FLAG_SECURE.
+    implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
 }
 
 android {
