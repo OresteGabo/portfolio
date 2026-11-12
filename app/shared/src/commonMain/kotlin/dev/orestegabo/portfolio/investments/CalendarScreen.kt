@@ -404,6 +404,18 @@ private fun CalendarEventTile(event: InvestmentCalendarEvent, expanded: Boolean,
             AppAnimatedVisibility(expanded) {
                 Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     HorizontalDivider()
+                    if (NativeCalendarBridge.available) {
+                        TextButton(onClick = {
+                            val draft = phoneCalendarEvent(event)
+                            NativeCalendarBridge.present(draft.date, draft.title, draft.notes)
+                        }) {
+                            AppIcon(Icons.Outlined.EventAvailable, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            AppText("Add to phone calendar")
+                        }
+                        AppText("Review the event and choose alerts in your calendar app. Dates will not update automatically.",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     if (event.category == CalendarCategory.ISSUANCE) {
                         val record = event.record
                         listOf("Announcement" to "announcementDate", "Book opens" to "openBookDate", "Book closes" to "closingBookDate",

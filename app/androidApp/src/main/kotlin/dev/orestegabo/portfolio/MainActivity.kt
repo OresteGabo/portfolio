@@ -56,6 +56,7 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         NextWidgetStore.install(this)
+        installCalendarExport(this)
         receiveAppAction(intent)
         intent.getStringExtra("widgetDate")?.let { dev.orestegabo.portfolio.investments.HomeWidgetBridge.openCalendar(it) }
         applyInitialCaptureProtection(this)

@@ -32,6 +32,7 @@ final class PricePushDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
         StructAppShortcuts.updateAppShortcutParameters()
         AppIconActions.install()
         HomeWidgetHost.install()
+        CalendarExportHost.shared.install()
         SharedPdfImportHost.shared.start()
         let defaults = UserDefaults.standard
         let id = defaults.string(forKey: "portfolio.push.deviceId") ?? UUID().uuidString.lowercased()

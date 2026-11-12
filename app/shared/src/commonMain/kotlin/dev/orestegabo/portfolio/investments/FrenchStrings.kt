@@ -2,6 +2,11 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Add to phone calendar" to "Ajouter au calendrier du téléphone",
+    "Review the event and choose alerts in your calendar app. Dates will not update automatically." to "Vérifiez l’événement et choisissez les alertes dans votre calendrier. Les dates ne seront pas actualisées automatiquement.",
+    "Expected coupon payment" to "Paiement du coupon prévu",
+    "Expected principal repayment" to "Remboursement du capital prévu",
+    "Dates are indicative. Confirm subscription deadlines and payments with your broker." to "Dates indicatives. Confirmez les échéances de souscription et les paiements avec votre courtier.",
     "Application form" to "Formulaire de souscription",
     "Bond application" to "Souscription obligataire",
     "Bond application form" to "Formulaire de souscription obligataire",
