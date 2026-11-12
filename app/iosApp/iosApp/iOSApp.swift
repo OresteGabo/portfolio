@@ -29,6 +29,7 @@ import Shared
 final class PricePushDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     private var enabled: Bool { (Bundle.main.object(forInfoDictionaryKey: "GaboPushEnabled") as? String) == "YES" }
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        StructAppShortcuts.updateAppShortcutParameters()
         AppIconActions.install()
         HomeWidgetHost.install()
         SharedPdfImportHost.shared.start()

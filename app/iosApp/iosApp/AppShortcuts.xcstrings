@@ -1,0 +1,36 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Import a PDF in ${applicationName}": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importer un PDF dans ${applicationName}"
+          }
+        }
+      }
+    },
+    "Add a purchase in ${applicationName}": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter un achat dans ${applicationName}"
+          }
+        }
+      }
+    },
+    "Open the calendar in ${applicationName}": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir le calendrier dans ${applicationName}"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

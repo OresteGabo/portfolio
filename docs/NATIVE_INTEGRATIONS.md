@@ -17,3 +17,11 @@ iPhone has a native PDF Share extension. It accepts one PDF of up to 10 MB, chec
 The coordinated single-file disk inbox refuses to overwrite a waiting file. Files are protected until first unlock after restart, removed only for the matching delivery after intake, and expired after 24 hours when the inbox is next accessed. The widget extension reads only its separate `next-widget.json`; staged PDFs live under `pdf-import-inbox`. No PDF contents or private exception details are logged. Disabling GABO_WIDGETS_ENABLED also omits this App Group-dependent extension.
 
 Verification: signed device/simulator builds, Foundation checks for invalid/oversized input, safe filenames, overwrite refusal, matching cleanup and expiry. A synthetic PDF was shared from Safari through the actual extension, prepared successfully, and delivered to the disposable guest app's existing parser. The parser rejected the non-investment fixture as expected; no records were created.
+
+## Siri, Shortcuts and Android Assistant
+
+iPhone exposes three App Intents and automatic App Shortcuts: Import PDF, Add purchase, and Open calendar, with English/French titles and invocation phrases. Intents require device authentication, foreground the app, and queue the same navigation whitelist behind the app's own onboarding/lock state. They never create records in the background. Shortcuts can also be assigned by the user to system surfaces such as the Action Button where available.
+
+Android declares OPEN_APP_FEATURE with English/French inline inventory mapped to stable shortcut IDs. The capability has a no-parameter fallback that simply opens the app. Google Assistant production voice discovery requires Google Play deployment/App Actions review and compatible Assistant configuration; a sideloaded debug APK does not activate that service. This integration does not promise another assistant vendor's support.
+
+Verification: Android compile/lint and installed launcher/Assistant-extra dispatch instrumentation passed. Xcode extracted all three App Intents and localized shortcut metadata. Apple's actual Shortcuts app displayed all three actions; running Open calendar foregrounded the disposable simulator app at Calendar. Siri speech recognition and Google Play review are external activation steps, not asserted as end-to-end voice tests.

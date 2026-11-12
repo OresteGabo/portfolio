@@ -2,4 +2,7 @@
     <string name="shortcut_import">Import PDF</string>
     <string name="shortcut_purchase">Add purchase</string>
     <string name="shortcut_calendar">Open calendar</string>
+    <string-array name="assistant_import_pdf_names"><item>Import PDF</item><item>Import document</item></string-array>
+    <string-array name="assistant_add_purchase_names"><item>Add purchase</item><item>New purchase</item></string-array>
+    <string-array name="assistant_calendar_names"><item>Calendar</item><item>Bond calendar</item></string-array>
 </resources>

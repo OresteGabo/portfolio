@@ -1,11 +1,26 @@
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
     <shortcut android:shortcutId="import-pdf" android:icon="@drawable/ic_price_notification" android:shortcutShortLabel="@string/shortcut_import">
         <intent android:action="android.intent.action.VIEW" android:targetPackage="dev.orestegabo.portfolio" android:targetClass="dev.orestegabo.portfolio.MainActivity" android:data="structcapital://action/import-pdf" />
+        <capability-binding android:key="actions.intent.OPEN_APP_FEATURE">
+            <parameter-binding android:key="feature" android:value="@array/assistant_import_pdf_names" />
+        </capability-binding>
     </shortcut>
     <shortcut android:shortcutId="add-purchase" android:icon="@drawable/ic_price_notification" android:shortcutShortLabel="@string/shortcut_purchase">
         <intent android:action="android.intent.action.VIEW" android:targetPackage="dev.orestegabo.portfolio" android:targetClass="dev.orestegabo.portfolio.MainActivity" android:data="structcapital://action/add-purchase" />
+        <capability-binding android:key="actions.intent.OPEN_APP_FEATURE">
+            <parameter-binding android:key="feature" android:value="@array/assistant_add_purchase_names" />
+        </capability-binding>
     </shortcut>
     <shortcut android:shortcutId="calendar" android:icon="@drawable/ic_price_notification" android:shortcutShortLabel="@string/shortcut_calendar">
         <intent android:action="android.intent.action.VIEW" android:targetPackage="dev.orestegabo.portfolio" android:targetClass="dev.orestegabo.portfolio.MainActivity" android:data="structcapital://action/calendar" />
+        <capability-binding android:key="actions.intent.OPEN_APP_FEATURE">
+            <parameter-binding android:key="feature" android:value="@array/assistant_calendar_names" />
+        </capability-binding>
     </shortcut>
+    <capability android:name="actions.intent.OPEN_APP_FEATURE">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="dev.orestegabo.portfolio" android:targetClass="dev.orestegabo.portfolio.MainActivity">
+            <parameter android:name="feature" android:key="appAction" android:required="true" />
+        </intent>
+        <intent android:action="android.intent.action.MAIN" android:targetPackage="dev.orestegabo.portfolio" android:targetClass="dev.orestegabo.portfolio.MainActivity" />
+    </capability>
 </shortcuts>

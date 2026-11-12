@@ -25,6 +25,13 @@ class AppIconShortcutTest {
                 assertNull(NativeAppActions.pending)
                 receiveAppAction(Intent(Intent.ACTION_VIEW,Uri.parse("structcapital://action/delete-account")))
                 assertNull(NativeAppActions.pending)
+                // Assistant inline inventory supplies the stable shortcut ID as an extra.
+                for (action in listOf("import-pdf", "add-purchase", "calendar")) {
+                    receiveAppAction(Intent(Intent.ACTION_VIEW).putExtra("appAction", action))
+                    assertEquals(action, NativeAppActions.take())
+                }
+                receiveAppAction(Intent(Intent.ACTION_VIEW).putExtra("appAction", "delete-account"))
+                assertNull(NativeAppActions.pending)
             } finally { NativeAppActions.clear() }
         }
     }
