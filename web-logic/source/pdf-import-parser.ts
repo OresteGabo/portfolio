@@ -70,9 +70,11 @@ export function parseBondPdfText(raw: string, usedOcr = false): BondPdfImport {
   const rate = number(capture(/C[ao]upon\s+(?:Interest\s+)?rate\s*[:\s]*([^\s%]+)\s*%(?=\s|$)/i));
   if (rate !== undefined && rate <= 100) fields.couponRate = rate / 100;
 
-  const settlement = capture(/SETTLEMENT\s+DATE[ \t:]*\n?[ \t]*([\dIlioO][^\n]*)/i);
-  const maturity = capture(/REDEMP?E?TION\s+DATE[ \t:]*\n?[ \t]*([\dIlioO][^\n]*)/i)
-    ?? capture(/MATURITY\s+DATE[ \t:]*\n?[ \t]*([\dIlioO][^\n]*)/i);
+  // Sparse OCR separates a table label and its value with empty lines. Only
+  // whitespace may be skipped: never cross another label to find a date.
+  const settlement = capture(/SETTLEMENT\s+DATE[ \t:]*(?:\n[ \t]*)*([\dIlioO][^\n]*)/i);
+  const maturity = capture(/REDEMP?E?TION\s+DATE[ \t:]*(?:\n[ \t]*)*([\dIlioO][^\n]*)/i)
+    ?? capture(/MATURITY\s+DATE[ \t:]*(?:\n[ \t]*)*([\dIlioO][^\n]*)/i);
   if (settlement) {
     const date = readDate(settlement);
     if (date) {

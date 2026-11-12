@@ -59,6 +59,8 @@ private fun PurchaseConversationReview(model: PortfolioModel, review: JsonRecord
             }
         }
     }
+    if (state.legacyEvidenceTarget != null) AppText("Existing purchase found. Recorded costs and tax settings are kept when the PDF does not state them.",
+        color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
     if (target != null || state.selected != null) AppText("Matches your existing purchase.", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium)
     FinancialText(body.text(if (state.bond) "bondName" else "securityName"), fontWeight = FontWeight.Bold)
     if (state.bond) {
@@ -76,7 +78,7 @@ private fun PurchaseConversationReview(model: PortfolioModel, review: JsonRecord
     Button(enabled = state.ready && !model.busy, modifier = Modifier.fillMaxWidth(), onClick = {
         state.confirmed?.let { model.saveImportedPurchase(review, if (state.bond) it else body, state.selected?.text("id"), done) }
     }) {
-        AppText(if (entry.documentId.isNotBlank()) "Confirm using saved PDF" else if (entry.state == ImportState.FAILED) "Retry save" else if (state.selected != null) "Save PDF and confirm purchase" else "Save purchase and PDF")
+        AppText(if (state.legacyEvidenceTarget != null) "Attach PDF to existing purchase" else if (entry.documentId.isNotBlank()) "Confirm using saved PDF" else if (entry.state == ImportState.FAILED) "Retry save" else if (state.selected != null) "Save PDF and confirm purchase" else "Save purchase and PDF")
     }
 }
 

@@ -2,6 +2,8 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Existing purchase found. Recorded costs and tax settings are kept when the PDF does not state them." to "Achat existant trouvé. Les frais et paramètres fiscaux enregistrés sont conservés lorsque le PDF ne les précise pas.",
+    "Attach PDF to existing purchase" to "Associer le PDF à l’achat existant",
     "Add to phone calendar" to "Ajouter au calendrier du téléphone",
     "Review the event and choose alerts in your calendar app. Dates will not update automatically." to "Vérifiez l’événement et choisissez les alertes dans votre calendrier. Les dates ne seront pas actualisées automatiquement.",
     "Expected coupon payment" to "Paiement du coupon prévu",

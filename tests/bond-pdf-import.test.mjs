@@ -91,3 +91,29 @@ test("recognizes OCR capital I in July dates without altering bond codes", () =>
   assert.ok(result.fields.couponDates.includes("2027-07-01"));
   assert.equal(result.fields.isin, "RWTEST000001/MN");
 });
+
+test("reads OCR date values after blank lines without changing allocation or schedule", () => {
+  const text = document.replace("SETTLEMENT DATE 14/08/2026", "SETTLEMENT DATE :\n \n\t14/08/2026")
+    .replace("REDEMPTION DATE 01/08/2046", "REDEMPTION DATE\n\n\n01/08/2046");
+  const result = parseBondPdfText(text, true);
+  assert.equal(result.fields.settlementDate, "2026-08-14");
+  assert.equal(result.fields.purchaseDate, "2026-08-14");
+  assert.equal(result.fields.maturityDate, "2046-08-01");
+  assert.equal(result.fields.faceValue, 1_000_000);
+  assert.equal(result.fields.couponDates.length, 40);
+  assert.deepEqual(result.missingFields, []);
+  assert.equal(result.usedOcr, true);
+});
+
+test("OCR whitespace handling never borrows a missing date from the next labelled field", () => {
+  for (const [label, field, missing] of [
+    ["SETTLEMENT", "settlementDate", "Settlement date"],
+    ["REDEMPTION", "maturityDate", "Maturity date"],
+  ]) {
+    const date = label === "SETTLEMENT" ? "14/08/2026" : "01/08/2046";
+    const text = document.replace(`${label} DATE ${date}`, `${label} DATE\n\nOTHER DATE\n\n${date}`);
+    const result = parseBondPdfText(text, true);
+    assert.equal(result.fields[field], undefined);
+    assert.ok(result.missingFields.includes(missing));
+  }
+});

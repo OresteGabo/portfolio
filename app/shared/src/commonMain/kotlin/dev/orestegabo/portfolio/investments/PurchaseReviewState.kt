@@ -10,7 +10,15 @@ internal class PurchaseReviewState(review: JsonRecord, documents: List<JsonRecor
     val matches = body?.let { input -> purchases.filter { pendingMatchesConfirmation(it, input) } }.orEmpty()
     val selectedId = selection ?: target?.text("id") ?: matches.singleOrNull()?.text("id")
     val selected = purchases.firstOrNull { it.text("id") == selectedId }
-    val confirmed = body?.let { runCatching { completePendingPurchase(effectiveReview, selected) }.getOrNull() }
+    // Older web imports can have an active holding and a library PDF with no evidence link.
+    // Keep the POST attach-evidence path so the server still compares every financial term.
+    val legacyEvidenceTarget = if (bond && historyComplete && target == null && selected == null) body?.let {
+        legacyBondEvidenceTarget(it, purchases)
+    } else null
+    val confirmed = body?.let { runCatching {
+        if (legacyEvidenceTarget != null) legacyBondEvidenceInput(effectiveReview, legacyEvidenceTarget)
+        else completePendingPurchase(effectiveReview, selected)
+    }.getOrNull() }
     val wrongTarget = target != null && (body == null || !bond || !pendingMatchesConfirmation(target, body))
     val ready = body != null && !wrongTarget && (!bond || historyComplete) &&
         (selected != null && pendingMatchesConfirmation(selected, body) || target == null && matches.isEmpty()) && confirmed != null

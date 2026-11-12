@@ -77,3 +77,24 @@ internal fun sharedIssuanceDocument(review: JsonRecord, documents: List<JsonReco
     }
     return document
 }
+
+
+/** Exact holding identity only. Legacy web records lack confirmationMethod and a personal proof link. */
+internal fun legacyBondEvidenceTarget(input: JsonRecord, records: List<JsonRecord>): JsonRecord? = records.filter { saved ->
+    saved.text("status") == "active" && saved.text("confirmationMethod").isBlank() &&
+        saved.text("confirmationDocumentId").isBlank() && saved.text("isin").isNotBlank() &&
+        listOf("instrumentType", "issuer", "currency", "market", "bondName", "isin", "settlementDate", "maturityDate", "firstCouponDate", "broker").all {
+            saved.text(it).trim() == input.text(it).trim()
+        } && listOf("faceValue", "pricePercent", "couponRate", "tenorYears", "couponFrequency").all {
+            saved.optDouble(it, Double.NaN) == input.optDouble(it, Double.NaN)
+        }
+}.singleOrNull()
+
+/** Absence in the PDF is not evidence of zero acquisition costs or a different tax election. */
+internal fun legacyBondEvidenceInput(review: JsonRecord, saved: JsonRecord): JsonRecord {
+    val fields = JsonRecord(requireNotNull(review.optJSONObject("fields")).toString())
+    for (key in listOf("feesPaid", "accruedInterestPaid", "withholdingTaxRate")) {
+        if (!fields.has(key) && saved.has(key)) fields.put(key, saved.optDouble(key, Double.NaN))
+    }
+    return importedPurchaseInput(JsonRecord(review.toString()).put("fields", fields))
+}
