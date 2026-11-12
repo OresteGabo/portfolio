@@ -61,8 +61,49 @@ struct WhatsNextWidgetView: View {
         }
     }
     var body: some View {
+        Group {
+            switch family {
+            case .accessoryInline:
+                Label("\(date(events.first)) · \(title(events.first))", systemImage: "calendar")
+            case .accessoryCircular:
+                ZStack {
+                    AccessoryWidgetBackground()
+                    VStack(spacing: 0) {
+                        Image(systemName: "calendar").font(.caption2)
+                        if let event = events.first {
+                            Text(NextWidgetData.formatted(event.date, pattern: "d", french: french))
+                                .font(.system(.title3, design: .rounded, weight: .bold))
+                            Text(NextWidgetData.formatted(event.date, pattern: "MMM", french: french))
+                                .font(.system(size: 9, weight: .medium))
+                        } else {
+                            Text(text("Open", "Ouvrir")).font(.caption2)
+                        }
+                    }
+                }.accessibilityLabel("\(title(events.first)), \(date(events.first))")
+            case .accessoryRectangular:
+                HStack(spacing: 7) {
+                    RoundedRectangle(cornerRadius: 2).frame(width: 3)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(events.first?.status ?? text("What’s next", "À venir"))
+                            .font(.caption2).lineLimit(1)
+                        Text(title(events.first)).font(.headline).lineLimit(1)
+                        Label(date(events.first), systemImage: "calendar").font(.caption).lineLimit(1)
+                    }
+                }
+            default:
+                homeScreen
+            }
+        }
+        .widgetURL(NextWidgetData.url(for: events.first?.date ?? entry.date))
+        .containerBackground(for: .widget) {
+            if family == .systemSmall || family == .systemMedium {
+                Color(red: 0.078, green: 0.125, blue: 0.078)
+            }
+        }
+    }
+    private var homeScreen: some View {
         let first = events.first
-        VStack(alignment: .leading, spacing: family == .systemSmall ? 3 : 7) {
+        return VStack(alignment: .leading, spacing: family == .systemSmall ? 3 : 7) {
             header
             if family == .systemMedium {
                 HStack(alignment: .top, spacing: 16) {
@@ -88,8 +129,7 @@ struct WhatsNextWidgetView: View {
             }
         }
         .padding(14)
-        .widgetURL(NextWidgetData.url(for: first?.date ?? entry.date))
-        .containerBackground(for: .widget) { Color(red: 0.078, green: 0.125, blue: 0.078) }
+
     }
     private func primary(_ event: NextWidgetEvent?, small: Bool) -> some View {
         VStack(alignment: .leading, spacing: small ? 2 : 4) {
@@ -115,7 +155,7 @@ struct WhatsNextWidget: Widget {
         }
         .configurationDisplayName("What’s next")
         .description("Upcoming bond subscriptions and expected payments. No personal amounts.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryInline, .accessoryCircular, .accessoryRectangular])
         .contentMarginsDisabled()
     }
 }

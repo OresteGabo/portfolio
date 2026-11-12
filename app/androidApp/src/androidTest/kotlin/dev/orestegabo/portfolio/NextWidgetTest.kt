@@ -55,8 +55,13 @@ class NextWidgetTest {
                 }
             }
             val manager=AppWidgetManager.getInstance(context)
-            assertNotNull(manager.getInstalledProvidersForPackage(context.packageName,null)
-                .firstOrNull { it.provider==ComponentName(context,NextSmallWidget::class.java) })
+            for (provider in listOf(NextSmallWidget::class.java, NextMediumWidget::class.java)) {
+                val info = manager.getInstalledProvidersForPackage(context.packageName,null)
+                    .first { it.provider == ComponentName(context,provider) }
+                assertTrue(info.widgetCategory and android.appwidget.AppWidgetProviderInfo.WIDGET_CATEGORY_KEYGUARD != 0)
+                assertTrue(info.widgetCategory and android.appwidget.AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN != 0)
+                assertTrue(info.initialKeyguardLayout != 0)
+            }
             NextWidgetStore.save(context,null)
             assertEquals(0,NextWidgetStore.snapshot(context).length())
         } finally {

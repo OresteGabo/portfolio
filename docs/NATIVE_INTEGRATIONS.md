@@ -25,3 +25,11 @@ iPhone exposes three App Intents and automatic App Shortcuts: Import PDF, Add pu
 Android declares OPEN_APP_FEATURE with English/French inline inventory mapped to stable shortcut IDs. The capability has a no-parameter fallback that simply opens the app. Google Assistant production voice discovery requires Google Play deployment/App Actions review and compatible Assistant configuration; a sideloaded debug APK does not activate that service. This integration does not promise another assistant vendor's support.
 
 Verification: Android compile/lint and installed launcher/Assistant-extra dispatch instrumentation passed. Xcode extracted all three App Intents and localized shortcut metadata. Apple's actual Shortcuts app displayed all three actions; running Open calendar foregrounded the disposable simulator app at Calendar. Siri speech recognition and Google Play review are external activation steps, not asserted as end-to-end voice tests.
+
+## Lock Screen widgets
+
+iPhone's existing What’s next extension now supports accessoryInline, accessoryCircular and accessoryRectangular in addition to its Home Screen sizes. Compact layouts use system-rendered styling and the same Rwanda-date timeline/deep link. They show public issue facts or generic payment labels/dates, never personal holding names or amounts. Lock Screen placement is user-controlled.
+
+Both Android providers advertise home_screen and keyguard with an initial keyguard layout. Android's newer Lock Screen widget host is OS/OEM-dependent; this metadata cannot make the Honor Android 15 expose an unsupported widget surface. Home Screen widgets continue to work. No lock bypass or background service is added.
+
+Verification: signed iPhone and simulator builds passed; the native Lock Screen picker listed Struct Capital's circular and rectangular families and accepted both widgets. The simulator compositor did not display the wallpaper-edit overlays in captured screenshots, so visual typography on a physical Lock Screen still deserves user review. Native Swift date/expiry/French/privacy checks and all three Android widget projection/render/provider instrumentation checks passed. Inline registration is compiled; its above-clock placement remains a user-device check.
