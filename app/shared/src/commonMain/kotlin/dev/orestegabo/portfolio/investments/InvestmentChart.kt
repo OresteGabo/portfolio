@@ -186,9 +186,24 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -205,13 +220,13 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.abs
 import kotlinx.datetime.LocalDate
+import kotlin.math.abs
 
 val LocalChartStyle = staticCompositionLocalOf { "area" }
 
@@ -221,13 +236,12 @@ fun InvestmentChart(
     values: List<Double>,
     labels: List<String> = emptyList(),
     notes: List<String> = emptyList(),
-    sparse: Boolean = false,
     dateRange: ClosedRange<LocalDate>? = null
 ) {
     CaptureRedactionRegion(
         Modifier.fillMaxWidth(),
         masked = { HiddenFinancialChart(Modifier.fillMaxSize()) }) {
-        InvestmentChartContent(values, labels, notes, sparse, dateRange)
+        InvestmentChartContent(values, labels, notes, dateRange)
     }
 }
 
@@ -236,7 +250,6 @@ private fun InvestmentChartContent(
     values: List<Double>,
     labels: List<String>,
     notes: List<String>,
-    sparse: Boolean,
     dateRange: ClosedRange<LocalDate>?
 ) {
     if (LocalNumbersHidden.current) {
@@ -387,7 +400,7 @@ private fun InvestmentChartContent(
                                 else lineTo(x(index), y(point.first))
                             }
                         }
-                        if (style == "area" && !sparse) {
+                        if (style == "area") {
                             val area = Path().apply {
                                 addPath(line)
                                 lineTo(x(points.lastIndex), size.height - inset)
