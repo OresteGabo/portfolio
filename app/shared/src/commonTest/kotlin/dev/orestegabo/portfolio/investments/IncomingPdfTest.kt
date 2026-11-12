@@ -23,6 +23,22 @@ class IncomingPdfTest {
         assertNull(inbox.pending)
     }
 
+    @Test fun sharedPdfWaitsForExplicitContinuationAndCancelClearsIt() {
+        val inbox = PdfImportInbox()
+        assertTrue(inbox.offer(bytes, "prepare", prepareFirst = true))
+        val pdf = assertNotNull(inbox.pending)
+        assertTrue(inbox.requiresPreparation)
+        assertNull(inbox.take(pdf.id))
+        inbox.continueImport(pdf.id + 1)
+        assertTrue(inbox.requiresPreparation)
+        inbox.continueImport(pdf.id)
+        assertContentEquals(bytes, assertNotNull(inbox.take(pdf.id)).bytes)
+        assertTrue(inbox.offer(bytes, "cancel", prepareFirst = true))
+        inbox.dismiss()
+        assertNull(inbox.pending)
+        assertFalse(inbox.requiresPreparation)
+    }
+
     @Test fun emptyOversizedAndNonPdfFilesAreRejectedBeforeParsing() {
         val inbox = PdfImportInbox()
         for (bad in listOf(byteArrayOf(), "not a PDF".encodeToByteArray(), ByteArray(MAX_PDF_BYTES + 1))) {

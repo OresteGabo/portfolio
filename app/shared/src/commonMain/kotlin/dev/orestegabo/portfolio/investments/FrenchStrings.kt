@@ -2,6 +2,21 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "DOCUMENT IMPORT" to "IMPORT DE DOCUMENT",
+    "Your PDF.\nA clearer portfolio." to "Votre PDF.\nUn portefeuille plus clair.",
+    "Ready for your review" to "Prêt pour votre vérification",
+    "Prepare your document, then review its details in Struct Capital." to "Préparez votre document, puis vérifiez ses données dans Struct Capital.",
+    "Open Struct Capital to review your document and choose what to save." to "Ouvrez Struct Capital pour vérifier votre document et choisir les données à enregistrer.",
+    "Prepare" to "Préparer",
+    "Keep a local copy ready for import." to "Préparer une copie locale pour l’import.",
+    "Review in the app" to "Vérifier dans l’app",
+    "Check the extracted investment details." to "Vérifier les données d’investissement extraites.",
+    "Save when ready" to "Enregistrer après vérification",
+    "You decide what enters your portfolio." to "Vous décidez des données à ajouter au portefeuille.",
+    "Preparing an import does not upload your PDF or save any investment records." to "La préparation n’envoie pas votre PDF et n’enregistre aucun investissement.",
+    "Your PDF is ready on this device. Nothing has been uploaded or saved to your portfolio." to "Votre PDF est prêt sur cet appareil. Aucun envoi ni ajout au portefeuille n’a été effectué.",
+    "Open Struct Capital" to "Ouvrir Struct Capital",
+    "Prepare import" to "Préparer l’import",
     "Existing purchase found. Recorded costs and tax settings are kept when the PDF does not state them." to "Achat existant trouvé. Les frais et paramètres fiscaux enregistrés sont conservés lorsque le PDF ne les précise pas.",
     "Attach PDF to existing purchase" to "Associer le PDF à l’achat existant",
     "Add to phone calendar" to "Ajouter au calendrier du téléphone",

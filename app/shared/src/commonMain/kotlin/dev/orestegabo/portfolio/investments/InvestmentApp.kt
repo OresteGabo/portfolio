@@ -217,9 +217,9 @@ fun InvestmentApp(model: PortfolioModel) {
         imported(review)
     }
     val incomingPdf = NativePdfInbox.pending
-    LaunchedEffect(incomingPdf?.id, model.user?.text("id"), model.locked, model.busy,
+    LaunchedEffect(incomingPdf?.id, NativePdfInbox.requiresPreparation, model.user?.text("id"), model.locked, model.busy,
         introductionRequested, importReview, editor, equityEditor, pendingEntry, legalRoute, model.documentPreview) {
-        if (incomingPdf != null && model.user != null && !model.locked && !model.busy &&
+        if (incomingPdf != null && !NativePdfInbox.requiresPreparation && model.user != null && !model.locked && !model.busy &&
             !introductionRequested && model.documentPreview == null && importReview == null && editor == null && equityEditor == null && !pendingEntry && legalRoute == null) {
             NativePdfInbox.take(incomingPdf.id)?.let { received ->
                 confirmationTarget = null
@@ -230,9 +230,9 @@ fun InvestmentApp(model: PortfolioModel) {
             }
         }
     }
-    LaunchedEffect(NativePdfInbox.pending?.id, model.isGuest, model.busy) {
+    LaunchedEffect(NativePdfInbox.pending?.id, NativePdfInbox.requiresPreparation, model.isGuest, model.busy) {
         val incoming = NativePdfInbox.pending
-        if (model.isGuest && !model.sampleGuest && !model.busy && model.guestImport?.review == null &&
+        if (!NativePdfInbox.requiresPreparation && model.isGuest && !model.sampleGuest && !model.busy && model.guestImport?.review == null &&
             model.guestImport?.previewBytes == null && incoming != null && model.portfolioReady) {
             NativePdfInbox.take(incoming.id)?.let { model.selectGuestPdf(ReceivedPdfActions(actions, it.bytes, it.fileName), engine) }
         }
@@ -251,6 +251,11 @@ fun InvestmentApp(model: PortfolioModel) {
     val colors = structCapitalColorScheme(dark)
     CompositionLocalProvider(LocalChartStyle provides chartStyle, LocalNumbersHidden provides model.numbersConcealed) {
     MaterialTheme(colorScheme = colors, typography = Typography()) {
+        if (incomingPdf != null && NativePdfInbox.requiresPreparation) {
+            PlatformSystemBarAppearance(dark)
+            PdfImportPreparationScreen(incomingPdf, continueImport = { NativePdfInbox.continueImport(incomingPdf.id) }, cancel = { NativePdfInbox.dismiss() })
+            return@MaterialTheme
+        }
         if (showGuestChoice) GuestEntryDialog(close = { showGuestChoice = false }, choose = { path ->
             if (model.enterGuest(path)) { showGuestChoice = false; finishIntroduction(); tab = "Portfolio" }
         })

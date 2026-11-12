@@ -46,7 +46,7 @@ internal fun FragmentActivity.receivePdf(intent: Intent) {
                 arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
                     if (it.moveToFirst()) it.getString(0).take(180) else null
                 } }.getOrNull() }
-            NativePdfInbox.offer(bytes, delivery, name ?: "Shared PDF")
+            NativePdfInbox.offer(bytes, delivery, name ?: "Shared PDF", prepareFirst = true)
         } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (failure: Exception) {
             NativePdfInbox.reject(when (failure.message) {

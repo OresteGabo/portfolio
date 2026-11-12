@@ -12,10 +12,12 @@ open class PdfImportInbox {
         private set
     var error: String? by mutableStateOf(null)
         private set
+    var requiresPreparation: Boolean by mutableStateOf(false)
+        private set
     private var sequence = 0L
     private val seen = ArrayDeque<String>()
 
-    fun offer(bytes: ByteArray, deliveryId: String, fileName: String = "Shared PDF"): Boolean {
+    fun offer(bytes: ByteArray, deliveryId: String, fileName: String = "Shared PDF", prepareFirst: Boolean = false): Boolean {
         if (deliveryId in seen) return false
         if (pending != null) { reject("Finish the waiting PDF before sharing another one."); return false }
         require(bytes.size in 1..MAX_PDF_BYTES) { "Choose a PDF of up to 10 MB." }
@@ -23,11 +25,13 @@ open class PdfImportInbox {
         seen.addLast(deliveryId)
         if (seen.size > 32) seen.removeFirst()
         error = null
+        requiresPreparation = prepareFirst
         pending = ReceivedPdf(++sequence, bytes, fileName.take(180))
         return true
     }
-    fun take(id: Long): ReceivedPdf? = pending?.takeIf { it.id == id }?.also { pending = null }
-    fun dismiss() { pending = null; error = null }
+    fun continueImport(id: Long) { if (pending?.id == id) requiresPreparation = false }
+    fun take(id: Long): ReceivedPdf? = pending?.takeIf { it.id == id && !requiresPreparation }?.also { pending = null }
+    fun dismiss() { pending = null; requiresPreparation = false; error = null }
     fun reject(message: String) { error = safeErrorMessage(message) }
     fun dismissError() { error = null }
 }
