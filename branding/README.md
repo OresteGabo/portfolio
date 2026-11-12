@@ -25,7 +25,7 @@ rebrand.
 
 `StructBrand.kt` uses portable Compose XML vectors (`struct_mark_light.xml` / `struct_mark_dark.xml`) generated from the supplied symbol paths. It selects contrast from the active app theme; fixed light surfaces request the olive version explicitly. Sign-in, unlock, navigation, dashboard and privacy cover use the same mark.
 
-Android adaptive launchers center the mark in the safe area on olive. Android 13+ also includes a monochrome themed launcher; price notifications use the white symbol as their small icon. iOS includes light and dark 1024px launcher assets.
+Android adaptive launchers center the same mark in the safe area. Default launcher resources use olive artwork on off-white, matching the iPhone light icon; night resources use cream artwork on olive, matching its dark icon. Legacy Android PNGs include the same light/night variants. Icon appearance follows the system/launcher configuration, independently of the app’s own theme setting. Android 13+ also includes a monochrome themed launcher, whose colors are controlled by the user’s launcher/wallpaper; price notifications use the white symbol as their small icon. iOS includes light and dark 1024px launcher assets.
 
 Run `swift -module-cache-path /tmp/struct-swift-module-cache scripts/generate-app-icons.swift` from the repository root on macOS to reproduce the iOS and legacy Android launcher PNGs from the checked-in 1024px masters. Platform launchers apply their own corner masks.
 

@@ -1,0 +1,5 @@
+<!-- Match the iPhone dark icon when the system/launcher uses night mode. -->
+<resources>
+    <color name="struct_launcher_background">@color/struct_brand_olive</color>
+    <color name="struct_launcher_foreground">@color/struct_brand_cream</color>
+</resources>

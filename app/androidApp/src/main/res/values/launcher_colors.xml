@@ -1,0 +1,5 @@
+<!-- Match the iPhone light icon. Keep launcher colors separate from in-app brand colors. -->
+<resources>
+    <color name="struct_launcher_background">@color/struct_brand_canvas</color>
+    <color name="struct_launcher_foreground">@color/struct_brand_olive</color>
+</resources>
