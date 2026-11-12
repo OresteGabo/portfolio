@@ -15,6 +15,7 @@
 		5AA8570A41A85189BBA60858 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EED4126428DAF60B0733A40 /* ShareViewController.swift */; };
 		69F3F1885F4E234E084C8715 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = B50E2C67AE014A0A2AD63CED /* Localizable.strings */; };
 		8B0A9172AA7FD0B8B783EAD4 /* NextWidgetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF540C87F3BAE7E326DDC565 /* NextWidgetData.swift */; };
+		9E9F1254F910CC8135944598 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 238277ADA7676568496F1604 /* Assets.xcassets */; };
 		AA130A7C64395970C81CC8CD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BEAFEC5EA600A967B60BE3E6 /* Assets.xcassets */; };
 		B38A59BEA2768EE0621C6F40 /* SharedPdfInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5449B8EC5709AC8512D9D45 /* SharedPdfInbox.swift */; };
 		B8DFC360CC7A05D35618879B /* SharedPdfInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5449B8EC5709AC8512D9D45 /* SharedPdfInbox.swift */; };
@@ -52,6 +53,7 @@
 /* Begin PBXFileReference section */
 		1102D19B4A04DA9D9D746FBB /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		17ABFF55CC1292D9754D83D8 /* ShareImport.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareImport.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		238277ADA7676568496F1604 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3B891BED7760D48E60B7764F /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		3EED4126428DAF60B0733A40 /* ShareViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		41211EB35BE020B656AA18EC /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
@@ -149,6 +151,7 @@
 				3EED4126428DAF60B0733A40 /* ShareViewController.swift */,
 				3B891BED7760D48E60B7764F /* Info.plist */,
 				74F70F09FBA80E7BCA16C382 /* ShareImport.entitlements */,
+				238277ADA7676568496F1604 /* Assets.xcassets */,
 			);
 			name = ShareImport;
 			path = ShareImport;
@@ -398,6 +401,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9E9F1254F910CC8135944598 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
