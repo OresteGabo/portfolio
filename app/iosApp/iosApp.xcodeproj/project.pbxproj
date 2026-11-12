@@ -13,7 +13,9 @@
 		45226A036542830E5A3FCD61 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 41211EB35BE020B656AA18EC /* Foundation.framework */; };
 		453A8F7F7AA53E15CC29B7F5 /* NextWidgetCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B93511B70F4AB0B15A1E854D /* NextWidgetCache.swift */; };
 		5AA8570A41A85189BBA60858 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EED4126428DAF60B0733A40 /* ShareViewController.swift */; };
+		62E648EE9FB401B5C45D0434 /* ImportActionIcon@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = BEEA127D78EDCDD8C40DEC6F /* ImportActionIcon@2x.png */; };
 		69F3F1885F4E234E084C8715 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = B50E2C67AE014A0A2AD63CED /* Localizable.strings */; };
+		84743599DDAF3908AAFA6F35 /* ImportActionIcon@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 607629971B2D2498F8A5243C /* ImportActionIcon@3x.png */; };
 		8B0A9172AA7FD0B8B783EAD4 /* NextWidgetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF540C87F3BAE7E326DDC565 /* NextWidgetData.swift */; };
 		9E9F1254F910CC8135944598 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 238277ADA7676568496F1604 /* Assets.xcassets */; };
 		AA130A7C64395970C81CC8CD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BEAFEC5EA600A967B60BE3E6 /* Assets.xcassets */; };
@@ -21,6 +23,7 @@
 		B8DFC360CC7A05D35618879B /* SharedPdfInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5449B8EC5709AC8512D9D45 /* SharedPdfInbox.swift */; };
 		C84FFD7926FA37B127717F75 /* BondSubscriptionAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6220EDEB136E060E005C215 /* BondSubscriptionAttributes.swift */; };
 		CAAB33D2859C0EE1C185743F /* NextWidgetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF540C87F3BAE7E326DDC565 /* NextWidgetData.swift */; };
+		D2B305D3D5FFC9CE75960A07 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7F36A722FDF4D6EF8865C009 /* InfoPlist.strings */; };
 		EC9A0FB8E5EA7A18907E97E7 /* WhatsNextWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 958AE161762EA3966F9BE8D7 /* WhatsNextWidget.swift */; };
 		F9CF97C0C1A4D706AB49BB56 /* BondSubscriptionAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6220EDEB136E060E005C215 /* BondSubscriptionAttributes.swift */; };
 		FDA6A0A979AD53CE482F2741 /* NextWidgetCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B93511B70F4AB0B15A1E854D /* NextWidgetCache.swift */; };
@@ -51,7 +54,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		05C441DA4E332EC705611D4D /* en */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1102D19B4A04DA9D9D746FBB /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		131DA8D5E3CBD605BEE57E4E /* fr */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		17ABFF55CC1292D9754D83D8 /* ShareImport.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareImport.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		238277ADA7676568496F1604 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3B891BED7760D48E60B7764F /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -60,6 +65,7 @@
 		456B8935A0C8FB8FDFC41EB9 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4A8DEDE0DCAA16D4C4B44544 /* BondLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BondLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		5DE88718697D52672D90ED4F /* Portfolio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Portfolio.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		607629971B2D2498F8A5243C /* ImportActionIcon@3x.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = "ImportActionIcon@3x.png"; sourceTree = "<group>"; };
 		6B1BD1B32E77828B60DC6A6C /* NextWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NextWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		74F70F09FBA80E7BCA16C382 /* ShareImport.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = ShareImport.entitlements; sourceTree = "<group>"; };
 		755CE1F29FFE7A29F0459829 /* en */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -69,6 +75,7 @@
 		A62861FD6A37E528F249654F /* NextWidget.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = NextWidget.entitlements; sourceTree = "<group>"; };
 		B93511B70F4AB0B15A1E854D /* NextWidgetCache.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NextWidgetCache.swift; sourceTree = "<group>"; };
 		BEAFEC5EA600A967B60BE3E6 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		BEEA127D78EDCDD8C40DEC6F /* ImportActionIcon@2x.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = "ImportActionIcon@2x.png"; sourceTree = "<group>"; };
 		CF540C87F3BAE7E326DDC565 /* NextWidgetData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NextWidgetData.swift; sourceTree = "<group>"; };
 		E5449B8EC5709AC8512D9D45 /* SharedPdfInbox.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharedPdfInbox.swift; sourceTree = "<group>"; };
 		F5E73C945083BC7E6227FFE3 /* BondLiveActivity.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BondLiveActivity.swift; sourceTree = "<group>"; };
@@ -152,6 +159,9 @@
 				3B891BED7760D48E60B7764F /* Info.plist */,
 				74F70F09FBA80E7BCA16C382 /* ShareImport.entitlements */,
 				238277ADA7676568496F1604 /* Assets.xcassets */,
+				7F36A722FDF4D6EF8865C009 /* InfoPlist.strings */,
+				BEEA127D78EDCDD8C40DEC6F /* ImportActionIcon@2x.png */,
+				607629971B2D2498F8A5243C /* ImportActionIcon@3x.png */,
 			);
 			name = ShareImport;
 			path = ShareImport;
@@ -402,6 +412,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				9E9F1254F910CC8135944598 /* Assets.xcassets in Resources */,
+				D2B305D3D5FFC9CE75960A07 /* InfoPlist.strings in Resources */,
+				62E648EE9FB401B5C45D0434 /* ImportActionIcon@2x.png in Resources */,
+				84743599DDAF3908AAFA6F35 /* ImportActionIcon@3x.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -566,6 +579,15 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
+		7F36A722FDF4D6EF8865C009 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				05C441DA4E332EC705611D4D /* en */,
+				131DA8D5E3CBD605BEE57E4E /* fr */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
 		B50E2C67AE014A0A2AD63CED /* Localizable.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -621,7 +643,6 @@
 				DEVELOPMENT_TEAM = X5HS2K2N42;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShareImport/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Struct Capital";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -651,7 +672,6 @@
 				DEVELOPMENT_TEAM = X5HS2K2N42;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShareImport/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Struct Capital";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

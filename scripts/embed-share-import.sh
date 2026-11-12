@@ -6,5 +6,5 @@ if [ "${GABO_WIDGETS_ENABLED:-NO}" != "YES" ]; then
     exit 0
 fi
 source_bundle="${BUILT_PRODUCTS_DIR:?}/ShareImport.appex"
-if [ ! -d "$source_bundle" ]; then echo 'PDF Share extension is missing from this build.' >&2; exit 1; fi
+if [ ! -d "$source_bundle" ]; then echo 'PDF import action extension is missing from this build.' >&2; exit 1; fi
 /usr/bin/ditto "$source_bundle" "$destination"

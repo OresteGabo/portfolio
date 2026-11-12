@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
+<key>CFBundleDisplayName</key><string>Import into Struct Capital</string>
+<key>CFBundleIcons</key><dict>
+    <key>CFBundlePrimaryIcon</key><dict>
+        <key>CFBundleIconFiles</key><array><string>ImportActionIcon</string></array>
+    </dict>
+</dict>
 <key>GaboWidgetAppGroup</key><string>$(GABO_WIDGET_APP_GROUP)</string>
 <key>NSExtension</key><dict>
-    <key>NSExtensionPointIdentifier</key><string>com.apple.share-services</string>
+    <key>NSExtensionPointIdentifier</key><string>com.apple.ui-services</string>
     <key>NSExtensionPrincipalClass</key><string>$(PRODUCT_MODULE_NAME).ShareViewController</string>
     <key>NSExtensionAttributes</key><dict><key>NSExtensionActivationRule</key>
         <string>SUBQUERY(extensionItems, $item, SUBQUERY($item.attachments, $attachment, ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "com.adobe.pdf").@count == 1).@count == 1</string>
