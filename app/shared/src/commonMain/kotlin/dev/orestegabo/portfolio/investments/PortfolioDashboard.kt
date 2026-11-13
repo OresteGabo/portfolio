@@ -351,7 +351,7 @@ fun PortfolioScreen(
                                 border=BorderStroke(1.dp,MaterialTheme.colorScheme.primary.copy(alpha=.12f))) {
                                 Column(Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=14.dp),
                                     verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                                    AppText("Pending investment",modifier=Modifier.semantics { heading() },
+                                    AppText("Add pending investment",modifier=Modifier.semantics { heading() },
                                         style=MaterialTheme.typography.labelMedium,fontWeight=FontWeight.SemiBold,
                                         color=MaterialTheme.colorScheme.onSurfaceVariant)
                                     AppText("Confirm later with your broker’s PDF.",style=MaterialTheme.typography.bodySmall,

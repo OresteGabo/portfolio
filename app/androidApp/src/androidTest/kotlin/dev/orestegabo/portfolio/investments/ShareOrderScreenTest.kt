@@ -53,9 +53,9 @@ class ShareOrderScreenTest {
                         path.endsWith("/share-orders") -> JsonRecord().put("orders",JsonList(saved?.let {listOf(it)} ?: emptyList<JsonRecord>())).toString()
                         path.contains("/share-orders/") && request.method==HttpMethod.Put -> {
                             val data=JsonRecord((request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString())
-                            assertEquals(720.0,data.getDouble("pricePerShare"),0.0); assertEquals(1000.0,data.getDouble("shares"),0.0)
+                            assertEquals(720.0,data.getDouble("pricePerShare"),0.0); assertEquals(if(writes.get()==0) 1000.0 else 1100.0,data.getDouble("shares"),0.0)
                             val budget=shareOrderEstimate(data.getDouble("shares"),data.getDouble("pricePerShare"))
-                            saved=data.put("id",path.substringAfterLast('/')).put("version",1).put("status","pending").put("currency","RWF").put("estimatedTotal",budget.total)
+                            saved=data.put("id",path.substringAfterLast('/')).put("version",writes.get()+1).put("status","pending").put("currency","RWF").put("estimatedTotal",budget.total)
                             writes.incrementAndGet();JsonRecord().put("order",saved!!).toString()
                         }
                         path.endsWith("/equities") -> { if(request.method==HttpMethod.Post)equityWrites.incrementAndGet();"""{"holdings":[{"id":"synthetic-owned-shares","instrumentType":"equity","exchange":"RSE","currency":"RWF","securityName":"SYNTHETIC Bralirwa","ticker":"BLR","shares":100,"pricePerShare":571,"grossConsideration":57100,"totalCharges":0,"netAmountPayable":57100,"status":"active","tradeDate":"$Today","settlementDate":"$Today"}]}""" }
@@ -94,14 +94,14 @@ class ShareOrderScreenTest {
             java.io.File(instrumentation.targetContext.cacheDir,"synthetic-share-order-home.png").outputStream().use {homeScreenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
             homeScreenshot.recycle()
             click("Investment actions")
-            await("Pending investment"); await("Confirm later with your broker’s PDF.")
+            await("Add pending investment"); await("Confirm later with your broker’s PDF.")
             Thread.sleep(250) // Capture the menu after its opening fade.
             val menuScreenshot=instrumentation.uiAutomation.takeScreenshot()
             java.io.File(instrumentation.targetContext.cacheDir,"synthetic-investment-menu.png").outputStream().use {menuScreenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
             menuScreenshot.recycle()
             click("Bond")
             assertEquals(1,bondRequests.get())
-            click("Investment actions");await("Pending investment");click("Shares",lastMatch=true)
+            click("Investment actions");await("Add pending investment");click("Shares",lastMatch=true)
             await("Security name"); click("Security name")
             await("SYNTHETIC Bralirwa (BLR)")
             click("SYNTHETIC BK Group (BOK)")
@@ -148,7 +148,26 @@ class ShareOrderScreenTest {
             var pendingCard = nodes(instrumentation.uiAutomation.rootInActiveWindow).first { it.text?.toString()?.contains("Bank of Kigali") == true }
             while(!pendingCard.isClickable && pendingCard.parent!=null)pendingCard=pendingCard.parent
             assertTrue(pendingCard.performAction(AccessibilityNodeInfo.ACTION_CLICK));instrumentation.waitForIdleSync()
-            await("Security name")
+            await("Edit")
+            assertFalse("Saved orders do not show save or remove controls",nodes(instrumentation.uiAutomation.rootInActiveWindow).any {
+                it.text?.toString() in listOf("Save pending order","Save changes","Cancel pending order")
+            })
+            assertFalse("Saved quantity has no steppers",nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.contentDescription?.toString() in listOf("Increase shares","Decrease shares")})
+            await("Order price")
+            val viewScreenshot=instrumentation.uiAutomation.takeScreenshot()
+            java.io.File(instrumentation.targetContext.cacheDir,"synthetic-pending-share-view.png").outputStream().use {viewScreenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
+            viewScreenshot.recycle()
+            click("Edit")
+            click("Increase shares")
+            await("RWF 805,543.2")
+            val cancelDeadline=System.currentTimeMillis()+5000
+            while(nodes(instrumentation.uiAutomation.rootInActiveWindow).none {it.text?.toString()=="Cancel" && it.isVisibleToUser} && System.currentTimeMillis()<cancelDeadline) {
+                nodes(instrumentation.uiAutomation.rootInActiveWindow).firstOrNull {it.isScrollable}?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+                instrumentation.waitForIdleSync()
+            }
+            click("Cancel")
+            await("RWF 732,312")
+            assertEquals("Cancel editing never writes or removes the order",1,writes.get())
             val uploadDeadline=System.currentTimeMillis()+5000
             while(nodes(instrumentation.uiAutomation.rootInActiveWindow).none {it.text?.toString()=="Upload contract" && it.isVisibleToUser} && System.currentTimeMillis()<uploadDeadline) {
                 nodes(instrumentation.uiAutomation.rootInActiveWindow).firstOrNull {it.isScrollable}?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
@@ -156,6 +175,26 @@ class ShareOrderScreenTest {
             }
             click("Upload contract")
             assertEquals(1,contractRequests.get());assertEquals(0,equityWrites.get())
+            val editDeadline=System.currentTimeMillis()+5000
+            while(nodes(instrumentation.uiAutomation.rootInActiveWindow).none {it.text?.toString()=="Edit" && it.isVisibleToUser} && System.currentTimeMillis()<editDeadline) {
+                nodes(instrumentation.uiAutomation.rootInActiveWindow).firstOrNull {it.isScrollable}?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)
+                instrumentation.waitForIdleSync()
+            }
+            click("Edit");click("Increase shares");await("RWF 805,543.2")
+            val saveDeadline=System.currentTimeMillis()+5000
+            while(nodes(instrumentation.uiAutomation.rootInActiveWindow).none {it.text?.toString()=="Save changes" && it.isVisibleToUser} && System.currentTimeMillis()<saveDeadline) {
+                nodes(instrumentation.uiAutomation.rootInActiveWindow).firstOrNull {it.isScrollable}?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+                instrumentation.waitForIdleSync()
+            }
+            Thread.sleep(100) // Let the edited total and button state settle after scrolling.
+            val editScreenshot=instrumentation.uiAutomation.takeScreenshot()
+            java.io.File(instrumentation.targetContext.cacheDir,"synthetic-pending-share-edit.png").outputStream().use {editScreenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
+            editScreenshot.recycle()
+            click("Save changes")
+            val savedDeadline=System.currentTimeMillis()+5000
+            while(writes.get()<2 && System.currentTimeMillis()<savedDeadline)Thread.sleep(50)
+            assertEquals(2,writes.get());assertEquals(1100.0,saved!!.optDouble("shares"),0.0)
+            assertEquals(0,equityWrites.get())
         } } finally { AppLanguage.select(priorLanguage) }
     }
 }

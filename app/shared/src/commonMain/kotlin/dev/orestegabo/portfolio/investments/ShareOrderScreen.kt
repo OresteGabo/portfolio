@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.UploadFile
@@ -33,7 +34,8 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
     var expanded by remember { mutableStateOf(false) }
     var cancelDialog by remember { mutableStateOf(false) }
     var executionDialog by remember { mutableStateOf(false) }
-    val editing = existing.text("id").isNotBlank()
+    val savedOrder = existing.text("id").isNotBlank()
+    var editMode by rememberSaveable(id) { mutableStateOf(!savedOrder) }
     val colors = MaterialTheme.colorScheme
     var quoteAttempted by remember { mutableStateOf(false) }
     LaunchedEffect(model.busy) {
@@ -43,11 +45,11 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
         .filter { it.text("ticker").isNotBlank() && it.optDouble("closing") > 0 }
         .distinctBy { it.text("ticker") }.sortedBy { it.text("name").ifBlank { it.text("ticker") } }
     val quote = companies.firstOrNull { it.text("ticker") == ticker }
-    val sameSecurity = editing && ticker == existing.text("ticker")
+    val sameSecurity = savedOrder && ticker == existing.text("ticker")
     val name = quote?.text("name")?.ifBlank { ticker } ?: if (sameSecurity) existing.text("securityName") else ""
-    val price = quote?.optDouble("closing") ?: if (sameSecurity) existing.optDouble("pricePerShare") else 0.0
+    val price = if (sameSecurity) existing.optDouble("pricePerShare") else quote?.optDouble("closing") ?: 0.0
     val estimate = runCatching { shareOrderEstimate(quantity.toInputNumberOrNull() ?: 0.0, price) }.getOrNull()
-    val changed = editing && (ticker != existing.text("ticker") || quantity.toInputNumberOrNull() != existing.optDouble("shares") || price != existing.optDouble("pricePerShare"))
+    val changed = savedOrder && (ticker != existing.text("ticker") || quantity.toInputNumberOrNull() != existing.optDouble("shares") || price != existing.optDouble("pricePerShare"))
     if (cancelDialog) AlertDialog(onDismissRequest = { cancelDialog=false }, title = { AppText("Cancel pending order?") },
         text = { AppText("Remove this pending record? Your broker’s order stays unchanged.") },
         confirmButton = { TextButton(enabled = !model.busy, onClick = { cancelDialog=false; model.cancelShareOrder(existing,back) }) { AppText("Cancel pending order") } },
@@ -62,12 +64,19 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
         }) { AppText("Review executed purchase") } }, dismissButton = { TextButton(onClick = { executionDialog=false }) { AppText("Not yet") } })
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         item {
-            ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { if (!model.busy && companies.isNotEmpty()) expanded=it }) {
-                Surface(modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+            ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { if (editMode && !model.busy && companies.isNotEmpty()) expanded=it }) {
+                Surface(modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled=editMode && !model.busy),
                     shape = RoundedCornerShape(24.dp), color = colors.surface,
                     border = BorderStroke(1.dp, colors.primary.copy(alpha=.18f))) {
                     Column(Modifier.padding(20.dp),verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        AppText("Security name",style=MaterialTheme.typography.labelMedium,color=colors.onSurfaceVariant)
+                        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+                            AppText("Security name",style=MaterialTheme.typography.labelMedium,color=colors.onSurfaceVariant)
+                            if (savedOrder && !editMode) TextButton(enabled=!model.busy,onClick={editMode=true}) {
+                                AppIcon(Icons.Outlined.Edit,null,Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                AppText("Edit")
+                            }
+                        }
                         Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
                             if (ticker.isNotBlank()) InvestmentLogo(ticker=ticker,modifier=Modifier.size(52.dp))
                             else Surface(shape=RoundedCornerShape(14.dp),color=colors.primary.copy(alpha=.07f)) { StructMark(Modifier.padding(10.dp).size(32.dp)) }
@@ -76,11 +85,11 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
                                     fontWeight=FontWeight.SemiBold,maxLines=2,overflow=TextOverflow.Ellipsis)
                                 if (ticker.isNotBlank()) AppText(ticker,style=MaterialTheme.typography.labelMedium,color=colors.primary)
                             }
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded)
+                            if (editMode) ExposedDropdownMenuDefaults.TrailingIcon(expanded)
                         }
                         HorizontalDivider(color=colors.outlineVariant.copy(alpha=.45f))
                         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-                            AppText("Market price",style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
+                            AppText(if (sameSecurity) "Order price" else "Market price",style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
                             FinancialText(if (price>0) money(price) else "—",style=MaterialTheme.typography.titleSmall,fontWeight=FontWeight.SemiBold,color=colors.primary)
                         }
                     }
@@ -92,10 +101,10 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
                 }
             }
         }
-        item { ShareOrderQuantity(quantity,enabled=!model.busy,
+        item { ShareOrderQuantity(quantity,editable=editMode,enabled=!model.busy,
             decrease={quantity=((quantity.toInputNumberOrNull()?.toLong() ?: 0L)-100).coerceAtLeast(100).toString()},
             increase={quantity=((quantity.toInputNumberOrNull()?.toLong() ?: 0L)+100).coerceAtMost(1_000_000_000).toString()}) }
-        if (!model.busy && companies.isEmpty()) item {
+        if (editMode && !model.busy && companies.isEmpty()) item {
             Row(Modifier.fillMaxWidth(),horizontalArrangement = Arrangement.SpaceBetween) {
                 AppText("Market prices unavailable.",Modifier.weight(1f),style = MaterialTheme.typography.bodySmall)
                 TextButton(onClick = { model.loadMarket(refresh=true) }) { AppText("Retry") }
@@ -103,23 +112,27 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
         }
         item { ShareOrderTotal(estimate) }
         if (!model.shareOrdersAvailable && !model.busy) item { AppText("Pending orders unavailable. Pull down on Home to retry.",style = MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.error) }
-        item { Button(enabled = !model.busy && model.shareOrdersAvailable && estimate!=null && name.isNotBlank(),modifier = Modifier.fillMaxWidth().heightIn(min=56.dp),shape=RoundedCornerShape(18.dp),onClick = {
+        if (editMode) item { Button(enabled = (!savedOrder || changed) && !model.busy && model.shareOrdersAvailable && estimate!=null && name.isNotBlank(),modifier = Modifier.fillMaxWidth().heightIn(min=56.dp),shape=RoundedCornerShape(18.dp),onClick = {
             model.saveShareOrder(id,JsonRecord().put("version",existing.optInt("version")).put("ticker",ticker).put("securityName",name)
                 .put("shares",quantity.toInputNumberOrNull()!!).put("pricePerShare",price)
                 .put("requestDate",existing.text("requestDate").ifBlank { Today.toString() })
                 .put("expectedExecutionDate",existing.text("expectedExecutionDate")).put("broker",existing.text("broker"))
                 .put("brokerConfirmed",existing.optBoolean("brokerConfirmed")).put("notes",existing.text("notes")),back)
-        }) { AppText(if(model.busy) "Saving…" else "Save pending order") } }
-        item { OutlinedButton(enabled = !model.busy,
+        }) { AppText(if(model.busy) "Saving…" else if(savedOrder) "Save changes" else "Save pending order") } }
+        if (savedOrder && editMode) item { TextButton(enabled=!model.busy,modifier=Modifier.fillMaxWidth(),onClick={
+            ticker=existing.text("ticker"); quantity=existing.text("shares"); expanded=false; editMode=false
+        }) { AppText("Cancel") } }
+        if (!savedOrder || !editMode) item { OutlinedButton(enabled = !model.busy,
             modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), shape = RoundedCornerShape(18.dp),
             onClick = { uploadContract(existing) }) {
             AppIcon(Icons.Outlined.UploadFile, null, Modifier.size(20.dp))
             Spacer(Modifier.width(8.dp))
             AppText("Upload contract")
         } }
-        if (editing) {
-            if (changed) item { AppText("Save changes before recording execution.",style = MaterialTheme.typography.bodySmall) }
-            item { OutlinedButton(enabled = !changed && !model.busy && model.shareOrdersAvailable,modifier = Modifier.fillMaxWidth(),onClick = { executionDialog=true }) { AppText("Record executed purchase") } }
+        if (savedOrder && !editMode) {
+            item { OutlinedButton(enabled = !model.busy && model.shareOrdersAvailable,modifier = Modifier.fillMaxWidth(),onClick = { executionDialog=true }) { AppText("Record executed purchase") } }
+        }
+        if (savedOrder && editMode) {
             item { TextButton(enabled = !model.busy && model.shareOrdersAvailable,modifier = Modifier.fillMaxWidth(),onClick = {cancelDialog=true}) { AppText("Cancel pending order",color = MaterialTheme.colorScheme.error) } }
         }
     }
@@ -128,20 +141,20 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
 
 
 @Composable
-private fun ShareOrderQuantity(value: String, enabled: Boolean, decrease: () -> Unit, increase: () -> Unit) {
+private fun ShareOrderQuantity(value: String, editable: Boolean, enabled: Boolean, decrease: () -> Unit, increase: () -> Unit) {
     val colors=MaterialTheme.colorScheme
     val amount=value.toInputNumberOrNull()?.toLong() ?: 0L
     Surface(shape=RoundedCornerShape(24.dp),color=colors.surface,border=BorderStroke(1.dp,colors.outlineVariant.copy(alpha=.55f))) {
         Column(Modifier.fillMaxWidth().padding(20.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
             AppText("Number of shares",style=MaterialTheme.typography.labelMedium,color=colors.onSurfaceVariant)
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-                FilledTonalIconButton(onClick=decrease,enabled=enabled && amount>100,
+                if (editable) FilledTonalIconButton(onClick=decrease,enabled=enabled && amount>100,
                     modifier=Modifier.size(48.dp),shape=RoundedCornerShape(14.dp)) { AppIcon(Icons.Outlined.Remove,"Decrease shares") }
                 FinancialText(formatNumber(amount.toDouble()),Modifier.weight(1f).heightIn(min=60.dp).wrapContentHeight(Alignment.CenterVertically),
                     style=MaterialTheme.typography.displaySmall.copy(fontFeatureSettings="tnum"),fontWeight=FontWeight.SemiBold,
                     color=if(value.isBlank()) colors.onSurfaceVariant.copy(alpha=.35f) else colors.onSurface,
                     textAlign=TextAlign.Center,maxLines=1,autoSize=TextAutoSize.StepBased(minFontSize=20.sp,maxFontSize=40.sp))
-                FilledTonalIconButton(onClick=increase,enabled=enabled && amount<1_000_000_000,
+                if (editable) FilledTonalIconButton(onClick=increase,enabled=enabled && amount<1_000_000_000,
                     modifier=Modifier.size(48.dp),shape=RoundedCornerShape(14.dp)) { AppIcon(Icons.Outlined.Add,"Increase shares") }
             }
         }
