@@ -62,10 +62,14 @@ internal fun generatePortfolioReport(data: PortfolioReportData): ByteArray {
             ReportMetric(t("Bond principal", "Capital obligataire"), cash(cost.bondFaceValue, cost.currency)),
             ReportMetric(t("RSE equity value", "Valeur des actions RSE"), cash(value.shareValue, cost.currency)),
             ReportMetric(t("Total cash cost of active holdings", "Coût total des positions actives"), cash(cost.investedCash, cost.currency)),
-            ReportMetric(t("Saved annual net coupon", "Coupon net annuel enregistré"), cash(cost.netAnnualCoupon, cost.currency)),
+            ReportMetric(t("Annual net coupon (including pending)", "Coupon net annuel (attente incluse)"), cash(cost.netAnnualCoupon, cost.currency)),
             ReportMetric(t("Unrealized share gain / loss (priced holdings)", "Gain / perte latent(e) des actions cotées"),
                 if (gains.isEmpty()) t("Unavailable", "Indisponible") else cash(gains.sum(), cost.currency), gains.takeIf { it.isNotEmpty() }?.sum()),
         ))
+        if (cost.pendingAnnualCoupon > 0) pdf.paragraph(t(
+            "Annual net coupon: ${cash(cost.confirmedAnnualCoupon,cost.currency)} confirmed + ${cash(cost.pendingAnnualCoupon,cost.currency)} pending. Missing pending rates are estimates from public treasury coupons by tenor, after saved withholding tax. Contracts and payment dates are unchanged.",
+            "Coupon net annuel : ${cash(cost.confirmedAnnualCoupon,cost.currency)} confirmé + ${cash(cost.pendingAnnualCoupon,cost.currency)} en attente. Les taux manquants sont estimés selon les coupons publics par durée, après la retenue enregistrée. Contrats et échéances inchangés."))
+        if (cost.unavailablePendingCouponCount > 0) pdf.paragraph(t("Some pending coupons could not be estimated and are excluded.", "Certains coupons en attente n’ont pas pu être estimés et sont exclus."))
         pdf.allocation(t("Asset allocation", "Répartition des actifs"), t("Bonds", "Obligations"), t("Shares", "Actions"), cost.bondFaceValue, value.shareValue)
         if (value.unpricedShares > 0) pdf.paragraph(t("${value.unpricedShares} unpriced position(s) use purchase cash cost; their gains are unavailable.",
             "${value.unpricedShares} position(s) sans cours sont valorisées au coût d'achat ; leurs gains sont indisponibles."))
@@ -176,7 +180,7 @@ internal fun generatePortfolioReport(data: PortfolioReportData): ByteArray {
     }
     val archive = JsonRecord().put("format", "gabo-portfolio-report-v1").put("generatedOn", data.today.toString())
         .put("cashLedger", JsonList(data.ledgerEntries)).put("couponReceipts", data.couponReceipts?.let(::JsonList)).put("email", data.email).put("monthlyTargetRwf", data.monthlyTarget).put("targetBasis", "current-setting-not-historical")
-        .put("purchases", JsonList(snapshot.purchases)).put("holdings", JsonList(snapshot.holdings)).put("shareOrders", JsonList(snapshot.shareOrders))
+        .put("purchases", JsonList(snapshot.purchases)).put("holdings", JsonList(snapshot.holdings)).put("shareOrders", JsonList(snapshot.shareOrders)).put("couponReferences", JsonList(snapshot.couponReferences))
         .put("documents", JsonList(snapshot.documents)).put("missingStatementItems", JsonList(data.statementItems))
     return pdf.finish(archive.toString())
 }

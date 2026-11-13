@@ -11,6 +11,7 @@ data class PortfolioSnapshot(
     val recentHoldingIds: Set<String>? = null,
     val monthlyInvestmentTotals: List<JsonRecord>? = null,
     val shareOrders: List<JsonRecord> = emptyList(),
+    val couponReferences: List<JsonRecord> = emptyList(),
 ) {
     fun recentBonds(today: LocalDate) = recentRows(purchases, "purchaseDate", today, recentPurchaseIds)
     fun recentShares(today: LocalDate) = recentRows(holdings, "tradeDate", today, recentHoldingIds)
@@ -45,19 +46,25 @@ data class PortfolioSnapshot(
         return (bonds + shares).map { it.text("currency") }.distinct().sorted().map { currency ->
             val currencyBonds = bonds.filter { it.text("currency") == currency }
             val currencyShares = shares.filter { it.text("currency") == currency }
+            val couponBonds = currencyBonds.filter { calendarDate(it.text("maturityDate"))?.let { maturity -> maturity > today } == true }
+            val confirmedCoupon = decimalAmount(emptyList(), addends = couponBonds.filter { it.text("status") == "active" }.map { it.netAnnualBondCoupon() })
+            val pendingCoupons = couponBonds.filter { it.text("status") == "submitted" }.map { pendingCouponEstimate(it, couponReferences, today) }
+            val pendingCoupon = decimalAmount(emptyList(), addends = pendingCoupons.mapNotNull { it.netAnnual })
             CurrencyInvestment(currency,
                 decimalAmount(emptyList(), addends = currencyBonds.map { it.optDouble("faceValue", 0.0) }),
                 decimalAmount(emptyList(), addends = currencyBonds.map { it.bondCashCost() }),
                 decimalAmount(emptyList(), addends = currencyShares.map { it.optDouble("netAmountPayable", 0.0) }), currencyBonds.size, currencyShares.sumOf { it.optInt("lotCount", 1) },
-                currencyBonds.filter { calendarDate(it.text("maturityDate"))?.let { maturity -> maturity > today } == true }
-                    .map { it.netAnnualBondCoupon() }.let { decimalAmount(emptyList(), addends = it) })
+                decimalAmount(emptyList(), addends = listOf(confirmedCoupon, pendingCoupon)), confirmedCoupon, pendingCoupon,
+                pendingCoupons.count { it.assumed }, pendingCoupons.count { it.netAnnual == null })
         }
     }
 }
 
 data class SharePosition(val ticker: String, val currency: String, val shares: Double, val cashCost: Double)
 data class CurrencyInvestment(val currency: String, val bondFaceValue: Double, val bondCashCost: Double,
-    val shareCashCost: Double, val bondCount: Int, val shareCount: Int, val netAnnualCoupon: Double = 0.0) {
+    val shareCashCost: Double, val bondCount: Int, val shareCount: Int, val netAnnualCoupon: Double = 0.0,
+    val confirmedAnnualCoupon: Double = 0.0, val pendingAnnualCoupon: Double = 0.0,
+    val estimatedPendingCouponCount: Int = 0, val unavailablePendingCouponCount: Int = 0) {
     val investedCash get() = decimalAmount(emptyList(), addends = listOf(bondCashCost, shareCashCost))
 }
 

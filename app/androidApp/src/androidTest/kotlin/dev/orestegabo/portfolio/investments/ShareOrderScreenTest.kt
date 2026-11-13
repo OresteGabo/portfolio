@@ -31,6 +31,12 @@ class ShareOrderScreenTest {
             override fun readOnboardingCompleted()=true
             override fun readLanguage()="en"
         }
+        val nativeActions=object: NativeActions {
+            override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? = null
+            override suspend fun savePdf(fileName: String, bytes: ByteArray) = false
+            override fun openUrl(url: String) {}
+            override fun shareText(text: String) {}
+        }
         var saved: JsonRecord?=null
         fun nodes(root: AccessibilityNodeInfo?): List<AccessibilityNodeInfo> = if(root==null) emptyList() else listOf(root)+(0 until root.childCount).flatMap {nodes(root.getChild(it))}
         fun await(text: String): AccessibilityNodeInfo {
@@ -50,6 +56,8 @@ class ShareOrderScreenTest {
                     val path=request.url.encodedPath
                     val response=when {
                         path.endsWith("/auth/session") -> """{"authenticated":true,"user":{"id":"synthetic-order-account","email":"synthetic@example.test"}}"""
+                        path.endsWith("/purchases") -> """{"purchases":[{"id":"synthetic-pending-bond","issuer":"Government of Rwanda","currency":"RWF","status":"submitted","bondName":"SYNTHETIC pending 10-year bond","purchaseDate":"$Today","settlementDate":"$Today","maturityDate":"2036-11-13","tenorYears":10,"faceValue":1000000,"pricePercent":100,"feesPaid":11000,"couponRate":0,"withholdingTaxRate":0.05}]}"""
+                        path.endsWith("/coupon-terms") -> """{"terms":[{"isin":"RWREFERENCE","issuer":"Government of Rwanda","currency":"RWF","maturityDate":"2036-08-01","tenorYears":10,"couponRate":0.123}]}"""
                         path.endsWith("/share-orders") -> JsonRecord().put("orders",JsonList(saved?.let {listOf(it)} ?: emptyList<JsonRecord>())).toString()
                         path.contains("/share-orders/") && request.method==HttpMethod.Put -> {
                             val data=JsonRecord((request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString())
@@ -67,22 +75,36 @@ class ShareOrderScreenTest {
                 activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE) // Synthetic test content only.
                 activity.viewModelStore.put("share-order-test",model)
                 AppLanguage.initialize(settings)
-                activity.setContent { MaterialTheme(colorScheme=structCapitalColorScheme(InstrumentationRegistry.getArguments().getString("dark")=="true")) {
+                activity.setContent { CompositionLocalProvider(LocalNativeActions provides nativeActions) { MaterialTheme(colorScheme=structCapitalColorScheme(InstrumentationRegistry.getArguments().getString("dark")=="true")) {
                     Surface(Modifier.fillMaxSize(),color=MaterialTheme.colorScheme.background) {
                     var order by remember { mutableStateOf<JsonRecord?>(null) }
                     if (order == null) PortfolioScreen(model, uploadPending={},openMissing={},allMissing={},seeAll={},openCalendar={},detail={},openShare={},
                         editShareOrder={ order=it }, addTemporaryBond={bondRequests.incrementAndGet()})
                     else Box(Modifier.fillMaxSize().safeDrawingPadding()) { ShareOrderScreen(model,order!!,back={order=null},recordExecution={error("Do not record execution during order creation")}, uploadContract={ assertEquals(saved!!.text("id"),it.text("id"));contractRequests.incrementAndGet() }) }
                     }
-                } }
+                } } }
             }
             val readyDeadline=System.currentTimeMillis()+15000
             var ready=false
             while(!ready && System.currentTimeMillis()<readyDeadline) {
-                instrumentation.runOnMainSync { ready=model.user!=null && model.shareOrdersAvailable && !model.busy }
+                instrumentation.runOnMainSync { ready=model.user!=null && model.shareOrdersAvailable && !model.busy && model.sharedCouponTerms.isNotEmpty() }
                 if(!ready)Thread.sleep(50)
             }
             assertTrue("Synthetic account and orders API ready",ready)
+            await("Annual net coupon");await("≈ 116,850")
+            scenario.onActivity {
+                val total=model.portfolio.summary(Today).single()
+                assertEquals(116850.0,total.netAnnualCoupon,0.0)
+                assertEquals(0.0,total.confirmedAnnualCoupon,0.0)
+                assertEquals(116850.0,total.pendingAnnualCoupon,0.0)
+            }
+            click("Valuation basis details")
+            await("Confirmed annual net coupon");await("Pending annual net coupon")
+            Thread.sleep(300) // Capture the dialog after its opening fade.
+            val estimateScreenshot=instrumentation.uiAutomation.takeScreenshot()
+            java.io.File(instrumentation.targetContext.cacheDir,"synthetic-coupon-assumptions.png").outputStream().use {estimateScreenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
+            estimateScreenshot.recycle()
+            click("Done")
             val menuDeadline=System.currentTimeMillis()+15000
             while(nodes(instrumentation.uiAutomation.rootInActiveWindow).none {it.contentDescription?.toString()=="Investment actions"} && System.currentTimeMillis()<menuDeadline) {
                 nodes(instrumentation.uiAutomation.rootInActiveWindow).firstOrNull {it.isScrollable}?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)

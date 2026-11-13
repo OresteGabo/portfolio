@@ -566,7 +566,14 @@ private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, pri
             onDismissRequest = { showBasis = false },
             title = { AppText("About this estimate") },
             text = {
-                AppText("$priceBasis\n\nTracked investments, including pending requests at recorded amounts. Bonds use principal value; shares use the latest available RSE closing price. Unpriced shares use purchase cash cost. Cash balances, liabilities, dividends and selling fees are excluded. Annual coupons are shown separately.")
+                Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
+                    AppText("$priceBasis\n\nTracked investments, including pending requests at recorded amounts. Bonds use principal value; shares use the latest available RSE closing price. Unpriced shares use purchase cash cost. Cash balances, liabilities, dividends and selling fees are excluded. Annual coupons are shown separately.")
+                    HorizontalDivider()
+                    Fact("Confirmed annual net coupon",money(total.confirmedAnnualCoupon,total.currency))
+                    Fact("Pending annual net coupon",(if (total.estimatedPendingCouponCount > 0) "≈ " else "") + money(total.pendingAnnualCoupon,total.currency))
+                    if (total.estimatedPendingCouponCount > 0) AppText("Missing pending rates use public treasury coupons by tenor. Between known tenors, rates are interpolated. Your saved withholding tax applies. Estimates do not change contracts or payment dates.",style=MaterialTheme.typography.bodySmall)
+                    if (total.unavailablePendingCouponCount > 0) AppText("Some pending coupons could not be estimated and are excluded.",style=MaterialTheme.typography.bodySmall)
+                }
             },
             confirmButton = {
                 TextButton(onClick = { showBasis = false }) { AppText("Done") }
@@ -655,7 +662,7 @@ private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, pri
                             total.netAnnualCoupon,
                             total.currency,
                             Icons.Outlined.Percent,
-                            Modifier.fillMaxWidth()
+                            Modifier.fillMaxWidth(), estimated=total.estimatedPendingCouponCount > 0
                         )
                     }
                 } else {
@@ -682,7 +689,7 @@ private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, pri
                             total.netAnnualCoupon,
                             total.currency,
                             Icons.Outlined.Percent,
-                            Modifier.weight(1f)
+                            Modifier.weight(1f), estimated=total.estimatedPendingCouponCount > 0
                         )
                     }
                 }
@@ -692,7 +699,7 @@ private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, pri
 }
 
 @Composable
-private fun MoneyMetric(label: String, value: Double, currency: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier) {
+private fun MoneyMetric(label: String, value: Double, currency: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier, estimated: Boolean = false) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(7.dp)) {
         AppIcon(icon, null, Modifier.size(20.dp), tint = StructColors.Dashboard.gold)
         AppText(
@@ -707,7 +714,7 @@ private fun MoneyMetric(label: String, value: Double, currency: String, icon: an
                 style = MaterialTheme.typography.labelSmall,
                 color = StructColors.Dashboard.worthMetricLabel,
                 maxLines = 1, softWrap = false)
-            FinancialText(money(value, currency).removePrefix("$currency "), modifier = Modifier.fillMaxWidth(),
+            FinancialText((if (estimated) "≈ " else "") + money(value, currency).removePrefix("$currency "), modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
                 maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
                 autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = 14.sp, stepSize = .5.sp))
@@ -863,8 +870,12 @@ private fun CouponIncomeCard(
             listOf("Annual net" to total.netAnnualCoupon, "Accrued" to tracks.sumOf { it.accruedCoupon }).forEach { (label, amount) ->
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     AppText(label, style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current.copy(alpha = .68f))
-                    FinancialText(money(amount, total.currency), Modifier,
+                    FinancialText((if (label == "Annual net" && total.estimatedPendingCouponCount > 0) "≈ " else "") + money(amount, total.currency), Modifier,
                         style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    if (label == "Annual net" && total.pendingAnnualCoupon > 0) {
+                        FinancialText((if (total.estimatedPendingCouponCount > 0) "≈ " else "") + "${money(total.pendingAnnualCoupon,total.currency)} ${localized("pending")}",
+                            style=MaterialTheme.typography.labelSmall,maxLines=2)
+                    }
                 }
             }
         }

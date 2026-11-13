@@ -352,7 +352,7 @@ class PortfolioModel(
     private var accountPortfolio by mutableStateOf<PortfolioSnapshot>(PortfolioSnapshot())
     var portfolio: PortfolioSnapshot
         get() = if (isGuest) guestViewPortfolio(guestPath, guestPortfolio, samplePortfolio) else accountPortfolio
-        private set(value) { accountPortfolio = value.copy(shareOrders = shareOrders) }
+        private set(value) { accountPortfolio = value.copy(shareOrders = shareOrders, couponReferences = sharedCouponTerms) }
     var bondReminderFeedback by mutableStateOf<String?>(null)
         private set
     fun dismissBondReminderFeedback() { bondReminderFeedback = null }
@@ -1017,7 +1017,10 @@ class PortfolioModel(
     }
 
     private suspend fun refreshSharedCouponTerms() {
-        try { sharedCouponTerms = api.request("/api/bonds/coupon-terms").rows("terms") }
+        try {
+            sharedCouponTerms = api.request("/api/bonds/coupon-terms").rows("terms")
+            accountPortfolio = accountPortfolio.copy(couponReferences = sharedCouponTerms)
+        }
         catch (cancelled: CancellationException) { throw cancelled }
         catch (failure: Exception) { if (failure is ApiException && failure.status == 401) throw failure }
     }
@@ -1632,9 +1635,11 @@ class PortfolioModel(
             catch(_: Exception) { null }
             reloadLedger()
             val apiOrders = api.request("/api/bonds/share-orders").rows("orders")
+            refreshSharedCouponTerms()
+            val reportCouponTerms = sharedCouponTerms
             reportProgress = "Building your report…"
             val bytes = withContext(Dispatchers.Default) {
-                generatePortfolioReport(PortfolioReportData(PortfolioSnapshot(bonds, shares, files, shareOrders = apiOrders), latestQuotes,
+                generatePortfolioReport(PortfolioReportData(PortfolioSnapshot(bonds, shares, files, shareOrders = apiOrders, couponReferences = reportCouponTerms), latestQuotes,
                     missing, account.text("email"), target, date, language, receipts, ledgerEntries))
             }
             reportProgress = "Choose where to share the PDF"
@@ -1792,7 +1797,7 @@ class PortfolioModel(
         cashLedgerRequested = false; backupRequested = false; ledgerHoldingId = null
         accountLedger = emptyList(); ledgerAvailable = false
         portfolio = PortfolioSnapshot()
-        sharedCouponTerms = emptyList()
+        sharedCouponTerms = emptyList(); accountPortfolio = accountPortfolio.copy(couponReferences = emptyList())
         statementItems = emptyList()
         statementReviewRows = null
         pdfImportProgress = null

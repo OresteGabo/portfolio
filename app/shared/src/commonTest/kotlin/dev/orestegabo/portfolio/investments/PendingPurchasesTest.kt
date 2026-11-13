@@ -21,7 +21,8 @@ class PendingPurchasesTest {
         assertEquals(11_000.0, pending.optDouble("feesPaid"))
         val snapshot = PortfolioSnapshot(purchases = listOf(pending))
         assertEquals(1011000.0, snapshot.summary(today).single().investedCash)
-        assertEquals(0.0, snapshot.summary(today).single().netAnnualCoupon)
+        assertEquals(124925.0, snapshot.summary(today).single().netAnnualCoupon)
+        assertEquals(1, snapshot.summary(today).single().estimatedPendingCouponCount)
         assertEquals(1, snapshot.recentBonds(today).size)
         assertEquals(CalendarCategory.MATURITY, investmentCalendarEvents(emptyList(), snapshot).single().category)
     }
