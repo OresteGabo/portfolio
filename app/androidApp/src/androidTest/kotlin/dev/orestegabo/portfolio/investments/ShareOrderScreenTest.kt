@@ -24,7 +24,7 @@ import org.junit.Test
 class ShareOrderScreenTest {
     @Test fun marketPriceDefaultsAndCommissionMatchesRequestedExample() {
         val instrumentation=InstrumentationRegistry.getInstrumentation()
-        val writes=AtomicInteger(); val equityWrites=AtomicInteger(); val bondRequests=AtomicInteger()
+        val writes=AtomicInteger(); val equityWrites=AtomicInteger(); val bondRequests=AtomicInteger(); val contractRequests=AtomicInteger()
         val settings=object: ServerSettings {
             override fun readOrigin()="https://share-order.example.test"
             override fun writeOrigin(origin: String) {}
@@ -71,8 +71,8 @@ class ShareOrderScreenTest {
                     Surface(Modifier.fillMaxSize(),color=MaterialTheme.colorScheme.background) {
                     var order by remember { mutableStateOf<JsonRecord?>(null) }
                     if (order == null) PortfolioScreen(model, uploadPending={},openMissing={},allMissing={},seeAll={},openCalendar={},detail={},openShare={},
-                        editShareOrder={ order=it.put("shares",1000) }, addTemporaryBond={bondRequests.incrementAndGet()})
-                    else Box(Modifier.fillMaxSize().safeDrawingPadding()) { ShareOrderScreen(model,order!!,back={order=null},recordExecution={error("Do not record execution during order creation")}) }
+                        editShareOrder={ order=it }, addTemporaryBond={bondRequests.incrementAndGet()})
+                    else Box(Modifier.fillMaxSize().safeDrawingPadding()) { ShareOrderScreen(model,order!!,back={order=null},recordExecution={error("Do not record execution during order creation")}, uploadContract={ assertEquals(saved!!.text("id"),it.text("id"));contractRequests.incrementAndGet() }) }
                     }
                 } }
             }
@@ -94,29 +94,30 @@ class ShareOrderScreenTest {
             java.io.File(instrumentation.targetContext.cacheDir,"synthetic-share-order-home.png").outputStream().use {homeScreenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
             homeScreenshot.recycle()
             click("Investment actions")
-            await("Add temporary shares")
+            await("Record share order")
+            Thread.sleep(250) // Capture the menu after its opening fade.
             val menuScreenshot=instrumentation.uiAutomation.takeScreenshot()
             java.io.File(instrumentation.targetContext.cacheDir,"synthetic-investment-menu.png").outputStream().use {menuScreenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
             menuScreenshot.recycle()
-            click("Add temporary bond")
+            click("Record bond request")
             assertEquals(1,bondRequests.get())
-            click("Investment actions");click("Add temporary shares")
+            click("Investment actions");click("Record share order")
             await("Security name"); click("Security name")
             await("SYNTHETIC Bralirwa (BLR)")
             click("SYNTHETIC BK Group (BOK)")
             assertFalse(nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.text?.toString() in listOf("Ticker","Broker","Notes","Expected price per share (RWF)","Request date · YYYY-MM-DD")})
             await("Market commission · 1.71%")
+            repeat(10) { click("Increase shares") }
             await("RWF 732,312")
             click("Increase shares")
             await("RWF 805,543.2")
             click("Decrease shares")
             await("RWF 732,312")
-            val quantityInput=nodes(instrumentation.uiAutomation.rootInActiveWindow).first {it.isEditable}
-            assertTrue(quantityInput.performAction(AccessibilityNodeInfo.ACTION_CLICK))
-            await("Done");click("Done")
-            val keyboardDeadline=System.currentTimeMillis()+5000
-            while(nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.text?.toString()=="Done"} && System.currentTimeMillis()<keyboardDeadline)Thread.sleep(50)
-            assertFalse("Done closes the keyboard accessory",nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.text?.toString()=="Done"})
+            val counter=await("1,000")
+            assertFalse("Share count is read-only",counter.isEditable)
+            assertFalse("Only the stepper can change the quantity",nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.isEditable})
+            counter.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            assertFalse(nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.text?.toString()=="Done"})
             val screenshot=instrumentation.uiAutomation.takeScreenshot()
             java.io.File(instrumentation.targetContext.cacheDir,"synthetic-share-order-screen.png").outputStream().use {screenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
             screenshot.recycle()
@@ -143,6 +144,18 @@ class ShareOrderScreenTest {
             val cardsScreenshot=instrumentation.uiAutomation.takeScreenshot()
             java.io.File(instrumentation.targetContext.cacheDir,"synthetic-pending-share-card.png").outputStream().use {cardsScreenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
             cardsScreenshot.recycle()
+            scenario.onActivity { assertEquals(789412.0,model.portfolio.summary(Today).single().shareCashCost,0.0) }
+            var pendingCard = nodes(instrumentation.uiAutomation.rootInActiveWindow).first { it.text?.toString()?.contains("Bank of Kigali") == true }
+            while(!pendingCard.isClickable && pendingCard.parent!=null)pendingCard=pendingCard.parent
+            assertTrue(pendingCard.performAction(AccessibilityNodeInfo.ACTION_CLICK));instrumentation.waitForIdleSync()
+            await("Security name")
+            val uploadDeadline=System.currentTimeMillis()+5000
+            while(nodes(instrumentation.uiAutomation.rootInActiveWindow).none {it.text?.toString()=="Upload contract" && it.isVisibleToUser} && System.currentTimeMillis()<uploadDeadline) {
+                nodes(instrumentation.uiAutomation.rootInActiveWindow).firstOrNull {it.isScrollable}?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+                instrumentation.waitForIdleSync()
+            }
+            click("Upload contract")
+            assertEquals(1,contractRequests.get());assertEquals(0,equityWrites.get())
         } } finally { AppLanguage.select(priorLanguage) }
     }
 }

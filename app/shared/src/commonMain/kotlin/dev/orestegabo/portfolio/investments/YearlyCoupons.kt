@@ -18,12 +18,12 @@ internal fun yearlyCoupons(purchases: List<JsonRecord>, receipts: List<JsonRecor
     today: LocalDate, receiptsAvailable: Boolean): YearCoupons {
     val rows = mutableListOf<YearCoupon>()
     val incomplete = mutableListOf<JsonRecord>()
-    for (purchase in purchases.filter { it.text("status") in setOf("active", "matured", "sold") && it.text("id").isNotBlank() }.distinctBy { it.text("id") }) {
+    for (purchase in purchases.filter { it.text("status") in setOf("active", "matured", "sold", "submitted") && it.text("id").isNotBlank() }.distinctBy { it.text("id") }) {
         val bought = calendarDate(purchase.text("purchaseDate"))
         val maturity = calendarDate(purchase.text("maturityDate"))
-        if (bought != null && bought > today) continue
+        if (bought != null && bought > today && purchase.text("status") != "submitted") continue
         if (!purchase.text("currency").matches(Regex("[A-Z]{3}"))) { incomplete += purchase; continue }
-        val evidence = if (!receiptsAvailable) emptyMap<LocalDate, JsonRecord>() else receipts.filter {
+        val evidence = if (!receiptsAvailable || purchase.text("status") == "submitted") emptyMap<LocalDate, JsonRecord>() else receipts.filter {
             it.text("purchaseId") == purchase.text("id") && it.text("currency").ifBlank { purchase.text("currency") } == purchase.text("currency") &&
                 calendarDate(it.text("dueDate"))?.let { due -> (year == null || due.year == year) && due <= today } == true
         }.distinctBy { it.text("dueDate") }.associateBy { calendarDate(it.text("dueDate"))!! }

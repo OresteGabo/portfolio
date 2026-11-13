@@ -10,6 +10,7 @@ data class PortfolioSnapshot(
     val recentPurchaseIds: Set<String>? = null,
     val recentHoldingIds: Set<String>? = null,
     val monthlyInvestmentTotals: List<JsonRecord>? = null,
+    val shareOrders: List<JsonRecord> = emptyList(),
 ) {
     fun recentBonds(today: LocalDate) = recentRows(purchases, "purchaseDate", today, recentPurchaseIds)
     fun recentShares(today: LocalDate) = recentRows(holdings, "tradeDate", today, recentHoldingIds)
@@ -20,15 +21,28 @@ data class PortfolioSnapshot(
         .put("netAmountPayable", lot.optDouble("remainingCost", lot.optDouble("netAmountPayable", 0.0))) }
         .filter { it.optDouble("shares", 0.0) > 0 }
 
-    fun sharePositions(today: LocalDate): List<SharePosition> = activeShares(today)
+    /** Pending orders contribute to projections without becoming sellable holdings. */
+    fun pendingShares() = shareOrders.filter { it.text("status") == "pending" }.map { order ->
+        JsonRecord(order.toString()).put("tradeDate", order.text("requestDate"))
+            .put("netAmountPayable", order.optDouble("estimatedTotal", 0.0))
+            .put("totalCharges", order.optDouble("estimatedCommission", 0.0))
+    }
+
+    fun investmentShares(today: LocalDate) = activeShares(today) + pendingShares()
+
+    fun investmentBonds(today: LocalDate) = purchases.filter {
+        it.text("status") == "submitted" || it.text("status") == "active" && onOrBefore(it.text("purchaseDate"), today)
+    }
+
+    fun sharePositions(today: LocalDate): List<SharePosition> = investmentShares(today)
         .groupBy { it.text("ticker") to it.text("currency") }
         .map { (key, lots) -> SharePosition(key.first, key.second,
             lots.sumOf { it.optDouble("shares", 0.0) }, decimalAmount(emptyList(), addends = lots.map { it.optDouble("netAmountPayable", 0.0) })) }
 
     fun summary(today: LocalDate): List<CurrencyInvestment> {
-        val bonds = purchases.filter { it.text("status") == "active" && onOrBefore(it.text("purchaseDate"), today) }
-        val shares = activeShares(today)
-        return (purchases + holdings).map { it.text("currency") }.distinct().sorted().map { currency ->
+        val bonds = investmentBonds(today)
+        val shares = investmentShares(today)
+        return (bonds + shares).map { it.text("currency") }.distinct().sorted().map { currency ->
             val currencyBonds = bonds.filter { it.text("currency") == currency }
             val currencyShares = shares.filter { it.text("currency") == currency }
             CurrencyInvestment(currency,

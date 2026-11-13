@@ -14,16 +14,16 @@ class PendingPurchasesTest {
     private val today = LocalDate(2026, 10, 24)
     private fun issue() = JsonRecord("""{"id":"october","title":"New 20-year bond","tenorYears":20,"settlementDate":"2026-10-23","maturityDate":"2046-09-28"}""")
     private fun confirmation() = JsonRecord("""{"kind":"bond","missingFields":[],"warnings":[],"fields":{"bondName":"FXD5/2026/20Y","isin":"RW0000000123","issuer":"Government of Rwanda","currency":"RWF","tenorYears":20,"faceValue":900000,"pricePercent":101.5,"couponRate":0.12,"purchaseDate":"2026-10-23","settlementDate":"2026-10-23","maturityDate":"2046-09-28","firstCouponDate":"2027-03-28","couponDates":["2027-03-28"],"couponFrequency":2,"scheduleConfidence":"confirmed"}}""")
-    @Test fun pendingNeedsOnlyPublishedBondAndAmountAndNeverChangesActiveTotals() {
+    @Test fun pendingNeedsOnlyPublishedBondAndAmountAndContributesRecordedCostToTotals() {
         val pending = pendingBondInput(issue(), 1_000_000.0, today)
         assertEquals("submitted", pending.text("status"))
         assertEquals(1_000_000.0, pending.optDouble("faceValue"))
         assertEquals(11_000.0, pending.optDouble("feesPaid"))
         val snapshot = PortfolioSnapshot(purchases = listOf(pending))
-        assertEquals(0.0, snapshot.summary(today).single().investedCash)
+        assertEquals(1011000.0, snapshot.summary(today).single().investedCash)
         assertEquals(0.0, snapshot.summary(today).single().netAnnualCoupon)
         assertEquals(1, snapshot.recentBonds(today).size)
-        assertTrue(investmentCalendarEvents(emptyList(), snapshot).isEmpty())
+        assertEquals(CalendarCategory.MATURITY, investmentCalendarEvents(emptyList(), snapshot).single().category)
     }
     @Test fun invalidAmountsAndIncompleteOrMaturedBondsAreRejected() {
         for (amount in listOf(0.0, -100000.0, 99000.0, 150000.0, Double.NaN)) {

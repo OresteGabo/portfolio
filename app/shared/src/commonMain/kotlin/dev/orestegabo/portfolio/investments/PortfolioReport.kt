@@ -48,6 +48,9 @@ internal fun generatePortfolioReport(data: PortfolioReportData): ByteArray {
     pdf.paragraph("${data.email}  |  ${data.today}")
     pdf.paragraph(t("All saved bond and share purchases, current holdings and target progress. Amounts are grouped by currency; currencies are never added together.",
         "Tous les achats d'obligations et d'actions enregistrés, les positions actuelles et la progression des objectifs. Les devises sont présentées séparément."))
+    if (snapshot.shareOrders.isNotEmpty() || snapshot.purchases.any { it.text("status") == "submitted" })
+        pdf.paragraph(t("Pending requests are included in totals and projections at their recorded amounts. They remain pending until confirmed.",
+            "Les demandes en attente sont incluses dans les totaux et projections à leurs montants enregistrés jusqu’à confirmation."))
     val valuations = snapshot.valuation(data.today, data.quotes)
     if (valuations.isEmpty()) pdf.paragraph(t("No investments recorded yet.", "Aucun investissement enregistré."))
     valuations.forEach { value ->
@@ -100,14 +103,14 @@ internal fun generatePortfolioReport(data: PortfolioReportData): ByteArray {
     }
     pdf.newPage()
     pdf.heading(t("Investment targets", "Objectifs d'investissement"), large = true)
-    pdf.paragraph(t("Reference monthly target: ${cash(data.monthlyTarget.toDouble())}. Annual reference: ${cash(data.monthlyTarget * 12.0)}. The current device setting is used for every year; historical target changes are not stored. Progress counts confirmed RWF purchases including recorded fees, not market gains. Pending amounts are separate.",
-        "Objectif mensuel de référence : ${cash(data.monthlyTarget.toDouble())}. Référence annuelle : ${cash(data.monthlyTarget * 12.0)}. Le réglage actuel de cet appareil est appliqué à chaque année ; les anciens objectifs ne sont pas conservés. La progression compte les achats RWF confirmés et les frais enregistrés, pas les gains de marché. Les montants en attente restent séparés."))
+    pdf.paragraph(t("Reference monthly target: ${cash(data.monthlyTarget.toDouble())}. Annual reference: ${cash(data.monthlyTarget * 12.0)}. The current device setting is used for every year; historical target changes are not stored. Progress includes confirmed purchases and pending requests in RWF, including recorded fees. Pending amounts are shown separately as part of the total.",
+        "Objectif mensuel de référence : ${cash(data.monthlyTarget.toDouble())}. Référence annuelle : ${cash(data.monthlyTarget * 12.0)}. Le réglage actuel de cet appareil est appliqué à chaque année ; les anciens objectifs ne sont pas conservés. La progression inclut les achats confirmés et les demandes en attente en RWF, frais compris. Les montants en attente sont détaillés séparément et inclus dans le total."))
     val years = reportYears(data)
     val annualTotals = years.associateWith { year -> (1..12).map { month ->
         requireNotNull(monthlyInvestmentProgress(snapshot.copy(monthlyInvestmentTotals = null), LocalDate(year, month, 1), data.monthlyTarget, data.today))
     } }
     annualTotals.forEach { (year, rows) ->
-        val total = rows.sumOf { it.confirmed }
+        val total = rows.sumOf { it.invested }
         pdf.bar(year.toString(), total, maxOf(data.monthlyTarget * 12.0, total), "${cash(total)} / ${cash(data.monthlyTarget * 12.0)}")
     }
     val months = if (french) listOf("Jan", "Fév", "Mars", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc")
@@ -115,16 +118,16 @@ internal fun generatePortfolioReport(data: PortfolioReportData): ByteArray {
     annualTotals.forEach { (year, rows) ->
         pdf.ensure(485.0)
         pdf.heading(year.toString())
-        pdf.metric(t("Confirmed / annual reference", "Confirmé / référence annuelle"), "${cash(rows.sumOf { it.confirmed })} / ${cash(data.monthlyTarget * 12.0)}")
+        pdf.metric(t("Invested / annual reference", "Investi / référence annuelle"), "${cash(rows.sumOf { it.invested })} / ${cash(data.monthlyTarget * 12.0)}")
         pdf.table(listOf(t("Month", "Mois"), t("Confirmed RWF", "Confirmé RWF"), t("Pending RWF", "En attente RWF"), t("Target RWF", "Objectif RWF"), t("Progress", "Progression")), rows.mapIndexed { index, row ->
             val future = LocalDate(year, index + 1, 1) > data.today
-            listOf(months[index], if (future) "-" else number(row.confirmed), if (future) "-" else number(row.pending), number(row.target.toDouble()), if (future) "-" else rate(row.confirmed / row.target))
+            listOf(months[index], if (future) "-" else number(row.confirmed), if (future) "-" else number(row.pending), number(row.target.toDouble()), if (future) "-" else rate(row.invested / row.target))
         }, listOf(64.0, 124.0, 124.0, 124.0, 87.0))
     }
     pdf.newPage()
     pdf.heading(t("All bond purchases", "Tous les achats d'obligations"), true)
-    pdf.paragraph(t("${snapshot.purchases.size} record(s). Pending and inactive records are retained here but excluded from active portfolio worth.",
-        "${snapshot.purchases.size} entrée(s). Les achats en attente et inactifs sont conservés ici, mais exclus du patrimoine actif."))
+    pdf.paragraph(t("${snapshot.purchases.size} record(s). Pending requests are included in estimated portfolio worth; inactive records are excluded.",
+        "${snapshot.purchases.size} entrée(s). Les demandes en attente sont incluses dans la valeur estimée ; les entrées inactives sont exclues."))
     snapshot.purchases.sortedByDescending { it.text("purchaseDate") }.forEach { bond ->
         val c = bond.text("currency")
         pdf.record(bond.text("bondName").ifBlank { bond.text("id") }, listOf(
@@ -149,6 +152,13 @@ internal fun generatePortfolioReport(data: PortfolioReportData): ByteArray {
             t("Contract / broker", "Contrat / courtier") to "${share.text("contractNote")} / ${share.text("broker")}",
             t("Record ID", "Identifiant") to share.text("id")))
     }
+    if (snapshot.shareOrders.isNotEmpty()) {
+        pdf.heading(t("Pending share orders", "Ordres d’actions en attente"))
+        snapshot.shareOrders.forEach { order -> pdf.record(order.text("securityName"), listOf(
+            t("Status", "Statut") to t("Pending", "En attente"),
+            t("Shares", "Actions") to number(order.optDouble("shares")),
+            t("Estimated cash cost", "Coût estimé") to cash(order.optDouble("estimatedTotal"), order.text("currency")))) }
+    }
     pdf.newPage()
     pdf.heading(t("Documents and missing records", "Documents et entrées à compléter"), true)
     pdf.paragraph(t("Original PDFs are not included in this report. Download them separately from Documents before deleting your account. A structured portfolio-data.json attachment inside this PDF preserves saved investment fields and document metadata. This is an archive, not an automatic restore file.",
@@ -166,12 +176,13 @@ internal fun generatePortfolioReport(data: PortfolioReportData): ByteArray {
     }
     val archive = JsonRecord().put("format", "gabo-portfolio-report-v1").put("generatedOn", data.today.toString())
         .put("cashLedger", JsonList(data.ledgerEntries)).put("couponReceipts", data.couponReceipts?.let(::JsonList)).put("email", data.email).put("monthlyTargetRwf", data.monthlyTarget).put("targetBasis", "current-setting-not-historical")
-        .put("purchases", JsonList(snapshot.purchases)).put("holdings", JsonList(snapshot.holdings))
+        .put("purchases", JsonList(snapshot.purchases)).put("holdings", JsonList(snapshot.holdings)).put("shareOrders", JsonList(snapshot.shareOrders))
         .put("documents", JsonList(snapshot.documents)).put("missingStatementItems", JsonList(data.statementItems))
     return pdf.finish(archive.toString())
 }
 
 internal fun reportYears(data: PortfolioReportData): List<Int> =
     (data.snapshot.purchases.mapNotNull { calendarDate(it.text("purchaseDate"))?.year } +
-        data.snapshot.holdings.mapNotNull { calendarDate(it.text("tradeDate"))?.year } + data.today.year)
+        data.snapshot.holdings.mapNotNull { calendarDate(it.text("tradeDate"))?.year } +
+        data.snapshot.shareOrders.mapNotNull { calendarDate(it.text("requestDate"))?.year } + data.today.year)
         .filter { it in 1900..data.today.year }.distinct().sortedDescending()

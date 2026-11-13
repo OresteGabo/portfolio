@@ -352,7 +352,7 @@ class PortfolioModel(
     private var accountPortfolio by mutableStateOf<PortfolioSnapshot>(PortfolioSnapshot())
     var portfolio: PortfolioSnapshot
         get() = if (isGuest) guestViewPortfolio(guestPath, guestPortfolio, samplePortfolio) else accountPortfolio
-        private set(value) { accountPortfolio = value }
+        private set(value) { accountPortfolio = value.copy(shareOrders = shareOrders) }
     var bondReminderFeedback by mutableStateOf<String?>(null)
         private set
     fun dismissBondReminderFeedback() { bondReminderFeedback = null }
@@ -655,12 +655,13 @@ class PortfolioModel(
     private suspend fun reloadShareOrders() {
         try {
             shareOrders = api.request("/api/bonds/share-orders").rows("orders")
+            accountPortfolio = accountPortfolio.copy(shareOrders = shareOrders)
             shareOrdersAvailable = true
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (failure: ApiException) {
             if (failure.status == 401) throw failure
             shareOrdersAvailable = false
-            if (failure.status in listOf(404,405)) shareOrders = emptyList()
+            if (failure.status in listOf(404,405)) { shareOrders = emptyList(); accountPortfolio = accountPortfolio.copy(shareOrders = emptyList()) }
         } catch (_: Exception) { shareOrdersAvailable = false }
     }
     fun saveShareOrder(id: String, order: JsonRecord, completed: () -> Unit) = action {
@@ -981,12 +982,17 @@ class PortfolioModel(
             val shares = async { api.request("/api/bonds/equities").rows("holdings") }
             bonds.await() to shares.await()
         }
+        val allBondsForPending = if (overview != null) try { api.request("/api/bonds/purchases").rows("purchases") }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) { if (failure is ApiException && failure.status == 401) throw failure; null }
+            else purchases
+        val completePendingBonds = (allBondsForPending ?: portfolio.purchases).filter { it.text("status") == "submitted" }
         val documents = if (deferSupplementary) portfolio.documents else api.request("/api/bonds/documents").rows("documents")
         val monthlyTotals = overview?.optJSONArray("monthlyInvestmentTotals")?.objects()
             ?: if (overview != null) try {
                 // Old compact responses omit contribution totals. Fetch their source records once
                 // during this sync, derive the rolling summary, then discard those extra records.
-                monthlyGoalTotalsFromHistory(api.request("/api/bonds/purchases").rows("purchases"),
+                monthlyGoalTotalsFromHistory(requireNotNull(allBondsForPending),
                     api.request("/api/bonds/equities").rows("holdings"), Today)
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) {
@@ -994,7 +1000,7 @@ class PortfolioModel(
                 null // An unavailable secondary summary must not hide the rest of the portfolio.
             } else null
         fun ids(key: String): Set<String>? = overview?.optJSONArray(key)?.let { rows -> (0 until rows.length()).map { rows.getString(it) }.toSet() }
-        portfolio = PortfolioSnapshot(purchases, holdings, if (deferSupplementary) portfolio.documents else documents, ids("recentPurchaseIds"), ids("recentHoldingIds"),
+        portfolio = PortfolioSnapshot((purchases + completePendingBonds).distinctBy { it.text("id") }, holdings, if (deferSupplementary) portfolio.documents else documents, ids("recentPurchaseIds"), ids("recentHoldingIds"),
             monthlyTotals)
         reloadLedger()
         reloadShareOrders()
@@ -1004,7 +1010,7 @@ class PortfolioModel(
         if (!deferSupplementary) {
             refreshSharedCouponTerms()
             loadStatementItems()
-            if (portfolio.activeShares(Today).isNotEmpty()) refreshEquityQuotes()
+            if (portfolio.investmentShares(Today).isNotEmpty()) refreshEquityQuotes()
             fetchNotifications()
         }
         privateDataLoadedAt = clock.markNow()
@@ -1240,11 +1246,18 @@ class PortfolioModel(
                     retryBondOnly = false; retryStatement = null
                     updateImport { it.copy(targetId = "", statementId = "") }
                 }
+                if (targetPurchaseId?.startsWith("share-order:") == true) {
+                    require(review.text("kind") == "equity") { "Choose the share purchase contract for this order." }
+                    val order = shareOrders.singleOrNull { it.text("id") == targetPurchaseId.removePrefix("share-order:") }
+                        ?: error("This order is no longer pending. Refresh your portfolio.")
+                    pendingShareContractInput(review, order) // Validate before offering confirmation.
+                    review.put("pendingOrderId", order.text("id")).put("pendingOrderVersion", order.optInt("version"))
+                }
                 updateImport { it.copy(kind = review.text("kind")) }
                 pdfImportProgress = PdfImportProgress(PdfImportStage.CHECKING)
                 val existing = findExistingImportPdf(review)
                 val importTarget = targetPurchaseId.takeUnless { review.text("kind") == "statement" }
-                val alreadySaved = existing != null && showExistingImport(existing, review,
+                val alreadySaved = !review.has("pendingOrderId") && existing != null && showExistingImport(existing, review,
                     requireComplete = true, targetId = importTarget)
                 if (!alreadySaved) {
                     if (existing != null) {
@@ -1354,7 +1367,7 @@ class PortfolioModel(
         val target = entry.targetId.takeIf(String::isNotBlank)
         val statement = if (same) retryStatement else statementItems.firstOrNull { it.text("id") == entry.statementId }
         val picker = if (same) ReceivedPdfActions(actions, retryPdf!!, entry.fileName) else actions
-        importPurchasePdf(picker, engine, bondOnly = if (same) retryBondOnly else target != null,
+        importPurchasePdf(picker, engine, bondOnly = if (same) retryBondOnly else target != null && !target.startsWith("share-order:"),
             expectedStatement = statement, targetPurchaseId = target, retryEntryId = id, completed = completed)
     }
 
@@ -1381,7 +1394,13 @@ class PortfolioModel(
     fun saveImportedPurchase(review: JsonRecord, purchase: JsonRecord, id: String?, completed: () -> Unit) = action {
         require(importedReview === review && importedPdf != null) { "Choose the PDF again before confirming." }
         startSavingImport()
-        if (checkExistingBeforeSave(review, id != null, completed, targetId = id)) return@action
+        val pendingOrderId = review.text("pendingOrderId")
+        if (pendingOrderId.isNotBlank()) {
+            val order = shareOrders.singleOrNull { it.text("id") == pendingOrderId }
+                ?: error("This order is no longer pending. Refresh your portfolio.")
+            pendingShareContractInput(review, order)
+        }
+        if (pendingOrderId.isBlank() && checkExistingBeforeSave(review, id != null, completed, targetId = id)) return@action
         val bond = review.text("kind") == "bond"
         val reusingDocument = uploadedDocument != null
         try {
@@ -1424,7 +1443,11 @@ class PortfolioModel(
                 listOf("shares", "pricePerShare", "netAmountPayable").all { existing.optDouble(it) == purchase.optDouble(it) }) {
                 "The saved purchase differs from this PDF. Review your portfolio before importing again."
             }
-            val response = if (existing != null && existing.text("contractDocumentId").isNotBlank()) JsonRecord().put("id", existing.text("id")) else api.request(if (bond) "/api/bonds/purchases" + (id?.let { "/$it" } ?: "") else "/api/bonds/equities",
+            val response = if (pendingOrderId.isNotBlank()) {
+                api.request("/api/bonds/share-orders/$pendingOrderId/confirm", "POST", JsonRecord()
+                    .put("confirmed", true).put("version", review.optInt("pendingOrderVersion"))
+                    .put("purchase", JsonRecord(purchase.toString()).put("contractDocumentId", uploadedDocument)))
+            } else if (existing != null && existing.text("contractDocumentId").isNotBlank()) JsonRecord().put("id", existing.text("id")) else api.request(if (bond) "/api/bonds/purchases" + (id?.let { "/$it" } ?: "") else "/api/bonds/equities",
                 if (bond && id != null) "PUT" else "POST", JsonRecord(purchase.toString()).apply { if(bond)put("confirmationDocumentId",uploadedDocument) else put("contractDocumentId",uploadedDocument) })
             val purchaseId = id ?: response.optJSONObject(if (bond) "purchase" else "holding")?.text("id")
                 ?: response.text("id")
@@ -1608,9 +1631,10 @@ class PortfolioModel(
             catch(cancelled: CancellationException) { throw cancelled }
             catch(_: Exception) { null }
             reloadLedger()
+            val apiOrders = api.request("/api/bonds/share-orders").rows("orders")
             reportProgress = "Building your report…"
             val bytes = withContext(Dispatchers.Default) {
-                generatePortfolioReport(PortfolioReportData(PortfolioSnapshot(bonds, shares, files), latestQuotes,
+                generatePortfolioReport(PortfolioReportData(PortfolioSnapshot(bonds, shares, files, shareOrders = apiOrders), latestQuotes,
                     missing, account.text("email"), target, date, language, receipts, ledgerEntries))
             }
             reportProgress = "Choose where to share the PDF"
@@ -1774,7 +1798,7 @@ class PortfolioModel(
         pdfImportProgress = null
         reportProgress = null
         historyComplete = false
-        shareOrders = emptyList(); shareOrdersAvailable = false
+        shareOrders = emptyList(); accountPortfolio = accountPortfolio.copy(shareOrders = emptyList()); shareOrdersAvailable = false
         market = null
         quotes = null
         quoteRefreshFailed = false

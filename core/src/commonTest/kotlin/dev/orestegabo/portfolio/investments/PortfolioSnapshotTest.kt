@@ -46,7 +46,7 @@ class PortfolioSnapshotTest {
             bond("RWF", "submitted"), bond("RWF", purchase = "2027-01-01"), bond("RWF", maturity = today.toString()),
             bond("RWF", maturity = "invalid")))
         val totals = snapshot.summary(today).associateBy { it.currency }
-        assertEquals(9500.0, totals.getValue("RWF").netAnnualCoupon)
+        assertEquals(19000.0, totals.getValue("RWF").netAnnualCoupon)
         assertEquals(9500.0, totals.getValue("USD").netAnnualCoupon)
         assertEquals(0.0, PortfolioSnapshot(holdings = listOf(share("BOK", 100.0))).summary(today).single().netAnnualCoupon)
     }

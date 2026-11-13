@@ -19,12 +19,14 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -336,13 +338,26 @@ fun PortfolioScreen(
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.weight(1f)) { ChoiceRow(InvestmentKind.entries, kind) { kind = it } }
                         if (model.user != null) Box {
-                            IconButton(onClick = { investmentMenuOpen = true }) {
-                                AppIcon(Icons.Outlined.MoreVert, "Investment actions")
+                            Surface(shape=RoundedCornerShape(14.dp),color=MaterialTheme.colorScheme.surface,
+                                border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant.copy(alpha=.55f))) {
+                                IconButton(onClick = { investmentMenuOpen = true }) {
+                                    AppIcon(Icons.Outlined.MoreVert, "Investment actions",tint=MaterialTheme.colorScheme.primary)
+                                }
                             }
-                            DropdownMenu(expanded = investmentMenuOpen, onDismissRequest = { investmentMenuOpen = false }) {
-                                DropdownMenuItem(text = { AppText("Add temporary bond") }, enabled = !model.busy,
+                            DropdownMenu(expanded = investmentMenuOpen, onDismissRequest = { investmentMenuOpen = false },
+                                modifier=Modifier.widthIn(min=260.dp,max=300.dp),shape=RoundedCornerShape(22.dp),
+                                containerColor=MaterialTheme.colorScheme.surface,tonalElevation=0.dp,shadowElevation=8.dp,
+                                border=BorderStroke(1.dp,MaterialTheme.colorScheme.primary.copy(alpha=.12f))) {
+                                DropdownMenuItem(text = { AppText("Record bond request",style=MaterialTheme.typography.bodyMedium,fontWeight=FontWeight.SemiBold,maxLines=2) },
+                                    leadingIcon = { InvestmentActionIcon(Icons.Outlined.AccountBalance) },
+                                    trailingIcon = { AppIcon(Icons.Outlined.ChevronRight,null,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant) },
+                                    modifier=Modifier.heightIn(min=68.dp),contentPadding=PaddingValues(horizontal=16.dp,vertical=10.dp),enabled = !model.busy,
                                     onClick = { investmentMenuOpen = false; addTemporaryBond() })
-                                DropdownMenuItem(text = { AppText("Add temporary shares") }, enabled = !model.busy,
+                                HorizontalDivider(Modifier.padding(horizontal=16.dp),color=MaterialTheme.colorScheme.outlineVariant.copy(alpha=.45f))
+                                DropdownMenuItem(text = { AppText("Record share order",style=MaterialTheme.typography.bodyMedium,fontWeight=FontWeight.SemiBold,maxLines=2) },
+                                    leadingIcon = { InvestmentActionIcon(Icons.Outlined.BarChart) },
+                                    trailingIcon = { AppIcon(Icons.Outlined.ChevronRight,null,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant) },
+                                    modifier=Modifier.heightIn(min=68.dp),contentPadding=PaddingValues(horizontal=16.dp,vertical=10.dp),enabled = !model.busy,
                                     onClick = { investmentMenuOpen = false; editShareOrder(JsonRecord()) })
                             }
                         }
@@ -430,6 +445,15 @@ fun PortfolioScreen(
         }
     }
 }
+@Composable
+private fun InvestmentActionIcon(icon: ImageVector) {
+    Surface(shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.primary.copy(alpha=.08f)) {
+        Box(Modifier.size(38.dp),contentAlignment=Alignment.Center) {
+            AppIcon(icon,null,Modifier.size(21.dp),tint=MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
 @Composable private fun Inset(content: @Composable () -> Unit) { Box(Modifier.padding(horizontal = 20.dp)) { content() } }
 @Composable private fun SectionLabel(text: String) {
     AppText(text, Modifier.padding(horizontal = 20.dp), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -532,7 +556,7 @@ private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, pri
             onDismissRequest = { showBasis = false },
             title = { AppText("About this estimate") },
             text = {
-                AppText("$priceBasis\n\nTracked investments only. Bonds use principal value; shares use the latest available RSE closing price. Unpriced shares use purchase cash cost. Cash balances, liabilities, dividends and selling fees are excluded. Annual coupons are shown separately.")
+                AppText("$priceBasis\n\nTracked investments, including pending requests at recorded amounts. Bonds use principal value; shares use the latest available RSE closing price. Unpriced shares use purchase cash cost. Cash balances, liabilities, dividends and selling fees are excluded. Annual coupons are shown separately.")
             },
             confirmButton = {
                 TextButton(onClick = { showBasis = false }) { AppText("Done") }
@@ -820,7 +844,7 @@ private fun CouponIncomeCard(
     modifier: Modifier,
     openCalendar: (LocalDate) -> Unit,
 ) {
-    val tracks = portfolio.purchases.filter { it.text("currency") == total.currency && it.text("status") == "active" }
+    val tracks = portfolio.investmentBonds(Today).filter { it.text("currency") == total.currency }
         .mapNotNull { it.terms()?.let { terms -> trackBond(terms, Today) } }
     val accent = insightAccent(InsightStyle.INCOME)
     val next = coupons.firstOrNull()
@@ -903,7 +927,7 @@ private fun MonthlyTargetCard(model: PortfolioModel, modifier: Modifier) {
             Row(Modifier.fillMaxWidth()) {
                 Column(Modifier.weight(1f)) {
                     AppText("Invested", style = MaterialTheme.typography.labelSmall)
-                    FinancialText(money(progress.confirmed, "RWF"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                    FinancialText(money(progress.invested, "RWF"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                 }
                 Column(Modifier.weight(1f)) {
                     AppText("Remaining", style = MaterialTheme.typography.labelSmall)

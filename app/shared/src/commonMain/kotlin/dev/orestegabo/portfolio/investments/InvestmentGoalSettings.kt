@@ -74,7 +74,7 @@ fun InvestmentGoalBreakdown(model: PortfolioModel) {
             rows.filterNotNull().forEach { progress ->
                 Row {
                     AppText(progress.month.monthLabel(), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                    FinancialText(money(progress.confirmed, "RWF"), style = MaterialTheme.typography.bodyMedium)
+                    FinancialText(money(progress.invested, "RWF"), style = MaterialTheme.typography.bodyMedium)
                 }
                 if (!LocalNumbersHidden.current) CaptureRedactionRegion(Modifier.fillMaxWidth(), masked = { Spacer(Modifier.fillMaxSize()) }) {
                     LinearProgressIndicator(progress = { progress.fraction }, modifier = Modifier.fillMaxWidth())

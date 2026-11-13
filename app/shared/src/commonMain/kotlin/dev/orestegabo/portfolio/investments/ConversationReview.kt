@@ -34,6 +34,22 @@ internal fun ConversationReview(model: PortfolioModel, review: JsonRecord, targe
 
 @Composable
 private fun PurchaseConversationReview(model: PortfolioModel, review: JsonRecord, target: JsonRecord?, entry: ImportReceipt, done: () -> Unit) {
+    if (review.text("pendingOrderId").isNotBlank()) {
+        val order = model.shareOrders.firstOrNull { it.text("id") == review.text("pendingOrderId") }
+        val parsed = runCatching { pendingShareContractInput(review, requireNotNull(order) { "This order is no longer pending. Refresh your portfolio." }) }
+        val body = parsed.getOrNull()
+        if (body == null) { AppText(userErrorMessage(parsed.exceptionOrNull()), color = MaterialTheme.colorScheme.error); return }
+        AppText("Matches your pending share order.", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium)
+        FinancialText(body.text("securityName"), fontWeight = FontWeight.Bold)
+        Fact("Shares", body.text("shares"))
+        Fact("Price", money(body.optDouble("pricePerShare"), body.text("currency")))
+        Fact("Cost", money(body.optDouble("netAmountPayable"), body.text("currency")))
+        Fact("Trade date", body.text("tradeDate"))
+        AppText("The contract replaces the pending estimate with the completed purchase.", style = MaterialTheme.typography.bodySmall)
+        Button(enabled = !model.busy, modifier = Modifier.fillMaxWidth(),
+            onClick = { model.saveImportedPurchase(review, body, null, done) }) { AppText("Save PDF and confirm purchase") }
+        return
+    }
     var selection by rememberSaveable(entry.id) { mutableStateOf(target?.text("id")) }
     val state = PurchaseReviewState(review, model.documents, model.purchases, model.historyComplete, target, selection, model.sharedCouponTerms)
     if (state.bond) AppText("Your PDF and its extracted terms stay private. Shared reference data is published by authorized Struct Capital staff.", style = MaterialTheme.typography.bodySmall)
@@ -112,4 +128,15 @@ private fun IssuanceConversationReview(model: PortfolioModel, review: JsonRecord
         onClick = { model.saveImportedIssuance(review, target, sharingConfirmed, done) }) {
         AppText(if (entry.documentId.isNotBlank() && target != null) "Confirm using saved PDF" else if (entry.documentId.isNotBlank()) "Use saved issuance report" else if (entry.state == ImportState.FAILED) "Retry save" else if (target != null) "Save PDF and confirm purchase" else "Save bond issuance")
     }
+}
+
+/** Only a full matching security/quantity may complete an order; actual contract costs are authoritative. */
+internal fun pendingShareContractInput(review: JsonRecord, order: JsonRecord): JsonRecord {
+    require(review.text("kind") == "equity") { "Choose the share purchase contract for this order." }
+    val body = importedPurchaseInput(review)
+    require(order.text("status") == "pending" && body.text("ticker").trim().uppercase() == order.text("ticker").trim().uppercase() &&
+        body.text("currency") == order.text("currency") && body.optDouble("shares") == order.optDouble("shares")) {
+        "This contract does not match the pending security or number of shares. Edit the order first if the quantity changed."
+    }
+    return body
 }

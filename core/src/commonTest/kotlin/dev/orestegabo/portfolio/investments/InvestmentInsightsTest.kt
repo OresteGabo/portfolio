@@ -79,12 +79,12 @@ class InvestmentInsightsTest {
         assertEquals(1_000_000.0, zero.months.sumOf { it.principal }); assertTrue(zero.months.all { it.netCoupons == 0.0 })
     }
 
-    @Test fun cashFlowScopeExcludesPendingSoldMaturedFuturePurchasesAndPastMaturities() {
+    @Test fun cashFlowScopeIncludesPendingButExcludesSoldMaturedFutureCompletedAndPastMaturities() {
         val rows = listOf(bond("pending").put("status", "submitted"), bond("sold").put("status", "sold"),
             bond("matured").put("status", "matured"), bond("future").put("purchaseDate", "2026-11-01"),
             bond("past", maturity = "2026-10-29"))
         val result = PortfolioSnapshot(rows).bondCashFlowOutlook(today)
-        assertTrue(result.months.isEmpty()); assertTrue(result.issues.isEmpty())
+        assertEquals(setOf("pending"), result.months.flatMap { it.flows }.map { it.purchaseId }.toSet()); assertTrue(result.issues.isEmpty())
     }
 
     @Test fun invalidRecordsAreReportedAndMissingCurrencyNeverBecomesRwf() {
@@ -122,12 +122,12 @@ class InvestmentInsightsTest {
         assertEquals(11000.0 / 1010000.0, totals.feeRate)
     }
 
-    @Test fun feesRemainHistoricalForSoldAndMaturedButIgnorePendingAndFuture() {
+    @Test fun feesIncludePendingEstimatesAndHistoricalPurchasesButIgnoreFutureCompleted() {
         val bonds = listOf(bond("old").put("status", "matured"), bond("sold").put("status", "sold"),
             bond("pending").put("status", "submitted"), bond("future").put("purchaseDate", "2027-01-01"))
         val shares = listOf(equity("sold-share", 100.0, 1.0, 101.0).put("status", "sold"))
         val totals = PortfolioSnapshot(bonds, shares).purchaseFeeAnalysis(today).currencies.single()
-        assertEquals(3, totals.purchases.size); assertEquals(22001.0, totals.fees)
+        assertEquals(4, totals.purchases.size); assertEquals(33001.0, totals.fees)
     }
 
     @Test fun unknownFeesAndInconsistentPayableAreExcludedInsteadOfAssumedZero() {

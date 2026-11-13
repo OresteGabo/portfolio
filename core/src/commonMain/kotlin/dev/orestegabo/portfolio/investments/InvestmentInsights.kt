@@ -24,7 +24,7 @@ fun PortfolioSnapshot.bondCashFlowOutlook(asOf: LocalDate, monthCount: Int = 12)
     val flows = mutableListOf<BondCashFlow>()
     val issues = mutableListOf<InsightIssue>()
     val currencies = mutableSetOf<String>()
-    for (p in purchases.filter { it.text("status") == "active" }) {
+    for (p in purchases.filter { it.text("status") in setOf("active", "submitted") }) {
         val bought = calendarDate(p.text("purchaseDate"))
         val maturity = calendarDate(p.text("maturityDate"))
         val face = p.validAmount("faceValue")
@@ -33,7 +33,7 @@ fun PortfolioSnapshot.bondCashFlowOutlook(asOf: LocalDate, monthCount: Int = 12)
         if (bought == null || maturity == null || face == null || face <= 0 || maturity <= bought || !currency.validCurrency()) {
             issue(InsightIssueReason.INVALID_RECORD); continue
         }
-        if (bought > asOf || maturity < asOf) continue
+        if (p.text("status") != "submitted" && bought > asOf || maturity < asOf) continue
         currencies += currency
         if (maturity < end) flows += BondCashFlow(p.text("id"), p.text("bondName"), currency, maturity, BondCashFlowKind.PRINCIPAL, roundedMoney(face))
         // Do not silently interpret a missing rate/tax/frequency as zero or invent an exemption.
@@ -78,15 +78,15 @@ data class CurrencyPurchaseFees(val currency: String, val purchases: List<Purcha
 data class PurchaseFeeAnalysis(val currencies: List<CurrencyPurchaseFees>, val issues: List<InsightIssue>)
 
 /** Acquisition history, not current holdings valuation. Sold/matured acquisitions remain historical costs;
- * submitted/cancelled/future/aggregate rows never become completed transactions. No fees inferred from defaults. */
+ * Pending requests use recorded estimates. Cancelled/future completed purchases and aggregate rows are excluded. */
 fun PortfolioSnapshot.purchaseFeeAnalysis(asOf: LocalDate): PurchaseFeeAnalysis {
     require(recentPurchaseIds == null && recentHoldingIds == null) { "Fee analysis requires complete purchase history." }
     val rows = mutableListOf<PurchaseFeeLine>()
     val issues = mutableListOf<InsightIssue>()
     fun invalid(p: JsonRecord, name: String) { issues += InsightIssue(p.text("id"), name, InsightIssueReason.INCOMPLETE_COSTS) }
-    for (p in purchases.filter { it.text("status") in setOf("active", "matured", "sold") }) {
+    for (p in purchases.filter { it.text("status") in setOf("active", "matured", "sold", "submitted") }) {
         val date = calendarDate(p.text("purchaseDate"))
-        if (date != null && date > asOf) continue
+        if (date != null && date > asOf && p.text("status") != "submitted") continue
         val face = p.validAmount("faceValue"); val price = p.validAmount("pricePercent")
         val accrued = p.validAmount("accruedInterestPaid"); val fees = p.validAmount("feesPaid")
         if (date == null || !p.text("currency").validCurrency() || face == null || face <= 0 || price == null || price <= 0 || accrued == null || fees == null) {
@@ -96,7 +96,7 @@ fun PortfolioSnapshot.purchaseFeeAnalysis(asOf: LocalDate): PurchaseFeeAnalysis 
         rows += PurchaseFeeLine(p.text("id"), p.text("bondName"), p.text("currency"), date, PurchaseFeeKind.BOND,
             consideration, accrued, fees, p.bondCashCost())
     }
-    for (p in holdings.filter { it.text("status") in setOf("active", "sold") }) {
+    for (p in holdings.filter { it.text("status") in setOf("active", "sold") } + pendingShares()) {
         val date = calendarDate(p.text("tradeDate"))
         if (date != null && date > asOf) continue
         val gross = p.validAmount("grossConsideration"); val fees = p.validAmount("totalCharges"); val payable = p.validAmount("netAmountPayable")

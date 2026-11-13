@@ -4,7 +4,7 @@ import kotlinx.datetime.LocalDate
 
 const val PendingBondCommission = 11_000.0
 
-/** Submitted records carry no confirmed price/coupon; only active records enter totals. */
+/** Submitted requests enter portfolio projections at recorded amounts until confirmed. */
 fun pendingBondInput(issue: JsonRecord, amount: Double, recorded: LocalDate): JsonRecord {
     require(amount.isFinite() && amount >= 100_000 && amount % 100_000 == 0.0) { "Use an amount in RWF 100,000 increments." }
     val settlement = calendarDate(issue.text("settlementDate")) ?: error("This bond has no settlement date yet.")
@@ -15,7 +15,7 @@ fun pendingBondInput(issue: JsonRecord, amount: Double, recorded: LocalDate): Js
         .put("market", "primary").put("bondName", calendarBondName(issue)).put("isin", issue.text("isin"))
         .put("purchaseDate", recorded.toString()).put("settlementDate", settlement.toString()).put("maturityDate", maturity.toString())
         .put("tenorYears", issue.optDouble("tenorYears")).put("faceValue", amount)
-        // Required legacy storage defaults, never presented as executed terms or counted in active totals.
+        // Provisional terms for valuation; actual price and coupon replace them on confirmation.
         .put("pricePercent", 100).put("couponRate", 0).put("couponFrequency", 2).put("withholdingTaxRate", .05)
         .put("firstCouponDate", "").put("couponDates", JsonList()).put("scheduleConfidence", "estimated")
         .put("accruedInterestPaid", 0).put("feesPaid", PendingBondCommission).put("broker", "").put("accountReference", "").put("sourceUrl", "")

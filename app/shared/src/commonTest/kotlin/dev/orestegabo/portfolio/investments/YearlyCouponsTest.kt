@@ -69,9 +69,11 @@ class YearlyCouponsTest {
         val badAmount = list(listOf(bond()), listOf(receipt().put("amount", "unknown"))).rows
         assertNull(yearlyCouponTotals(badAmount, "RWF", true).confirmed)
     }
-    @Test fun submittedCancelledAndFuturePurchasesCannotProduceCouponIncome() {
+    @Test fun submittedProducesOnlyScheduledIncomeWhileCancelledAndFutureCompletedAreExcluded() {
         val rows = list(listOf(bond(status = "submitted"), bond("cancelled", status = "cancelled"), bond("future").put("purchaseDate", "2027-01-01")), listOf(receipt())).rows
-        assertTrue(rows.isEmpty())
+        assertEquals(3, rows.size)
+        assertTrue(rows.all { it.purchase.text("status") == "submitted" && it.recordedAmount == null })
+        assertEquals(0.0, yearlyCouponTotals(rows, "RWF", true).confirmed)
     }
     @Test fun soldBondsOnlyShowRecordedEntriesAndMaturedBondsHaveNoFutureForecast() {
         val sold = list(listOf(bond(status = "sold")), listOf(receipt())).rows
@@ -113,7 +115,7 @@ class YearlyCouponsTest {
         val later = bond().put("couponDates", JsonList(listOf("2027-01-01")))
         assertEquals(2027, nextCouponYear(listOf(later), emptyList(), 2025, today, true)?.year)
         assertNull(nextCouponYear(listOf(later), emptyList(), 2027, today, true))
-        assertNull(nextCouponYear(listOf(later.put("status", "submitted")), emptyList(), 2026, today, true))
+        assertEquals(2027, nextCouponYear(listOf(later.put("status", "submitted")), emptyList(), 2026, today, true)?.year)
         assertNull(nextCouponYear(listOf(bond().put("withholdingTaxRate", null)), emptyList(), 2026, today, true))
         assertNull(nextCouponYear(listOf(bond(status = "sold")), listOf(receipt()), 2026, today, true))
     }

@@ -502,7 +502,9 @@ fun InvestmentApp(model: PortfolioModel) {
                         chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
                         openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { brandIntroRequested = true; replayIntroduction = true; introductionRequested = true }, openInvestmentTools = { investmentTools = true }, openSignInActivity = { securityNotificationId = null; notificationPanel = "security" }, openGuest = { showGuestChoice = true }, openIssueReport = { issueReportSource = "Settings" })
                     editor != null -> PurchaseEditor(model, editor!!, { editor = null })
-                    shareOrderEditor != null -> ShareOrderScreen(model, shareOrderEditor!!, { shareOrderEditor = null }, recordExecution = { equityEditor = it; shareOrderEditor = null })
+                    shareOrderEditor != null -> ShareOrderScreen(model, shareOrderEditor!!, { shareOrderEditor = null }, recordExecution = { equityEditor = it; shareOrderEditor = null }, uploadContract = { order ->
+                        model.importPurchasePdf(actions, engine, targetPurchaseId = order.text("id").takeIf { it.isNotBlank() }?.let { "share-order:$it" }, completed = ::imported)
+                    })
                     equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null; shareOrderEditor = null }, pendingOrder = if (model.user != null) ({ shareOrderEditor = JsonRecord(); equityEditor = null }) else null)
                     investmentTools -> InvestmentToolsScreen(model, openCalendar = { date -> investmentTools = false; openCalendarAt(date) },
                         openHistory = { investmentTools = false; investmentHistory = true })

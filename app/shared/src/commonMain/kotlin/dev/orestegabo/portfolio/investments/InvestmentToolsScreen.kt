@@ -49,7 +49,7 @@ internal fun InvestmentToolsScreen(model: PortfolioModel, openCalendar: (LocalDa
             item { Panel {
                 AppText("Bond cash-flow outlook", fontWeight = FontWeight.Bold)
                 AppText("${detailDate(outlook.from)} – ${detailDate(outlook.untilExclusive.minus(DatePeriod(days = 1)))}", style = MaterialTheme.typography.bodySmall)
-                AppText("Scheduled from saved active bonds, not income received. The current month starts today. Principal repayments are not profit.", style = MaterialTheme.typography.bodySmall)
+                AppText("Scheduled from saved bonds, including pending requests; not income received. The current month starts today. Principal repayments are not profit.", style = MaterialTheme.typography.bodySmall)
                 AppText("Recorded coupon rates and withholding taxes stay unchanged. No future purchases, reinvestment, dividends or market-price assumptions are included. Payment timing is not guaranteed.", style = MaterialTheme.typography.bodySmall)
                 AppText("Saved confirmed dates take precedence. Other coupon dates are estimates from your bond terms.", style = MaterialTheme.typography.bodySmall)
             } }
@@ -73,7 +73,7 @@ internal fun InvestmentToolsScreen(model: PortfolioModel, openCalendar: (LocalDa
             item { Panel {
                 AppText("Recorded purchase fees", fontWeight = FontWeight.Bold)
                 AppText("Completed acquisitions through {0}.".let { localized(it).replace("{0}", detailDate(today)) }, style = MaterialTheme.typography.bodySmall)
-                AppText("Includes recorded purchases even when later sold or matured. Pending and future purchases are excluded. This is acquisition history, not current portfolio value.", style = MaterialTheme.typography.bodySmall)
+                AppText("Includes recorded purchases even when later sold or matured. Pending requests use estimated costs; future completed purchases are excluded. This is acquisition history, not current portfolio value.", style = MaterialTheme.typography.bodySmall)
                 AppText("Fees are already included in cash cost and are not added again. Fee rate means recorded buying charges divided by trade consideration; accrued interest is separate. Selling, custody and unrecorded charges are excluded.", style = MaterialTheme.typography.bodySmall)
                 TextButton(onClick = openHistory) { AppText("View purchases") }
             } }

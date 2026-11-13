@@ -13,7 +13,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlin.test.*
 
 class ApplicationBidModelTest {
-    @Test fun bidPostsOnlyAmountAndRetryIdentityAndAppearsPendingWithoutInflatingActiveTotals() = runTest {
+    @Test fun bidPostsOnlyAmountAndRetryIdentityAndAppearsPendingInPortfolioTotals() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val today=bondSubscriptionDate(kotlin.time.Clock.System.now())
         val close=LocalDate(today.year,today.month,1).plus(DatePeriod(months=1)).minus(DatePeriod(days=1))
@@ -52,7 +52,7 @@ class ApplicationBidModelTest {
             assertEquals("submitted",model.purchases.single().text("status"))
             assertEquals("saved-bid",model.portfolio.recentBonds(today).single().text("id"))
             assertEquals("saved-bid",model.portfolio.recentBonds(Today).single().text("id"))
-            assertEquals(0.0,model.portfolio.summary(today).single().bondFaceValue)
+            assertEquals(1000000.0,model.portfolio.summary(today).single().bondFaceValue)
         } finally { store.clear();Dispatchers.resetMain() }
     }
 }

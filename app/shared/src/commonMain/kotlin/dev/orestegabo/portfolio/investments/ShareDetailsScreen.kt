@@ -102,8 +102,11 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, edit: (JsonR
         if (valuation != null) item(key = "position") {
             Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 DetailHeading("Your position")
-                DetailColumns(first = { DetailStatistic("Shares held", formatNumber(valuation.position.shares)) },
+                DetailColumns(first = { DetailStatistic("Shares", formatNumber(valuation.position.shares)) },
                     second = { DetailStatistic("Acquisition cost", money(valuation.position.cashCost, currency)) })
+                val pendingQuantity = model.portfolio.pendingShares().filter { it.text("ticker") == ticker && it.text("currency") == currency }
+                    .sumOf { it.optDouble("shares", 0.0) }
+                if (pendingQuantity > 0) DetailValueRow("Pending shares", formatNumber(pendingQuantity))
                 DetailNote("Includes recorded purchase fees. Excludes dividends, realized gains and future selling fees.")
                 HorizontalDivider()
             }

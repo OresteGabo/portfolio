@@ -40,6 +40,53 @@ class ImportConversationModelTest {
             assertEquals(0, f.uploads); assertEquals(0, f.writes)
         } finally { f.store.clear(); Dispatchers.resetMain() }
     }
+    private fun shareFixture() = Fixture().apply {
+        pendingOrder = JsonRecord().put("id", "order-id").put("version", 3).put("status", "pending")
+            .put("currency", "RWF").put("ticker", "BOK").put("shares", 1000).put("estimatedTotal", 732312)
+            .put("requestDate", Today.toString())
+        review.put("kind", "equity").put("fields", JsonRecord().put("securityName", "Bank of Kigali")
+            .put("ticker", "BOK").put("currency", "RWF").put("shares", 1000).put("pricePerShare", 721)
+            .put("grossConsideration", 721000).put("totalCharges", 12329.1).put("netAmountPayable", 733329.1)
+            .put("tradeDate", Today.toString()).put("contractNote", "CONTRACT-TEST").put("broker", "BK Capital"))
+    }
+
+    @Test fun shareContractCompletesTheExistingPendingOrderWithActualCostsAndOnePdfEvenAfterLostResponse() = runTest {
+        val f = shareFixture()
+        val m = model(f)
+        try {
+            advanceUntilIdle()
+            assertEquals(732312.0, m.portfolio.summary(Today).single().shareCashCost)
+            m.importPurchasePdf(f.actions(), f.engine, targetPurchaseId = "share-order:order-id") {}
+            advanceUntilIdle()
+            assertEquals(ImportState.REVIEW, m.activeImportReceipt()?.state)
+            assertEquals("order-id", f.review.text("pendingOrderId"))
+            f.failConfirmResponse = true
+            m.saveImportedPurchase(f.review, pendingShareContractInput(f.review, f.pendingOrder!!), null) {}
+            advanceUntilIdle()
+            assertNotNull(m.error)
+            f.failConfirmResponse = false
+            m.saveImportedPurchase(f.review, importedPurchaseInput(f.review), null) {}
+            advanceUntilIdle()
+            assertNull(m.error)
+            assertEquals(1, f.uploads); assertEquals(2, f.confirmations); assertEquals(0, f.equityPosts)
+            assertTrue(m.shareOrders.isEmpty()); assertEquals(1, m.holdings.size)
+            assertEquals(733329.1, m.portfolio.summary(Today).single().shareCashCost)
+            assertEquals(ImportState.SAVED, m.activeImportReceipt()?.state)
+        } finally { f.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun mismatchedShareContractCannotUploadOrCompleteAnOrder() = runTest {
+        val f = shareFixture().apply { review.put("fields", review.getJSONObject("fields").put("shares", 500)) }
+        val m = model(f)
+        try {
+            advanceUntilIdle()
+            m.importPurchasePdf(f.actions(), f.engine, targetPurchaseId = "share-order:order-id") {}
+            advanceUntilIdle()
+            assertNotNull(m.error)
+            assertEquals(0, f.uploads); assertEquals(0, f.confirmations); assertEquals(0, f.equityPosts)
+            assertEquals(1, m.shareOrders.size)
+        } finally { f.store.clear(); Dispatchers.resetMain() }
+    }
     private class Settings : ServerSettings {
         val history = mutableMapOf<String, String>()
         override fun readOrigin() = "https://imports.example.test"
@@ -58,6 +105,11 @@ class ImportConversationModelTest {
         var failStatement = false
         var statementWrites = 0
         var savedPurchase: JsonRecord? = null
+        var pendingOrder: JsonRecord? = null
+        var savedShare: JsonRecord? = null
+        var confirmations = 0
+        var equityPosts = 0
+        var failConfirmResponse = false
         val bytes = "%PDF-1.7 synthetic import\n%%EOF".encodeToByteArray()
         val fields = JsonRecord().put("issuer", "Government of Rwanda").put("bondName", "Test bond").put("isin", "RWTEST000001/MN")
             .put("currency", "RWF").put("purchaseDate", "2026-10-23").put("settlementDate", "2026-10-23")
@@ -98,6 +150,22 @@ class ImportConversationModelTest {
                             f.savedPurchase = body().put("id", "purchase-id")
                             respond("""{"purchase":{"id":"purchase-id"}}""", if (f.lostResponse) HttpStatusCode.ServiceUnavailable else HttpStatusCode.OK)
                         } else respond(JsonRecord().put("purchases", JsonList(listOfNotNull(f.savedPurchase))).toString())
+                        "/api/bonds/share-orders" -> respond(JsonRecord().put("orders", JsonList(listOfNotNull(f.pendingOrder))).toString())
+                        "/api/bonds/share-orders/order-id/confirm" -> {
+                            val payload = body()
+                            assertEquals(3, payload.optInt("version")); assertTrue(payload.optBoolean("confirmed"))
+                            f.confirmations++
+                            val purchase = payload.getJSONObject("purchase")
+                            assertEquals("doc-id", purchase.text("contractDocumentId"))
+                            assertEquals(721.0, purchase.optDouble("pricePerShare"))
+                            if (f.savedShare == null) f.savedShare = JsonRecord(purchase.toString()).put("id", "share-id")
+                            f.pendingOrder = null
+                            respond(f.savedShare!!.toString(), if (f.failConfirmResponse) HttpStatusCode.ServiceUnavailable else HttpStatusCode.OK)
+                        }
+                        "/api/bonds/equities" -> {
+                            if (request.method == HttpMethod.Post) f.equityPosts++
+                            respond(JsonRecord().put("holdings", JsonList(listOfNotNull(f.savedShare))).toString())
+                        }
                         "/api/bonds/documents" -> if (request.method == HttpMethod.Post) {
                             f.uploads++
                             respond("""{"documentId":"doc-id"}""")

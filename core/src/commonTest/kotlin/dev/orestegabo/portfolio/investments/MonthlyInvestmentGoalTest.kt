@@ -15,8 +15,9 @@ class MonthlyInvestmentGoalTest {
         val progress = assertNotNull(monthlyInvestmentProgress(snapshot, today, 3_000_000, today))
         assertEquals(3 * 924500.0 + 36500, progress.confirmed)
         assertEquals(924500.0, progress.pending)
-        assertEquals(190000.0, progress.remaining)
-        assertFalse(progress.achieved)
+        assertEquals(0.0, progress.remaining)
+        assertEquals(3734500.0, progress.invested)
+        assertTrue(progress.achieved)
     }
     @Test fun aggregatesAreAuthoritativeBeyondThePreviewAndAReachedGoalDoesNotGoNegative() {
         val snapshot = PortfolioSnapshot(purchases = listOf(bond()), recentPurchaseIds = setOf("preview"),

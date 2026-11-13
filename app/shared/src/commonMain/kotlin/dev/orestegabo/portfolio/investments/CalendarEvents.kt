@@ -50,10 +50,10 @@ fun investmentCalendarEvents(issuances: List<JsonRecord>, portfolio: PortfolioSn
             }
         }
     }
-    portfolio.purchases.filter { it.text("status") == "active" }.forEach { purchase ->
+    portfolio.purchases.filter { it.text("status") in setOf("active", "submitted") }.forEach { purchase ->
         purchase.terms()?.let { terms ->
             val tracking = trackBond(terms, terms.purchaseDate)
-            tracking.schedule.forEach { date -> events += InvestmentCalendarEvent(
+            tracking.schedule.filter { terms.couponRate > 0 }.forEach { date -> events += InvestmentCalendarEvent(
                 "${purchase.text("id")}:coupon:$date", date, "Expected coupon", purchase.text("bondName"),
                 CalendarCategory.COUPON, purchase, tracking.netPerPayment) }
             events += InvestmentCalendarEvent("${purchase.text("id")}:maturity", terms.maturityDate, "Principal due",

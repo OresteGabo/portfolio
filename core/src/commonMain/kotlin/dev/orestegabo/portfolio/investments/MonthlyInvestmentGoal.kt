@@ -6,9 +6,10 @@ const val DEFAULT_MONTHLY_INVESTMENT_TARGET = 100_000L
 fun validInvestmentTarget(amount: Long) = amount in 1..1_000_000_000_000L
 
 data class MonthlyInvestmentProgress(val month: LocalDate, val target: Long, val confirmed: Double, val pending: Double) {
-    val remaining get() = decimalAmount(emptyList(), addends = listOf(target.toDouble(), -confirmed)).coerceAtLeast(0.0)
-    val fraction get() = (confirmed / target).coerceIn(0.0, 1.0).toFloat()
-    val achieved get() = confirmed >= target
+    val invested get() = decimalAmount(emptyList(), addends = listOf(confirmed, pending))
+    val remaining get() = decimalAmount(emptyList(), addends = listOf(target.toDouble(), -invested)).coerceAtLeast(0.0)
+    val fraction get() = (invested / target).coerceIn(0.0, 1.0).toFloat()
+    val achieved get() = invested >= target
 }
 
 /** Uses complete server aggregates or full history, never the truncated preview or market gains. */
@@ -16,9 +17,12 @@ fun monthlyInvestmentProgress(snapshot: PortfolioSnapshot, month: LocalDate, tar
     require(validInvestmentTarget(target))
     val first = LocalDate(month.year, month.month, 1)
     val key = first.toString().take(7)
+    val orderPending = decimalAmount(emptyList(), addends = snapshot.pendingShares().filter {
+        it.text("currency") == "RWF" && it.text("tradeDate").take(7) == key && it.text("tradeDate") <= today.toString()
+    }.map { it.optDouble("netAmountPayable", 0.0) })
     snapshot.monthlyInvestmentTotals?.let { totals ->
         val row = totals.firstOrNull { it.text("month") == key }
-        return MonthlyInvestmentProgress(first, target, row?.optDouble("confirmed", 0.0) ?: 0.0, row?.optDouble("pending", 0.0) ?: 0.0)
+        return MonthlyInvestmentProgress(first, target, row?.optDouble("confirmed", 0.0) ?: 0.0, decimalAmount(emptyList(), addends = listOf(row?.optDouble("pending", 0.0) ?: 0.0, orderPending)))
     }
     if (snapshot.recentPurchaseIds != null || snapshot.recentHoldingIds != null) return null
     fun relevant(row: JsonRecord, field: String) = row.text("currency") == "RWF" &&
@@ -29,7 +33,7 @@ fun monthlyInvestmentProgress(snapshot: PortfolioSnapshot, month: LocalDate, tar
     val confirmed = decimalAmount(emptyList(), addends =
         bonds.filter { it.text("status") in listOf("active", "sold", "matured") }.map { it.bondCashCost().amount() } +
         shares.filter { it.text("status") in listOf("active", "sold") }.map { it.optDouble("netAmountPayable", 0.0).amount() })
-    val pending = decimalAmount(emptyList(), addends = bonds.filter { it.text("status") == "submitted" }.map { it.bondCashCost().amount() })
+    val pending = decimalAmount(emptyList(), addends = bonds.filter { it.text("status") == "submitted" }.map { it.bondCashCost().amount() } + orderPending)
     return MonthlyInvestmentProgress(first, target, confirmed, pending)
 }
 

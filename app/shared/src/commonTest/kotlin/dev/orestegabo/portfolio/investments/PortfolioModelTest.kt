@@ -276,7 +276,7 @@ class PortfolioModelTest {
         try {
             advanceUntilIdle()
             assertFalse(model.historyComplete)
-            assertEquals(0, scenario.purchaseReads)
+            assertEquals(1, scenario.purchaseReads)
             assertEquals(0, scenario.equityReads)
             assertTrue(model.portfolio.recentBonds(Today).isEmpty())
             assertTrue(model.portfolio.recentShares(Today).isEmpty())
@@ -284,16 +284,16 @@ class PortfolioModelTest {
             model.loadInvestmentHistory()
             advanceUntilIdle()
             assertTrue(model.historyComplete)
-            assertEquals(1, scenario.purchaseReads)
+            assertEquals(2, scenario.purchaseReads)
             assertEquals(1, scenario.equityReads)
             model.loadInvestmentHistory()
             advanceUntilIdle()
-            assertEquals(1, scenario.purchaseReads)
+            assertEquals(2, scenario.purchaseReads)
             model.refresh()
             advanceUntilIdle()
             assertFalse(model.historyComplete)
             assertEquals(2, scenario.overviewReads)
-            assertEquals(1, scenario.purchaseReads)
+            assertEquals(3, scenario.purchaseReads)
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
 
@@ -320,16 +320,16 @@ class PortfolioModelTest {
             assertNull(model.monthlyTargetProgress()) // Not a misleading zero before data arrives.
             advanceUntilIdle()
             assertEquals(300000.0, model.monthlyTargetProgress()?.confirmed)
-            assertEquals(0, scenario.purchaseReads); assertEquals(0, scenario.equityReads)
+            assertEquals(1, scenario.purchaseReads); assertEquals(0, scenario.equityReads)
             scenario.monthlyConfirmed = 500000
             model.refreshPortfolio(); advanceUntilIdle()
             assertEquals(500000.0, model.monthlyTargetProgress()?.confirmed)
-            assertEquals(0, scenario.purchaseReads); assertEquals(0, scenario.equityReads)
+            assertEquals(2, scenario.purchaseReads); assertEquals(0, scenario.equityReads)
             assertFalse(model.historyComplete)
             scenario.monthlyConfirmed = 700000
             model.savePurchase(JsonRecord(), null) { }; advanceUntilIdle()
             assertEquals(700000.0, model.monthlyTargetProgress()?.confirmed)
-            assertEquals(0, scenario.purchaseReads); assertEquals(0, scenario.equityReads)
+            assertEquals(3, scenario.purchaseReads); assertEquals(0, scenario.equityReads)
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
 
