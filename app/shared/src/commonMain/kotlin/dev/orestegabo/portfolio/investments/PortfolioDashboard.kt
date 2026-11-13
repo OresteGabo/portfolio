@@ -119,7 +119,8 @@ fun PortfolioScreen(
     unreadNotifications: Int = 0,
     openShare: (JsonRecord) -> Unit,
     addBond: () -> Unit = {},
-    addShare: () -> Unit = {}
+    addShare: () -> Unit = {},
+    editShareOrder: (JsonRecord) -> Unit = {}
 ) {
     if (!model.portfolioReady) {
         if (model.portfolioLoading) PortfolioLoadingSkeleton(openNotifications, unreadNotifications)
@@ -208,6 +209,7 @@ fun PortfolioScreen(
                             enabled = !model.busy,
                             onClick = addShare
                         ) { AppText("Add share purchase") }
+                        if (model.user != null) OutlinedButton(enabled = !model.busy,onClick = { editShareOrder(JsonRecord()) }) { AppText("Add pending share order") }
                     }
                 }
             }
@@ -384,6 +386,23 @@ fun PortfolioScreen(
 
                 if (kind != InvestmentKind.BONDS) {
                     if (kind == InvestmentKind.ALL) item { SectionLabel("Shares") }
+                    if (model.user != null && model.shareOrders.isNotEmpty()) {
+                        item { SectionLabel("Pending share orders") }
+                        items(model.shareOrders,key = { "share-order:${it.text("id")}" }) { order ->
+                            Inset { Panel {
+                                Row(verticalAlignment = Alignment.CenterVertically,horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    InvestmentLogo(ticker=order.text("ticker"))
+                                    Column(Modifier.weight(1f)) {
+                                        FinancialText(order.text("ticker"),fontWeight = FontWeight.SemiBold)
+                                        AppText("Awaiting execution",style = MaterialTheme.typography.bodySmall)
+                                    }
+                                }
+                                Fact("Number of shares",order.text("shares"))
+                                Fact("Estimated amount payable",money(order.optDouble("estimatedTotal")))
+                                TextButton(enabled = !model.busy,onClick = { editShareOrder(order) }) { AppText("Review order") }
+                            } }
+                        }
+                    }
                     if (recentShares.isEmpty()) item {
                         Inset {
                             EmptyState(

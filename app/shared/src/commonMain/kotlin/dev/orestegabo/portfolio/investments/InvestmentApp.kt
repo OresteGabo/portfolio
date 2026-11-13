@@ -80,6 +80,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var shareDetail by remember { mutableStateOf<JsonRecord?>(null) }
     var editor by remember { mutableStateOf<JsonRecord?>(null) }
     var equityEditor by remember { mutableStateOf<JsonRecord?>(null) }
+    var shareOrderEditor by remember { mutableStateOf<JsonRecord?>(null) }
     var investmentTools by rememberSaveable { mutableStateOf(false) }
     var simulator by rememberSaveable { mutableStateOf(false) }
     var legalRoute by rememberSaveable { mutableStateOf<String?>(null) }
@@ -120,14 +121,14 @@ fun InvestmentApp(model: PortfolioModel) {
         if (model.user != null && !introductionRequested && !replayIntroduction) finishIntroduction()
     }
     fun openGuestSettings() {
-        detail = null; shareDetail = null; documentDetail = null; editor = null; equityEditor = null
+        detail = null; shareDetail = null; documentDetail = null; editor = null; equityEditor = null; shareOrderEditor = null
         couponList = false; investmentHistory = false; simulator = false; investmentTools = false; education = false
         model.closeDocumentPreview(); tab = "Settings"
     }
     fun openNotificationInbox() {
         tab = "Notifications"; notificationPanel = null; securityNotificationId = null
         legalRoute = null; legalHistory = emptyList(); missingDocuments = false; pendingEntry = false
-        couponList = false; investmentHistory = false; documentDetail = null; detail = null; shareDetail = null; editor = null; equityEditor = null
+        couponList = false; investmentHistory = false; documentDetail = null; detail = null; shareDetail = null; editor = null; equityEditor = null; shareOrderEditor = null
         simulator = false; investmentTools = false; education = false
         model.closeDocumentPreview()
     }
@@ -154,7 +155,7 @@ fun InvestmentApp(model: PortfolioModel) {
     LaunchedEffect(NativePushBridge.updateRevision) { if(model.user!=null && !model.locked)model.refreshNotifications() }
     LaunchedEffect(tab,model.user,model.locked) { if(tab=="Notifications" && model.user!=null && !model.locked)model.refreshNotifications() }
     LaunchedEffect(model.user, model.sessionState, model.guestViewRevision) {
-        if (model.user == null) { couponList=false; documentDetail=null; notificationPurchase=null;notificationPanel=null;securityNotificationId=null; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; shareDetail = null; editor = null; equityEditor = null; importReview = null; simulator = false; investmentTools = false; education = false }
+        if (model.user == null) { couponList=false; documentDetail=null; notificationPurchase=null;notificationPanel=null;securityNotificationId=null; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; shareDetail = null; editor = null; equityEditor = null; shareOrderEditor = null; importReview = null; simulator = false; investmentTools = false; education = false }
     }
     LaunchedEffect(model, model.messageRevision) {
         val revision = model.messageRevision
@@ -173,7 +174,7 @@ fun InvestmentApp(model: PortfolioModel) {
     fun showImportConversation() {
         tab = "Documents"; documentSection = "Import"
         notificationPanel = null; missingDocuments = false; investmentHistory = false
-        couponList = false; documentDetail = null; editor = null; equityEditor = null; detail = null; shareDetail = null; pendingEntry = false
+        couponList = false; documentDetail = null; editor = null; equityEditor = null; shareOrderEditor = null; detail = null; shareDetail = null; pendingEntry = false
         simulator = false; education = false
     }
     fun imported(review: JsonRecord) {
@@ -186,11 +187,11 @@ fun InvestmentApp(model: PortfolioModel) {
         model.importPurchasePdf(actions, engine, completed = ::imported)
     }
     LaunchedEffect(NativeAppActions.pending, model.user, model.isGuest, model.portfolioReady, model.locked,
-        model.busy, introductionRequested, brandIntroRequested, importReview, editor, equityEditor, pendingEntry, model.documentPreview) {
+        model.busy, introductionRequested, brandIntroRequested, importReview, editor, equityEditor, shareOrderEditor, pendingEntry, model.documentPreview) {
         val requested = NativeAppActions.pending
         val ready = model.user != null || (model.isGuest && !model.sampleGuest && model.portfolioReady)
         if (requested != null && ready && !model.locked && !model.busy && !introductionRequested && !brandIntroRequested &&
-            importReview == null && editor == null && equityEditor == null && !pendingEntry && model.documentPreview == null && NativePdfInbox.pending == null) {
+            importReview == null && editor == null && equityEditor == null && shareOrderEditor == null && !pendingEntry && model.documentPreview == null && NativePdfInbox.pending == null) {
             NativeAppActions.take()
             openNotificationInbox() // Close nested screens before selecting a new destination.
             when (requested) {
@@ -218,9 +219,9 @@ fun InvestmentApp(model: PortfolioModel) {
     }
     val incomingPdf = NativePdfInbox.pending
     LaunchedEffect(incomingPdf?.id, NativePdfInbox.requiresPreparation, model.user?.text("id"), model.locked, model.busy,
-        introductionRequested, importReview, editor, equityEditor, pendingEntry, legalRoute, model.documentPreview) {
+        introductionRequested, importReview, editor, equityEditor, shareOrderEditor, pendingEntry, legalRoute, model.documentPreview) {
         if (incomingPdf != null && !NativePdfInbox.requiresPreparation && model.user != null && !model.locked && !model.busy &&
-            !introductionRequested && model.documentPreview == null && importReview == null && editor == null && equityEditor == null && !pendingEntry && legalRoute == null) {
+            !introductionRequested && model.documentPreview == null && importReview == null && editor == null && equityEditor == null && shareOrderEditor == null && !pendingEntry && legalRoute == null) {
             NativePdfInbox.take(incomingPdf.id)?.let { received ->
                 confirmationTarget = null
                 model.importPurchasePdf(ReceivedPdfActions(actions, received.bytes, received.fileName), engine) { review ->
@@ -272,7 +273,7 @@ fun InvestmentApp(model: PortfolioModel) {
             return@MaterialTheme
         }
         val guestImportActive = model.isGuest && (model.guestImport?.review != null || model.guestImport?.previewBytes != null)
-        val childScreen = model.applicationBidForm != null || model.cashLedgerRequested || model.backupRequested || model.guestMigration != null || guestImportActive || couponList || documentDetail != null || model.documentPreview != null || notificationPanel == "security" || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || shareDetail != null || editor != null || equityEditor != null || simulator || investmentTools || education
+        val childScreen = model.applicationBidForm != null || model.cashLedgerRequested || model.backupRequested || model.guestMigration != null || guestImportActive || couponList || documentDetail != null || model.documentPreview != null || notificationPanel == "security" || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || shareDetail != null || editor != null || equityEditor != null || shareOrderEditor != null || simulator || investmentTools || education
         val nested = childScreen || tab == "Notifications"
         val documentsHome = (model.user != null || model.isGuest) && !model.locked && !nested && tab == "Documents"
         val importChat = !model.isGuest && documentsHome && documentSection == "Import"
@@ -280,11 +281,11 @@ fun InvestmentApp(model: PortfolioModel) {
             if (model.applicationBidForm != null) { model.closeApplicationBid() } else if (model.cashLedgerRequested) { model.cashLedgerRequested = false } else if (model.backupRequested) { model.backupRequested = false } else if (model.guestMigration != null) { if (model.guestMigration?.preview != null) { model.guestMigration?.closePreview(); Unit } else model.closeGuestMigration() } else if (guestImportActive) { if (model.guestImport?.previewBytes != null) model.guestImport.closePreview() else model.cancelGuestImport() } else if (model.documentPreview != null) { model.closeDocumentPreview() } else if (importChat) { documentSection = "Library" } else if (notificationPanel == "security") { notificationPanel=null;securityNotificationId=null } else if (legalRoute != null) {
                 legalRoute = legalHistory.lastOrNull()
                 legalHistory = legalHistory.dropLast(1)
-            } else if (couponList && detail == null && shareDetail == null && editor == null && equityEditor == null && model.documentPreview == null) { couponList = false
-            } else if (documentDetail != null && detail == null && shareDetail == null && editor == null && equityEditor == null) { documentDetail = null
+            } else if (couponList && detail == null && shareDetail == null && editor == null && equityEditor == null && shareOrderEditor == null && model.documentPreview == null) { couponList = false
+            } else if (documentDetail != null && detail == null && shareDetail == null && editor == null && equityEditor == null && shareOrderEditor == null) { documentDetail = null
             } else if (tab == "Notifications" && !childScreen) { tab = "Portfolio" } else {
-                if (detail == null && shareDetail == null && editor == null && equityEditor == null && importReview == null && !pendingEntry && !simulator && !investmentTools && !education) investmentHistory = false
-                missingDocuments = false; detail = null; shareDetail = null; editor = null; equityEditor = null; pendingEntry = false; simulator = false; investmentTools = false; education = false
+                if (detail == null && shareDetail == null && editor == null && equityEditor == null && shareOrderEditor == null && importReview == null && !pendingEntry && !simulator && !investmentTools && !education) investmentHistory = false
+                missingDocuments = false; detail = null; shareDetail = null; editor = null; equityEditor = null; shareOrderEditor = null; pendingEntry = false; simulator = false; investmentTools = false; education = false
             }
         }
         if (model.user != null && !model.locked) {
@@ -306,6 +307,7 @@ fun InvestmentApp(model: PortfolioModel) {
             missingDocuments -> "Missing documents"
             pendingEntry -> "Pending purchase"
             editor != null -> if (editor!!.text("id").isBlank()) "Add bond" else "Edit bond"
+            shareOrderEditor != null -> "Pending share order"
             equityEditor != null -> if (equityEditor!!.text("id").isBlank()) "Add shares" else "Edit shares"
             investmentTools -> "Investment outlook"
             simulator -> "Simulator"
@@ -500,7 +502,8 @@ fun InvestmentApp(model: PortfolioModel) {
                         chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
                         openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { brandIntroRequested = true; replayIntroduction = true; introductionRequested = true }, openInvestmentTools = { investmentTools = true }, openSignInActivity = { securityNotificationId = null; notificationPanel = "security" }, openGuest = { showGuestChoice = true }, openIssueReport = { issueReportSource = "Settings" })
                     editor != null -> PurchaseEditor(model, editor!!, { editor = null })
-                    equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null })
+                    shareOrderEditor != null -> ShareOrderScreen(model, shareOrderEditor!!, { shareOrderEditor = null }, recordExecution = { equityEditor = it; shareOrderEditor = null })
+                    equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null; shareOrderEditor = null }, pendingOrder = if (model.user != null) ({ shareOrderEditor = JsonRecord(); equityEditor = null }) else null)
                     investmentTools -> InvestmentToolsScreen(model, openCalendar = { date -> investmentTools = false; openCalendarAt(date) },
                         openHistory = { investmentTools = false; investmentHistory = true })
                     simulator -> SimulatorScreen(model, engine) { simulator = false }
@@ -515,7 +518,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     couponList -> calendarUi.SaveableStateProvider(couponsStateKey) { YearlyCouponsScreen(model, openBond = { detail = it }) }
                     investmentHistory -> InvestmentHistoryScreen(model, openShare = { shareDetail = it }) { detail = it }
                     tab == "Portfolio" -> PortfolioScreen(model, openNotifications = { if (model.isGuest) openGuestSettings() else openNotificationInbox() }, unreadNotifications = model.unreadNotifications, openShare = { shareDetail = it }, uploadPending = ::uploadPendingPurchase, openMissing = ::uploadMissing, allMissing = { missingDocuments = true }, seeAll = { investmentHistory = true },
-                        openCalendar = ::openCalendarAt, detail = { detail = it }, addBond = { editor = JsonRecord() }, addShare = { equityEditor = JsonRecord() })
+                        openCalendar = ::openCalendarAt, detail = { detail = it }, addBond = { editor = JsonRecord() }, addShare = { equityEditor = JsonRecord() }, editShareOrder = { shareOrderEditor = it })
                     tab == "Calendar" -> calendarUi.SaveableStateProvider(calendarStateKey) { CalendarScreen(model, initialDate = calendarFocus?.let(::calendarDate), addTemporaryPurchase = { issue -> pendingIssueId = issue.text("id"); pendingEntry = true }) }
                     tab == "Documents" && model.isGuest -> DocumentsScreen(model, openBond = { detail = it }, openShare = { shareDetail = it }, openDetails = { documentDetail = it })
                     tab == "Documents" -> documentUi.SaveableStateProvider("documents:${model.origin}|${model.user?.text("id")}|${model.guestPath}|${model.guestViewRevision}") { DocumentsHub(model, engine, importReview, confirmationTarget,

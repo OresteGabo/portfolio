@@ -648,6 +648,34 @@ class PortfolioModel(
     fun monthlyTargetProgress(month: LocalDate = Today): MonthlyInvestmentProgress? =
         if (portfolioReady) monthlyInvestmentProgress(portfolio, month, monthlyInvestmentTarget, Today) else null
     val documents get() = if (isGuest) guestViewDocuments(portfolio) else portfolio.documents
+    var shareOrders by mutableStateOf<List<JsonRecord>>(emptyList())
+        private set
+    var shareOrdersAvailable by mutableStateOf(false)
+        private set
+    private suspend fun reloadShareOrders() {
+        try {
+            shareOrders = api.request("/api/bonds/share-orders").rows("orders")
+            shareOrdersAvailable = true
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (failure: ApiException) {
+            if (failure.status == 401) throw failure
+            shareOrdersAvailable = false
+            if (failure.status in listOf(404,405)) shareOrders = emptyList()
+        } catch (_: Exception) { shareOrdersAvailable = false }
+    }
+    fun saveShareOrder(id: String, order: JsonRecord, completed: () -> Unit) = action {
+        require(user != null && !isGuest) { "Sign in to save a pending share order." }
+        api.request("/api/bonds/share-orders/$id", "PUT", order)
+        completed()
+        reloadShareOrders()
+        message = "Pending share order saved."
+    }
+    fun cancelShareOrder(order: JsonRecord, completed: () -> Unit) = action {
+        api.request("/api/bonds/share-orders/${order.text("id")}/cancel", "POST", JsonRecord().put("version", order.optInt("version")))
+        completed()
+        reloadShareOrders()
+        message = "Pending share order cancelled."
+    }
     var market by mutableStateOf<JsonRecord?>(null)
         private set
     private var accountQuotes by mutableStateOf<JsonRecord?>(null)
@@ -969,6 +997,7 @@ class PortfolioModel(
         portfolio = PortfolioSnapshot(purchases, holdings, if (deferSupplementary) portfolio.documents else documents, ids("recentPurchaseIds"), ids("recentHoldingIds"),
             monthlyTotals)
         reloadLedger()
+        reloadShareOrders()
         privateDataAvailable = true
         reconcileImportHistory()
         historyComplete = overview == null
@@ -1535,7 +1564,11 @@ class PortfolioModel(
     fun saveEquity(holding: JsonRecord, id: String?, completed: () -> Unit) {
         if (isGuest) { guestWrite({ if (guestImport?.review != null) guestImport.save(holding) else requireNotNull(guestRepository).saveShare(holding, id) }, completed); return }
         action {
-            api.request("/api/bonds/equities", "POST", holding)
+            if (holding.text("pendingOrderId").isNotBlank()) {
+                api.request("/api/bonds/share-orders/${holding.text("pendingOrderId")}/confirm", "POST",
+                    JsonRecord().put("confirmed", true).put("version", holding.optInt("pendingOrderVersion")).put("purchase", holding))
+                reloadShareOrders()
+            } else api.request("/api/bonds/equities", "POST", holding)
             completed()
             refreshAfterWrite("Share purchase saved.")
         }
@@ -1741,6 +1774,7 @@ class PortfolioModel(
         pdfImportProgress = null
         reportProgress = null
         historyComplete = false
+        shareOrders = emptyList(); shareOrdersAvailable = false
         market = null
         quotes = null
         quoteRefreshFailed = false

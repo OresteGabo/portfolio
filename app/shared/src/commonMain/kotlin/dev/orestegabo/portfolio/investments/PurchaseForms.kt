@@ -199,13 +199,20 @@ private val equityFields = listOf(
 )
 
 @Composable
-fun EquityEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit, imported: JsonRecord? = null) {
+fun EquityEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit, imported: JsonRecord? = null, pendingOrder: (() -> Unit)? = null) {
     val values = remember(existing) { mutableStateMapOf<String, String>().apply { equityFields.forEach { this[it.key] = if (existing.has(it.key)) existing.text(it.key) else if (model.isGuest && imported != null) "" else it.initial } } }
     val gross = (values["shares"]?.toInputNumberOrNull() ?: 0.0) * (values["pricePerShare"]?.toInputNumberOrNull() ?: 0.0)
     val fees = listOf("brokerageCommission", "rseTransactionFee", "csdTransactionLevy", "cmaTransactionFee").sumOf { values[it]?.toInputNumberOrNull() ?: 0.0 }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { TextButton(enabled = !model.guestStorageLoading, onClick = back) { AppText("← Cancel") }; PageTitle("Record keeping", if (model.isGuest && existing.text("id").isNotBlank()) "Edit share purchase" else "Add share purchase", if (model.isGuest) "Saved privately on this device. No account upload." else "Record the details from your RSE purchase contract note.") }
         imported?.let { item { PdfReviewNotice(it) } }
+        if (pendingOrder != null && imported == null && existing.text("id").isBlank() && existing.text("pendingOrderId").isBlank()) item {
+            OutlinedButton(onClick = pendingOrder,enabled = !model.busy,modifier = Modifier.fillMaxWidth()) { AppText("Order not executed yet? Save a pending order") }
+        }
+        if (existing.text("pendingOrderId").isNotBlank()) item { Panel {
+            AppText("Record the actual executed trade date, price and contract-note charges. The order estimate is not proof of execution.")
+            AppText("Recording this purchase will close the pending order.",style = MaterialTheme.typography.bodySmall)
+        } }
         equityFields.forEach { field -> item { Field(field.label, values[field.key].orEmpty(), { values[field.key] = it }, if (field.numeric) KeyboardType.Decimal else KeyboardType.Text) } }
         item { Panel { Fact("Gross consideration", money(gross)); Fact("Total charges", money(fees)); Fact("Net amount payable", money(gross + fees)) } }
         item { Button(enabled = !model.busy && !model.guestStorageLoading && (model.guestImport?.review == null || model.guestImport.confirmed), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), onClick = {
@@ -219,6 +226,7 @@ fun EquityEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit, 
                 listOf("tradeDate", "settlementDate").forEach { LocalDate.parse(body.text(it)) }
                 require(body.getDouble("shares") % 1.0 == 0.0 && body.getDouble("shares") > 0) { "Enter a positive whole number of shares." }
                 body.put("grossConsideration", kotlin.math.round(gross * 100) / 100.0).put("totalCharges", kotlin.math.round(fees * 100) / 100.0).put("netAmountPayable", kotlin.math.round((gross + fees) * 100) / 100.0)
+                if (existing.text("pendingOrderId").isNotBlank()) body.put("pendingOrderId",existing.text("pendingOrderId")).put("pendingOrderVersion",existing.optInt("pendingOrderVersion"))
                 model.saveEquity(body, id = existing.text("id").takeIf { model.isGuest && it.isNotBlank() }, completed = back)
             }.onFailure { model.error = userErrorMessage(it, "Check the share details.") }
         }) { AppText("Save share purchase") } }
