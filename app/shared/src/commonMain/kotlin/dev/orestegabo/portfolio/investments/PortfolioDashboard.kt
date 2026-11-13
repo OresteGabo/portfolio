@@ -79,6 +79,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -345,16 +346,25 @@ fun PortfolioScreen(
                                 }
                             }
                             DropdownMenu(expanded = investmentMenuOpen, onDismissRequest = { investmentMenuOpen = false },
-                                modifier=Modifier.widthIn(min=260.dp,max=300.dp),shape=RoundedCornerShape(22.dp),
+                                modifier=Modifier.widthIn(min=280.dp,max=300.dp),shape=RoundedCornerShape(22.dp),
                                 containerColor=MaterialTheme.colorScheme.surface,tonalElevation=0.dp,shadowElevation=8.dp,
                                 border=BorderStroke(1.dp,MaterialTheme.colorScheme.primary.copy(alpha=.12f))) {
-                                DropdownMenuItem(text = { AppText("Record bond request",style=MaterialTheme.typography.bodyMedium,fontWeight=FontWeight.SemiBold,maxLines=2) },
+                                Column(Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=14.dp),
+                                    verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                                    AppText("Pending investment",modifier=Modifier.semantics { heading() },
+                                        style=MaterialTheme.typography.labelMedium,fontWeight=FontWeight.SemiBold,
+                                        color=MaterialTheme.colorScheme.onSurfaceVariant)
+                                    AppText("Confirm later with your broker’s PDF.",style=MaterialTheme.typography.bodySmall,
+                                        color=MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                HorizontalDivider(Modifier.padding(horizontal=16.dp),color=MaterialTheme.colorScheme.outlineVariant.copy(alpha=.45f))
+                                DropdownMenuItem(text = { AppText("Bond",style=MaterialTheme.typography.bodyMedium,fontWeight=FontWeight.SemiBold,maxLines=2) },
                                     leadingIcon = { InvestmentActionIcon(Icons.Outlined.AccountBalance) },
                                     trailingIcon = { AppIcon(Icons.Outlined.ChevronRight,null,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant) },
                                     modifier=Modifier.heightIn(min=68.dp),contentPadding=PaddingValues(horizontal=16.dp,vertical=10.dp),enabled = !model.busy,
                                     onClick = { investmentMenuOpen = false; addTemporaryBond() })
                                 HorizontalDivider(Modifier.padding(horizontal=16.dp),color=MaterialTheme.colorScheme.outlineVariant.copy(alpha=.45f))
-                                DropdownMenuItem(text = { AppText("Record share order",style=MaterialTheme.typography.bodyMedium,fontWeight=FontWeight.SemiBold,maxLines=2) },
+                                DropdownMenuItem(text = { AppText("Shares",style=MaterialTheme.typography.bodyMedium,fontWeight=FontWeight.SemiBold,maxLines=2) },
                                     leadingIcon = { InvestmentActionIcon(Icons.Outlined.BarChart) },
                                     trailingIcon = { AppIcon(Icons.Outlined.ChevronRight,null,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant) },
                                     modifier=Modifier.heightIn(min=68.dp),contentPadding=PaddingValues(horizontal=16.dp,vertical=10.dp),enabled = !model.busy,

@@ -41,7 +41,7 @@ class ShareOrderScreenTest {
             }
             error("Expected UI text: $text")
         }
-        fun click(text: String) { var node=await(text);while(!node.isClickable && node.parent!=null)node=node.parent;assertTrue(node.performAction(AccessibilityNodeInfo.ACTION_CLICK));instrumentation.waitForIdleSync() }
+        fun click(text: String, lastMatch: Boolean = false) { var node=await(text);if(lastMatch)node=nodes(instrumentation.uiAutomation.rootInActiveWindow).last {it.isVisibleToUser && (it.text?.toString()==text || it.contentDescription?.toString()==text)};while(!node.isClickable && node.parent!=null)node=node.parent;assertTrue(node.performAction(AccessibilityNodeInfo.ACTION_CLICK));instrumentation.waitForIdleSync() }
         val priorLanguage=AppLanguage.preference
         try { ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             lateinit var model: PortfolioModel
@@ -94,14 +94,14 @@ class ShareOrderScreenTest {
             java.io.File(instrumentation.targetContext.cacheDir,"synthetic-share-order-home.png").outputStream().use {homeScreenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
             homeScreenshot.recycle()
             click("Investment actions")
-            await("Record share order")
+            await("Pending investment"); await("Confirm later with your broker’s PDF.")
             Thread.sleep(250) // Capture the menu after its opening fade.
             val menuScreenshot=instrumentation.uiAutomation.takeScreenshot()
             java.io.File(instrumentation.targetContext.cacheDir,"synthetic-investment-menu.png").outputStream().use {menuScreenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
             menuScreenshot.recycle()
-            click("Record bond request")
+            click("Bond")
             assertEquals(1,bondRequests.get())
-            click("Investment actions");click("Record share order")
+            click("Investment actions");await("Pending investment");click("Shares",lastMatch=true)
             await("Security name"); click("Security name")
             await("SYNTHETIC Bralirwa (BLR)")
             click("SYNTHETIC BK Group (BOK)")
