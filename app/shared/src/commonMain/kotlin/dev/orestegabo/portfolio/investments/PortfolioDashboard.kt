@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -41,9 +40,12 @@ import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.EventAvailable
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Percent
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -121,7 +123,8 @@ fun PortfolioScreen(
     openShare: (JsonRecord) -> Unit,
     addBond: () -> Unit = {},
     addShare: () -> Unit = {},
-    editShareOrder: (JsonRecord) -> Unit = {}
+    editShareOrder: (JsonRecord) -> Unit = {},
+    addTemporaryBond: () -> Unit = {}
 ) {
     if (!model.portfolioReady) {
         if (model.portfolioLoading) PortfolioLoadingSkeleton(openNotifications, unreadNotifications)
@@ -142,6 +145,7 @@ fun PortfolioScreen(
     }
 
     var kind by rememberSaveable { mutableStateOf(InvestmentKind.ALL) }
+    var investmentMenuOpen by remember { mutableStateOf(false) }
     var status by rememberSaveable { mutableStateOf(BondStatus.ALL) }
 
     val today = Today;
@@ -211,12 +215,6 @@ fun PortfolioScreen(
                             onClick = addShare
                         ) { AppText("Add share purchase") }
                     }
-                }
-            }
-            if (model.user != null) item {
-                Inset {
-                    Button(enabled = !model.busy, onClick = { editShareOrder(JsonRecord()) },
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { AppText("Add shares") }
                 }
             }
             item {
@@ -335,10 +333,23 @@ fun PortfolioScreen(
                         }
                         TextButton(onClick = seeAll) { AppText("See all") }
                     }
-                    ChoiceRow(InvestmentKind.entries, kind) { kind = it }
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.weight(1f)) { ChoiceRow(InvestmentKind.entries, kind) { kind = it } }
+                        if (model.user != null) Box {
+                            IconButton(onClick = { investmentMenuOpen = true }) {
+                                AppIcon(Icons.Outlined.MoreVert, "Investment actions")
+                            }
+                            DropdownMenu(expanded = investmentMenuOpen, onDismissRequest = { investmentMenuOpen = false }) {
+                                DropdownMenuItem(text = { AppText("Add temporary bond") }, enabled = !model.busy,
+                                    onClick = { investmentMenuOpen = false; addTemporaryBond() })
+                                DropdownMenuItem(text = { AppText("Add temporary shares") }, enabled = !model.busy,
+                                    onClick = { investmentMenuOpen = false; editShareOrder(JsonRecord()) })
+                            }
+                        }
+                    }
                 }
             }
-            if (model.busy && model.refreshPhase == PortfolioRefreshPhase.IDLE && recentBonds.isEmpty() && recentShares.isEmpty()) {
+            if (model.busy && model.refreshPhase == PortfolioRefreshPhase.IDLE && recentBonds.isEmpty() && recentShares.isEmpty() && model.shareOrders.isEmpty()) {
                 item { LoadingState() }
             } else {
                 if (kind != InvestmentKind.SHARES) {
@@ -392,24 +403,13 @@ fun PortfolioScreen(
 
                 if (kind != InvestmentKind.BONDS) {
                     if (kind == InvestmentKind.ALL) item { SectionLabel("Shares") }
-                    if (model.user != null && model.shareOrders.isNotEmpty()) {
-                        item { SectionLabel("Pending share orders") }
-                        items(model.shareOrders,key = { "share-order:${it.text("id")}" }) { order ->
-                            Inset { Panel {
-                                Row(verticalAlignment = Alignment.CenterVertically,horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    InvestmentLogo(ticker=order.text("ticker"))
-                                    Column(Modifier.weight(1f)) {
-                                        FinancialText(order.text("ticker"),fontWeight = FontWeight.SemiBold)
-                                        AppText("Awaiting execution",style = MaterialTheme.typography.bodySmall)
-                                    }
-                                }
-                                Fact("Number of shares",order.text("shares"))
-                                Fact("Estimated amount payable",money(order.optDouble("estimatedTotal")))
-                                TextButton(enabled = !model.busy,onClick = { editShareOrder(order) }) { AppText("Review order") }
-                            } }
+                    val pendingShares = if (model.user != null) model.shareOrders else emptyList()
+                    items(pendingShares, key = { "share-order:${it.text("id")}" }) { order ->
+                        AppMovingItem {
+                            Inset { SharePurchaseTile(order) { editShareOrder(order) } }
                         }
                     }
-                    if (recentShares.isEmpty()) item {
+                    if (recentShares.isEmpty() && pendingShares.isEmpty()) item {
                         Inset {
                             EmptyState(
                                 "No shares in the past year",

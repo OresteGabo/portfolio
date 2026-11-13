@@ -20,12 +20,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-private fun InvestmentEntry(title: String, subtitle: String, bond: Boolean, ticker: String = "", open: () -> Unit) {
+private fun InvestmentEntry(title: String, subtitle: String, bond: Boolean, ticker: String = "", pending: Boolean = false, open: () -> Unit) {
     Surface(onClick = open, shape = RoundedCornerShape(22.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .4f))) {
         ListItem(
             headlineContent = { AppText(title, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis) },
-            supportingContent = { FinancialText(subtitle, style = MaterialTheme.typography.bodySmall) },
+            supportingContent = {
+                if (pending) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    FinancialText(subtitle, Modifier.weight(1f, fill = false).alignByBaseline(),
+                        style = MaterialTheme.typography.bodySmall, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+                    PendingStatusBadge(Modifier.alignByBaseline())
+                } else FinancialText(subtitle, style = MaterialTheme.typography.bodySmall)
+            },
             leadingContent = { InvestmentLogo(bond = bond, ticker = ticker) },
             trailingContent = { AppIcon(Icons.Outlined.ChevronRight, "Details") },
             colors = ListItemDefaults.colors(containerColor = Color.Transparent)
@@ -35,7 +41,7 @@ private fun InvestmentEntry(title: String, subtitle: String, bond: Boolean, tick
 
 /** Neutral status stays distinct from active holdings without looking like a disabled control. */
 @Composable
-private fun PendingBondStatusBadge(modifier: Modifier = Modifier) {
+private fun PendingStatusBadge(modifier: Modifier = Modifier) {
     val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
     val background = if (dark) Color(0xFF2B2E33) else Color(0xFFF0F1F3)
     val foreground = if (dark) Color(0xFFC4C8CF) else Color(0xFF5C626B)
@@ -68,7 +74,7 @@ fun BondPurchaseTile(model: PortfolioModel, purchase: JsonRecord, manage: () -> 
                         FinancialText(money(purchase.optDouble("faceValue"), purchase.text("currency")),
                             Modifier.weight(1f, fill = false).alignByBaseline(), style = MaterialTheme.typography.bodySmall,
                             maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
-                        PendingBondStatusBadge(Modifier.alignByBaseline())
+                        PendingStatusBadge(Modifier.alignByBaseline())
                     } else FinancialText("${money(purchase.optDouble("faceValue"), purchase.text("currency"))} · ${localized(purchase.text("status"))}",
                         style = MaterialTheme.typography.bodySmall)
                 },
@@ -175,9 +181,12 @@ fun BondPurchaseFacts(purchase: JsonRecord) {
 
 @Composable
 fun SharePurchaseTile(holding: JsonRecord, open: () -> Unit) {
-    InvestmentEntry(holding.text("securityName").ifBlank { holding.text("ticker") },
-        "${formatNumber(holding.optDouble("remainingShares", holding.optDouble("shares")))} shares · ${money(holding.optDouble("remainingCost", holding.optDouble("netAmountPayable")), holding.text("currency"))}",
-        bond = false, ticker = holding.text("ticker"), open = open)
+    val pending = holding.text("status") == "pending"
+    val shares = if (pending) holding.optDouble("shares") else holding.optDouble("remainingShares", holding.optDouble("shares"))
+    val cost = if (pending) holding.optDouble("estimatedTotal") else holding.optDouble("remainingCost", holding.optDouble("netAmountPayable"))
+    InvestmentEntry(shareCardName(holding),
+        "${formatNumber(shares)} shares · ${money(cost, holding.text("currency").ifBlank { "RWF" })}",
+        bond = false, ticker = holding.text("ticker"), pending = pending, open = open)
 }
 
 @Composable

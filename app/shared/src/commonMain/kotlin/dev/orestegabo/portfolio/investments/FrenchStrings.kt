@@ -2,6 +2,12 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Select a company" to "Choisir une société",
+    "Decrease shares" to "Diminuer le nombre d’actions",
+    "Increase shares" to "Augmenter le nombre d’actions",
+    "Investment actions" to "Actions d’investissement",
+    "Add temporary bond" to "Ajouter une obligation provisoire",
+    "Add temporary shares" to "Ajouter des actions provisoires",
     "Remove this pending record? Your broker’s order stays unchanged." to "Retirer cet enregistrement ? L’ordre chez votre courtier reste inchangé.",
     "Record completed purchase?" to "Enregistrer l’achat exécuté ?",
     "Review the actual price and fees before saving." to "Vérifiez le prix réel et les frais avant d’enregistrer.",

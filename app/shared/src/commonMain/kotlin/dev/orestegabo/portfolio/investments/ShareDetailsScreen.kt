@@ -25,7 +25,8 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, edit: (JsonR
         it.position.ticker == ticker && it.position.currency == currency
     }
     val quote = detailQuote(model.quotes, ticker, currency, Today)
-    val name = lots.firstOrNull()?.text("securityName")?.ifBlank { null }
+    val name = model.quotes?.rows("quotes")?.firstOrNull { it.text("ticker")==ticker }?.text("name")?.takeIf { it.isNotBlank() }
+        ?: lots.firstOrNull()?.text("securityName")?.ifBlank { null }
         ?: selected.text("securityName").ifBlank { ticker }
     val exchange = lots.firstOrNull()?.text("exchange").orEmpty()
     var requestedQuotes by remember(ticker, currency) { mutableStateOf(false) }

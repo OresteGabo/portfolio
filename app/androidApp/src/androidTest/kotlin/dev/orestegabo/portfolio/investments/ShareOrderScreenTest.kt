@@ -5,6 +5,9 @@ import android.graphics.Bitmap
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.Modifier
+import androidx.compose.material3.Surface
 import androidx.compose.material3.MaterialTheme
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
@@ -21,7 +24,7 @@ import org.junit.Test
 class ShareOrderScreenTest {
     @Test fun marketPriceDefaultsAndCommissionMatchesRequestedExample() {
         val instrumentation=InstrumentationRegistry.getInstrumentation()
-        val writes=AtomicInteger(); val equityWrites=AtomicInteger()
+        val writes=AtomicInteger(); val equityWrites=AtomicInteger(); val bondRequests=AtomicInteger()
         val settings=object: ServerSettings {
             override fun readOrigin()="https://share-order.example.test"
             override fun writeOrigin(origin: String) {}
@@ -33,12 +36,12 @@ class ShareOrderScreenTest {
         fun await(text: String): AccessibilityNodeInfo {
             val deadline=System.currentTimeMillis()+15000
             while(System.currentTimeMillis()<deadline) {
-                nodes(instrumentation.uiAutomation.rootInActiveWindow).firstOrNull {it.text?.toString()==text}?.let {return it}
+                nodes(instrumentation.uiAutomation.rootInActiveWindow).firstOrNull {(it.text?.toString()==text || it.contentDescription?.toString()==text)}?.let {return it}
                 Thread.sleep(80)
             }
             error("Expected UI text: $text")
         }
-        fun click(text: String) { var node=await(text);while(!node.isClickable && node.parent!=null)node=node.parent;assertTrue(node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) }
+        fun click(text: String) { var node=await(text);while(!node.isClickable && node.parent!=null)node=node.parent;assertTrue(node.performAction(AccessibilityNodeInfo.ACTION_CLICK));instrumentation.waitForIdleSync() }
         val priorLanguage=AppLanguage.preference
         try { ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             lateinit var model: PortfolioModel
@@ -52,10 +55,10 @@ class ShareOrderScreenTest {
                             val data=JsonRecord((request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString())
                             assertEquals(720.0,data.getDouble("pricePerShare"),0.0); assertEquals(1000.0,data.getDouble("shares"),0.0)
                             val budget=shareOrderEstimate(data.getDouble("shares"),data.getDouble("pricePerShare"))
-                            saved=data.put("id",path.substringAfterLast('/')).put("version",1).put("status","pending").put("estimatedTotal",budget.total)
+                            saved=data.put("id",path.substringAfterLast('/')).put("version",1).put("status","pending").put("currency","RWF").put("estimatedTotal",budget.total)
                             writes.incrementAndGet();JsonRecord().put("order",saved!!).toString()
                         }
-                        path.endsWith("/equities") -> { if(request.method==HttpMethod.Post)equityWrites.incrementAndGet();"""{"holdings":[]}""" }
+                        path.endsWith("/equities") -> { if(request.method==HttpMethod.Post)equityWrites.incrementAndGet();"""{"holdings":[{"id":"synthetic-owned-shares","instrumentType":"equity","exchange":"RSE","currency":"RWF","securityName":"SYNTHETIC Bralirwa","ticker":"BLR","shares":100,"pricePerShare":571,"grossConsideration":57100,"totalCharges":0,"netAmountPayable":57100,"status":"active","tradeDate":"$Today","settlementDate":"$Today"}]}""" }
                         path.endsWith("/rse/quotes") -> """{"source":{"status":"available","publishedAt":"2026-11-13T12:00:00Z"},"quotes":[{"ticker":"BOK","name":"SYNTHETIC BK Group","closing":720},{"ticker":"BLR","name":"SYNTHETIC Bralirwa","closing":571}]}"""
                         else -> "{}"
                     }
@@ -64,11 +67,13 @@ class ShareOrderScreenTest {
                 activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE) // Synthetic test content only.
                 activity.viewModelStore.put("share-order-test",model)
                 AppLanguage.initialize(settings)
-                activity.setContent { MaterialTheme(colorScheme=structCapitalColorScheme(false)) {
+                activity.setContent { MaterialTheme(colorScheme=structCapitalColorScheme(InstrumentationRegistry.getArguments().getString("dark")=="true")) {
+                    Surface(Modifier.fillMaxSize(),color=MaterialTheme.colorScheme.background) {
                     var order by remember { mutableStateOf<JsonRecord?>(null) }
                     if (order == null) PortfolioScreen(model, uploadPending={},openMissing={},allMissing={},seeAll={},openCalendar={},detail={},openShare={},
-                        editShareOrder={ order=it.put("shares",1000) })
-                    else ShareOrderScreen(model,order!!,back={},recordExecution={error("Do not record execution during order creation")})
+                        editShareOrder={ order=it.put("shares",1000) }, addTemporaryBond={bondRequests.incrementAndGet()})
+                    else Box(Modifier.fillMaxSize().safeDrawingPadding()) { ShareOrderScreen(model,order!!,back={order=null},recordExecution={error("Do not record execution during order creation")}) }
+                    }
                 } }
             }
             val readyDeadline=System.currentTimeMillis()+15000
@@ -78,17 +83,40 @@ class ShareOrderScreenTest {
                 if(!ready)Thread.sleep(50)
             }
             assertTrue("Synthetic account and orders API ready",ready)
-            await("Add shares")
+            val menuDeadline=System.currentTimeMillis()+15000
+            while(nodes(instrumentation.uiAutomation.rootInActiveWindow).none {it.contentDescription?.toString()=="Investment actions"} && System.currentTimeMillis()<menuDeadline) {
+                nodes(instrumentation.uiAutomation.rootInActiveWindow).firstOrNull {it.isScrollable}?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+                instrumentation.waitForIdleSync();Thread.sleep(80)
+            }
+            await("Investment actions")
+            assertFalse(nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.text?.toString()=="Add shares"})
             val homeScreenshot=instrumentation.uiAutomation.takeScreenshot()
             java.io.File(instrumentation.targetContext.cacheDir,"synthetic-share-order-home.png").outputStream().use {homeScreenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
             homeScreenshot.recycle()
-            click("Add shares")
+            click("Investment actions")
+            await("Add temporary shares")
+            val menuScreenshot=instrumentation.uiAutomation.takeScreenshot()
+            java.io.File(instrumentation.targetContext.cacheDir,"synthetic-investment-menu.png").outputStream().use {menuScreenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
+            menuScreenshot.recycle()
+            click("Add temporary bond")
+            assertEquals(1,bondRequests.get())
+            click("Investment actions");click("Add temporary shares")
             await("Security name"); click("Security name")
             await("SYNTHETIC Bralirwa (BLR)")
             click("SYNTHETIC BK Group (BOK)")
             assertFalse(nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.text?.toString() in listOf("Ticker","Broker","Notes","Expected price per share (RWF)","Request date · YYYY-MM-DD")})
             await("Market commission · 1.71%")
             await("RWF 732,312")
+            click("Increase shares")
+            await("RWF 805,543.2")
+            click("Decrease shares")
+            await("RWF 732,312")
+            val quantityInput=nodes(instrumentation.uiAutomation.rootInActiveWindow).first {it.isEditable}
+            assertTrue(quantityInput.performAction(AccessibilityNodeInfo.ACTION_CLICK))
+            await("Done");click("Done")
+            val keyboardDeadline=System.currentTimeMillis()+5000
+            while(nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.text?.toString()=="Done"} && System.currentTimeMillis()<keyboardDeadline)Thread.sleep(50)
+            assertFalse("Done closes the keyboard accessory",nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.text?.toString()=="Done"})
             val screenshot=instrumentation.uiAutomation.takeScreenshot()
             java.io.File(instrumentation.targetContext.cacheDir,"synthetic-share-order-screen.png").outputStream().use {screenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
             screenshot.recycle()
@@ -97,6 +125,24 @@ class ShareOrderScreenTest {
             while(writes.get()==0 && System.currentTimeMillis()<deadline)Thread.sleep(50)
             assertEquals(1,writes.get());assertEquals(0,equityWrites.get())
             assertEquals(732312.0,saved!!.getDouble("estimatedTotal"),0.0)
+            fun pendingCardVisible() = nodes(instrumentation.uiAutomation.rootInActiveWindow).any {
+                val text=it.text?.toString().orEmpty()
+                it.isVisibleToUser && (text=="Pending" || text.contains("Bank of Kigali") && text.contains("Pending"))
+            }
+            val cardDeadline=System.currentTimeMillis()+15000
+            while(!pendingCardVisible() && System.currentTimeMillis()<cardDeadline) {
+                nodes(instrumentation.uiAutomation.rootInActiveWindow).firstOrNull {it.isScrollable}?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+                instrumentation.waitForIdleSync();Thread.sleep(80)
+            }
+            assertTrue("Pending shares appear in the normal investment list",pendingCardVisible())
+            nodes(instrumentation.uiAutomation.rootInActiveWindow).firstOrNull {it.isScrollable}?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+            instrumentation.waitForIdleSync()
+            assertFalse(nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.text?.toString()=="Pending share orders"})
+            assertTrue("Share cards use the short company name",nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.text?.toString()?.contains("Bank of Kigali")==true})
+            scenario.onActivity { assertEquals(1,model.holdings.size);assertEquals("synthetic-owned-shares",model.holdings.single().text("id")) }
+            val cardsScreenshot=instrumentation.uiAutomation.takeScreenshot()
+            java.io.File(instrumentation.targetContext.cacheDir,"synthetic-pending-share-card.png").outputStream().use {cardsScreenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
+            cardsScreenshot.recycle()
         } } finally { AppLanguage.select(priorLanguage) }
     }
 }

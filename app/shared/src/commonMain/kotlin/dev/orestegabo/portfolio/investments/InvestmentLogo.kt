@@ -17,6 +17,21 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import portfolio.app.shared.generated.resources.*
 
+/** Compact company labels for cards; full source names remain in records and detail screens. */
+internal fun shareCardName(holding: JsonRecord): String = when (holding.text("ticker").trim().uppercase()) {
+    "BOK", "BK", "BK GROUP" -> "Bank of Kigali"
+    "IMR", "I&M", "IMBANK" -> "I&M Bank"
+    "BLR", "BRALIRWA" -> "Bralirwa"
+    "CMR", "CIMERWA" -> "Cimerwa"
+    "KCB" -> "KCB"
+    "MTNR", "MTN" -> "MTN Rwanda"
+    "EQTY", "EQUITY", "EQUITY BANK" -> "Equity Bank"
+    "NMG" -> "Nation Media"
+    "USL" -> "Uchumi"
+    "RHB" -> "RH Bophelo"
+    else -> holding.text("securityName").ifBlank { holding.text("ticker") }
+}
+
 internal fun investmentLogoResource(ticker: String, bond: Boolean = false): org.jetbrains.compose.resources.DrawableResource? {
     val symbol = ticker.trim().uppercase()
     return when {
