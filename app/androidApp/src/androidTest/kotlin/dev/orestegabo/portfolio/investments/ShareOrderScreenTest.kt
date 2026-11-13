@@ -4,6 +4,7 @@ import android.view.WindowManager
 import android.graphics.Bitmap
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.*
 import androidx.compose.material3.MaterialTheme
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
@@ -64,7 +65,10 @@ class ShareOrderScreenTest {
                 activity.viewModelStore.put("share-order-test",model)
                 AppLanguage.initialize(settings)
                 activity.setContent { MaterialTheme(colorScheme=structCapitalColorScheme(false)) {
-                    ShareOrderScreen(model,JsonRecord().put("shares",1000),back={},recordExecution={error("Do not record execution during order creation")})
+                    var order by remember { mutableStateOf<JsonRecord?>(null) }
+                    if (order == null) PortfolioScreen(model, uploadPending={},openMissing={},allMissing={},seeAll={},openCalendar={},detail={},openShare={},
+                        editShareOrder={ order=it.put("shares",1000) })
+                    else ShareOrderScreen(model,order!!,back={},recordExecution={error("Do not record execution during order creation")})
                 } }
             }
             val readyDeadline=System.currentTimeMillis()+15000
@@ -74,6 +78,11 @@ class ShareOrderScreenTest {
                 if(!ready)Thread.sleep(50)
             }
             assertTrue("Synthetic account and orders API ready",ready)
+            await("Add shares")
+            val homeScreenshot=instrumentation.uiAutomation.takeScreenshot()
+            java.io.File(instrumentation.targetContext.cacheDir,"synthetic-share-order-home.png").outputStream().use {homeScreenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
+            homeScreenshot.recycle()
+            click("Add shares")
             await("Security name"); click("Security name")
             await("SYNTHETIC Bralirwa (BLR)")
             click("SYNTHETIC BK Group (BOK)")

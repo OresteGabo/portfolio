@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -209,8 +210,13 @@ fun PortfolioScreen(
                             enabled = !model.busy,
                             onClick = addShare
                         ) { AppText("Add share purchase") }
-                        if (model.user != null) OutlinedButton(enabled = !model.busy,onClick = { editShareOrder(JsonRecord()) }) { AppText("Add pending share order") }
                     }
+                }
+            }
+            if (model.user != null) item {
+                Inset {
+                    Button(enabled = !model.busy, onClick = { editShareOrder(JsonRecord()) },
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { AppText("Add shares") }
                 }
             }
             item {
