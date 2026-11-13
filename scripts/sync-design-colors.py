@@ -11,7 +11,9 @@ GENERATED_NOTE = '<!-- Generated colors: scripts/sync-design-colors.py; edit des
 
 def palette(source):
     result = {}
-    for group, names in [('Brand', ['olive', 'cream', 'canvas']), ('Fixed', ['white'])]:
+    for group, names in [('Brand', ['olive', 'cream', 'canvas']), ('Fixed', ['white']),
+                         ('Widget', ['background', 'outline', 'secondaryText', 'text']),
+                         ('BondNotification', ['trackLight', 'trackDark', 'badgeLight', 'badgeDark'])]:
         section = re.search(r'object ' + group + r' \{(.*?)\n    \}', source, re.S).group(1)
         for name in names:
             argb = re.search(r'val ' + name + r' = Color\(0x([A-Fa-f0-9]{8})\)', section).group(1).upper()
@@ -22,7 +24,11 @@ def palette(source):
 def outputs():
     colors = palette(SOURCE.read_text())
     rows = [('struct_brand_olive', 'Brand.olive'), ('struct_brand_cream', 'Brand.cream'),
-            ('struct_brand_canvas', 'Brand.canvas'), ('struct_fixed_white', 'Fixed.white')]
+            ('struct_brand_canvas', 'Brand.canvas'), ('struct_fixed_white', 'Fixed.white'),
+            ('struct_widget_background', 'Widget.background'), ('struct_widget_outline', 'Widget.outline'),
+            ('struct_widget_secondary_text', 'Widget.secondaryText'), ('struct_widget_text', 'Widget.text'),
+            ('struct_bond_track_light', 'BondNotification.trackLight'), ('struct_bond_track_dark', 'BondNotification.trackDark'),
+            ('struct_bond_badge_light', 'BondNotification.badgeLight'), ('struct_bond_badge_dark', 'BondNotification.badgeDark')]
     result = {ROOT / 'app/androidApp/src/main/res/values/struct_colors.xml':
               GENERATED_NOTE + '<resources>\n' + ''.join(f'    <color name="{name}">{colors[key]}</color>\n' for name, key in rows) + '</resources>\n'}
     for theme, key in [('light', 'Brand.olive'), ('dark', 'Brand.cream')]:

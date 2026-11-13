@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.StructColors
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -129,8 +131,8 @@ internal fun SignInScreen(
                 Modifier.fillMaxSize().background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color.Black.copy(alpha = 0.1f),
-                            Color.Black.copy(alpha = 0.35f),
+                            StructColors.Fixed.black.copy(alpha = 0.1f),
+                            StructColors.Fixed.black.copy(alpha = 0.35f),
                             MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                             MaterialTheme.colorScheme.surface
                         ),

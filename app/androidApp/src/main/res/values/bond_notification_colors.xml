@@ -1,5 +1,5 @@
 <resources>
-    <color name="bond_timeline_accent">#6D5E0F</color>
-    <color name="bond_timeline_track">#DDD8BD</color>
-    <color name="bond_badge_background">#ECE6C7</color>
+    <color name="bond_timeline_accent">@color/struct_brand_olive</color>
+    <color name="bond_timeline_track">@color/struct_bond_track_light</color>
+    <color name="bond_badge_background">@color/struct_bond_badge_light</color>
 </resources>

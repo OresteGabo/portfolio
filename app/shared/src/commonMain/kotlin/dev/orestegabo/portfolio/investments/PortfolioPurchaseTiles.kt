@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.design.StructColors
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
@@ -43,8 +45,8 @@ private fun InvestmentEntry(title: String, subtitle: String, bond: Boolean, tick
 @Composable
 private fun PendingStatusBadge(modifier: Modifier = Modifier) {
     val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
-    val background = if (dark) Color(0xFF2B2E33) else Color(0xFFF0F1F3)
-    val foreground = if (dark) Color(0xFFC4C8CF) else Color(0xFF5C626B)
+    val background = StructColors.PendingStatus.background.resolve(dark)
+    val foreground = StructColors.PendingStatus.foreground.resolve(dark)
     Surface(modifier = modifier, shape = RoundedCornerShape(5.dp), color = background, contentColor = foreground) {
         Row(Modifier.padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)) {

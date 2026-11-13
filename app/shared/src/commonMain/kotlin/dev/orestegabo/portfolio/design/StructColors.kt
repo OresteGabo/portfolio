@@ -45,6 +45,26 @@ object StructColors {
         val inactiveText = ThemeColor(Color(0xFF666D77), Color(0xFFADB2BA))
     }
 
+    object PendingStatus {
+        val background = ThemeColor(LanguageSelector.track.light, Color(0xFF2B2E33))
+        val foreground = ThemeColor(Color(0xFF5C626B), Color(0xFFC4C8CF))
+    }
+
+    /** Android home widgets deliberately keep their existing fixed dark presentation. */
+    object Widget {
+        val background = Color(0xFF142014)
+        val outline = Color(0xFF34422B)
+        val secondaryText = Color(0xFFB9C4AD)
+        val text = Color(0xFFF7F5E9)
+    }
+
+    object BondNotification {
+        val trackLight = Color(0xFFDDD8BD)
+        val trackDark = Color(0xFF514D38)
+        val badgeLight = Color(0xFFECE6C7)
+        val badgeDark = Color(0xFF454129)
+    }
+
     /** National identity colors are fixed artwork colors, independent of the app brand. */
     object Flag {
         val white = Fixed.white

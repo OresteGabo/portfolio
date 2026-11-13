@@ -4,4 +4,12 @@
     <color name="struct_brand_cream">#F2E6A7</color>
     <color name="struct_brand_canvas">#FAF8F2</color>
     <color name="struct_fixed_white">#FFFFFF</color>
+    <color name="struct_widget_background">#142014</color>
+    <color name="struct_widget_outline">#34422B</color>
+    <color name="struct_widget_secondary_text">#B9C4AD</color>
+    <color name="struct_widget_text">#F7F5E9</color>
+    <color name="struct_bond_track_light">#DDD8BD</color>
+    <color name="struct_bond_track_dark">#514D38</color>
+    <color name="struct_bond_badge_light">#ECE6C7</color>
+    <color name="struct_bond_badge_dark">#454129</color>
 </resources>
