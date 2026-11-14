@@ -1,6 +1,8 @@
 package dev.orestegabo.portfolio.investments
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +31,8 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, openPurchase
         ?: lots.firstOrNull()?.text("securityName")?.ifBlank { null }
         ?: selected.text("securityName").ifBlank { ticker }
     val exchange = lots.firstOrNull()?.text("exchange").orEmpty()
+    val pendingQuantity = model.portfolio.pendingShares().filter { it.text("ticker") == ticker && it.text("currency") == currency }
+        .sumOf { it.optDouble("shares", 0.0) }
     var requestedQuotes by remember(ticker, currency) { mutableStateOf(false) }
     var allLots by rememberSaveable(ticker, currency) { mutableStateOf(false) }
     LaunchedEffect(ticker, currency, model.historyComplete, model.busy) {
@@ -50,6 +54,7 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, openPurchase
                         FinancialText(listOf(ticker, exchange).filter { it.isNotBlank() }.joinToString(" · "),
                             style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                     }
+                    ShareValuesInfoButton(quote, model.quoteRefreshFailed, pending = pendingQuantity > 0)
                 }
                 FinancialText(name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Medium,
                     modifier = Modifier.semantics { heading() })
@@ -61,42 +66,17 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, openPurchase
                 valuation?.let { ShareReturnSummary(it) }
             }
         }
-        item(key = "quote") {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                HorizontalDivider()
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AppIcon(Icons.Outlined.Schedule, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        AppText(when {
-                            quote.price == null -> "Market price unavailable"
-                            quote.cached || model.quoteRefreshFailed -> "Cached closing price"
-                            else -> "Official closing price"
-                        }, style = MaterialTheme.typography.labelLarge)
-                        quote.date?.takeIf { quote.price != null }?.let { DetailNote("${localized("Market date")} · ${detailDate(it)}") }
-                        if (quote.price != null) DetailNote("Source: Rwanda Stock Exchange")
-                        if (quote.cached || model.quoteRefreshFailed) DetailNote("This is a saved quote, not a live trading price.")
-                    }
-                    IconButton(enabled = !model.busy, onClick = { model.loadMarket(true) }) { AppIcon(Icons.Outlined.Refresh, "Refresh prices") }
-                }
-                DetailValueRow("Closing price", quote.price?.let { money(it, currency) } ?: localized("Unavailable"))
-                if (quote.price == null) DetailNote("No usable market price. Purchase cost is not a market valuation.")
-                HorizontalDivider()
-            }
-        }
+        item(key = "quote") { ShareClosingQuote(model, quote, currency) }
         if (valuation != null) item(key = "position") {
             Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 DetailHeading("Your position")
                 DetailColumns(first = { DetailStatistic("Shares", formatNumber(valuation.position.shares)) },
                     second = { DetailStatistic("Acquisition cost", money(valuation.position.cashCost, currency)) })
-                val pendingQuantity = model.portfolio.pendingShares().filter { it.text("ticker") == ticker && it.text("currency") == currency }
-                    .sumOf { it.optDouble("shares", 0.0) }
                 if (pendingQuantity > 0) DetailValueRow("Pending shares", formatNumber(pendingQuantity))
-                DetailNote("Overall return is based on the combined acquisition cost, including purchase fees.")
-                DetailNote("Includes recorded purchase fees. Excludes dividends, realized gains and future selling fees.")
                 HorizontalDivider()
             }
         }
-        item(key = "history-title") { DetailHeading("Purchase history", "Each purchase, its return and original evidence.") }
+        item(key = "history-title") { DetailHeading("Purchase history") }
         if (!model.historyComplete) item(key = "history-state") {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (model.busy) {
@@ -119,10 +99,54 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, openPurchase
             if (!model.sampleGuest) OutlinedButton(enabled = model.canEditInvestments, onClick = { model.openCashLedger(lots.firstOrNull()?.text("id")) }) { AppText("Record sale or dividend") }
             InvestmentActivityTimeline(model, lots)
         }
-        item(key = "dividend-note") {
-            DetailNote("No verified upcoming dividend is available here. Dividend income is not included in the displayed return.")
+    }
+}
+
+@Composable
+private fun ShareClosingQuote(model: PortfolioModel, quote: DetailQuote, currency: String) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            AppText(when {
+                quote.price == null -> "Market price unavailable"
+                quote.cached || model.quoteRefreshFailed -> "Cached closing price"
+                else -> "Closing price"
+            }, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            quote.price?.let { FinancialText(money(it, currency), style = MaterialTheme.typography.titleMedium) }
+        }
+        quote.date?.takeIf { quote.price != null }?.let { DetailNote(detailDate(it)) }
+        IconButton(enabled = !model.busy, onClick = { model.loadMarket(true) }) {
+            AppIcon(Icons.Outlined.Refresh, "Refresh prices")
         }
     }
+}
+
+@Composable
+private fun ShareValuesInfoButton(quote: DetailQuote, refreshFailed: Boolean,
+                                  singlePurchase: Boolean = false, pending: Boolean = false) {
+    var showing by rememberSaveable { mutableStateOf(false) }
+    IconButton(onClick = { showing = true }) {
+        AppIcon(Icons.Outlined.Info, "About share values", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+    if (showing) AlertDialog(onDismissRequest = { showing = false },
+        title = { AppText("About share values") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                DetailHeading("Unrealized gain / loss")
+                AppText(if (singlePurchase) "Return uses this purchase’s acquisition cost, including fees, for the shares still held."
+                    else "Overall return is based on the combined acquisition cost, including purchase fees.")
+                AppText("Returns are since purchase, not annualized. Dividends, realized gains and future selling fees are excluded.")
+                if (pending) AppText("Totals include pending shares. Their acquisition costs are estimates until confirmed.")
+                DetailHeading("Closing price")
+                AppText("Source: Rwanda Stock Exchange")
+                AppText(when {
+                    quote.price == null -> "No usable market price. Purchase cost is not a market valuation."
+                    quote.cached || refreshFailed -> "This is a saved quote, not a live trading price."
+                    else -> "Values use the latest available closing price, not a live trading price."
+                })
+            }
+        },
+        confirmButton = { TextButton(onClick = { showing = false }) { AppText("Got it") } })
 }
 
 @Composable
@@ -139,7 +163,6 @@ private fun ShareReturnSummary(valuation: ValuedSharePosition, compact: Boolean 
             FinancialText(listOfNotNull(change, rate).joinToString("  ·  "),
                 style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
                 color = color, fontWeight = FontWeight.Medium)
-            DetailNote("Unrealized gain / loss")
         }
     }
 }
@@ -181,16 +204,14 @@ fun SharePurchaseDetailsScreen(model: PortfolioModel, selected: JsonRecord,
                             style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
                         DetailNote(calendarDate(lot.text("tradeDate"))?.let(::detailDate) ?: localized("Unavailable"))
                     }
+                    ShareValuesInfoButton(quote, model.quoteRefreshFailed, singlePurchase = true)
                 }
                 valuation?.let {
                     DetailAmount(if (it.closingPrice == null) "Purchase cost" else "Market value", it.estimatedValue, lot.text("currency"))
                     ShareReturnSummary(it)
                 }
                 if (valuation?.gainLoss == null) DetailNote(if (lot.optDouble("remainingShares", lot.optDouble("shares")) <= 0) "No shares remaining" else "Return unavailable")
-                quote.price?.let { DetailValueRow("Closing price", money(it, lot.text("currency"))) }
-                quote.date?.takeIf { quote.price != null }?.let { DetailNote("${localized("Market date")} · ${detailDate(it)}") }
-                if (quote.cached || model.quoteRefreshFailed) DetailNote("This is a saved quote, not a live trading price.")
-                DetailNote("Return uses this purchase’s acquisition cost, including fees, for the shares still held.")
+                ShareClosingQuote(model, quote, lot.text("currency"))
                 HorizontalDivider()
             }
         }

@@ -2,6 +2,10 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "About share values" to "À propos des valeurs affichées",
+    "Returns are since purchase, not annualized. Dividends, realized gains and future selling fees are excluded." to "Les rendements sont calculés depuis l’achat et ne sont pas annualisés. Les dividendes, les gains réalisés et les frais de vente futurs sont exclus.",
+    "Totals include pending shares. Their acquisition costs are estimates until confirmed." to "Les totaux incluent les actions en attente. Leurs coûts d’acquisition sont estimés jusqu’à confirmation.",
+    "Values use the latest available closing price, not a live trading price." to "Les valeurs utilisent le dernier cours de clôture disponible, pas un cours en temps réel.",
     "Share purchase" to "Achat d’actions",
     "Each purchase, its return and original evidence." to "Chaque achat, son rendement et son justificatif d’origine.",
     "No shares remaining" to "Aucune action restante",

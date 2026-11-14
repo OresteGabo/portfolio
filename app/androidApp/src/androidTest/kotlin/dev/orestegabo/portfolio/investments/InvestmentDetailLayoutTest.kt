@@ -240,7 +240,13 @@ class InvestmentDetailLayoutTest {
                     scenario.onActivity { share.value = true; composition.intValue++ }
                     instrumentation.waitForIdleSync(); Thread.sleep(500)
                     scrollTo("View purchase"); capture("share-purchase-history")
-                    tap("View purchase")
+                    scrollTo("About share values"); tap("About share values")
+                    await("Unrealized gain / loss")
+                    tap("Got it")
+                    scrollTo("View purchase"); tap("View purchase")
+                    scrollTo("About share values"); tap("About share values")
+                    await("Return uses this purchase’s acquisition cost, including fees, for the shares still held.")
+                    tap("Got it")
                     scrollTo("Purchase breakdown"); capture("share-purchase-ledger")
                     tap("Purchase breakdown"); scrollTo("Trade date"); assertNotNull(find("Trade date"))
                 }
