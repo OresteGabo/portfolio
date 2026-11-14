@@ -33,7 +33,7 @@ The sibling website was not comprehensively audited. Its synchronization scripts
 | Notifications | In-app notifications, coupon receipts/preferences and device registration; Firebase/APNs adapters are conditional on configuration |
 | Tests | Kotlin common/JVM/Android tests, Android instrumentation, iOS-specific tests, Node built-in test runner; Spring JUnit/Testcontainers integration and pure parser/compatibility fixtures |
 
-The public website constant is `https://structcapital.net`, but `PortfolioApi.DEFAULT_ORIGIN` still targets `https://bonds.orestegabo.dev` pending a verified domain cutover. These are different roles; no DNS, cookie-origin or API migration was performed.
+The public website constant is `https://structcapital.net`. Native `DEFAULT_ORIGIN` targets the Spring service directly at `https://gabo-portfolio-api-639858675564.europe-west1.run.app`; website deployment and Vercel routing are outside the native data path. Legacy production gateway settings migrate to the direct service with a fresh sign-in; origin-bound credentials are never copied.
 
 `:server` is a small Ktor/Netty greeting sample, not the Spring financial API. Do not deploy it as a replacement backend or migrate Spring functionality into it by accident.
 

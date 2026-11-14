@@ -17,7 +17,7 @@ Use a 308 permanent redirect and retain path and query string. For example, `htt
 
 - `OFFICIAL_WEBSITE_ORIGIN` is the public `.net` origin and is used by the new Settings website link.
 - The English/French offline legal credits list the new public website.
-- `DEFAULT_ORIGIN` remains the working `https://bonds.orestegabo.dev` transport origin until cutover is verified. Existing saved origins, sessions, invitations and password setup continue to use their matching backend. The native HTTP client deliberately does not follow redirects.
+- `DEFAULT_ORIGIN` now targets the Spring backend service directly; see the 14 November direct-backend migration below. The legacy website gateway remains available for older binaries. The native HTTP client deliberately does not follow redirects.
 - Branded contact addresses and their roles are defined in `docs/legal/content.json` and documented in `docs/EMAIL.md`. They replace the personal contact in app copy. Buying a domain does not provision the mailboxes; configure and verify delivery before publishing the contact update.
 
 ## Vercel setup
@@ -31,13 +31,13 @@ Use a 308 permanent redirect and retain path and query string. For example, `htt
 
 Apex `.net` is an intentional branding choice. Vercel recommends `www` for routing flexibility but also supports apex domains. There should be one canonical public origin.
 
-## Native API cutover after the host is ready
+## Native API transport policy
 
-1. Serve the existing API directly on `https://structcapital.net` using the same production data; configure the backend's exact allowed Origin and trusted-host rules. Confirm JSON responses, authentication, uploads and document downloads before changing native defaults.
-2. Change `DEFAULT_ORIGIN` to `OFFICIAL_WEBSITE_ORIGIN`. Decide how to migrate saved legacy origins explicitly; do not silently copy cookies, sessions or credentials between hosts. The app's secure vault is origin-bound, so a new manual sign-in may be needed. Keep the old backend available for already installed app versions.
-3. Update the exact `passwordSharingDomain` allowlist and `PasswordSharingTest`, plus the `webcredentials:` entries in both iOS entitlement files. Publish the matching Apple association JSON directly on the new host before enabling password sharing. A redirect to the old association URL is insufficient.
-4. Change invitation generation and password-setup links to the new origin as part of the verified API migration. Validate the complete flow without real invitation secrets in logs or terminal history.
-5. Build Android, compile the shared iOS target, and run core/shared tests. Verify a clean install and an existing-user upgrade on a device. Only then publish the native update that switches transport defaults.
+Native apps use the direct Spring/Cloud Run origin defined in `core/.../BackendOrigin.kt`. Do not point `DEFAULT_ORIGIN` at the marketing website, the investment browser frontend, or a Vercel redirect/proxy. Website-domain setup is separate from the native transport.
+
+When changing the backend service itself, verify its TLS, exact allowed Origin, authentication, private API routes, uploads and downloads first. Origin-bound cookies and saved passwords must not be silently copied to another host. Preserve custom development configurations and guest privacy. Keep legacy gateways working for binaries that still contain their old address until those apps update.
+
+Optional Apple website-password association is independent of API transport. It must never be required for manual native sign-in or account features.
 
 ## Verification commands
 
@@ -56,3 +56,27 @@ curl -i https://structcapital.net/.well-known/apple-app-site-association
 Defensive registrations reduce impersonation opportunities for these exact names; they do not prevent lookalike domains elsewhere. Keep registration auto-renewal and Vercel account MFA enabled. If a domain will not send email, separately configure a non-sending SPF policy and rejecting DMARC after checking that no existing email service relies on it.
 
 Sources: [Vercel domain setup](https://vercel.com/docs/domains/set-up-custom-domain), [Vercel domain redirects](https://vercel.com/docs/domains/working-with-domains/deploying-and-redirecting), [Google Registry .dev HTTPS requirement](https://www.registry.google/domains/dev/).
+
+
+## Mobile API outage and recovery — 14 November 2026
+
+A separate website migration moved investment browser pages to `https://invest.orestegabo.dev` and redirected the old `bonds.orestegabo.dev` host, including `/api/bonds/*`. The native client correctly refuses redirects, so the resulting HTTP 308 prevented installed apps from reaching the healthy Spring service. This was a gateway routing failure, not lost account or investment data.
+
+Recovery retains the native origin and origin-bound sessions: the investment deployment excludes the exact `/api/bonds` namespace from legacy-host redirects and forwards it directly to the existing Spring backend. The legacy hostname is now attached to the separate Vercel **gabo-portfolio** project (`prj_OPxGdH1uAr6pzVIGT3v7WyMeaXwy`), alongside `invest.orestegabo.dev`, rather than the personal **gabo-cv** project. Personal-site deployments no longer own the mobile API hostname. Existing browser paths still redirect with their queries intact, and Apple association JSON stays direct.
+
+Verified production deployment: `dpl_3vjUbwejJn8JzMTa2TVVQ1CK19PY` (`gabo-portfolio-e8k03qi5n-orestegabos-projects.vercel.app`). Plain public HTTPS checks with redirects disabled confirmed legacy session HTTP 200 JSON, private overview GET and document POST HTTP 401 JSON, browser `/stocks?period=all` HTTP 308 to the matching invest URL, and Apple association HTTP 200 JSON. The new investment session endpoint and personal homepage remain HTTP 200. Vercel confirms the legacy hostname is attached, verified, and configured correctly; no DNS records or backend settings were changed.
+
+**Compatibility requirement:** keep `/api/bonds` and its subpaths directly accessible at the installed clients’ origin. Never replace this route with a domain-level redirect. Future API-origin migrations require explicit native-client and session-migration testing; browser redirect checks alone are insufficient. `structcapital.net` currently serves a separate marketing website and is not a verified native API origin.
+
+
+## Direct native backend connection — 14 November 2026
+
+The new native build removes Vercel and website hosting from API transport entirely:
+
+`Android/iPhone → https://gabo-portfolio-api-639858675564.europe-west1.run.app → Spring/PostgreSQL`
+
+`BackendOrigin.kt` defines the direct default. Only exact known legacy production gateway settings (`https://bonds.orestegabo.dev` and `https://invest.orestegabo.dev`) migrate automatically; custom servers and explicit development build overrides stay explicit. Legacy-default accounts without a saved server setting are detected using vault presence metadata only. The migration selects manual account sign-in and does not read, copy, or delete old-host credentials or cookies. After a fresh sign-in, optional secure sign-in saves a new record for the backend origin. Guest mode remains offline and never opens the account vault during migration.
+
+The backend uses the existing service, database, authentication and allowed-origin settings. Public direct HTTPS verification confirmed session GET 200 JSON, unauthenticated document POST 401, and a login CORS preflight accepting the exact direct origin. No DNS, backend settings or account data are changed by this native update.
+
+The repaired legacy host is compatibility infrastructure for old installed binaries only; keep it available until those clients update. The public marketing website, browser investment frontend and optional OS website-password association are separate features, not native API transport dependencies. The app can sign in, load investments, import PDFs and manage reminders with no website deployed. Do not switch the native transport back to a frontend hostname during future branding/domain changes.

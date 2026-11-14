@@ -12,6 +12,7 @@ internal val frenchStrings: Map<String, String> = mapOf(
     "Return unavailable" to "Rendement indisponible",
     "Overall return is based on the combined acquisition cost, including purchase fees." to "Le rendement global est calculé sur le coût d’acquisition total, frais d’achat inclus.",
     "Return uses this purchase’s acquisition cost, including fees, for the shares still held." to "Le rendement utilise le coût d’acquisition de cet achat, frais inclus, pour les actions encore détenues.",
+    "Please sign in again to reconnect your account." to "Veuillez vous reconnecter pour accéder à votre compte.",
     "Select a company" to "Choisir une société",
     "Decrease shares" to "Diminuer le nombre d’actions",
     "Increase shares" to "Augmenter le nombre d’actions",

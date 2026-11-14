@@ -3,7 +3,7 @@
 Audit documentation: [current feature inventory](docs/CURRENT_STATE.md) · [prioritized technical debt](docs/TECHNICAL_DEBT.md) · [product roadmap](docs/PRODUCT_ROADMAP.md) · [architecture assessment](docs/architecture/ASSESSMENT.md) · [target architecture](docs/architecture/TARGET_ARCHITECTURE.md) · [implementation decisions](docs/architecture/DECISIONS.md).
 
 Financial workflows: [document parsing](docs/DOCUMENT_PARSING.md) · [calculation policy and reference tests](docs/FINANCIAL_CALCULATIONS.md) · [reconciliation and evidence](docs/RECONCILIATION.md).
-Android and iPhone investment journal built with shared Compose Multiplatform screens and Material 3. The official public website is `https://structcapital.net` (Struct Capital, by GABO). API traffic currently connects to the existing service at `https://bonds.orestegabo.dev` until the Vercel domain migration is verified. See [domain setup and cutover](docs/DOMAINS.md). The personal website and CV are excluded.
+Android and iPhone investment journal built with shared Compose Multiplatform screens and Material 3. The official public website is `https://structcapital.net` (Struct Capital, by GABO). Native API traffic connects directly to the Spring service at `https://gabo-portfolio-api-639858675564.europe-west1.run.app`; neither website hosting nor Vercel routing is in its data path. Existing legacy-origin installations reconnect with a fresh sign-in after updating. See [domain setup and cutover](docs/DOMAINS.md). The personal website and CV are excluded.
 
 ## Run
 

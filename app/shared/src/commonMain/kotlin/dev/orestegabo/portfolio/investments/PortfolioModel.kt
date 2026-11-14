@@ -34,9 +34,14 @@ class PortfolioModel(
     private val guestRepository: GuestPortfolioRepository? = null,
     private val guestMarketData: GuestMarketData? = null,
 ) : ViewModel() {
-    var origin by mutableStateOf(initialOrigin ?: settings.readOrigin() ?: DEFAULT_ORIGIN)
+    private val savedOrigin = settings.readOrigin()
+    private val savedEntryChoice = restoredSessionChoice(runCatching { settings.readSessionChoice() }.getOrDefault(MANUAL_ACCOUNT_ENTRY))
+    private val backendOriginMigrated = initialOrigin == null && (isLegacyWebsiteApiOrigin(savedOrigin) ||
+        savedOrigin == null && GuestPath.restore(savedEntryChoice) == null && vault?.hasSaved(LEGACY_WEBSITE_API_ORIGIN) == true)
+    var origin by mutableStateOf(initialOrigin ?: nativeBackendOrigin(savedOrigin))
         private set
-    private var entryChoice by mutableStateOf(restoredSessionChoice(runCatching { settings.readSessionChoice() }.getOrDefault(MANUAL_ACCOUNT_ENTRY)))
+    // Never restore an old-host password or cookie into the new backend origin.
+    private var entryChoice by mutableStateOf(if (backendOriginMigrated && GuestPath.restore(savedEntryChoice) == null) MANUAL_ACCOUNT_ENTRY else savedEntryChoice)
     private var accountEntry by mutableStateOf(false)
     val guestPath get() = GuestPath.restore(entryChoice)
     val isGuest get() = guestPath != null && !accountEntry
@@ -907,7 +912,7 @@ class PortfolioModel(
     }
 
     fun connect(value: String) = action {
-        val candidate = value.trim().trimEnd('/')
+        val candidate = nativeBackendOrigin(value.trim().trimEnd('/'))
         val next = apiFactory(candidate)
         vault?.delete(origin)
         secureSignInEnabled = false; locked = false
@@ -1810,10 +1815,19 @@ class PortfolioModel(
     }
     // Main.immediate may execute startup (and its failure cleanup) inside this constructor.
     // Keep startup after every state delegate and cache has been initialized.
-    init { if (isGuest) { loadGuestPortfolio(); refreshGuestQuotes() } else runAction(allowLocked = true, failureMessage = CONNECTION_ERROR_MESSAGE) {
-        UnlockPerformance.measure("public_assets") { loadPublicData() }
-        if (!locked && !deferAccountStartup && entryChoice != MANUAL_ACCOUNT_ENTRY) checkSession()
-    } }
+    init {
+        if (backendOriginMigrated) {
+            runCatching {
+                settings.writeOrigin(origin)
+                if (!isGuest) settings.writeSessionChoice(MANUAL_ACCOUNT_ENTRY)
+            }
+        }
+        if (isGuest) { loadGuestPortfolio(); refreshGuestQuotes() } else runAction(allowLocked = true, failureMessage = CONNECTION_ERROR_MESSAGE) {
+            UnlockPerformance.measure("public_assets") { loadPublicData() }
+            if (!locked && !deferAccountStartup && entryChoice != MANUAL_ACCOUNT_ENTRY) checkSession()
+            if (backendOriginMigrated) message = "Please sign in again to reconnect your account."
+        }
+    }
 
 }
 

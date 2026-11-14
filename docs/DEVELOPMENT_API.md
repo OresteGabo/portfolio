@@ -1,6 +1,6 @@
 # Testing the standalone Spring API
 
-The production default remains `https://bonds.orestegabo.dev`. Local API selection is an explicit **Debug-only build override**. It does not write over the saved server preference or reuse a production-origin session/password vault.
+The native production default is the direct Spring service at `https://gabo-portfolio-api-639858675564.europe-west1.run.app`, independent of both websites. Local API selection is an explicit **Debug-only build override**. It does not write over the saved server preference or reuse a production-origin session/password vault.
 
 ## Local backend
 
