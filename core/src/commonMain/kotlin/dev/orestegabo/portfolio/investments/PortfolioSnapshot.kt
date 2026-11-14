@@ -16,6 +16,23 @@ data class PortfolioSnapshot(
     fun recentBonds(today: LocalDate) = recentRows(purchases, "purchaseDate", today, recentPurchaseIds)
     fun recentShares(today: LocalDate) = recentRows(holdings, "tradeDate", today, recentHoldingIds)
 
+    /** Select recent companies before limiting, then include every lot in their balances. */
+    fun recentShareCompanies(today: LocalDate): List<JsonRecord> {
+        val start = today.minus(DatePeriod(years = 1))
+        val recent = holdings.filter { row ->
+            val date = calendarDate(row.text("tradeDate"))
+            date != null && date >= start && date <= today &&
+                (recentHoldingIds == null || row.text("id") in recentHoldingIds)
+        }
+        val companies = recent.filter { it.text("status") == "active" }
+            .map { it.text("ticker") to it.text("currency") }.toSet()
+        val otherIds = recent.filter { it.text("status") != "active" }.map { it.text("id") }.toSet()
+        return shareCompanyRows(holdings.filter {
+            (it.text("status") == "active" && onOrBefore(it.text("tradeDate"), today) &&
+                (it.text("ticker") to it.text("currency")) in companies) || it.text("id") in otherIds
+        }).take(12)
+    }
+
     fun activeShares(today: LocalDate) = holdings.filter {
         it.text("status") == "active" && onOrBefore(it.text("tradeDate"), today)
     }.map { lot -> JsonRecord(lot.toString()).put("shares", lot.optDouble("remainingShares", lot.optDouble("shares", 0.0)))

@@ -157,7 +157,7 @@ fun PortfolioScreen(
     }
 
     val recentShares = remember(model.portfolio, today) {
-        model.portfolio.recentShares(today)
+        model.portfolio.recentShareCompanies(today)
     }
 
     val summary = remember(model.portfolio, today) {

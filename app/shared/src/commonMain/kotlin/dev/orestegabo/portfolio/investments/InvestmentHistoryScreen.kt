@@ -41,14 +41,14 @@ fun InvestmentHistoryScreen(model: PortfolioModel, openShare: (JsonRecord) -> Un
     }
         .sortedByDescending { it.text("purchaseDate") }
 
-    val shares = if (kind == InvestmentKind.BONDS) emptyList() else model.holdings.filter {
+    val shares = if (kind == InvestmentKind.BONDS) emptyList() else shareCompanyRows(model.holdings.filter {
         matches(
             it,
             "tradeDate",
             "securityName"
         )
     }
-        .sortedByDescending { it.text("tradeDate") }
+        .sortedByDescending { it.text("tradeDate") })
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
