@@ -15,6 +15,10 @@ fun PortfolioSnapshot.valuedShares(today: LocalDate, quotes: JsonRecord?): List<
     }
 }
 
+/** Return on the remaining shares of one confirmed purchase, using its own acquisition cost. */
+fun valuedSharePurchase(purchase: JsonRecord, today: LocalDate, quotes: JsonRecord?): ValuedSharePosition? =
+    PortfolioSnapshot(holdings = listOf(purchase)).valuedShares(today, quotes).singleOrNull()
+
 data class ValuedSharePosition(val position: SharePosition, val closingPrice: Double?) {
     val estimatedValue get() = closingPrice?.let { decimalAmount(listOf(position.shares, it)) } ?: position.cashCost
     val gainLoss get() = closingPrice?.let { decimalAmount(emptyList(), addends = listOf(estimatedValue, -position.cashCost)) }

@@ -109,6 +109,7 @@ class InvestmentDetailLayoutTest {
             override fun shareText(text: String) = Unit
         }
         val share = mutableStateOf(false)
+        val sharePurchase = mutableStateOf<JsonRecord?>(null)
         val dark = mutableStateOf(false)
         val composition = mutableIntStateOf(0)
         fun visible(predicate: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo? {
@@ -172,7 +173,8 @@ class InvestmentDetailLayoutTest {
                                         Box(Modifier
                                             .fillMaxSize()
                                             .padding(padding)) { key(composition.intValue) {
-                                            if (share.value) ShareDetailsScreen(model, JsonRecord().put("ticker", ticker).put("currency", "RWF"))
+                                            if (share.value && sharePurchase.value != null) SharePurchaseDetailsScreen(model, sharePurchase.value!!, back = { sharePurchase.value = null })
+                                            else if (share.value) ShareDetailsScreen(model, JsonRecord().put("ticker", ticker).put("currency", "RWF"), openPurchase = { sharePurchase.value = it })
                                             else BondDetailsScreen(model, bond, engine, {}, {}, { edits.incrementAndGet() })
                                         } }
                                     }
@@ -237,12 +239,14 @@ class InvestmentDetailLayoutTest {
                     tap("Delete purchase"); await("Delete purchase?"); tap("Keep purchase"); assertEquals(0, deletes.get())
                     scenario.onActivity { share.value = true; composition.intValue++ }
                     instrumentation.waitForIdleSync(); Thread.sleep(500)
+                    scrollTo("View purchase"); capture("share-purchase-history")
+                    tap("View purchase")
                     scrollTo("Purchase breakdown"); capture("share-purchase-ledger")
                     tap("Purchase breakdown"); scrollTo("Trade date"); assertNotNull(find("Trade date"))
                 }
                 if (mode == "missing") {
                     // Header clearly uses cost, not a zero-price valuation or invented loss.
-                    scenario.onActivity { share.value = true; composition.intValue++ }
+                    scenario.onActivity { sharePurchase.value = null; share.value = true; composition.intValue++ }
                     instrumentation.waitForIdleSync(); Thread.sleep(500)
                     assertNotNull(find(localized("Purchase cost")))
                 }

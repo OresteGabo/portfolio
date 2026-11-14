@@ -80,4 +80,38 @@ class PortfolioValuationTest {
         assertEquals(40000.0, snapshot.valuation(today, stale).single().shareValue)
     }
 
+    @Test fun purchasesKeepTheirOwnCostAndReturnsWhileCompanyReturnIsCostWeighted() {
+        val early = lot(date = "2025-01-01", cost = 10100.0)
+        val later = lot(date = "2026-10-01", cost = 30300.0).put("shares", 200)
+        val price = quotes(180.0)
+        val first = assertNotNull(valuedSharePurchase(early, today, price))
+        val second = assertNotNull(valuedSharePurchase(later, today, price))
+        assertEquals(7900.0, first.gainLoss)
+        assertEquals(7900.0 / 10100.0, first.gainLossRate)
+        assertEquals(5700.0, second.gainLoss)
+        assertEquals(5700.0 / 30300.0, second.gainLossRate)
+        val combined = PortfolioSnapshot(holdings = listOf(early, later)).valuedShares(today, price).single()
+        assertEquals(13600.0, combined.gainLoss)
+        assertEquals(13600.0 / 40400.0, combined.gainLossRate)
+        assertEquals(first.estimatedValue + second.estimatedValue, combined.estimatedValue)
+        assertNotEquals((first.gainLossRate!! + second.gainLossRate!!) / 2, combined.gainLossRate)
+    }
+
+    @Test fun purchaseReturnUsesRemainingCostAfterSaleAndNeverInventsMissingOrFutureReturns() {
+        val partial = lot(cost = 10100.0).put("remainingShares", 40).put("remainingCost", 4040)
+        val value = assertNotNull(valuedSharePurchase(partial, today, quotes(180.0)))
+        assertEquals(7200.0, value.estimatedValue)
+        assertEquals(3160.0, value.gainLoss)
+        assertEquals(3160.0 / 4040.0, value.gainLossRate)
+        assertNull(valuedSharePurchase(partial.put("remainingShares", 0), today, quotes(180.0)))
+        for (record in listOf(lot(date = "2027-01-01"), lot(status = "pending"), lot(status = "sold")))
+            assertNull(valuedSharePurchase(record, today, quotes(180.0)))
+        for (price in listOf(null, quotes(0.0), quotes(180.0, "2027-01-01"))) {
+            val missing = assertNotNull(valuedSharePurchase(lot(), today, price))
+            assertNull(missing.gainLoss)
+            assertNull(missing.gainLossRate)
+        }
+        assertNull(valuedSharePurchase(lot(currency = "USD"), today, quotes(180.0))!!.gainLoss)
+    }
+
 }

@@ -78,6 +78,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var detail by remember { mutableStateOf<JsonRecord?>(null) }
     var documentDetail by remember { mutableStateOf<JsonRecord?>(null) }
     var shareDetail by remember { mutableStateOf<JsonRecord?>(null) }
+    var sharePurchaseDetail by remember(shareDetail) { mutableStateOf<JsonRecord?>(null) }
     var editor by remember { mutableStateOf<JsonRecord?>(null) }
     var equityEditor by remember { mutableStateOf<JsonRecord?>(null) }
     var shareOrderEditor by remember { mutableStateOf<JsonRecord?>(null) }
@@ -90,6 +91,7 @@ fun InvestmentApp(model: PortfolioModel) {
     val actions = LocalNativeActions.current
     val engine = LocalImportEngine.current ?: if (model.isGuest && model.guestPath == GuestPath.PERSONAL) rememberGuestInvestmentEngine() else if (model.isGuest) remember { GuestUnavailableEngine() } else rememberInvestmentEngine()
     DisposableEffect(engine) { onDispose { engine.destroy() } }
+    val shareUi = rememberSaveableStateHolder()
     val documentUi = rememberSaveableStateHolder()
     val calendarUi = rememberSaveableStateHolder()
     val calendarStateKey = "calendar:${model.origin}|${model.user?.text("id")}|${model.guestPath}|${model.guestViewRevision}"
@@ -281,6 +283,8 @@ fun InvestmentApp(model: PortfolioModel) {
             if (model.applicationBidForm != null) { model.closeApplicationBid() } else if (model.cashLedgerRequested) { model.cashLedgerRequested = false } else if (model.backupRequested) { model.backupRequested = false } else if (model.guestMigration != null) { if (model.guestMigration?.preview != null) { model.guestMigration?.closePreview(); Unit } else model.closeGuestMigration() } else if (guestImportActive) { if (model.guestImport?.previewBytes != null) model.guestImport.closePreview() else model.cancelGuestImport() } else if (model.documentPreview != null) { model.closeDocumentPreview() } else if (importChat) { documentSection = "Library" } else if (notificationPanel == "security") { notificationPanel=null;securityNotificationId=null } else if (legalRoute != null) {
                 legalRoute = legalHistory.lastOrNull()
                 legalHistory = legalHistory.dropLast(1)
+            } else if (equityEditor != null && sharePurchaseDetail != null) { equityEditor = null
+            } else if (sharePurchaseDetail != null) { sharePurchaseDetail = null
             } else if (couponList && detail == null && shareDetail == null && editor == null && equityEditor == null && shareOrderEditor == null && model.documentPreview == null) { couponList = false
             } else if (documentDetail != null && detail == null && shareDetail == null && editor == null && equityEditor == null && shareOrderEditor == null) { documentDetail = null
             } else if (tab == "Notifications" && !childScreen) { tab = "Portfolio" } else {
@@ -313,6 +317,7 @@ fun InvestmentApp(model: PortfolioModel) {
             simulator -> "Simulator"
             education -> "Learn"
             detail != null -> "Bond details"
+            sharePurchaseDetail != null -> "Share purchase"
             shareDetail != null -> "Share details"
             documentDetail != null -> "Document details"
             couponList -> "Coupons"
@@ -328,7 +333,7 @@ fun InvestmentApp(model: PortfolioModel) {
         }
         PlatformSystemBarAppearance(dark)
         PlatformBackHandler(nested || importChat, back)
-        val investmentDetailsVisible = ((shareDetail != null && screenTitle == "Share details") ||
+        val investmentDetailsVisible = ((shareDetail != null && screenTitle in listOf("Share details", "Share purchase")) ||
             (detail != null && screenTitle == "Bond details")) && model.documentPreview == null && !model.locked &&
             (model.user != null || model.isGuest) && !guestImportActive
         // Financial editors stay in this protected scene and must draw after the scaffold.
@@ -515,7 +520,10 @@ fun InvestmentApp(model: PortfolioModel) {
                         BondDetailsScreen(model, purchase, engine, { confirmationTarget = purchase; imported(it) },
                             { detail = null }, { editor = purchase; detail = null })
                     }
-                    shareDetail != null -> ShareDetailsScreen(model, shareDetail!!, edit = { equityEditor = it }, back = { shareDetail = null })
+                    sharePurchaseDetail != null -> SharePurchaseDetailsScreen(model, sharePurchaseDetail!!, edit = { equityEditor = it }, back = { sharePurchaseDetail = null })
+                    shareDetail != null -> shareUi.SaveableStateProvider("shares:${model.origin}|${model.user?.text("id")}|${model.guestPath}|${model.guestViewRevision}|${shareDetail!!.text("ticker")}|${shareDetail!!.text("currency")}") {
+                        ShareDetailsScreen(model, shareDetail!!, openPurchase = { sharePurchaseDetail = it })
+                    }
                     documentDetail != null -> DocumentDetailsScreen(model, documentDetail!!, openBond = { detail = it }, openShare = { shareDetail = it })
                     couponList -> calendarUi.SaveableStateProvider(couponsStateKey) { YearlyCouponsScreen(model, openBond = { detail = it }) }
                     investmentHistory -> InvestmentHistoryScreen(model, openShare = { shareDetail = it }) { detail = it }
