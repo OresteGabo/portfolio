@@ -3,10 +3,8 @@
     <string name="next_widget_small_name">What’s next · Small</string>
     <string name="next_widget_medium_name">What’s next · Medium</string>
     <string name="next_widget_description">Upcoming bond subscriptions and expected payments. No personal amounts.</string>
-    <string name="next_widget_preview_status">Next subscription</string>
-    <string name="next_widget_preview_title">Your next investment event</string>
+    <string name="next_widget_preview_status">Opens</string>
+    <string name="next_widget_preview_title">Treasury bond</string>
     <string name="next_widget_preview_date">Calendar</string>
-    <string name="next_widget_preview_detail">Open the app to update</string>
-    <string name="next_widget_after">ALSO COMING UP</string>
-    <string name="next_widget_preview_second">Expected payments</string>
+    <string name="next_widget_preview_second">Coupon</string>
 </resources>

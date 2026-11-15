@@ -1,6 +1,11 @@
 package dev.orestegabo.portfolio
 
 import android.appwidget.AppWidgetManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.view.View
+import android.widget.TextView
+import java.io.File
 import android.content.ComponentName
 import android.widget.FrameLayout
 import androidx.test.platform.app.InstrumentationRegistry
@@ -46,12 +51,31 @@ class NextWidgetTest {
         val before = context.getSharedPreferences("portfolio.next-widget",0).all
         try {
             val day=LocalDate.now(java.time.ZoneId.of("Africa/Kigali"))
-            val fixture=JSONObject().put("language","en").put("issues",JSONArray(listOf(issue("fixture",day.toString(),day.plusDays(2).toString()))))
+            val fixture=JSONObject().put("language","en")
+                .put("issues",JSONArray(listOf(issue("fixture",day.toString(),day.plusDays(2).toString()))))
+                .put("payments",JSONArray().put(JSONObject().put("date",day.plusDays(3).toString()).put("kind","coupon")))
             NextWidgetStore.save(context,fixture.toString())
             instrumentation.runOnMainSync {
                 for(medium in listOf(false,true)) {
                     val view=NextWidgetStore.render(context,medium).apply(context,FrameLayout(context))
-                    assertNotNull(view.findViewById<android.view.View>(R.id.next_title))
+                    assertNotNull(view.findViewById<View>(R.id.next_title))
+                    assertEquals("Closes", view.findViewById<TextView>(R.id.next_status).text.toString())
+                    if (medium) {
+                        assertEquals(View.VISIBLE,view.findViewById<View>(R.id.next_secondary).visibility)
+                        assertEquals("Coupon",view.findViewById<TextView>(R.id.next_second_title).text.toString())
+                    }
+                    val density=context.resources.displayMetrics.density
+                    val width=((if(medium) 320 else 160)*density).toInt()
+                    val height=(160*density).toInt()
+                    view.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),
+                        View.MeasureSpec.makeMeasureSpec(height,View.MeasureSpec.EXACTLY))
+                    view.layout(0,0,width,height)
+                    val bitmap=Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888)
+                    view.draw(Canvas(bitmap))
+                    File(context.cacheDir,"next-widget-${if(medium) "medium" else "small"}.png").outputStream().use {
+                        bitmap.compress(Bitmap.CompressFormat.PNG,100,it)
+                    }
+                    bitmap.recycle()
                 }
             }
             val manager=AppWidgetManager.getInstance(context)
@@ -64,6 +88,17 @@ class NextWidgetTest {
             }
             NextWidgetStore.save(context,null)
             assertEquals(0,NextWidgetStore.snapshot(context).length())
+            instrumentation.runOnMainSync {
+                for (medium in listOf(false,true)) {
+                    val view=NextWidgetStore.render(context,medium).apply(context,FrameLayout(context))
+                    assertEquals("Open Inzira",view.findViewById<TextView>(R.id.next_title).text.toString())
+                    assertEquals(View.GONE,view.findViewById<View>(R.id.next_date).visibility)
+                    if (medium) {
+                        assertEquals(View.GONE,view.findViewById<View>(R.id.next_secondary).visibility)
+                        assertEquals(View.GONE,view.findViewById<View>(R.id.next_divider).visibility)
+                    }
+                }
+            }
         } finally {
             val edit=context.getSharedPreferences("portfolio.next-widget",0).edit().clear()
             (before["snapshot"] as? String)?.let { edit.putString("snapshot",it) }

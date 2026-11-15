@@ -9,6 +9,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.widget.RemoteViews
+import android.view.View
 import android.widget.Toast
 import dev.orestegabo.portfolio.investments.HomeWidgetBridge
 import org.json.JSONObject
@@ -81,28 +82,45 @@ internal object NextWidgetStore {
             return PendingIntent.getActivity(context, request, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         }
         val view = RemoteViews(context.packageName, if (medium) R.layout.next_widget_medium else R.layout.next_widget_small)
-        val format = DateTimeFormatter.ofPattern("d MMM", locale)
+        fun date(event: NextWidgetEvent?): String = event?.date?.format(
+            DateTimeFormatter.ofPattern(if (event.date.year == today.year) "d MMM" else "d MMM yy", locale)) ?: ""
         view.setTextViewText(R.id.next_heading, text("What’s next", "À venir"))
-        view.setTextViewText(R.id.next_status, first?.status ?: text("Your investment calendar", "Votre calendrier"))
-        view.setTextViewText(R.id.next_title, first?.title ?: if (snapshot.has("issues")) text("No upcoming events", "Aucun événement à venir") else text("Open Inzira", "Ouvrir Inzira"))
-        view.setTextViewText(R.id.next_date, first?.date?.format(format) ?: text("Calendar", "Calendrier"))
-        view.setTextViewText(R.id.next_detail, first?.detail ?: text("Open the app to update", "Ouvrir l’app pour actualiser"))
+        fun title(event: NextWidgetEvent?): String = when {
+            event == null -> if (snapshot.has("issues")) text("Nothing upcoming", "Rien à venir") else text("Open Inzira", "Ouvrir Inzira")
+            event.key.startsWith("payment:maturity:") -> text("Maturity", "Échéance")
+            event.key.startsWith("payment:") -> "Coupon"
+            else -> event.title
+        }
+        fun dateLabel(event: NextWidgetEvent?): String = when {
+            event == null -> ""
+            event.key.startsWith("payment:") -> text("Expected", "Prévu")
+            event.priority == 0 && event.date == today -> text("Closes today", "Clôture aujourd’hui")
+            event.priority == 0 -> text("Closes", "Clôture")
+            else -> text("Opens", "Ouverture")
+        }
+        view.setTextViewText(R.id.next_status, dateLabel(first))
+        view.setTextViewText(R.id.next_title, title(first))
+        view.setTextViewText(R.id.next_date, date(first))
+        view.setViewVisibility(R.id.next_status, if (first == null) View.GONE else View.VISIBLE)
+        view.setViewVisibility(R.id.next_date, if (first == null) View.GONE else View.VISIBLE)
         val updated = preferences(context).getLong("updated", 0)
         val saved = if (updated == 0L) text("No saved data", "Aucune donnée enregistrée") else {
             val stamp = Instant.ofEpochMilli(updated).atZone(ZoneId.systemDefault())
                 .format(DateTimeFormatter.ofPattern("d MMM · HH:mm", locale))
             text("Saved $stamp", "Enregistré $stamp")
         }
-        view.setTextViewText(R.id.next_updated, saved)
         view.setOnClickPendingIntent(android.R.id.background, pending(first?.date, if (medium) 7102 else 7101))
         view.setContentDescription(android.R.id.background,
             listOf(text("What’s next", "À venir"), first?.status, first?.title, first?.date?.toString(), first?.detail, saved).filterNotNull().joinToString(". "))
         if (medium) {
             val second = events.getOrNull(1)
-            view.setTextViewText(R.id.next_second_label, text("ALSO COMING UP", "ÉGALEMENT À VENIR"))
-            view.setTextViewText(R.id.next_second_title, second?.title ?: text("All upcoming events", "Tous les événements"))
-            view.setTextViewText(R.id.next_second_date, second?.date?.format(format) ?: text("Calendar", "Calendrier"))
-            view.setTextViewText(R.id.next_second_detail, second?.detail ?: text("Tap to explore", "Voir le calendrier"))
+            view.setTextViewText(R.id.next_second_title, title(second))
+            view.setTextViewText(R.id.next_second_status, dateLabel(second))
+            view.setTextViewText(R.id.next_second_date, date(second))
+            view.setViewVisibility(R.id.next_secondary, if (second == null) View.GONE else View.VISIBLE)
+            view.setViewVisibility(R.id.next_divider, if (second == null) View.GONE else View.VISIBLE)
+            view.setContentDescription(R.id.next_secondary,
+                listOfNotNull(second?.status, second?.title, second?.date?.toString(), second?.detail).joinToString(". "))
             view.setOnClickPendingIntent(R.id.next_secondary, pending(second?.date, 7103))
         }
         return view

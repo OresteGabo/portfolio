@@ -36,28 +36,24 @@ struct WhatsNextWidgetView: View {
     private var events: [NextWidgetEvent] {
         entry.envelope.map { NextWidgetData.events($0.snapshot, at: entry.date) } ?? []
     }
-    private var saved: String {
-        guard let savedAt = entry.envelope?.savedAt else { return text("No saved data", "Aucune donnée") }
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: french ? "fr_FR" : "en_GB")
-        formatter.dateFormat = "d MMM · HH:mm"
-        return text("Saved ", "Enregistré ") + formatter.string(from: savedAt)
-    }
     private func date(_ event: NextWidgetEvent?) -> String {
-        event.map { NextWidgetData.formatted($0.date, pattern: "d MMM", french: french) } ?? text("Calendar", "Calendrier")
+        event.map {
+            let calendar = NextWidgetData.marketCalendar
+            let pattern = calendar.component(.year, from: $0.date) == calendar.component(.year, from: entry.date) ? "d MMM" : "d MMM yy"
+            return NextWidgetData.formatted($0.date, pattern: pattern, french: french)
+        } ?? text("Calendar", "Calendrier")
     }
     private func title(_ event: NextWidgetEvent?) -> String {
-        event?.title ?? (entry.envelope == nil ? text("Open Inzira", "Ouvrir Inzira") : text("No upcoming events", "Aucun événement à venir"))
+        guard let event else { return entry.envelope == nil ? text("Open Inzira", "Ouvrir Inzira") : text("Nothing upcoming", "Rien à venir") }
+        if event.key.hasPrefix("payment:maturity:") { return text("Maturity", "Échéance") }
+        if event.key.hasPrefix("payment:") { return text("Coupon", "Coupon") }
+        return event.title
     }
     private var header: some View {
         HStack(spacing: 6) {
             Image("WidgetLogo").resizable().scaledToFit().frame(width: 19, height: 19)
                 .clipShape(RoundedRectangle(cornerRadius: 4)).accessibilityHidden(true)
             Text(text("What’s next", "À venir")).font(.system(size: 12, weight: .semibold)).foregroundStyle(cream).lineLimit(1)
-            if family == .systemMedium {
-                Spacer(minLength: 4)
-                Text(saved).font(.system(size: 8)).foregroundStyle(muted).lineLimit(1).minimumScaleFactor(0.8)
-            }
         }
     }
     var body: some View {
@@ -101,50 +97,51 @@ struct WhatsNextWidgetView: View {
             }
         }
     }
+    private func dateLabel(_ event: NextWidgetEvent) -> String {
+        if event.key.hasPrefix("payment:") { return text("Expected", "Prévu") }
+        if event.priority == 0 {
+            return NextWidgetData.marketCalendar.isDate(event.date, inSameDayAs: entry.date)
+                ? text("Closes today", "Clôture aujourd’hui") : text("Closes", "Clôture")
+        }
+        return text("Opens", "Ouverture")
+    }
     private var homeScreen: some View {
-        let first = events.first
-        return VStack(alignment: .leading, spacing: family == .systemSmall ? 3 : 7) {
+        VStack(alignment: .leading, spacing: 12) {
             header
-            if family == .systemMedium {
-                HStack(alignment: .top, spacing: 16) {
-                    primary(first, small: false).frame(maxWidth: .infinity, alignment: .leading)
-                    let second = events.dropFirst().first
-                    Link(destination: NextWidgetData.url(for: second?.date ?? entry.date)) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(text("ALSO COMING UP", "ÉGALEMENT À VENIR"))
-                                .font(.system(size: 9)).foregroundStyle(muted).lineLimit(1).minimumScaleFactor(0.7)
-                            Spacer(minLength: 0)
-                            Text(second?.title ?? text("All upcoming events", "Tous les événements"))
-                                .font(.system(size: 12, weight: .medium)).foregroundStyle(white).lineLimit(3).minimumScaleFactor(0.85)
-                            Spacer(minLength: 0)
-                            Text(date(second)).font(.system(size: 22, weight: .bold)).foregroundStyle(cream).lineLimit(1).minimumScaleFactor(0.8)
-                            Text(second?.detail ?? text("Tap to explore", "Voir le calendrier"))
-                                .font(.system(size: 9)).foregroundStyle(muted).lineLimit(1).minimumScaleFactor(0.8)
-                        }.frame(maxWidth: 115, maxHeight: .infinity, alignment: .leading).contentShape(Rectangle())
-                    }.buttonStyle(.plain)
+            if family == .systemMedium, let first = events.first {
+                HStack(spacing: 16) {
+                    eventCard(first, small: false).frame(maxWidth: .infinity, alignment: .leading)
+                    if let second = events.dropFirst().first {
+                        Rectangle().fill(muted.opacity(0.22)).frame(width: 1)
+                        Link(destination: NextWidgetData.url(for: second.date)) {
+                            eventCard(second, small: false).frame(maxWidth: .infinity, alignment: .leading)
+                        }.buttonStyle(.plain)
+                    }
                 }
+            } else if let first = events.first {
+                eventCard(first, small: family == .systemSmall)
             } else {
-                primary(first, small: true)
-                Text(saved).font(.system(size: 8)).foregroundStyle(muted).lineLimit(1).minimumScaleFactor(0.8)
+                Spacer(minLength: 0)
+                Text(title(nil)).font(.system(size: 16, weight: .medium)).foregroundStyle(white)
+                    .lineLimit(2)
+                Spacer(minLength: 0)
             }
-        }
-        .padding(14)
-
+        }.padding(16)
     }
-    private func primary(_ event: NextWidgetEvent?, small: Bool) -> some View {
-        VStack(alignment: .leading, spacing: small ? 2 : 4) {
-            Text(event?.status ?? text("Your investment calendar", "Votre calendrier"))
-                .font(.system(size: 10)).foregroundStyle(muted).lineLimit(1).minimumScaleFactor(0.8)
-            Spacer(minLength: 0)
-            Text(title(event)).font(.system(size: small ? 14 : 15, weight: .semibold))
-                .foregroundStyle(white).lineLimit(small ? 2 : 3).minimumScaleFactor(0.8)
-            Spacer(minLength: 0)
-            Text(date(event)).font(.system(size: small ? 25 : 27, weight: .bold))
+    private func eventCard(_ event: NextWidgetEvent, small: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(dateLabel(event)).font(.system(size: 10, weight: .medium))
+                .foregroundStyle(muted).lineLimit(1).minimumScaleFactor(0.85)
+            Text(date(event)).font(.system(size: small ? 29 : 28, weight: .semibold, design: .rounded))
                 .foregroundStyle(cream).lineLimit(1).minimumScaleFactor(0.8)
-            Text(event?.detail ?? text("Open the app to update", "Ouvrir l’app pour actualiser"))
-                .font(.system(size: 9)).foregroundStyle(muted).lineLimit(1).minimumScaleFactor(0.8)
-        }
+            Spacer(minLength: 4)
+            Text(title(event)).font(.system(size: 13, weight: .medium))
+                .foregroundStyle(white).lineLimit(2).minimumScaleFactor(0.85)
+        }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(event.status), \(event.title), \(NextWidgetData.formatted(event.date, pattern: "d MMM yyyy", french: french)), \(event.detail)")
     }
+
 }
 
 @main
