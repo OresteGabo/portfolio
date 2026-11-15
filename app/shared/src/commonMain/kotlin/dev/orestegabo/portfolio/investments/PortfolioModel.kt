@@ -294,40 +294,21 @@ class PortfolioModel(
     var backupRequested by mutableStateOf(false)
     var ledgerHoldingId by mutableStateOf<String?>(null)
     fun openCashLedger(holdingId: String? = null) { ledgerHoldingId = holdingId; cashLedgerRequested = true }
-    private var accountLedger by mutableStateOf<List<JsonRecord>>(emptyList())
-    var ledgerAvailable by mutableStateOf(false); private set
+    private val cashLedger = PortfolioCashLedger({ api }, { loadPrivateData(force = true) })
+    val ledgerAvailable get() = cashLedger.available
     private val guestLedger by derivedStateOf { guestPortfolio?.metadata?.rows("cashLedger").orEmpty() }
-    val ledgerEntries get() = if (isGuest) guestLedger else accountLedger
-    var ledgerError by mutableStateOf<String?>(null); private set
-    suspend fun reloadLedger() {
-        if (isGuest) return
-        try {
-            val response = api.request("/api/bonds/cash-ledger")
-            ledgerError = null
-            ledgerAvailable = response.has("entries")
-            accountLedger = response.rows("entries")
-        } catch (cancelled: CancellationException) { throw cancelled }
-        catch (failure: ApiException) {
-            if (failure.status == 401) throw failure
-            ledgerAvailable = false
-            if (failure.status in listOf(404, 405)) { accountLedger = emptyList(); ledgerError = "Cash activity is currently unavailable. Your investments remain available." }
-            else ledgerError = "Cash activity could not be refreshed. Try again."
-        } catch (failure: Exception) {
-            ledgerAvailable = false; ledgerError = "Cash activity could not be refreshed. Try again."
-        }
-    }
+    val ledgerEntries get() = if (isGuest) guestLedger else cashLedger.entries
+    val ledgerError get() = cashLedger.error
+    suspend fun reloadLedger() { if (!isGuest) cashLedger.reload() }
     fun saveLedgerEntry(entry: JsonRecord, completed: () -> Unit) {
         if (sampleGuest) return
         if (isGuest) guestWrite({ requireNotNull(guestRepository).saveLedgerEntry(entry) }, completed)
-        else action {
-            api.request("/api/bonds/cash-ledger", "POST", entry)
-            reloadLedger(); loadPrivateData(force = true); completed()
-        }
+        else action { cashLedger.save(entry); completed() }
     }
     fun deleteLedgerEntry(id: String) {
         if (sampleGuest) return
         if (isGuest) guestWrite({ requireNotNull(guestRepository).deleteLedgerEntry(id) })
-        else action { api.request("/api/bonds/cash-ledger/$id", "DELETE"); reloadLedger(); loadPrivateData(force = true) }
+        else action { cashLedger.delete(id) }
     }
     suspend fun exportGuestBackup(): ByteArray = requireNotNull(guestRepository).exportBackup()
     fun restoreGuestBackup(bytes: ByteArray, completed: () -> Unit) {
@@ -406,36 +387,16 @@ class PortfolioModel(
         if (secureSignInEnabled) lock() else { ++generation; clearPrivateData() }
         return true
     }
-    var statementItems by mutableStateOf<List<JsonRecord>>(emptyList())
-        private set
-    var statementReviewRows by mutableStateOf<List<JsonRecord>?>(null)
-        private set
-    fun closeStatementReview() { statementReviewRows = null }
-    fun showStatementRecordReview(row: JsonRecord) { statementReviewRows = listOf(row) }
-    fun showStatementDocumentReview(id: String) = action {
-        require(id.matches(Regex("[A-Za-z0-9_-]{1,120}"))) { "Invalid statement document." }
-        statementReviewRows = api.request("/api/bonds/statement-items?documentId=$id").rows("items")
-    }
-    fun resolveStatementRecord(item: JsonRecord, purchaseId: String?, reason: String, completed: () -> Unit = {}) = action {
-        val id = item.text("id")
-        require(id.matches(Regex("[A-Za-z0-9_-]{1,120}")) && reason.trim().length in 3..500) { "Explain the reconciliation correction." }
-        val updated = api.request("/api/bonds/statement-items/$id/resolve", "POST", JsonRecord()
-            .put("action", if (purchaseId == null) "clear" else "link").put("purchaseId", purchaseId.orEmpty()).put("reason", reason.trim()).put("expectedDecisionAt", item.rows("decisions").lastOrNull()?.text("at").orEmpty())).rows("rows").single()
-        statementReviewRows = statementReviewRows?.map { if (it.text("id") == id) updated else it }
-        statementItems = api.request("/api/bonds/statement-items").rows("items")
-        completed()
-    }
-    fun createStatementBond(item: JsonRecord, instrument: JsonRecord, figures: JsonRecord, completed: () -> Unit) = action {
-        val id = item.text("id")
-        require(id.matches(Regex("[A-Za-z0-9_-]{1,120}"))) { "Invalid statement record." }
-        val body = JsonRecord(figures.toString()).put("instrumentId", instrument.text("id")).put("confirmed", true)
-            .put("reason", "Verified statement purchase and selected public bond terms")
-            .put("expectedDecisionAt", item.rows("decisions").lastOrNull()?.text("at").orEmpty())
-        val updated = api.request("/api/bonds/statement-items/$id/bond", "POST", body).rows("rows").single()
-        statementReviewRows = statementReviewRows?.map { if (it.text("id") == id) updated else it }
-        completed()
-        refreshAfterWrite("Statement purchase saved using existing bond terms.")
-    }
+    private val statements = PortfolioStatements({ api }, ::refreshAfterWrite)
+    val statementItems get() = statements.items
+    val statementReviewRows get() = statements.reviewRows
+    fun closeStatementReview() = statements.closeReview()
+    fun showStatementRecordReview(row: JsonRecord) = statements.showRecord(row)
+    fun showStatementDocumentReview(id: String) = action { statements.showDocument(id) }
+    fun resolveStatementRecord(item: JsonRecord, purchaseId: String?, reason: String, completed: () -> Unit = {}) =
+        action { statements.resolve(item, purchaseId, reason, completed) }
+    fun createStatementBond(item: JsonRecord, instrument: JsonRecord, figures: JsonRecord, completed: () -> Unit) =
+        action { statements.createBond(item, instrument, figures, completed) }
     private var accountHistoryComplete by mutableStateOf<Boolean>(false)
     var historyComplete: Boolean
         get() = if (isGuest) portfolioReady else accountHistoryComplete
@@ -474,33 +435,19 @@ class PortfolioModel(
     fun monthlyTargetProgress(month: LocalDate = Today): MonthlyInvestmentProgress? =
         if (portfolioReady) monthlyInvestmentProgress(portfolio, month, monthlyInvestmentTarget, Today) else null
     val documents get() = if (isGuest) guestViewDocuments(portfolio) else portfolio.documents
-    var shareOrders by mutableStateOf<List<JsonRecord>>(emptyList())
-        private set
-    var shareOrdersAvailable by mutableStateOf(false)
-        private set
-    private suspend fun reloadShareOrders() {
-        try {
-            shareOrders = api.request("/api/bonds/share-orders").rows("orders")
-            accountPortfolio = accountPortfolio.copy(shareOrders = shareOrders)
-            shareOrdersAvailable = true
-        } catch (cancelled: CancellationException) { throw cancelled }
-        catch (failure: ApiException) {
-            if (failure.status == 401) throw failure
-            shareOrdersAvailable = false
-            if (failure.status in listOf(404,405)) { shareOrders = emptyList(); accountPortfolio = accountPortfolio.copy(shareOrders = emptyList()) }
-        } catch (_: Exception) { shareOrdersAvailable = false }
+    private val pendingShareOrders = PortfolioShareOrders({ api }) { orders ->
+        accountPortfolio = accountPortfolio.copy(shareOrders = orders)
     }
+    val shareOrders get() = pendingShareOrders.orders
+    val shareOrdersAvailable get() = pendingShareOrders.available
+    private suspend fun reloadShareOrders() = pendingShareOrders.reload()
     fun saveShareOrder(id: String, order: JsonRecord, completed: () -> Unit) = action {
         require(user != null && !isGuest) { "Sign in to save a pending share order." }
-        api.request("/api/bonds/share-orders/$id", "PUT", order)
-        completed()
-        reloadShareOrders()
+        pendingShareOrders.save(id, order, completed)
         message = "Pending share order saved."
     }
     fun cancelShareOrder(order: JsonRecord, completed: () -> Unit) = action {
-        api.request("/api/bonds/share-orders/${order.text("id")}/cancel", "POST", JsonRecord().put("version", order.optInt("version")))
-        completed()
-        reloadShareOrders()
+        pendingShareOrders.cancel(order, completed)
         message = "Pending share order cancelled."
     }
     var market by mutableStateOf<JsonRecord?>(null)
@@ -849,13 +796,7 @@ class PortfolioModel(
         catch (failure: Exception) { if (failure is ApiException && failure.status == 401) throw failure }
     }
 
-    private suspend fun loadStatementItems() {
-        statementItems = try { api.request("/api/bonds/statement-items").rows("items") }
-        catch (failure: ApiException) {
-            if (failure.status == 401) throw failure
-            if (failure.status == 404 || failure.status == 405) emptyList() else statementItems
-        }
-    }
+    private suspend fun loadStatementItems() = statements.load()
 
     fun retryPortfolioSync() {
         if (isGuest) { loadGuestPortfolio(); return }
@@ -1046,14 +987,8 @@ class PortfolioModel(
     fun discardImportedPdf(review: JsonRecord) = imports.discardImportedPdf(review)
     fun cancelPdfImport() { if (pdfImportProgress != null) activeJob?.cancel() }
 
-    fun checkStatement(review: JsonRecord, completed: (List<JsonRecord>) -> Unit) = action {
-        val rows = review.rows("rows").map { JsonRecord(it.toString()).put("currency", "RWF").put("broker", "BK Capital") }
-        val movements = review.rows("movements").map { JsonRecord(it.toString()).put("currency", "RWF").put("broker", "BK Capital") }
-        require(rows.size + movements.size in 1..500) { "No records were found in this statement." }
-        val response = api.request("/api/bonds/statement-items", "POST", JsonRecord().put("items", JsonList(rows)).put("movements", JsonList(movements)))
-        statementItems = api.request("/api/bonds/statement-items").rows("items")
-        completed(response.rows("rows"))
-    }
+    fun checkStatement(review: JsonRecord, completed: (List<JsonRecord>) -> Unit) =
+        action { statements.check(review, completed) }
 
     fun saveImportedPurchase(review: JsonRecord, purchase: JsonRecord, id: String?, completed: () -> Unit) =
         imports.saveImportedPurchase(review, purchase, id, completed)
@@ -1265,16 +1200,14 @@ class PortfolioModel(
         monthlyInvestmentTarget = DEFAULT_MONTHLY_INVESTMENT_TARGET
         user = null
         applicationBidForm = null
-        ledgerError = null
         cashLedgerRequested = false; backupRequested = false; ledgerHoldingId = null
-        accountLedger = emptyList(); ledgerAvailable = false
+        cashLedger.clear()
         portfolio = PortfolioSnapshot()
         sharedCouponTerms = emptyList(); accountPortfolio = accountPortfolio.copy(couponReferences = emptyList())
-        statementItems = emptyList()
-        statementReviewRows = null
+        statements.clear()
         reports.clearProgress()
         historyComplete = false
-        shareOrders = emptyList(); accountPortfolio = accountPortfolio.copy(shareOrders = emptyList()); shareOrdersAvailable = false
+        pendingShareOrders.clear()
         market = null
         quotes = null
         quoteRefreshFailed = false
