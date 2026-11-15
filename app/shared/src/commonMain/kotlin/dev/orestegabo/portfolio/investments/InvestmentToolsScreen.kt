@@ -37,15 +37,16 @@ internal fun InvestmentToolsScreen(model: PortfolioModel, openCalendar: (LocalDa
             InvestmentToolResults(snapshot.bondCashFlowOutlook(today), snapshot.purchaseFeeAnalysis(today))
         }
     }
+    val toolResults = results
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { ChoiceRow(listOf("Cash flows", "Buying fees"), section) { section = it } }
         if (!model.historyComplete) item {
             if (model.busy || model.portfolioSyncing || !requested) LoadingState()
             else EmptyState("Investment history unavailable", EmptyArtwork.PORTFOLIO, compact = true,
                 actionLabel = "Try again", onAction = { model.error = null; model.loadInvestmentHistory(force = true) })
-        } else if (results == null) item { LoadingState() }
+        } else if (toolResults == null) item { LoadingState() }
         else if (section == "Cash flows") {
-            val outlook = results!!.outlook
+            val outlook = toolResults.outlook
             item { Panel {
                 AppText("Bond cash-flow outlook", fontWeight = FontWeight.Bold)
                 AppText("${detailDate(outlook.from)} – ${detailDate(outlook.untilExclusive.minus(DatePeriod(days = 1)))}", style = MaterialTheme.typography.bodySmall)
@@ -69,7 +70,7 @@ internal fun InvestmentToolsScreen(model: PortfolioModel, openCalendar: (LocalDa
                 else TextButton(onClick = { openCalendar(month.flows.first().date) }) { AppText("View payment dates") }
             } }
         } else {
-            val analysis = results!!.fees
+            val analysis = toolResults.fees
             item { Panel {
                 AppText("Recorded purchase fees", fontWeight = FontWeight.Bold)
                 AppText("Completed acquisitions through {0}.".let { localized(it).replace("{0}", detailDate(today)) }, style = MaterialTheme.typography.bodySmall)

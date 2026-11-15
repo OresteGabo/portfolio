@@ -10,7 +10,6 @@ import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.NavigateBefore
@@ -56,13 +55,14 @@ internal fun PdfViewerScreen(model: PortfolioModel, preview: DocumentPreview, re
         catch (_: Exception) { failure = true }
     }
     DisposableEffect(document) { val handle = document; onDispose { handle?.close() } }
+    val pages = document
     when {
         failure || preview.bytes == null && !model.busy -> Box(Modifier.fillMaxSize().padding(20.dp), contentAlignment = Alignment.Center) {
             EmptyState("Could not open PDF", EmptyArtwork.DOCUMENTS, compact = true,
                 description = if (failure) PDF_DISPLAY_ERROR else model.error ?: "Try opening this document again.",
                 actionLabel = "Retry", onAction = retry)
         }
-        preview.bytes == null || document == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        preview.bytes == null || pages == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 CircularProgressIndicator(Modifier.size(28.dp))
                 AppText(model.reportProgress ?: "Opening PDF", style = MaterialTheme.typography.bodyMedium)
@@ -73,7 +73,6 @@ internal fun PdfViewerScreen(model: PortfolioModel, preview: DocumentPreview, re
                 description = "The PDF will appear when the privacy shield is ready.")
         }
         else -> {
-            val pages = document!!
             if (model.captureProtectionEnabled) CaptureRedactionRegion(Modifier.fillMaxSize(), masked = {
                 Surface(Modifier.fillMaxSize()) { Box(contentAlignment = Alignment.Center) { AppIcon(Icons.Outlined.Lock, "PDF hidden for privacy", Modifier.size(40.dp)) } }
             }) { PdfPageList(pages) { failure = true } }
@@ -114,7 +113,7 @@ private fun PdfPageList(document: PdfDocumentPages, failed: () -> Unit) {
             Modifier.weight(1f).fillMaxWidth().background(StructColors.Document.readerCanvas),
             state = scroll,
             contentPadding = PaddingValues(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items((0 until document.pageCount).toList(), key = { it }) { page ->
+            items(count = document.pageCount, key = { it }) { page ->
                 val viewport by remember(scroll, page) { derivedStateOf {
                     val layout = scroll.layoutInfo
                     val item = layout.visibleItemsInfo.firstOrNull { it.index == page }
