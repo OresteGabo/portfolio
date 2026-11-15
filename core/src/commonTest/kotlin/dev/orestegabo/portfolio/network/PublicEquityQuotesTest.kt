@@ -1,4 +1,7 @@
-package dev.orestegabo.portfolio.investments
+package dev.orestegabo.portfolio.network
+
+import dev.orestegabo.portfolio.investments.JsonList
+import dev.orestegabo.portfolio.investments.JsonRecord
 
 import io.ktor.client.engine.mock.*
 import io.ktor.client.request.HttpRequestData

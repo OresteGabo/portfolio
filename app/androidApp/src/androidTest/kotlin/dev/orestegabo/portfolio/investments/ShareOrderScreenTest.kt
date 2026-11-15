@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.network.PortfolioApi
+
 import android.view.WindowManager
 import android.graphics.Bitmap
 import android.view.accessibility.AccessibilityNodeInfo

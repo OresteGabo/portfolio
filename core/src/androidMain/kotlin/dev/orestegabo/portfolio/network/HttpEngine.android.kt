@@ -1,9 +1,9 @@
-package dev.orestegabo.portfolio.investments
+package dev.orestegabo.portfolio.network
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.cio.CIO
 // HttpURLConnection stream cancellation can drain sockets on the caller/UI thread.
 // Reuse the project’s coroutine transport (also used on JVM) for safe lifecycle cancellation.
-actual fun createPlatformHttpEngine(): HttpClientEngine = CIO.create()
+internal actual fun createPlatformHttpEngine(): HttpClientEngine = CIO.create()
 internal actual fun createPublicQuoteHttpEngine(): HttpClientEngine {
     // HttpURLConnection can consult a process-global CookieHandler outside Ktor's cookie plugin.
     // Fail closed rather than changing another feature's global cookie policy or leaking cookies.

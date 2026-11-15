@@ -1,6 +1,10 @@
 @file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.network.DEFAULT_ORIGIN
+import dev.orestegabo.portfolio.network.LEGACY_WEBSITE_API_ORIGIN
+import dev.orestegabo.portfolio.network.PortfolioApi
+
 import androidx.lifecycle.ViewModelStore
 import io.ktor.client.engine.mock.*
 import kotlinx.coroutines.Dispatchers

@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.network.PortfolioApi
+
 import androidx.lifecycle.ViewModelStore
 import io.ktor.client.engine.mock.*
 import io.ktor.http.*

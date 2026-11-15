@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.network.PortfolioApi
+
 import android.os.Looper
 import kotlinx.coroutines.*
 import org.junit.Assert.*

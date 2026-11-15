@@ -1,4 +1,4 @@
-package dev.orestegabo.portfolio.investments
+package dev.orestegabo.portfolio.network
 
 import java.net.CookieHandler
 import java.net.URI

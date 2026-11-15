@@ -1,6 +1,8 @@
 @file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlinx.cinterop.BetaInteropApi::class)
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.network.PUBLIC_QUOTE_MAX_BYTES
+
 import kotlinx.cinterop.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember

@@ -1,10 +1,10 @@
 @file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlin.experimental.ExperimentalNativeApi::class)
-package dev.orestegabo.portfolio.investments
+package dev.orestegabo.portfolio.network
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
 import kotlin.native.Platform
 import platform.Foundation.NSURLRequestReloadIgnoringLocalCacheData
-actual fun createPlatformHttpEngine(): HttpClientEngine = Darwin.create {
+internal actual fun createPlatformHttpEngine(): HttpClientEngine = Darwin.create {
     configureSession {
         HTTPCookieStorage = null
         HTTPShouldSetCookies = false

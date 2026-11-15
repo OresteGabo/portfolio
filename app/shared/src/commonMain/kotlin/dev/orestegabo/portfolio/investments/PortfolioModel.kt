@@ -1,5 +1,14 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.features.documents.PortfolioStatements
+import dev.orestegabo.portfolio.features.shares.PortfolioShareOrders
+import dev.orestegabo.portfolio.features.transactions.PortfolioCashLedger
+import dev.orestegabo.portfolio.network.ApiException
+import dev.orestegabo.portfolio.network.LEGACY_WEBSITE_API_ORIGIN
+import dev.orestegabo.portfolio.network.PortfolioApi
+import dev.orestegabo.portfolio.network.isLegacyWebsiteApiOrigin
+import dev.orestegabo.portfolio.network.nativeBackendOrigin
+
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

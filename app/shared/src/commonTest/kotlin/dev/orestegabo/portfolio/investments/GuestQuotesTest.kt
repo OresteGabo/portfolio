@@ -1,6 +1,8 @@
 @file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.network.PUBLIC_QUOTE_MAX_BYTES
+
 import androidx.lifecycle.ViewModelStore
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.*

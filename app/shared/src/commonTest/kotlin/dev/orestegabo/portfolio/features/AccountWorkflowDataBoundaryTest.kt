@@ -1,4 +1,11 @@
-package dev.orestegabo.portfolio.investments
+package dev.orestegabo.portfolio.features
+
+import dev.orestegabo.portfolio.features.documents.PortfolioStatements
+import dev.orestegabo.portfolio.features.shares.PortfolioShareOrders
+import dev.orestegabo.portfolio.features.transactions.PortfolioCashLedger
+import dev.orestegabo.portfolio.investments.JsonList
+import dev.orestegabo.portfolio.investments.JsonRecord
+import dev.orestegabo.portfolio.network.PortfolioDataApi
 
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*

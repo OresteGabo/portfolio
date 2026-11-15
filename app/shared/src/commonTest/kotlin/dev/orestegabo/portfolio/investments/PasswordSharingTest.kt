@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.network.DEFAULT_ORIGIN
+
 import kotlin.test.*
 
 class PasswordSharingTest {

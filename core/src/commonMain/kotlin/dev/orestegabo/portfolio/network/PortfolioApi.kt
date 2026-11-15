@@ -1,4 +1,8 @@
-package dev.orestegabo.portfolio.investments
+package dev.orestegabo.portfolio.network
+
+import dev.orestegabo.portfolio.investments.JsonList
+import dev.orestegabo.portfolio.investments.JsonRecord
+import dev.orestegabo.portfolio.investments.UnlockPerformance
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
@@ -15,7 +19,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 class ApiException(val status: Int, message: String) : Exception(message)
-expect fun createPlatformHttpEngine(): HttpClientEngine
+internal expect fun createPlatformHttpEngine(): HttpClientEngine
 expect val allowsDevelopmentHttp: Boolean
 
 private class SessionCookies : CookiesStorage {

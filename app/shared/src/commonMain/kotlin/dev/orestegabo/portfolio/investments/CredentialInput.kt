@@ -1,5 +1,8 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.network.DEFAULT_ORIGIN
+import dev.orestegabo.portfolio.network.LEGACY_WEBSITE_API_ORIGIN
+
 import androidx.compose.ui.text.input.PlatformImeOptions
 
 enum class CredentialInput { USERNAME, PASSWORD, NEW_PASSWORD }

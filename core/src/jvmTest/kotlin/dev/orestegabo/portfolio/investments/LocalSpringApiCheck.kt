@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.network.PortfolioApi
+
 import kotlinx.coroutines.runBlocking
 import java.io.File
 

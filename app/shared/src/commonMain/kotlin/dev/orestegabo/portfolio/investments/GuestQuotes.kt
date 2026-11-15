@@ -1,5 +1,9 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.network.PUBLIC_QUOTE_MAX_BYTES
+import dev.orestegabo.portfolio.network.PublicEquityQuotesApi
+import dev.orestegabo.portfolio.network.normalizedPublicEquityQuotes
+
 import androidx.compose.runtime.Composable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers

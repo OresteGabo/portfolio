@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.network.PortfolioApi
+
 
 internal data class InvestmentEvidence(val label: String, val document: JsonRecord)
 

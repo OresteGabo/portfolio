@@ -16,7 +16,7 @@ import java.util.UUID
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import dev.orestegabo.portfolio.investments.PlatformBuild
+import dev.orestegabo.portfolio.network.PlatformBuild
 import dev.orestegabo.portfolio.investments.applyInitialCaptureProtection
 
 class MainActivity : FragmentActivity() {

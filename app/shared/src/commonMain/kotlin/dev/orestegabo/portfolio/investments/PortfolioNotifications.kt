@@ -1,5 +1,8 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.network.ApiException
+import dev.orestegabo.portfolio.network.PortfolioApi
+
 import androidx.compose.runtime.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope

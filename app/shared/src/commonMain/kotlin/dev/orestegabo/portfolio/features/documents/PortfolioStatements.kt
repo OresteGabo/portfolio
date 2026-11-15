@@ -1,4 +1,9 @@
-package dev.orestegabo.portfolio.investments
+package dev.orestegabo.portfolio.features.documents
+
+import dev.orestegabo.portfolio.investments.JsonList
+import dev.orestegabo.portfolio.investments.JsonRecord
+import dev.orestegabo.portfolio.network.ApiException
+import dev.orestegabo.portfolio.network.PortfolioDataApi
 
 import androidx.compose.runtime.*
 

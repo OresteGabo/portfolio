@@ -1,6 +1,6 @@
-package dev.orestegabo.portfolio.investments
+package dev.orestegabo.portfolio.network
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.cio.CIO
-actual fun createPlatformHttpEngine(): HttpClientEngine = CIO.create()
+internal actual fun createPlatformHttpEngine(): HttpClientEngine = CIO.create()
 internal actual fun createPublicQuoteHttpEngine(): HttpClientEngine = createPlatformHttpEngine()
 actual val allowsDevelopmentHttp: Boolean = false

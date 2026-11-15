@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio
 
+import dev.orestegabo.portfolio.network.allowsDevelopmentHttp
+
 import dev.orestegabo.portfolio.design.StructColors
 
 import androidx.compose.foundation.layout.*

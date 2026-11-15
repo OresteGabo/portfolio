@@ -1,4 +1,4 @@
-package dev.orestegabo.portfolio.investments
+package dev.orestegabo.portfolio.network
 
 /** Native API traffic goes directly to Spring; website hosting and redirects are not in its path. */
 const val DEFAULT_ORIGIN = "https://gabo-portfolio-api-639858675564.europe-west1.run.app"

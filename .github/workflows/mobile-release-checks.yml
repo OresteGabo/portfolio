@@ -36,6 +36,7 @@ jobs:
       - name: Parser and release-package regression tests
         run: |
           python3 scripts/sync-design-colors.py --check
+          python3 scripts/check-kmp-packages.py
           node --version
           node --test tests/*.test.mjs
           python3 -m unittest discover -s scripts/tests -p 'test_*.py'

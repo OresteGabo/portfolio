@@ -1,5 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
+import dev.orestegabo.portfolio.network.ApiException
+
 internal const val GENERAL_ERROR_MESSAGE = "Something went wrong. Please try again."
 internal const val CONNECTION_ERROR_MESSAGE = "Could not connect. Check your connection and try again."
 
