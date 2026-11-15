@@ -515,6 +515,8 @@ internal val frenchStrings: Map<String, String> = mapOf(
     "Shake to hide numbers" to "Secouer pour masquer les montants",
     "Shake again to show them" to "Secouez à nouveau pour les afficher",
     "Progress unavailable" to "Progression indisponible",
+    "The server response could not be read. Refresh before trying again." to "La réponse du serveur est illisible. Actualisez avant de réessayer.",
+    "The request timed out. Refresh before trying again." to "Le délai de la requête a expiré. Actualisez avant de réessayer.",
     "Something went wrong. Please try again." to "Une erreur s’est produite. Veuillez réessayer.",
     "Could not connect. Check your connection and try again." to "Connexion impossible. Vérifiez votre connexion et réessayez.",
     "Email or password is incorrect." to "L’adresse e-mail ou le mot de passe est incorrect.",

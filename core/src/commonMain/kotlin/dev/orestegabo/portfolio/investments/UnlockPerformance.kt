@@ -1,6 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
 import kotlin.time.TimeSource
+import kotlinx.coroutines.CancellationException
 
 /** Opt-in diagnostics. Callers supply only fixed stage/route labels, never user data or errors. */
 object UnlockPerformance {
@@ -20,13 +21,13 @@ object UnlockPerformance {
     suspend fun <T> measure(stage: String, block: suspend () -> T): T {
         val span = begin(stage)
         return try { block().also { span?.end() } }
-        catch (failure: Throwable) { span?.end("failed"); throw failure }
+        catch (failure: Throwable) { span?.end(if (failure is CancellationException) "cancelled" else "failed"); throw failure }
     }
 
     fun <T> measureSync(stage: String, block: () -> T): T {
         val span = begin(stage)
         return try { block().also { span?.end() } }
-        catch (failure: Throwable) { span?.end("failed"); throw failure }
+        catch (failure: Throwable) { span?.end(if (failure is CancellationException) "cancelled" else "failed"); throw failure }
     }
 
     /** No query strings, identifiers, hostnames, or arbitrary caller-controlled paths in logs. */

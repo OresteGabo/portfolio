@@ -2,6 +2,8 @@
 package dev.orestegabo.portfolio.investments
 
 import dev.orestegabo.portfolio.network.ApiException
+import dev.orestegabo.portfolio.network.ApiResponseException
+import dev.orestegabo.portfolio.network.ApiTimeoutException
 import dev.orestegabo.portfolio.network.PortfolioApi
 
 import androidx.lifecycle.ViewModelStore
@@ -66,6 +68,16 @@ class UserFacingErrorsTest {
         }
     }
 
+    @Test fun typedApiFailuresKeepDiagnosticCausesOutOfDisplayAndRemainLocalized() {
+        val cause = IllegalArgumentException(diagnostic)
+        for (failure in listOf(ApiResponseException(cause), ApiTimeoutException(cause))) {
+            assertSame(cause, failure.cause)
+            assertEquals(failure.message, userErrorMessage(failure, "Could not read this PDF."))
+            assertFalse(userErrorMessage(failure).contains("SECRET"))
+            assertNotEquals(failure.message, localized(userErrorMessage(failure), "fr"))
+        }
+    }
+
     @Test fun startupFailuresAndDirectErrorAssignmentsAreSanitizedBeforeLogin() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(dispatcher)
@@ -88,8 +100,11 @@ class UserFacingErrorsTest {
                 try {
                     advanceUntilIdle()
                     assertNull(model.user)
-                    assertEquals(if (mode == "server") "The service is temporarily unavailable. Please try again later."
-                        else CONNECTION_ERROR_MESSAGE, model.error)
+                    assertEquals(when (mode) {
+                        "server" -> "The service is temporarily unavailable. Please try again later."
+                        "json" -> ApiResponseException.MESSAGE
+                        else -> CONNECTION_ERROR_MESSAGE
+                    }, model.error)
                     assertFalse(model.error.orEmpty().contains("PRIVATE_ERROR_SENTINEL"))
                     model.error = diagnostic
                     assertEquals(GENERAL_ERROR_MESSAGE, model.error)

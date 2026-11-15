@@ -1,12 +1,16 @@
 package dev.orestegabo.portfolio.investments
 
 import dev.orestegabo.portfolio.network.ApiException
+import dev.orestegabo.portfolio.network.ApiResponseException
+import dev.orestegabo.portfolio.network.ApiTimeoutException
 
 internal const val GENERAL_ERROR_MESSAGE = "Something went wrong. Please try again."
 internal const val CONNECTION_ERROR_MESSAGE = "Could not connect. Check your connection and try again."
 
 /** Exact, app-authored messages only. Never trust free-form exception or server response text. */
 private val approvedErrorMessages = setOf(
+    ApiResponseException.MESSAGE,
+    ApiTimeoutException.MESSAGE,
     "Bids are unavailable for this form or the subscription window has closed.",
     "This subscription window is closed or its issuance month has not started.",
     "The application form details could not be verified. Open the form or contact the owner.",

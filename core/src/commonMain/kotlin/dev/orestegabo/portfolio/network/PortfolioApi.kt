@@ -6,6 +6,9 @@ import dev.orestegabo.portfolio.investments.UnlockPerformance
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.network.sockets.SocketTimeoutException
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.cookies.*
 import io.ktor.client.request.*
@@ -15,6 +18,7 @@ import io.ktor.utils.io.*
 import io.ktor.util.date.GMTDate
 import kotlin.time.Clock
 import kotlin.random.Random
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -87,7 +91,11 @@ class PortfolioApi(
         val raw = bytes(path, method, body)
         return UnlockPerformance.measure("json_decode") {
             val text = raw.decodeToString()
-            if (text.isBlank()) JsonRecord() else JsonRecord(text)
+            if (text.isBlank()) JsonRecord() else try {
+                JsonRecord(text)
+            } catch (failure: IllegalArgumentException) {
+                throw ApiResponseException(failure)
+            }
         }
     }
     override suspend fun bytes(path: String, method: String, body: JsonRecord?): ByteArray {
@@ -129,6 +137,16 @@ class PortfolioApi(
                     throw ApiException(response.status.value, message?.takeIf { it.isNotBlank() } ?: "Server returned HTTP ${response.status.value}. Please try again.")
                 }
                 bytes
+            }
+        } catch (failure: Throwable) {
+            throw when (failure) {
+                is CancellationException -> { outcome = "cancelled"; failure }
+                is HttpRequestTimeoutException, is ConnectTimeoutException, is SocketTimeoutException -> {
+                    outcome = "timeout"
+                    ApiTimeoutException(failure)
+                }
+                is ApiException -> { outcome = failure.status.toString(); failure }
+                else -> { outcome = "failed"; failure }
             }
         } finally { timing?.end(outcome) }
     }
