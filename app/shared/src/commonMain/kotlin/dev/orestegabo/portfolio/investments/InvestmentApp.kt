@@ -54,6 +54,7 @@ private val destinations = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InvestmentApp(model: PortfolioModel) {
+    val formBackDispatcher = remember { FormBackDispatcher() }
     // Each native host persists only a safe projection; widgets need no signed-in API session.
     LaunchedEffect(model.user, model.portfolioReady, model.calendar, model.portfolio, model.documents, model.couponReceipts, model.bondReminderMonths, AppLanguage.code) {
         if (HomeWidgetBridge.available && !model.isGuest && model.user != null && model.portfolioReady)
@@ -97,14 +98,26 @@ fun InvestmentApp(model: PortfolioModel) {
     val calendarStateKey = "calendar:${model.origin}|${model.user?.text("id")}|${model.guestPath}|${model.guestViewRevision}"
     val couponsStateKey = "coupons:${model.origin}|${model.user?.text("id")}|${model.guestPath}|${model.guestViewRevision}"
     fun openCalendarAt(date: kotlinx.datetime.LocalDate?) {
+        // A calendar destination must not remain hidden behind a read-only child route.
+        // Active forms keep their current screen/draft; the selected calendar waits underneath.
+        val editing = editor != null || equityEditor != null || shareOrderEditor != null || pendingEntry ||
+            model.applicationBidForm != null || model.backupRequested || model.cashLedgerRequested ||
+            model.guestMigration != null || notificationPanel == "target"
+        if (!editing) {
+            detail = null; shareDetail = null; sharePurchaseDetail = null; documentDetail = null
+            couponList = false; investmentHistory = false; missingDocuments = false
+            simulator = false; investmentTools = false; education = false
+            legalRoute = null; legalHistory = emptyList(); notificationPanel = null; securityNotificationId = null
+            model.closeDocumentPreview()
+        }
         calendarUi.removeState(calendarStateKey)
         calendarFocus = date?.toString(); tab = "Calendar"
     }
-    var handledWidgetRoute by remember { mutableIntStateOf(0) }
     LaunchedEffect(HomeWidgetBridge.routeRevision, model.user, model.locked) {
-        if (HomeWidgetBridge.routeRevision > handledWidgetRoute && model.user != null && !model.locked) {
-            openCalendarAt(calendarDate(HomeWidgetBridge.requestedDate.orEmpty()))
-            handledWidgetRoute = HomeWidgetBridge.routeRevision
+        if (model.user != null && !model.locked) {
+            HomeWidgetBridge.consumeCalendarRequest(HomeWidgetBridge.routeRevision)?.let { date ->
+                openCalendarAt(calendarDate(date))
+            }
         }
     }
     val preferences = rememberServerSettings()
@@ -166,13 +179,7 @@ fun InvestmentApp(model: PortfolioModel) {
             if (model.messageRevision == revision) model.message = null
         }
     }
-    LaunchedEffect(model, model.errorRevision) {
-        val revision = model.errorRevision
-        if (model.error != null) {
-            kotlinx.coroutines.delay(5_000)
-            if (model.errorRevision == revision) model.error = null
-        }
-    }
+
     fun showImportConversation() {
         tab = "Documents"; documentSection = "Import"
         notificationPanel = null; missingDocuments = false; investmentHistory = false
@@ -252,7 +259,7 @@ fun InvestmentApp(model: PortfolioModel) {
         imported(review)
     }
     val colors = structCapitalColorScheme(dark)
-    CompositionLocalProvider(LocalChartStyle provides chartStyle, LocalNumbersHidden provides model.numbersConcealed) {
+    CompositionLocalProvider(LocalFormBackDispatcher provides formBackDispatcher, LocalChartStyle provides chartStyle, LocalNumbersHidden provides model.numbersConcealed) {
     MaterialTheme(colorScheme = colors, typography = Typography()) {
         if (incomingPdf != null && NativePdfInbox.requiresPreparation) {
             PlatformSystemBarAppearance(dark)
@@ -279,7 +286,7 @@ fun InvestmentApp(model: PortfolioModel) {
         val nested = childScreen || tab == "Notifications"
         val documentsHome = (model.user != null || model.isGuest) && !model.locked && !nested && tab == "Documents"
         val importChat = !model.isGuest && documentsHome && documentSection == "Import"
-        val back = {
+        val navigateBack = {
             if (model.applicationBidForm != null) { model.closeApplicationBid() } else if (model.cashLedgerRequested) { model.cashLedgerRequested = false } else if (model.backupRequested) { model.backupRequested = false } else if (model.guestMigration != null) { if (model.guestMigration?.preview != null) { model.guestMigration?.closePreview(); Unit } else model.closeGuestMigration() } else if (guestImportActive) { if (model.guestImport?.previewBytes != null) model.guestImport.closePreview() else model.cancelGuestImport() } else if (model.documentPreview != null) { model.closeDocumentPreview() } else if (importChat) { documentSection = "Library" } else if (notificationPanel == "security") { notificationPanel=null;securityNotificationId=null } else if (legalRoute != null) {
                 legalRoute = legalHistory.lastOrNull()
                 legalHistory = legalHistory.dropLast(1)
@@ -292,6 +299,7 @@ fun InvestmentApp(model: PortfolioModel) {
                 missingDocuments = false; detail = null; shareDetail = null; editor = null; equityEditor = null; shareOrderEditor = null; pendingEntry = false; simulator = false; investmentTools = false; education = false
             }
         }
+        val back: () -> Unit = { formBackDispatcher.dispatch(navigateBack) }
         if (model.user != null && !model.locked) {
             StatementReconciliationDialog(model, ::uploadMissing)
             when (notificationPanel) {

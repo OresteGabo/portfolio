@@ -66,6 +66,8 @@ fun PurchaseEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit
         }
     }
 
+    val initialValues = remember(existing) { values.toMap() }
+
     var instrument by rememberSaveable {
         mutableStateOf(BondInstrument.entries.find { it.value == existing.text("instrumentType") }
             ?: BondInstrument.TREASURY)
@@ -83,9 +85,12 @@ fun PurchaseEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit
             ?: ScheduleConfidence.ESTIMATED)
     }
 
+    val initialOptions = remember(existing) { listOf(instrument, market, status, confidence) }
+    val requestBack = rememberFormBackHandler(values.toMap() != initialValues || listOf(instrument, market, status, confidence) != initialOptions,
+        model.busy || model.guestStorageLoading, back)
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
-            TextButton(enabled = !model.guestStorageLoading, onClick = back) { AppText("← Cancel") }
+            TextButton(enabled = !model.guestStorageLoading, onClick = requestBack) { AppText("← Cancel") }
             PageTitle(
                 "Record keeping",
                 if (id == null) "Add bond purchase" else "Edit purchase",
@@ -203,8 +208,10 @@ fun EquityEditor(model: PortfolioModel, existing: JsonRecord, back: () -> Unit, 
     val values = remember(existing) { mutableStateMapOf<String, String>().apply { equityFields.forEach { this[it.key] = if (existing.has(it.key)) existing.text(it.key) else if (model.isGuest && imported != null) "" else it.initial } } }
     val gross = (values["shares"]?.toInputNumberOrNull() ?: 0.0) * (values["pricePerShare"]?.toInputNumberOrNull() ?: 0.0)
     val fees = listOf("brokerageCommission", "rseTransactionFee", "csdTransactionLevy", "cmaTransactionFee").sumOf { values[it]?.toInputNumberOrNull() ?: 0.0 }
+    val initialValues = remember(existing) { values.toMap() }
+    val requestBack = rememberFormBackHandler(values.toMap() != initialValues, model.busy || model.guestStorageLoading, back)
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { TextButton(enabled = !model.guestStorageLoading, onClick = back) { AppText("← Cancel") }; PageTitle("Record keeping", if (model.isGuest && existing.text("id").isNotBlank()) "Edit share purchase" else "Add share purchase", if (model.isGuest) "Saved privately on this device. No account upload." else "Record the details from your RSE purchase contract note.") }
+        item { TextButton(enabled = !model.guestStorageLoading, onClick = requestBack) { AppText("← Cancel") }; PageTitle("Record keeping", if (model.isGuest && existing.text("id").isNotBlank()) "Edit share purchase" else "Add share purchase", if (model.isGuest) "Saved privately on this device. No account upload." else "Record the details from your RSE purchase contract note.") }
         imported?.let { item { PdfReviewNotice(it) } }
         if (pendingOrder != null && imported == null && existing.text("id").isBlank() && existing.text("pendingOrderId").isBlank()) item {
             OutlinedButton(onClick = pendingOrder,enabled = !model.busy,modifier = Modifier.fillMaxWidth()) { AppText("Order not executed yet? Save a pending order") }

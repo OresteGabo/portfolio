@@ -18,10 +18,13 @@ fun PendingBondScreen(model: PortfolioModel, initialIssueId: String? = null, don
     var selectedId by rememberSaveable(initialIssueId) { mutableStateOf(initialIssueId ?: choices.lastOrNull { it.text("settlementDate") <= Today.toString() }?.text("id") ?: choices.firstOrNull()?.text("id")) }
     val issue = choices.find { it.text("id") == selectedId }
     var amount by rememberSaveable(initialIssueId) { mutableStateOf(ApplicationAmountStep.toString()) }
+    val initialSelection by rememberSaveable(initialIssueId) { mutableStateOf(selectedId) }
     var choosing by remember { mutableStateOf(false) }
     val draft = issue?.let { runCatching { pendingBondInput(it, amount.toInputNumberOrNull() ?: 0.0, today) }.getOrNull() }
+    rememberFormBackHandler(selectedId != initialSelection || amount != ApplicationAmountStep.toString(), model.busy, done)
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        if (choices.isEmpty()) item { EmptyState("No published bonds", EmptyArtwork.BONDS, compact = true) }
+        if (choices.isEmpty() && model.busy) item { LoadingState() }
+        else if (choices.isEmpty()) item { EmptyState("No published bonds", EmptyArtwork.BONDS, compact = true) }
         else {
             item { PendingBondHeader(issue?.let(::calendarBondName) ?: "Choose a bond", issue?.text("settlementDate").orEmpty(),
                 issue?.text("maturityDate").orEmpty(), choose = if (initialIssueId == null) ({ choosing = true }) else null) }

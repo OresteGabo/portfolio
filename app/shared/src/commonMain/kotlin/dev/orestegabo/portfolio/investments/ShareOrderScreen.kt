@@ -50,6 +50,8 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
     val price = if (sameSecurity) existing.optDouble("pricePerShare") else quote?.optDouble("closing") ?: 0.0
     val estimate = runCatching { shareOrderEstimate(quantity.toInputNumberOrNull() ?: 0.0, price) }.getOrNull()
     val changed = savedOrder && (ticker != existing.text("ticker") || quantity.toInputNumberOrNull() != existing.optDouble("shares") || price != existing.optDouble("pricePerShare"))
+    val draftChanged = if (savedOrder) editMode && changed else ticker.isNotBlank() || quantity.toInputNumberOrNull()?.let { it > 0 } == true
+    rememberFormBackHandler(draftChanged, model.busy, back)
     if (cancelDialog) AlertDialog(onDismissRequest = { cancelDialog=false }, title = { AppText("Cancel pending order?") },
         text = { AppText("Remove this pending record? Your broker’s order stays unchanged.") },
         confirmButton = { TextButton(enabled = !model.busy, onClick = { cancelDialog=false; model.cancelShareOrder(existing,back) }) { AppText("Cancel pending order") } },
@@ -89,7 +91,7 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
                         }
                         HorizontalDivider(color=colors.outlineVariant.copy(alpha=.45f))
                         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-                            AppText(if (sameSecurity) "Order price" else "Market price",style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
+                            AppText(if (sameSecurity) "Order price" else "Latest closing price",style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
                             FinancialText(if (price>0) money(price) else "—",style=MaterialTheme.typography.titleSmall,fontWeight=FontWeight.SemiBold,color=colors.primary)
                         }
                     }
@@ -104,14 +106,21 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
         item { ShareOrderQuantity(quantity,editable=editMode,enabled=!model.busy,
             decrease={quantity=((quantity.toInputNumberOrNull()?.toLong() ?: 0L)-100).coerceAtLeast(100).toString()},
             increase={quantity=((quantity.toInputNumberOrNull()?.toLong() ?: 0L)+100).coerceAtMost(1_000_000_000).toString()}) }
-        if (editMode && !model.busy && companies.isEmpty()) item {
-            Row(Modifier.fillMaxWidth(),horizontalArrangement = Arrangement.SpaceBetween) {
-                AppText("Market prices unavailable.",Modifier.weight(1f),style = MaterialTheme.typography.bodySmall)
-                TextButton(onClick = { model.loadMarket(refresh=true) }) { AppText("Retry") }
+        val pricesLoading = model.marketLoading || (model.busy && companies.isEmpty())
+        val priceFeedback = closingPriceFeedback(companies.isNotEmpty(), pricesLoading, model.quoteRefreshFailed)
+        if (editMode && priceFeedback != null) item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AppText(priceFeedback, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                if (!pricesLoading) TextButton(enabled = !model.busy, onClick = { model.loadMarket(refresh = true) }) { AppText("Retry") }
             }
         }
         item { ShareOrderTotal(estimate) }
-        if (!model.shareOrdersAvailable && !model.busy) item { AppText("Pending orders unavailable. Pull down on Home to retry.",style = MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.error) }
+        if (!model.shareOrdersAvailable && !model.busy) item {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                AppText("Pending orders unavailable.", Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = model::refresh) { AppText("Retry") }
+            }
+        }
         if (editMode) item { Button(enabled = (!savedOrder || changed) && !model.busy && model.shareOrdersAvailable && estimate!=null && name.isNotBlank(),modifier = Modifier.fillMaxWidth().heightIn(min=56.dp),shape=RoundedCornerShape(18.dp),onClick = {
             model.saveShareOrder(id,JsonRecord().put("version",existing.optInt("version")).put("ticker",ticker).put("securityName",name)
                 .put("shares",quantity.toInputNumberOrNull()!!).put("pricePerShare",price)
@@ -186,4 +195,12 @@ private fun ShareOrderTotal(estimate: ShareOrderEstimate?) {
             }
         }
     }
+}
+/** Optional quotes can be retained after failure; make their freshness explicit without changing the price. */
+internal fun closingPriceFeedback(hasPrices: Boolean, loading: Boolean, failed: Boolean): String? = when {
+    loading && hasPrices -> "Updating closing prices…"
+    loading -> "Loading closing prices…"
+    !hasPrices -> "Closing prices unavailable."
+    failed -> "Using previously loaded closing prices."
+    else -> null
 }

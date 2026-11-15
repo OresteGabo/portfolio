@@ -2,6 +2,19 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Discard changes?" to "Abandonner les modifications ?",
+    "Your unsaved changes will be lost. Saved investments will not change." to "Vos modifications non enregistrées seront perdues. Les investissements enregistrés ne changeront pas.",
+    "Discard changes" to "Abandonner les modifications",
+    "Keep editing" to "Continuer la modification",
+    "Latest closing price" to "Dernier cours de clôture",
+    "Updating closing prices…" to "Mise à jour des cours de clôture…",
+    "Loading closing prices…" to "Chargement des cours de clôture…",
+    "Closing prices unavailable." to "Cours de clôture indisponibles.",
+    "Using previously loaded closing prices." to "Les cours de clôture précédemment chargés sont utilisés.",
+    "Pending orders unavailable." to "Ordres en attente indisponibles.",
+    "Backup not saved. You can try again." to "Sauvegarde non enregistrée. Vous pouvez réessayer.",
+    "12–256 characters." to "12 à 256 caractères.",
+    "Working…" to "Traitement…",
     "About share values" to "À propos des valeurs affichées",
     "Returns are since purchase, not annualized. Dividends, realized gains and future selling fees are excluded." to "Les rendements sont calculés depuis l’achat et ne sont pas annualisés. Les dividendes, les gains réalisés et les frais de vente futurs sont exclus.",
     "Totals include pending shares. Their acquisition costs are estimates until confirmed." to "Les totaux incluent les actions en attente. Leurs coûts d’acquisition sont estimés jusqu’à confirmation.",

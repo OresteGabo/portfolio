@@ -11,7 +11,12 @@ class BondReminderNotificationTest {
     @Test fun backgroundCardUpdatesEndsAndRespectsMonthOptOut() {
         val instrumentation=InstrumentationRegistry.getInstrumentation()
         val context=instrumentation.targetContext
-        instrumentation.uiAutomation.executeShellCommand("pm grant ${context.packageName} android.permission.POST_NOTIFICATIONS").close()
+        if (Build.VERSION.SDK_INT >= 33) {
+            // Complete permission setup before the synchronous receive() eligibility check.
+            instrumentation.uiAutomation.grantRuntimePermission(context.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
+            assertEquals(android.content.pm.PackageManager.PERMISSION_GRANTED,
+                context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS))
+        }
         val manager=context.getSystemService(NotificationManager::class.java)
         fun awaitState(description: String, predicate: () -> Boolean) {
             val deadline=System.currentTimeMillis()+5000

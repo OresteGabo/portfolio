@@ -18,6 +18,11 @@ object HomeWidgetBridge {
     fun publish(snapshot: String) { save?.invoke(snapshot) }
     fun clear() { save?.invoke(null) }
     fun requestPin(medium: Boolean) { pin?.invoke(medium) }
+    /** A handled route must not replay after the root UI is recreated. Keep newer requests intact. */
+    internal fun consumeCalendarRequest(revision: Int): String? {
+        if (revision != routeRevision) return null
+        return requestedDate.also { requestedDate = null }
+    }
     fun openCalendar(date: String) {
         if (calendarDate(date) == null) return
         requestedDate = date; routeRevision++
