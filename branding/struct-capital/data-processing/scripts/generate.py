@@ -94,7 +94,44 @@ def engraved_logo(p):
     return ''.join(out)+'</g>'
 
 
-def core(p):
+def chip_surface(p):
+    """Peripheral silicon routing leaves a quiet, unbroken corridor for the live waymark."""
+    geometry = json.loads((ROOT.parents[1] / 'inzira/refined-10/geometry.json').read_text())
+    mask = 'inzira-chip-clearance-' + p['ink'].lstrip('#')
+    out = [f'<defs><mask id="{mask}" maskUnits="userSpaceOnUse" x="190" y="90" width="260" height="155">',
+           '<rect x="190" y="90" width="260" height="155" fill="white"/>',
+           '<g transform="matrix(.229090909 .126 -.252 .1386 320 110.56)" fill="black" stroke="black" stroke-width="24" stroke-linejoin="round">']
+    out += [f'<path d="{data}"/>' for data in geometry['paths'].values()]
+    out += ['<path d="M190 400 C190 370 164 343 183 316 C200 291 256 270 310 240 C343 222 358 206 348 185 C339 165 293 155 252 138 L174 108" fill="none" stroke-width="50"/>',
+            f'</g></mask></defs><g mask="url(#{mask})">']
+    # A restrained wafer grid, confined to the space around the brand-shaped circuit.
+    out += ['<g opacity=".19">']
+    for i in range(1,18):
+        t = .05 + i * .05
+        out += [path('M'+point(iso(t,.055))+'L'+point(iso(t,.945)),p['fine'],.45),
+                path('M'+point(iso(.055,t))+'L'+point(iso(.945,t)),p['fine'],.45)]
+    out += ['</g>']
+    # Each edge has right-angle copper traces ending in small plated vias.
+    def turn(u,v,edge):
+        return [(u,v),(v,1-u),(1-u,1-v),(1-v,u)][edge]
+    for edge in range(4):
+        for i in range(7):
+            t = .19 + i * .10
+            depth = .17 + (i % 3) * .035
+            coords = [(t,.045),(t,.10),(t+.028,.128),(t+.028,depth)]
+            vertices = [iso(*turn(u,v,edge)) for u,v in coords]
+            out += [path('M'+'L'.join(point(v) for v in vertices),p['fine'],.8),
+                    circle(*vertices[-1],1.25,p['accent'],p['face'],.7)]
+    # Two little logic-cell banks give the remaining corners a recognisable silicon texture.
+    for origin in (.12,.77):
+        for row in range(3):
+            for col in range(3):
+                u=origin+col*.035; v=origin+row*.035; w=.023
+                out += [poly([iso(u,v),iso(u+w,v),iso(u+w,v+w),iso(u,v+w)],p['fine'],.5,p['inset'])]
+    return ''.join(out)+'</g>'
+
+
+def core(p, path_surface=False):
     c=p['ink']; fine=p['fine']; out=['<g id="isometric-processor-core">']
     # Leadframe: pins are behind the chip body.
     for side,i,a,b,end in pin_ends():
@@ -104,12 +141,16 @@ def core(p):
         t=i/33
         for a,b in [(iso(t,1,3),iso(t,1,19)),(iso(1,t,3),iso(1,t,19))]: out += [path('M'+point(a)+'L'+point(b),fine,.65)]
     out += [poly(quad(0,1),c,2.2,p['face'])]
-    # Crosshatched substrate engraved into the top package.
-    for i in range(1,43):
-        t=i/43
-        out += [path('M'+point(iso(t,.025))+'L'+point(iso(t,.975)),fine,.55),path('M'+point(iso(.025,t))+'L'+point(iso(.975,t)),fine,.55)]
-    out += [poly(quad(.065,.935),c,1.15),poly(quad(.255,.745),c,1.8,p['surface']),poly(quad(.295,.705),p['accent'],1.3,p['inset']),path('M'+point(iso(.295,.705))+'L'+point(iso(.295,.295))+'L'+point(iso(.705,.295)),fine,.8)]
-    out += [engraved_logo(p),circle(*iso(.13,.84),2,c,p['surface'],1)]
+    if path_surface:
+        # A single uninterrupted metal face; the live vector circuit occupies the whole top.
+        out += [poly(quad(.045,.955),fine,.7),chip_surface(p),circle(*iso(.10,.87),1.8,c,p['surface'],.8)]
+    else:
+        # Crosshatched substrate engraved into the top package.
+        for i in range(1,43):
+            t=i/43
+            out += [path('M'+point(iso(t,.025))+'L'+point(iso(t,.975)),fine,.55),path('M'+point(iso(.025,t))+'L'+point(iso(.975,t)),fine,.55)]
+        out += [poly(quad(.065,.935),c,1.15),poly(quad(.255,.745),c,1.8,p['surface']),poly(quad(.295,.705),p['accent'],1.3,p['inset']),path('M'+point(iso(.295,.705))+'L'+point(iso(.295,.295))+'L'+point(iso(.705,.295)),fine,.8)]
+        out += [engraved_logo(p),circle(*iso(.13,.84),2,c,p['surface'],1)]
     return ''.join(out)+'</g>'
 
 

@@ -45,7 +45,7 @@ def main():
         }
         for name, children in layers.items():
             export(f'onboarding_{name}_{theme}', children, '0 0 760 560', 760, 560)
-        core = ET.fromstring(documents.core(documents.THEMES[theme]))
+        core = ET.fromstring(documents.core(documents.THEMES[theme], path_surface=True))
         for node in list(core):
             if node.get('id') == 'struct-capital-engraving':
                 core.remove(node)

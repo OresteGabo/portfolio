@@ -77,7 +77,7 @@ internal fun OnboardingScreen(
             snapshotFlow { markBounds }.filterNotNull().first()
             withFrameNanos { }
             if (reducedMotion) signature.snapTo(1f)
-            else signature.animateTo(1f, tween(2_600, easing = LinearEasing))
+            else signature.animateTo(1f, tween(3_600, easing = LinearEasing))
             finishBrand()
         }
     }
