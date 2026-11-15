@@ -238,9 +238,6 @@ internal class ReportPdf(private val title: String, private val footer: String, 
         content.append("${InziraBrandGeometry.PDF_UPPER_FOLD} f\n")
         content.append("${InziraBrandGeometry.PDF_LOWER_FOLD} f\nQ\n")
     }
-    private fun rule() {
-        content.append("${ReportColors.rule} RG 0.4 w 36 ${n(842 - y + 7)} m 559 ${n(842 - y + 7)} l S\n")
-    }
     private fun rect(x: Double, top: Double, w: Double, h: Double, color: String) {
         content.append("$color rg ${n(x)} ${n(842 - top - h)} ${n(w)} ${n(h)} re f\n")
     }

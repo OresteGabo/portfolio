@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Refresh onboarding PNGs from the canonical theme-specific SVG generators.
-Run after rebuilding branding/struct-capital/{calendar,data-processing}/scripts/generate.py.
+Reads the source generator directly; no full-pack exports are required.
 """
 from pathlib import Path
 import importlib.util
@@ -23,11 +23,10 @@ def dimensions(data):
 
 def main():
     changed = []
-    # Validate every mapping first, then copy, preserving the existing image geometry.
+    # Render every mapping first, preserving the existing image geometry.
     copies = []
     for target, (pack, source) in SOURCES.items():
         for theme in ('dark', 'light'):
-            src = PACKS / pack / 'png/2x' / f'{source}-{theme}.png'
             dest = DEST / f'onboarding_{target}_{theme}.png'
             generator = PACKS / pack / 'scripts/generate.py'
             spec = importlib.util.spec_from_file_location('onboarding_source', generator)
@@ -43,13 +42,13 @@ def main():
                 data = output.read_bytes()
             if dest.exists():
                 assert dimensions(data) == dimensions(dest.read_bytes()), f'Unexpected size change: {dest}'
-            copies.append((src, dest, data))
-    for src, dest, data in copies:
+            copies.append((dest, data))
+    for dest, data in copies:
         if not dest.exists() or dest.read_bytes() != data:
             dest.write_bytes(data)
             changed.append(dest.name)
     print(f'Updated {len(changed)} onboarding images: '+', '.join(changed))
-    assert all(dest.read_bytes() == data for _, dest, data in copies)
+    assert all(dest.read_bytes() == data for dest, data in copies)
     print(f'All {len(copies)} onboarding PNGs match the canonical SVG artwork.')
 
 

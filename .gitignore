@@ -87,3 +87,19 @@ htmlcov/
 # Local native push-provider configuration
 /app/androidApp/google-services.json
 **/AuthKey_*.p8
+
+# Optional illustration exports are reproducible; retain only their source generators.
+/branding/struct-capital/calendar/svg/
+/branding/struct-capital/calendar/png/
+/branding/struct-capital/calendar/manifest.json
+/branding/struct-capital/calendar/preview*.svg
+/branding/struct-capital/calendar/preview*.png
+/branding/struct-capital/calendar/calendar-assets/
+/branding/struct-capital/calendar/calendar-assets.zip
+/branding/struct-capital/data-processing/svg/
+/branding/struct-capital/data-processing/png/
+/branding/struct-capital/data-processing/manifest.json
+/branding/struct-capital/data-processing/*preview*.svg
+/branding/struct-capital/data-processing/*preview*.png
+/branding/struct-capital/data-processing/data-processing-assets/
+/branding/struct-capital/data-processing/data-processing-assets.zip

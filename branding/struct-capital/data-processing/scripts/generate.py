@@ -5,8 +5,6 @@ Rebuild with Python 3 and rsvg-convert (librsvg). No third-party Python packages
 from pathlib import Path
 import json
 import subprocess
-import shutil
-import zipfile
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -303,18 +301,6 @@ def main():
     for theme in ('dark','light'):
         dest=ROOT/f'pipeline-preview-{theme}.svg'; dest.write_text(svg('data-pipeline',theme,True))
         subprocess.run(['rsvg-convert','-o',str(ROOT/f'pipeline-preview-{theme}.png'),str(dest)],check=True)
-    with zipfile.ZipFile(ROOT/'data-processing-assets.zip','w',zipfile.ZIP_DEFLATED) as z:
-        # Package only our explicit deliverables, never extracted copies of a previous ZIP.
-        files=[ROOT/'README.md',ROOT/'manifest.json',ROOT/'scripts/generate.py',ROOT/'scripts/verify.swift',ROOT/'scripts/struct-capital-symbol.svg']
-        files+=list((ROOT/'svg').glob('*.svg'))+list((ROOT/'png').glob('*/*.png'))+list(ROOT.glob('*preview*.svg'))+list(ROOT.glob('*preview*.png'))
-        mirror=ROOT/'data-processing-assets'
-        for file in sorted(files):
-            if file.exists():
-                z.write(file,Path('data-processing-assets')/file.relative_to(ROOT))
-                if mirror.is_dir():
-                    destination=mirror/file.relative_to(ROOT)
-                    destination.parent.mkdir(parents=True,exist_ok=True)
-                    shutil.copy2(file,destination)
-    print(f'Generated {len(manifest)} SVGs, {len(manifest)*3} transparent PNGs, previews, manifest, and ZIP.')
+    print("Generated optional SVG/PNG exports, previews and manifest; app assets use the focused scripts in /scripts.")
 
 if __name__=='__main__': main()

@@ -187,12 +187,8 @@ Baseline commit: `5952c80`. First-party/configuration source entries: **238**. I
 | `app/shared/src/iosTest/kotlin/dev/orestegabo/portfolio/investments/IosInvestmentEngineTest.kt` | 172 |
 | `app/shared/src/iosTest/kotlin/dev/orestegabo/portfolio/investments/IosPdfReceiverTest.kt` | 42 |
 | `app/shared/src/iosTest/kotlin/dev/orestegabo/portfolio/investments/PdfDocumentRenderingTest.kt` | 73 |
-| `branding/struct-capital/calendar/calendar-assets/scripts/generate.py` | 205 |
-| `branding/struct-capital/calendar/calendar-assets/scripts/outline-text.swift` | 38 |
 | `branding/struct-capital/calendar/scripts/generate.py` | 205 |
 | `branding/struct-capital/calendar/scripts/outline-text.swift` | 38 |
-| `branding/struct-capital/data-processing/data-processing-assets/scripts/generate.py` | 279 |
-| `branding/struct-capital/data-processing/data-processing-assets/scripts/verify.swift` | 26 |
 | `branding/struct-capital/data-processing/scripts/generate.py` | 279 |
 | `branding/struct-capital/data-processing/scripts/verify.swift` | 26 |
 | `build.gradle.kts` | 11 |

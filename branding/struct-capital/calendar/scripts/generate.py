@@ -6,9 +6,7 @@ from pathlib import Path
 import html
 import json
 import subprocess
-import shutil
 import xml.etree.ElementTree as ET
-import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 LOGO = ET.parse(ROOT.parents[1] / 'inzira/inzira-artwork-symbol.svg').getroot()
@@ -188,18 +186,6 @@ def main():
         french += [f'<g transform="translate({x} {y})">{content}</g>']
     french+=['</svg>']; (ROOT/'preview-fr.svg').write_text(''.join(french))
     subprocess.run(['rsvg-convert','-o',str(ROOT/'preview-fr.png'),str(ROOT/'preview-fr.svg')],check=True)
-    with zipfile.ZipFile(ROOT/'calendar-assets.zip','w',zipfile.ZIP_DEFLATED) as z:
-        files=[ROOT/'README.md',ROOT/'manifest.json']
-        files+=list((ROOT/'scripts').glob('*.py'))+list((ROOT/'scripts').glob('*.swift'))+list((ROOT/'scripts').glob('*.json'))+list((ROOT/'scripts').glob('*.svg'))
-        files+=list((ROOT/'svg').glob('*.svg'))+list((ROOT/'png').glob('*/*.png'))+list(ROOT.glob('preview*.svg'))+list(ROOT.glob('preview*.png'))
-        mirror=ROOT/'calendar-assets'
-        for file in sorted(files):
-            if file.exists():
-                z.write(file,Path('calendar-assets')/file.relative_to(ROOT))
-                if mirror.is_dir():
-                    destination=mirror/file.relative_to(ROOT)
-                    destination.parent.mkdir(parents=True,exist_ok=True)
-                    shutil.copy2(file,destination)
-    print(f'Generated {len(assets)} SVGs, {len(assets)*3} PNGs, preview, manifest and ZIP.')
+    print("Generated optional SVG/PNG exports, previews and manifest; app assets use the focused scripts in /scripts.")
 
 if __name__=='__main__': main()
