@@ -1,6 +1,9 @@
 package dev.orestegabo.portfolio.investments
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
@@ -144,10 +147,10 @@ private fun StatementBondDialog(model: PortfolioModel, row: JsonRecord, dismiss:
             AppText("Choose the bond you purchased. Its coupon and payment dates come from saved public terms. Verify your own principal and execution figures against the statement.")
             Fact("Statement bond cost", money(row.optDouble("amount"), "RWF"))
             row.rows("bondOptions").forEach { instrument ->
-                Row(Modifier.fillMaxWidth().clickable(enabled = !model.busy) {
-                    selected = instrument; price = instrument.text("pricePercent"); confirmed = false
-                }) {
-                    RadioButton(selected?.text("id") == instrument.text("id"), null)
+                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).selectable(
+                    selected = selected?.text("id") == instrument.text("id"), enabled = !model.busy, role = Role.RadioButton,
+                    onClick = { selected = instrument; price = instrument.text("pricePercent"); confirmed = false })) {
+                    RadioButton(selected?.text("id") == instrument.text("id"), null, Modifier.clearAndSetSemantics {})
                     Column {
                         FinancialText(instrument.text("bondName"), fontWeight = FontWeight.SemiBold)
                         FinancialText("${instrument.text("isin")} · ${percent(instrument.optDouble("couponRate"))}", style = MaterialTheme.typography.bodySmall)

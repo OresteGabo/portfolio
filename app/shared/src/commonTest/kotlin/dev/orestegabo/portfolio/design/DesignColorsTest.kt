@@ -30,6 +30,27 @@ class DesignColorsTest {
     }
 
     @Test
+    fun containerAndSecondaryTextRemainReadableAcrossTheNeutralSurfaceHierarchy() {
+        fun contrast(a: Color, b: Color): Double {
+            val lower = minOf(a.luminance(), b.luminance()).toDouble()
+            val higher = maxOf(a.luminance(), b.luminance()).toDouble()
+            return (higher + .05) / (lower + .05)
+        }
+        for (dark in listOf(false, true)) {
+            val colors = structCapitalColorScheme(dark)
+            val surfaces = listOf(colors.background, colors.surface, colors.surfaceVariant, colors.surfaceContainerLowest,
+                colors.surfaceContainerLow, colors.surfaceContainer, colors.surfaceContainerHigh,
+                colors.surfaceContainerHighest)
+            for (surface in surfaces) {
+                assertEquals(1f, surface.alpha)
+                assertTrue(contrast(surface, colors.onSurface) >= 4.5, "Body text on neutral surface ($dark)")
+                assertTrue(contrast(surface, colors.onSurfaceVariant) >= 4.5, "Supporting text on neutral surface ($dark)")
+            }
+            assertTrue(contrast(colors.secondary, colors.onSecondary) >= 4.5, "Secondary action ($dark)")
+        }
+    }
+
+    @Test
     fun pdfOperandsStayPortableAndWithinTheirDeclaredPrecision() {
         val color = Color(.123456f, .987654f, .00001f)
         for (precision in 0..5) {

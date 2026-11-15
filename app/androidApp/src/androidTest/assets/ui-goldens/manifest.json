@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "sdk": 36,
-  "sourceRevision": "40aedf4",
+  "sourceRevision": "c3f5df9",
   "screen": "ShareDetailsScreen",
   "fixture": "Synthetic TEST, 100 shares at RWF 90, cached RWF 100 close dated 2000-01-02",
   "profiles": [
@@ -45,7 +45,7 @@
   "goldens": [
     {
       "file": "small-light.png",
-      "sha256": "46044c14a02155bf30c145544b16f8f9671d67e2dfa86f46e582d6ed0ba93e80"
+      "sha256": "a0531a0050238da37b5da35fac86382d7d438e41c91e7c614295958c7665ff16"
     },
     {
       "file": "small-dark.png",
@@ -53,7 +53,7 @@
     },
     {
       "file": "phone-light.png",
-      "sha256": "1b4d434b046977510dd18a4648391ce9164918b6f9791e453b95d60a5bb06a99"
+      "sha256": "40665a9b9dd6c7fa9fad2c65c494ded4fdf44dfff25104336ba41f4186c6fc08"
     },
     {
       "file": "phone-dark.png",
@@ -61,7 +61,7 @@
     },
     {
       "file": "large-phone-light.png",
-      "sha256": "8c43e8c97b858ee5dbae150982f70a22ee0121932ade4faabaa0b1be36673636"
+      "sha256": "6eeb5eb2d865dcb9e5f5664025ad5469247b508bba6d36dee165b0453e9854cc"
     },
     {
       "file": "large-phone-dark.png",
@@ -69,7 +69,7 @@
     },
     {
       "file": "tablet-light.png",
-      "sha256": "8462021c3b9bed19329f0deadbf6b547280c4e2e8edccdfc55dd4ea0a5de09f4"
+      "sha256": "1f18f61d5b28dd5eec4fe86ce09b9e08e66ce7bbe9d8ae150be3c832d373db92"
     },
     {
       "file": "tablet-dark.png",
@@ -77,7 +77,7 @@
     },
     {
       "file": "landscape-light.png",
-      "sha256": "7c96e64ab64e4566955ef7ef87cbef7ba68ddea633f1e593f0a12a4efbefcf8a"
+      "sha256": "0af5850ad5fe5396a05e98aa65b69ee3bd80da64c70285ad718871aec09e7ce2"
     },
     {
       "file": "landscape-dark.png",
@@ -85,7 +85,7 @@
     },
     {
       "file": "large-text-light.png",
-      "sha256": "f6cc642f4ca29f02f7ca2cf3e8fa8de51071e8b6d4162e686114fd2badee4196"
+      "sha256": "0ed92851ebad07c9f90bc56feeab5e3f2db077bb3716ee61c0b002f0c1a89a52"
     },
     {
       "file": "large-text-dark.png",
@@ -98,6 +98,8 @@
     "density": "Compose Density(1f); viewport pixels equal dp",
     "kotlin": "2.3.21",
     "composeMultiplatform": "1.11.1",
-    "note": "Committed UI at 40aedf4; unrelated pending theme changes excluded. Native modal asserted separately."
-  }
+    "note": "Parent revision plus the explicitly identified reviewed source variant; source digest pins rendered Kotlin. Native modal asserted separately."
+  },
+  "sourceVariant": "reviewed data refactor and UI/design/accessibility changes; financial presentation unchanged",
+  "sharedSourceSha256": "1b39d4445573e3b3c8b7a965afe9dcdbd0ca391f7dd33ecd8f44adfa03043d26"
 }

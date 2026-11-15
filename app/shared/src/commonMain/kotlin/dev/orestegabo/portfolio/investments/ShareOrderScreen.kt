@@ -24,6 +24,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import dev.orestegabo.portfolio.design.InziraDimensions
+import dev.orestegabo.portfolio.design.InziraShapes
+import dev.orestegabo.portfolio.design.InziraSpacing
 import kotlin.uuid.Uuid
 
 @Composable
@@ -64,85 +67,87 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
                 .put("shares",existing.getDouble("shares")).put("pricePerShare",existing.getDouble("pricePerShare"))
                 .put("broker",existing.text("broker")).put("pendingOrderId",id).put("pendingOrderVersion",existing.optInt("version")))
         }) { AppText("Review executed purchase") } }, dismissButton = { TextButton(onClick = { executionDialog=false }) { AppText("Not yet") } })
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        item {
-            ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { if (editMode && !model.busy && companies.isNotEmpty()) expanded=it }) {
-                Surface(modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled=editMode && !model.busy),
-                    shape = RoundedCornerShape(24.dp), color = colors.surface,
-                    border = BorderStroke(1.dp, colors.primary.copy(alpha=.18f))) {
-                    Column(Modifier.padding(20.dp),verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
-                            AppText("Security name",style=MaterialTheme.typography.labelMedium,color=colors.onSurfaceVariant)
-                            if (savedOrder && !editMode) TextButton(enabled=!model.busy,onClick={editMode=true}) {
-                                AppIcon(Icons.Outlined.Edit,null,Modifier.size(16.dp))
-                                Spacer(Modifier.width(6.dp))
-                                AppText("Edit")
+    FormContent { formModifier ->
+        LazyColumn(formModifier, contentPadding = PaddingValues(InziraSpacing.screen), verticalArrangement = Arrangement.spacedBy(InziraSpacing.screen)) {
+            item {
+                ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { if (editMode && !model.busy && companies.isNotEmpty()) expanded=it }) {
+                    Surface(modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled=editMode && !model.busy),
+                        shape = RoundedCornerShape(24.dp), color = colors.surface,
+                        border = BorderStroke(1.dp, colors.primary.copy(alpha=.18f))) {
+                        Column(Modifier.padding(20.dp),verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+                                AppText("Security name",style=MaterialTheme.typography.labelMedium,color=colors.onSurfaceVariant)
+                                if (savedOrder && !editMode) TextButton(enabled=!model.busy,onClick={editMode=true}) {
+                                    AppIcon(Icons.Outlined.Edit,null,Modifier.size(16.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    AppText("Edit")
+                                }
                             }
-                        }
-                        Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
-                            if (ticker.isNotBlank()) InvestmentLogo(ticker=ticker,modifier=Modifier.size(52.dp))
-                            else Surface(shape=RoundedCornerShape(14.dp),color=colors.primary.copy(alpha=.07f)) { StructMark(Modifier.padding(10.dp).size(32.dp)) }
-                            Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                                AppText(name.ifBlank { localized("Select a company") },style=MaterialTheme.typography.titleMedium,
-                                    fontWeight=FontWeight.SemiBold,maxLines=2,overflow=TextOverflow.Ellipsis)
-                                if (ticker.isNotBlank()) AppText(ticker,style=MaterialTheme.typography.labelMedium,color=colors.primary)
+                            Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
+                                if (ticker.isNotBlank()) InvestmentLogo(ticker=ticker,modifier=Modifier.size(52.dp))
+                                else Surface(shape=RoundedCornerShape(14.dp),color=colors.primary.copy(alpha=.07f)) { StructMark(Modifier.padding(10.dp).size(32.dp)) }
+                                Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                                    AppText(name.ifBlank { localized("Select a company") },style=MaterialTheme.typography.titleMedium,
+                                        fontWeight=FontWeight.SemiBold,maxLines=2,overflow=TextOverflow.Ellipsis)
+                                    if (ticker.isNotBlank()) AppText(ticker,style=MaterialTheme.typography.labelMedium,color=colors.primary)
+                                }
+                                if (editMode) ExposedDropdownMenuDefaults.TrailingIcon(expanded)
                             }
-                            if (editMode) ExposedDropdownMenuDefaults.TrailingIcon(expanded)
-                        }
-                        HorizontalDivider(color=colors.outlineVariant.copy(alpha=.45f))
-                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-                            AppText(if (sameSecurity) "Order price" else "Latest closing price",style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
-                            FinancialText(if (price>0) money(price) else "—",style=MaterialTheme.typography.titleSmall,fontWeight=FontWeight.SemiBold,color=colors.primary)
+                            HorizontalDivider(color=colors.outlineVariant.copy(alpha=.45f))
+                            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
+                                AppText(if (sameSecurity) "Order price" else "Latest closing price",style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
+                                FinancialText(if (price>0) money(price) else "—",style=MaterialTheme.typography.titleSmall,fontWeight=FontWeight.SemiBold,color=colors.primary)
+                            }
                         }
                     }
+                    ExposedDropdownMenu(expanded = expanded,onDismissRequest = { expanded=false }) {
+                        companies.forEach { company -> DropdownMenuItem(text = { AppText("${company.text("name").ifBlank { company.text("ticker") }} (${company.text("ticker")})") },
+                            leadingIcon = { InvestmentLogo(ticker=company.text("ticker"),modifier=Modifier.size(28.dp)) },
+                            onClick = { ticker=company.text("ticker"); expanded=false }) }
+                    }
                 }
-                ExposedDropdownMenu(expanded = expanded,onDismissRequest = { expanded=false }) {
-                    companies.forEach { company -> DropdownMenuItem(text = { AppText("${company.text("name").ifBlank { company.text("ticker") }} (${company.text("ticker")})") },
-                        leadingIcon = { InvestmentLogo(ticker=company.text("ticker"),modifier=Modifier.size(28.dp)) },
-                        onClick = { ticker=company.text("ticker"); expanded=false }) }
+            }
+            item { ShareOrderQuantity(quantity,editable=editMode,enabled=!model.busy,
+                decrease={quantity=((quantity.toInputNumberOrNull()?.toLong() ?: 0L)-100).coerceAtLeast(100).toString()},
+                increase={quantity=((quantity.toInputNumberOrNull()?.toLong() ?: 0L)+100).coerceAtMost(1_000_000_000).toString()}) }
+            val pricesLoading = model.marketLoading || (model.busy && companies.isEmpty())
+            val priceFeedback = closingPriceFeedback(companies.isNotEmpty(), pricesLoading, model.quoteRefreshFailed)
+            if (editMode && priceFeedback != null) item {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AppText(priceFeedback, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                    if (!pricesLoading) TextButton(enabled = !model.busy, onClick = { model.loadMarket(refresh = true) }) { AppText("Retry") }
                 }
             }
-        }
-        item { ShareOrderQuantity(quantity,editable=editMode,enabled=!model.busy,
-            decrease={quantity=((quantity.toInputNumberOrNull()?.toLong() ?: 0L)-100).coerceAtLeast(100).toString()},
-            increase={quantity=((quantity.toInputNumberOrNull()?.toLong() ?: 0L)+100).coerceAtMost(1_000_000_000).toString()}) }
-        val pricesLoading = model.marketLoading || (model.busy && companies.isEmpty())
-        val priceFeedback = closingPriceFeedback(companies.isNotEmpty(), pricesLoading, model.quoteRefreshFailed)
-        if (editMode && priceFeedback != null) item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AppText(priceFeedback, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                if (!pricesLoading) TextButton(enabled = !model.busy, onClick = { model.loadMarket(refresh = true) }) { AppText("Retry") }
+            item { ShareOrderTotal(estimate) }
+            if (!model.shareOrdersAvailable && !model.busy) item {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    AppText("Pending orders unavailable.", Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                    TextButton(onClick = model::refresh) { AppText("Retry") }
+                }
             }
-        }
-        item { ShareOrderTotal(estimate) }
-        if (!model.shareOrdersAvailable && !model.busy) item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                AppText("Pending orders unavailable.", Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-                TextButton(onClick = model::refresh) { AppText("Retry") }
+            if (editMode) item { Button(enabled = (!savedOrder || changed) && !model.busy && model.shareOrdersAvailable && estimate!=null && name.isNotBlank(),modifier = Modifier.fillMaxWidth().heightIn(min=InziraDimensions.primaryActionMinHeight),shape=InziraShapes.action,onClick = {
+                model.saveShareOrder(id,JsonRecord().put("version",existing.optInt("version")).put("ticker",ticker).put("securityName",name)
+                    .put("shares",quantity.toInputNumberOrNull()!!).put("pricePerShare",price)
+                    .put("requestDate",existing.text("requestDate").ifBlank { Today.toString() })
+                    .put("expectedExecutionDate",existing.text("expectedExecutionDate")).put("broker",existing.text("broker"))
+                    .put("brokerConfirmed",existing.optBoolean("brokerConfirmed")).put("notes",existing.text("notes")),back)
+            }) { AppText(if(model.busy) "Saving…" else if(savedOrder) "Save changes" else "Save pending order") } }
+            if (savedOrder && editMode) item { TextButton(enabled=!model.busy,modifier=Modifier.fillMaxWidth(),onClick={
+                ticker=existing.text("ticker"); quantity=existing.text("shares"); expanded=false; editMode=false
+            }) { AppText("Cancel") } }
+            if (!savedOrder || !editMode) item { OutlinedButton(enabled = !model.busy,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), shape = InziraShapes.action,
+                onClick = { uploadContract(existing) }) {
+                AppIcon(Icons.Outlined.UploadFile, null, Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                AppText("Upload contract")
+            } }
+            if (savedOrder && !editMode) {
+                item { OutlinedButton(enabled = !model.busy && model.shareOrdersAvailable,modifier = Modifier.fillMaxWidth(),onClick = { executionDialog=true }) { AppText("Record executed purchase") } }
             }
-        }
-        if (editMode) item { Button(enabled = (!savedOrder || changed) && !model.busy && model.shareOrdersAvailable && estimate!=null && name.isNotBlank(),modifier = Modifier.fillMaxWidth().heightIn(min=56.dp),shape=RoundedCornerShape(18.dp),onClick = {
-            model.saveShareOrder(id,JsonRecord().put("version",existing.optInt("version")).put("ticker",ticker).put("securityName",name)
-                .put("shares",quantity.toInputNumberOrNull()!!).put("pricePerShare",price)
-                .put("requestDate",existing.text("requestDate").ifBlank { Today.toString() })
-                .put("expectedExecutionDate",existing.text("expectedExecutionDate")).put("broker",existing.text("broker"))
-                .put("brokerConfirmed",existing.optBoolean("brokerConfirmed")).put("notes",existing.text("notes")),back)
-        }) { AppText(if(model.busy) "Saving…" else if(savedOrder) "Save changes" else "Save pending order") } }
-        if (savedOrder && editMode) item { TextButton(enabled=!model.busy,modifier=Modifier.fillMaxWidth(),onClick={
-            ticker=existing.text("ticker"); quantity=existing.text("shares"); expanded=false; editMode=false
-        }) { AppText("Cancel") } }
-        if (!savedOrder || !editMode) item { OutlinedButton(enabled = !model.busy,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), shape = RoundedCornerShape(18.dp),
-            onClick = { uploadContract(existing) }) {
-            AppIcon(Icons.Outlined.UploadFile, null, Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-            AppText("Upload contract")
-        } }
-        if (savedOrder && !editMode) {
-            item { OutlinedButton(enabled = !model.busy && model.shareOrdersAvailable,modifier = Modifier.fillMaxWidth(),onClick = { executionDialog=true }) { AppText("Record executed purchase") } }
-        }
-        if (savedOrder && editMode) {
-            item { TextButton(enabled = !model.busy && model.shareOrdersAvailable,modifier = Modifier.fillMaxWidth(),onClick = {cancelDialog=true}) { AppText("Cancel pending order",color = MaterialTheme.colorScheme.error) } }
+            if (savedOrder && editMode) {
+                item { TextButton(enabled = !model.busy && model.shareOrdersAvailable,modifier = Modifier.fillMaxWidth(),onClick = {cancelDialog=true}) { AppText("Cancel pending order",color = MaterialTheme.colorScheme.error) } }
+            }
         }
     }
 }
@@ -153,7 +158,7 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
 private fun ShareOrderQuantity(value: String, editable: Boolean, enabled: Boolean, decrease: () -> Unit, increase: () -> Unit) {
     val colors=MaterialTheme.colorScheme
     val amount=value.toInputNumberOrNull()?.toLong() ?: 0L
-    Surface(shape=RoundedCornerShape(24.dp),color=colors.surface,border=BorderStroke(1.dp,colors.outlineVariant.copy(alpha=.55f))) {
+    Surface(shape=InziraShapes.card,color=colors.surface,border=BorderStroke(1.dp,colors.outlineVariant.copy(alpha=.55f))) {
         Column(Modifier.fillMaxWidth().padding(20.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
             AppText("Number of shares",style=MaterialTheme.typography.labelMedium,color=colors.onSurfaceVariant)
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
@@ -196,6 +201,7 @@ private fun ShareOrderTotal(estimate: ShareOrderEstimate?) {
         }
     }
 }
+
 /** Optional quotes can be retained after failure; make their freshness explicit without changing the price. */
 internal fun closingPriceFeedback(hasPrices: Boolean, loading: Boolean, failed: Boolean): String? = when {
     loading && hasPrices -> "Updating closing prices…"

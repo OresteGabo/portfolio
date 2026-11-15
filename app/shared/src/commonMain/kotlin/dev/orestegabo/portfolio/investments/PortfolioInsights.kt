@@ -167,7 +167,7 @@ internal fun AllocationCard(total: CurrencyInvestment, modifier: Modifier) {
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Canvas(Modifier.size(7.dp)) { drawCircle(color) }
-            AppText(label, style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current.copy(alpha = .65f))
+            AppText(label, style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current)
         }
         FinancialText(money(cost, currency), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
     }
@@ -196,7 +196,7 @@ internal fun CouponIncomeCard(
         Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             listOf("Annual net" to total.netAnnualCoupon, "Accrued" to tracks.sumOf { it.accruedCoupon }).forEach { (label, amount) ->
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    AppText(label, style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current.copy(alpha = .68f))
+                    AppText(label, style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current)
                     FinancialText((if (label == "Annual net" && total.estimatedPendingCouponCount > 0) "≈ " else "") + money(amount, total.currency), Modifier,
                         style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     if (label == "Annual net" && total.pendingAnnualCoupon > 0) {
@@ -216,7 +216,7 @@ internal fun CouponIncomeCard(
         } else {
             val amount = coupons.filter { it.date == next.date }.sumOf { it.amount ?: 0.0 }
             Row(Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(14.dp))
-                .clickable(onClickLabel = localized("Open coupon in calendar")) { openCalendar(next.date) }
+                .clickable(role = androidx.compose.ui.semantics.Role.Button, onClickLabel = localized("Open coupon in calendar")) { openCalendar(next.date) }
                 .padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Surface(shape = RoundedCornerShape(14.dp), color = accent.copy(alpha = .12f)) {
@@ -227,7 +227,7 @@ internal fun CouponIncomeCard(
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     AppText("Next coupon · ${next.date.year}", style = MaterialTheme.typography.labelSmall,
-                        color = LocalContentColor.current.copy(alpha = .68f))
+                        color = LocalContentColor.current)
                     FinancialText(money(amount, total.currency), Modifier,
                         style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }

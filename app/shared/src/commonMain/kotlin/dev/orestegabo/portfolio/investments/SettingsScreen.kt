@@ -1,15 +1,9 @@
 package dev.orestegabo.portfolio.investments
 
-import dev.orestegabo.portfolio.design.StructColors
-
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -27,11 +21,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -50,19 +39,13 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
     var deletionPassword by remember { mutableStateOf("") }
     var dialog by rememberSaveable { mutableStateOf<String?>(null) }
     var ownerSection by rememberSaveable { mutableStateOf<String?>(null) }
-    var accounts by remember { mutableStateOf<JsonRecord?>(null) }
+    val administration = remember(model) { PortfolioAdministration({ model.api }, model::action) }
     var publisherChange by remember { mutableStateOf<JsonRecord?>(null) }
-    var registration by remember { mutableStateOf<JsonRecord?>(null) }
-    var bondSearch by rememberSaveable { mutableStateOf("") }
-    var inviteEmail by rememberSaveable { mutableStateOf("") }
     val email = model.user?.text("email").orEmpty()
     val owner = model.user?.optBoolean("isOwner") == true
     fun loadOwner(section: String) {
         ownerSection = section
-        model.action {
-            if (section == "accounts") accounts = model.api.request("/api/bonds/auth/accounts")
-            else registration = model.api.request("/api/bonds/auth/registration")
-        }
+        administration.load(section)
     }
 
     publisherChange?.takeIf { owner }?.let { account ->
@@ -74,11 +57,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 AppText("This permission allows publishing reference data that affects all users. It does not grant owner administration access.")
             } },
             confirmButton = { TextButton(enabled = !model.busy, onClick = {
-                model.action {
-                    model.api.request("/api/bonds/auth/accounts/${account.text("id")}/public-data-publisher", "PUT", JsonRecord().put("enabled", enabled))
-                    accounts = model.api.request("/api/bonds/auth/accounts")
-                    publisherChange = null
-                }
+                administration.setPublisher(account, enabled) { publisherChange = null }
             }) { AppText(if (enabled) "Allow publication" else "Remove permission") } },
             dismissButton = { TextButton(onClick = { publisherChange = null }) { AppText("Cancel") } })
     }
@@ -316,133 +295,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
             confirmButton = { TextButton(enabled = !model.busy, onClick = { dialog = null; model.logout() }) { AppText("Sign out", color = MaterialTheme.colorScheme.error) } },
             dismissButton = { TextButton(onClick = { dialog = null }) { AppText("Cancel") } })
 
-        LaunchedEffect(ownerSection, model.historyComplete, model.busy) {
-            if (ownerSection == "bonds" && !model.historyComplete && !model.busy && model.error == null) model.loadInvestmentHistory()
-        }
-        if (ownerSection != null && (owner || ownerSection == "bonds")) ModalBottomSheet(onDismissRequest = { ownerSection = null }) {
-            LazyColumn(Modifier.fillMaxWidth().navigationBarsPadding(), contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                item { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    AppText(when (ownerSection) { "accounts" -> "Accounts"; "bonds" -> "Bond purchases"; else -> "Invitations" }, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    IconButton(enabled = !model.busy, onClick = { if (ownerSection == "bonds") model.loadInvestmentHistory(force = true) else loadOwner(ownerSection!!) }) { AppIcon(Icons.Outlined.Refresh, "Refresh ${ownerSection}") }
-                    IconButton(onClick = { ownerSection = null }) { AppIcon(Icons.Outlined.Close, "Close") }
-                } }
-                if (model.busy) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
-                model.error?.let { error -> item { AppText(error, color = MaterialTheme.colorScheme.error) } }
-                if (ownerSection == "bonds") {
-                    if (model.purchases.isNotEmpty()) item { Field("Search bonds, ISIN, broker", bondSearch, { bondSearch = it }) }
-                    val bonds = (if (model.historyComplete) model.purchases else emptyList()).filter { purchase -> listOf("bondName", "isin", "broker").any { purchase.text(it).contains(bondSearch, ignoreCase = true) } }
-                    if (bonds.isEmpty() && !model.busy && model.historyComplete) item {
-                        EmptyState(if (model.purchases.isEmpty()) "No bond purchases yet" else "No matches",
-                            if (model.purchases.isEmpty()) EmptyArtwork.BONDS else EmptyArtwork.SEARCH, compact = true,
-                            actionLabel = if (bondSearch.isNotBlank()) "Clear search" else null,
-                            onAction = if (bondSearch.isNotBlank()) ({ bondSearch = "" }) else null)
-                    }
-                    bonds.forEach { purchase -> item {
-                        ListItem(headlineContent = { AppText(purchase.text("bondName"), fontWeight = FontWeight.SemiBold) },
-                            supportingContent = { AppText("${purchase.text("isin")} · ${purchase.text("status")}") },
-                            trailingContent = { AppIcon(Icons.Outlined.ChevronRight, null) },
-                            modifier = Modifier.clickable { ownerSection = null; openBond(purchase) })
-                    } }
-                } else if (ownerSection == "accounts") {
-                    val rows = accounts?.rows("accounts")
-                    if (rows != null && rows.isEmpty() && !model.busy) item { EmptyState("No accounts yet", EmptyArtwork.ACCOUNTS, compact = true) }
-                    rows?.forEach { account -> item {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            AppText(account.text("email"), fontWeight = FontWeight.SemiBold)
-                            Fact("Account", "${account.text("kind")} · ${account.text("status")}")
-                            account.optJSONObject("portfolio")?.let { Fact("Bond purchases", it.text("purchaseCount")) }
-                            if (account.has("canPublishPublicData")) {
-                                AppText(if (account.optBoolean("canPublishPublicData")) "Can publish shared data" else "Personal account only", style = MaterialTheme.typography.bodySmall)
-                                if (account.text("id") != "owner" && account.text("status") == "active") TextButton(
-                                    enabled = !model.busy, onClick = { publisherChange = account }) {
-                                    AppText(if (account.optBoolean("canPublishPublicData")) "Remove publication permission" else "Allow shared-data publication")
-                                }
-                            }
-                            HorizontalDivider()
-                        }
-                    } }
-                } else registration?.let { settings ->
-                    item { AppText(if (settings.optBoolean("available")) "Invitations are available" else "Invitations are unavailable", style = MaterialTheme.typography.bodyMedium) }
-                    settings.optJSONObject("invitation")?.let { invitation -> item { Panel {
-                        Fact("Active invitation", invitation.text("email")); Fact("Expires", invitation.text("expiresAt"))
-                    } } }
-                    if (settings.optBoolean("available")) item {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Field("Invitation email (optional)", inviteEmail, { inviteEmail = it }, enabled = !model.busy)
-                            Button(enabled = !model.busy, modifier = Modifier.fillMaxWidth(), onClick = { model.action {
-                                val response = model.api.request("/api/bonds/auth/registration", "POST", JsonRecord().put("email", inviteEmail))
-                                registration = model.api.request("/api/bonds/auth/registration")
-                                actions.shareText("${model.origin}/join#invite=${response.text("invite")}")
-                            } }) { AppText("Create & share invitation") }
-                            OutlinedButton(enabled = !model.busy, modifier = Modifier.fillMaxWidth(), onClick = { model.action {
-                                model.api.request("/api/bonds/auth/registration", "DELETE")
-                                registration = model.api.request("/api/bonds/auth/registration")
-                            } }) { AppText("Close invitations") }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SettingsSection(title: String, footnote: String? = null, content: @Composable ColumnScope.() -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        AppText(title, Modifier.padding(horizontal = 16.dp).semantics { heading() }, style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) { Column(content = content) }
-        footnote?.let { AppText(it, Modifier.padding(horizontal = 16.dp), style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant) }
-    }
-}
-
-@Composable
-private fun SettingsRow(icon: ImageVector, title: String, subtitle: String? = null, enabled: Boolean = true,
-    tint: Color = MaterialTheme.colorScheme.primary, toggleState: Boolean? = null, onClick: () -> Unit, trailing: (@Composable () -> Unit)? = null,
-    modifier: Modifier = Modifier) {
-    ListItem(headlineContent = { AppText(title, color = if (enabled) tint.takeIf { it == MaterialTheme.colorScheme.error } ?: MaterialTheme.colorScheme.onSurface
-        else MaterialTheme.colorScheme.onSurfaceVariant) }, supportingContent = subtitle?.let { { FinancialText(it, style = MaterialTheme.typography.bodySmall) } },
-        leadingContent = { AppIcon(icon, null, tint = if (enabled) tint else MaterialTheme.colorScheme.onSurfaceVariant) },
-        trailingContent = trailing ?: { AppIcon(Icons.Outlined.ChevronRight, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = modifier.fillMaxWidth().then(if (toggleState != null) Modifier.toggleable(toggleState, enabled = enabled, role = Role.Switch, onValueChange = { onClick() })
-            else Modifier.clickable(enabled = enabled, role = Role.Button, onClick = onClick)))
-}
-
-@Composable private fun SettingsDivider() { HorizontalDivider(Modifier.padding(start = 56.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f)) }
-
-@Composable
-private fun AppearanceOptions(selected: String, choose: (String) -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        listOf("system" to "System", "light" to "Light", "dark" to "Dark").forEach { (value, label) ->
-            val active = selected == value
-            Surface(Modifier.weight(1f).semantics { contentDescription = localized(label) }.selectable(active, role = Role.RadioButton, onClick = { choose(value) }),
-                shape = RoundedCornerShape(16.dp),
-                color = if (active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
-                border = BorderStroke(if (active) 2.dp else 1.dp,
-                    if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)) {
-                Column(Modifier.padding(horizontal = 8.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Canvas(Modifier.size(width = 44.dp, height = 62.dp)) {
-                        val cream = StructColors.AppearancePreview.cream
-                        val ink = StructColors.AppearancePreview.ink
-                        val accent = StructColors.AppearancePreview.accent
-                        drawRoundRect(if (value == "dark") ink else cream, cornerRadius = CornerRadius(7.dp.toPx()))
-                        if (value == "system") drawRoundRect(ink, topLeft = Offset(size.width / 2, 0f),
-                            size = Size(size.width / 2, size.height), cornerRadius = CornerRadius(5.dp.toPx()))
-                        drawRoundRect(accent, Offset(size.width * .15f, size.height * .2f), Size(size.width * .7f, size.height * .24f), CornerRadius(3.dp.toPx()))
-                        repeat(3) { index ->
-                            drawRoundRect(if (value == "dark") cream.copy(alpha = .3f) else ink.copy(alpha = .2f),
-                                Offset(size.width * .15f, size.height * (.55f + index * .12f)),
-                                Size(size.width * .7f, size.height * .045f), CornerRadius(2.dp.toPx()))
-                        }
-                    }
-                    AppText(label, style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
-                }
-            }
-        }
+        SettingsRecordsSheet(model, ownerSection, administration, dismiss = { ownerSection = null },
+            changePublisher = { publisherChange = it }, openBond = openBond)
     }
 }

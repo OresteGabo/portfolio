@@ -1,21 +1,8 @@
 package dev.orestegabo.portfolio.investments
 
 import dev.orestegabo.portfolio.design.structCapitalColorScheme
-
-import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -27,17 +14,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
-import androidx.compose.ui.autofill.ContentType
-import androidx.compose.ui.semantics.contentType
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
@@ -55,16 +37,11 @@ private val destinations = listOf(
 @Composable
 fun InvestmentApp(model: PortfolioModel) {
     val formBackDispatcher = remember { FormBackDispatcher() }
-    // Each native host persists only a safe projection; widgets need no signed-in API session.
-    LaunchedEffect(model.user, model.portfolioReady, model.calendar, model.portfolio, model.documents, model.couponReceipts, model.bondReminderMonths, AppLanguage.code) {
-        if (HomeWidgetBridge.available && !model.isGuest && model.user != null && model.portfolioReady)
-            HomeWidgetBridge.publish(homeWidgetSnapshot(model))
-    }
+    PublishHomeWidget(model)
     val selectionFeedback = LocalSelectionFeedback.current
     var notificationPurchase by remember { mutableStateOf<JsonRecord?>(null) }
     var notificationPanel by rememberSaveable { mutableStateOf<String?>(null) }
     var securityNotificationId by rememberSaveable { mutableStateOf<String?>(null) }
-    var handledInboxRequest by rememberSaveable { mutableIntStateOf(0) }
     var showGuestChoice by rememberSaveable { mutableStateOf(false) }
     var issueReportSource by remember(model.user?.text("id"), model.isGuest, model.locked) { mutableStateOf<String?>(null) }
     var tab by rememberSaveable { mutableStateOf("Portfolio") }
@@ -90,8 +67,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var education by rememberSaveable { mutableStateOf(false) }
     var importReview by remember(model) { mutableStateOf(model.currentImportReview()) }
     val actions = LocalNativeActions.current
-    val engine = LocalImportEngine.current ?: if (model.isGuest && model.guestPath == GuestPath.PERSONAL) rememberGuestInvestmentEngine() else if (model.isGuest) remember { GuestUnavailableEngine() } else rememberInvestmentEngine()
-    DisposableEffect(engine) { onDispose { engine.destroy() } }
+    val engine = rememberInvestmentAppEngine(model)
     val shareUi = rememberSaveableStateHolder()
     val documentUi = rememberSaveableStateHolder()
     val calendarUi = rememberSaveableStateHolder()
@@ -113,13 +89,7 @@ fun InvestmentApp(model: PortfolioModel) {
         calendarUi.removeState(calendarStateKey)
         calendarFocus = date?.toString(); tab = "Calendar"
     }
-    LaunchedEffect(HomeWidgetBridge.routeRevision, model.user, model.locked) {
-        if (model.user != null && !model.locked) {
-            HomeWidgetBridge.consumeCalendarRequest(HomeWidgetBridge.routeRevision)?.let { date ->
-                openCalendarAt(calendarDate(date))
-            }
-        }
-    }
+    HomeWidgetRouteEffects(model, ::openCalendarAt)
     val preferences = rememberServerSettings()
     var showImportHint by rememberSaveable { mutableStateOf(!preferences.readImportHintDismissed()) }
     var introductionRequested by rememberSaveable { mutableStateOf(!preferences.readOnboardingCompleted() && !model.locked && !model.isGuest) }
@@ -152,34 +122,12 @@ fun InvestmentApp(model: PortfolioModel) {
     var chartStyle by rememberSaveable { mutableStateOf(preferences.readChartStyle()?.takeIf { it in listOf("area", "line", "bars") } ?: "area") }
     RefreshCapturedUi(tab, AppLanguage.code, theme, chartStyle, legalRoute)
     val dark = when (theme) { "light" -> false; "dark" -> true; else -> systemDark }
-    LaunchedEffect(model.user, model.locked) {
-        if (model.user != null && !model.locked) {
-            withFrameNanos { }
-            model.dashboardPresented()
-            NativePushBridge.accountReady()
-        }
-    }
-    LaunchedEffect(model.user, model.locked, NativePushBridge.registration, NativePushBridge.allowed, NativePushBridge.liveStartToken, NativePushBridge.liveActivities, AppLanguage.code) {
-        model.syncPushDevice()
-    }
-    LaunchedEffect(NativePushBridge.inboxRequest, model.user, model.locked) {
-        if(NativePushBridge.inboxRequest>handledInboxRequest && model.user!=null && !model.locked) {
-            openNotificationInbox();handledInboxRequest=NativePushBridge.inboxRequest
-        }
-    }
-    LaunchedEffect(NativePushBridge.updateRevision) { if(model.user!=null && !model.locked)model.refreshNotifications() }
-    LaunchedEffect(tab,model.user,model.locked) { if(tab=="Notifications" && model.user!=null && !model.locked)model.refreshNotifications() }
+    AccountPlatformEffects(model)
+    NotificationRouteEffects(model, tab, ::openNotificationInbox)
     LaunchedEffect(model.user, model.sessionState, model.guestViewRevision) {
         if (model.user == null) { couponList=false; documentDetail=null; notificationPurchase=null;notificationPanel=null;securityNotificationId=null; missingDocuments = false; pendingIssueId = null; pendingEntry = false; confirmationTarget = null; calendarFocus = null; investmentHistory = false; tab = "Portfolio"; detail = null; shareDetail = null; editor = null; equityEditor = null; shareOrderEditor = null; importReview = null; simulator = false; investmentTools = false; education = false }
     }
-    LaunchedEffect(model, model.messageRevision) {
-        val revision = model.messageRevision
-        if (model.message != null) {
-            kotlinx.coroutines.delay(3_000)
-            if (model.messageRevision == revision) model.message = null
-        }
-    }
-
+    NoticeLifetimeEffects(model)
     fun showImportConversation() {
         tab = "Documents"; documentSection = "Import"
         notificationPanel = null; missingDocuments = false; investmentHistory = false
@@ -491,11 +439,11 @@ fun InvestmentApp(model: PortfolioModel) {
                         when (notificationDestination(item)) {
                             NotificationDestination.CALENDAR -> openCalendarAt(calendarDate(item.text("dueDate")))
                             NotificationDestination.PURCHASE -> model.action {
-                                val result = model.api.request("/api/bonds/purchases/${item.text("purchaseId")}")
+                                val result = model.readPurchase(item.text("purchaseId"))
                                 notificationPurchase = result.getJSONObject("purchase")
                             }
                             NotificationDestination.DOCUMENT -> model.action {
-                                val row = model.api.request("/api/bonds/statement-items").rows("items").firstOrNull { it.text("id") == item.text("statementId") }
+                                val row = model.readStatementItem(item.text("statementId"))
                                 if (row == null) model.message = "This document reminder has already been resolved."
                                 else model.showStatementRecordReview(row)
                             }
@@ -547,7 +495,7 @@ fun InvestmentApp(model: PortfolioModel) {
                         openPurchase = { id -> model.action {
                             require(id.matches(Regex("[A-Za-z0-9_-]{1,120}"))) { "Check the purchase details." }
                             val row = model.purchases.firstOrNull { it.text("id") == id }
-                                ?: model.api.request("/api/bonds/purchases/$id").optJSONObject("purchase")
+                                ?: model.readPurchase(id).optJSONObject("purchase")
                             require(row != null) { "Check the purchase details." }; detail = row
                         } }, openMissing = { missingDocuments = true }, openBond = { detail = it }, openShare = { shareDetail = it }, openDetails = { documentDetail = it }) }
                     tab == "Stocks" -> StocksScreen(model, openShare = { shareDetail = it })
@@ -562,104 +510,5 @@ fun InvestmentApp(model: PortfolioModel) {
         }
         }
     }
-    }
-}
-
-@Composable
-internal fun Notice(text: String, error: Boolean, dismiss: () -> Unit) {
-    Surface(modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }, color = if (error) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer) {
-        Row(Modifier.fillMaxWidth().padding(start = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            FinancialText(text, Modifier.weight(1f).padding(vertical = 10.dp), style = MaterialTheme.typography.bodySmall)
-            TextButton(onClick = dismiss) { AppText("Dismiss") }
-        }
-    }
-}
-
-@Composable
-fun PageTitle(eyebrow: String, title: String, subtitle: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        AppText(eyebrow, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
-        AppText(title, Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        AppText(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-    }
-}
-
-@Composable
-fun Panel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Surface(modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), tonalElevation = 1.dp) {
-        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
-    }
-}
-
-@Composable
-fun Fact(label: String, value: String) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        AppText(label, Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-        FinancialText(displayRecordValue(value).ifBlank { "—" }, Modifier.weight(1f), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodySmall)
-    }
-}
-
-
-@Composable
-fun Field(label: String, value: String, change: (String) -> Unit, keyboard: KeyboardType = KeyboardType.Text, helper: String? = null, autofill: ContentType? = null, enabled: Boolean = true,
-    numbersHidden: Boolean? = null, trailingIcon: (@Composable () -> Unit)? = null) {
-    val hidden = numbersHidden ?: LocalNumbersHidden.current
-    if (keyboard in listOf(KeyboardType.Number, KeyboardType.Decimal) && LocalCaptureBackdropRegistry.current != null) {
-        CaptureRedactionRegion(Modifier.fillMaxWidth(), masked = {
-            // A disabled TextField still intercepts taps. Capture masks must contain no input nodes.
-            Column(Modifier.fillMaxSize()) {
-                Column(Modifier.weight(1f).fillMaxWidth().border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.extraSmall)
-                    .padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.Center) {
-                    AppText(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    AppText("••••", style = MaterialTheme.typography.bodyLarge)
-                }
-                helper?.let { AppText(it, Modifier.padding(start = 16.dp, top = 4.dp), style = MaterialTheme.typography.bodySmall) }
-            }
-        }) { FieldContent(label, value, change, keyboard, helper, autofill, enabled, hidden, trailingIcon) }
-    } else FieldContent(label, value, change, keyboard, helper, autofill, enabled, hidden, trailingIcon)
-}
-
-@Composable
-private fun FieldContent(label: String, value: String, change: (String) -> Unit, keyboard: KeyboardType, helper: String?, autofill: ContentType?, enabled: Boolean,
-    numbersHidden: Boolean, trailingIcon: (@Composable () -> Unit)?) {
-    val focus = LocalFocusManager.current
-    OutlinedTextField(value, change, Modifier.fillMaxWidth().then(if (autofill != null) Modifier.semantics { contentType = autofill } else Modifier), label = { AppText(label) }, singleLine = true, enabled = enabled,
-        visualTransformation = if (numbersHidden && keyboard in listOf(KeyboardType.Number, KeyboardType.Decimal)) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
-        trailingIcon = trailingIcon,
-        keyboardActions = KeyboardActions(onDone = { focus.clearFocus() }, onNext = { focus.moveFocus(FocusDirection.Next) }),
-        keyboardOptions = KeyboardOptions(keyboardType = keyboard, imeAction = if (autofill == ContentType.Username) ImeAction.Next else ImeAction.Done, platformImeOptions = if (autofill == ContentType.Username) credentialImeOptions(CredentialInput.USERNAME) else null), supportingText = helper?.let { { AppText(it) } })
-}
-
-@Composable
-fun <T : Enum<T>> ChoiceRow(
-    choices: List<T>,
-    selected: T,
-    choose: (T) -> Unit
-) {
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(choices) { item ->
-            FilterChip(
-                selected = item == selected,
-                onClick = { choose(item) },
-                label = { AppText(item.toString()) }
-            )
-        }
-    }
-}
-
-@Composable
-fun ChoiceRow(
-    choices: List<String>,
-    selected: String,
-    choose: (String) -> Unit
-) {
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(choices) { item ->
-            FilterChip(
-                selected = item == selected,
-                onClick = { choose(item) },
-                label = { AppText(item.replaceFirstChar { it.uppercase() }) }
-            )
-        }
     }
 }

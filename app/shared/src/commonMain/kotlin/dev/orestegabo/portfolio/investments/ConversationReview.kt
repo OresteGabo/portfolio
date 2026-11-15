@@ -1,6 +1,8 @@
 package dev.orestegabo.portfolio.investments
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -66,8 +68,9 @@ private fun PurchaseConversationReview(model: PortfolioModel, review: JsonRecord
     if (target == null && state.matches.isNotEmpty()) {
         AppText("Match an existing purchase", fontWeight = FontWeight.SemiBold)
         state.matches.forEach { row ->
-            Row(Modifier.fillMaxWidth().clickable(enabled = !model.busy) { selection = row.text("id") }, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                RadioButton(state.selectedId == row.text("id"), null)
+            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).selectable(selected = state.selectedId == row.text("id"),
+                enabled = !model.busy, role = Role.RadioButton, onClick = { selection = row.text("id") }), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                RadioButton(state.selectedId == row.text("id"), null, Modifier.clearAndSetSemantics {})
                 Column(Modifier.weight(1f)) {
                     FinancialText(row.text("bondName"), style = MaterialTheme.typography.bodyMedium)
                     FinancialText(money(row.optDouble("faceValue"), row.text("currency")), style = MaterialTheme.typography.labelMedium)

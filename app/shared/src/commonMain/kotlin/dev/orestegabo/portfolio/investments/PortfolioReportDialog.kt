@@ -1,11 +1,10 @@
 package dev.orestegabo.portfolio.investments
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 
 @Composable
 internal fun PortfolioReportDialog(model: PortfolioModel, close: () -> Unit) {
@@ -20,9 +19,7 @@ internal fun PortfolioReportDialog(model: PortfolioModel, close: () -> Unit) {
 internal fun PortfolioReportProgressDialog(model: PortfolioModel) {
     model.reportProgress?.let { progress ->
         AlertDialog(onDismissRequest = {}, title = { AppText("Portfolio report") }, text = {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                CircularProgressIndicator(Modifier.size(28.dp)); AppText(progress, Modifier.weight(1f))
-            }
+            ProgressContent(progress, modifier = Modifier.verticalScroll(rememberScrollState()))
         }, confirmButton = {})
     }
 }

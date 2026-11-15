@@ -9,6 +9,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import dev.orestegabo.portfolio.design.InziraDimensions
+import dev.orestegabo.portfolio.design.InziraShapes
+import dev.orestegabo.portfolio.design.InziraSpacing
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,19 +63,19 @@ fun EmptyState(
     badgeIcon: ImageVector? = null,
 ) {
     val colors = MaterialTheme.colorScheme
-    val corner = if (compact) 24.dp else 28.dp
+    val corner = if (compact) InziraShapes.card else InziraShapes.spaciousCard
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(corner),
+        shape = corner,
         border = if (framed) BorderStroke(1.dp, colors.outlineVariant.copy(alpha = .5f)) else null,
         color = colors.surfaceContainerLow,
     ) {
         Column(
             modifier = Modifier.background(Brush.verticalGradient(listOf(
                 colors.primaryContainer.copy(alpha = .35f), colors.surfaceContainerLow,
-            ))).padding(horizontal = if (compact) 20.dp else 24.dp, vertical = if (compact) 20.dp else 32.dp),
+            ))).padding(horizontal = if (compact) InziraSpacing.screen else InziraSpacing.section, vertical = if (compact) InziraSpacing.screen else InziraSpacing.spacious),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(if (compact) 12.dp else 16.dp),
+            verticalArrangement = Arrangement.spacedBy(if (compact) InziraSpacing.medium else InziraSpacing.large),
         ) {
             Box(Modifier.size(if (compact) 108.dp else 196.dp), contentAlignment = Alignment.Center) {
                 Canvas(Modifier.matchParentSize()) {
@@ -110,14 +113,14 @@ fun EmptyState(
                 style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center)
             action?.let { primary ->
                 Button(onClick = primary.onClick, enabled = primary.enabled,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp), shape = RoundedCornerShape(16.dp)) {
-                    primary.icon?.let { AppIcon(it, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)) }
+                    modifier = Modifier.fillMaxWidth().heightIn(min = InziraDimensions.primaryActionMinHeight), shape = InziraShapes.action) {
+                    primary.icon?.let { AppIcon(it, null, Modifier.size(InziraDimensions.inlineIcon)); Spacer(Modifier.width(InziraSpacing.small)) }
                     AppText(primary.label, textAlign = TextAlign.Center)
                 }
             }
             secondaryAction?.let { secondary ->
                 TextButton(onClick = secondary.onClick, enabled = secondary.enabled) {
-                    secondary.icon?.let { AppIcon(it, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)) }
+                    secondary.icon?.let { AppIcon(it, null, Modifier.size(InziraDimensions.inlineIcon)); Spacer(Modifier.width(InziraSpacing.small)) }
                     AppText(secondary.label, textAlign = TextAlign.Center)
                 }
             }
@@ -142,6 +145,6 @@ fun EmptyState(
 @Composable
 fun LoadingState() {
     Box(Modifier.fillMaxWidth().height(136.dp), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(Modifier.size(26.dp), strokeWidth = 2.dp)
+        CircularProgressIndicator(Modifier.size(InziraDimensions.progressIndicator), strokeWidth = InziraDimensions.progressStroke)
     }
 }

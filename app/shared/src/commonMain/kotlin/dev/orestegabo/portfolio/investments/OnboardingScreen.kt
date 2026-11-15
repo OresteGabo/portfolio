@@ -93,7 +93,8 @@ internal fun OnboardingScreen(
     PlatformBackHandler(true) { if (animateBrand) Unit else if (pager.currentPage > 0) move(pager.currentPage - 1) else finish() }
     Surface(Modifier.fillMaxSize(), color = background, contentColor = colors.onSurface) {
         Box(Modifier.fillMaxSize().onGloballyPositioned { rootPosition = it.positionInRoot() }) {
-            Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), contentAlignment = Alignment.TopCenter) {
+            BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), contentAlignment = Alignment.TopCenter) {
+                val footerMaxHeight = (maxHeight - 176.dp).coerceAtLeast(144.dp)
                 Column(Modifier.widthIn(max = 600.dp).fillMaxSize().graphicsLayer { alpha = welcomeReveal }
                     .then(if (animateBrand) Modifier.clearAndSetSemantics {} else Modifier)) {
                     Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp).heightIn(min = 56.dp),
@@ -117,6 +118,7 @@ internal fun OnboardingScreen(
                                     Spacer(Modifier.height(20.dp))
                                 }
                                 Box(Modifier.fillMaxWidth().height(if (step == IntroductionStep.IMPORT) diagramHeight else artHeight).clip(RoundedCornerShape(32.dp))
+                                    .then(if (step == IntroductionStep.IMPORT) Modifier else Modifier.clearAndSetSemantics {})
                                     .background(Brush.radialGradient(listOf(colors.primary.copy(alpha = .06f), artworkSurface))),
                                     contentAlignment = Alignment.Center) {
                                     IntroductionArtwork(step, dark,
@@ -132,13 +134,15 @@ internal fun OnboardingScreen(
                             }
                         }
                     }
-                    Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+                    // On short windows, actions scroll independently instead of consuming the entire story pane.
+                    Column(Modifier.fillMaxWidth().heightIn(max = footerMaxHeight)
+                        .verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                             pages.forEachIndexed { index, step ->
                                 val selected = pager.currentPage == index
                                 val label = "${localized("Step")} ${index + 1} ${localized("of")} ${pages.size}: ${localized(step.title).replace('\n', ' ')}"
-                                Box(Modifier.size(32.dp).clip(CircleShape).clickable(role = Role.Tab) { move(index) }
+                                Box(Modifier.size(48.dp).clip(CircleShape).clickable(role = Role.Tab) { move(index) }
                                     .semantics { contentDescription = label; this.selected = selected }, contentAlignment = Alignment.Center) {
                                     Box(Modifier.size(width = if (selected) 24.dp else 7.dp, height = 7.dp).clip(CircleShape)
                                         .background(colors.primary.copy(alpha = if (selected) 1f else .22f)))

@@ -1,6 +1,5 @@
 package dev.orestegabo.portfolio.investments
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,30 +23,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.painterResource
 
 enum class ChartPeriod(val label: String) {
     ALL("all"),
@@ -63,77 +54,16 @@ enum class StockSection(val label: String) {
     override fun toString(): String = label
 }
 @Composable
-private fun CompanyPriceChart(
-    symbol: String,
-    name: String,
-    quote: JsonRecord?,
-    quotes: JsonRecord?,
-    history: JsonRecord?,
-    failed: Boolean,
-    loading: Boolean,
-    period: ChartPeriod = ChartPeriod.ALL,
-    onPeriod: (ChartPeriod) -> Unit,
-    onRetry: () -> Unit,
-) {
-    val observations = stockPriceHistory(history, quotes, symbol, period, Today)
-    Panel(Modifier.smoothContentSize()) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            InvestmentLogo(ticker = symbol)
-            Column(Modifier.weight(1f)) {
-                AppText(symbol, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                AppText(name, style = MaterialTheme.typography.bodySmall)
-            }
-            if (observations.isEmpty()) FinancialText(quote?.let { money(it.optDouble("closing")) } ?: "—",
-                style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        }
-        ChoiceRow(ChartPeriod.entries, period, onPeriod)
-        Box(Modifier.fillMaxWidth().heightIn(min = 360.dp).clip(MaterialTheme.shapes.medium)) {
-            // Decorative identity stays with each pager page, including loading and empty states.
-            val logo = investmentLogoResource(symbol)
-            if (logo != null) {
-                Image(painterResource(logo), contentDescription = null,
-                    modifier = Modifier.align(Alignment.Center).fillMaxWidth(.72f).height(200.dp),
-                    contentScale = ContentScale.Fit, alpha = .08f)
-            } else {
-                Text(symbol, modifier = Modifier.align(Alignment.Center),
-                    fontSize = 64.sp, fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = .06f))
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                AppLoadingLine(loading, reserveSpace = true)
-                if (observations.isNotEmpty()) AppFadeIn("$symbol/${period.name.lowercase()}") {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        InvestmentChart(observations.map { it.price }, observations.map { it.date.toString() },
-                            notes = observations.map { it.note },
-                            dateRange = if (period == ChartPeriod.YEAR) yearlyPriceChartRange(Today) else null
-                        )
-                        AppText(if (observations.any { it.contract }) "Closes & trades · known dates only"
-                        else "Exchange closes · known dates only",
-                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        if (history != null && !history.optBoolean("tradeHistoryAvailable")) AppText("Contract prices unavailable",
-                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                } else if (history != null) {
-                    Box(Modifier.fillMaxWidth().height(276.dp), contentAlignment = Alignment.Center) {
-                        EmptyState("No price history", EmptyArtwork.CHARTS, compact = true, framed = false)
-                    }
-                }
-                AppReveal(failed) { TextButton(onClick = onRetry) { AppText("Retry price history") } }
-            }
-        }
-    }
-}
-
-@Composable
 fun StocksScreen(model: PortfolioModel, openShare: (JsonRecord) -> Unit) {
     val reducedMotion = LocalReducedMotion.current
     var section by rememberSaveable { mutableStateOf(StockSection.SHARES) }
     var search by rememberSaveable { mutableStateOf("") }
     var period by rememberSaveable { mutableStateOf(ChartPeriod.ALL) } // Default to ALL as requested
-    val histories = remember { mutableStateMapOf<String, JsonRecord>() }
-    val failedHistories = remember { mutableStateMapOf<String, Boolean>() }
-    val loadedRevisions = remember { mutableStateMapOf<String, Int>() }
-    val loadingRevisions = remember { mutableStateMapOf<String, Int>() }
+    val currentModel by rememberUpdatedState(model)
+    val history = remember { EquityPriceHistory { symbol, period -> currentModel.readEquityHistory(symbol, period) } }
+    val histories = history.values
+    val failedHistories = history.failed
+    val loadingRevisions = history.loadingRevisions
     var refreshRevision by remember { mutableIntStateOf(0) }
     val quoteRows = model.quotes?.rows("quotes").orEmpty()
     val watchlist = listOf("BOK" to "BK Group", "BLR" to "Bralirwa", "IMR" to "I&M Bank Rwanda", "CMR" to "Cimerwa", "RHB" to "RH Bophelo", "NMG" to "Nation Media Group", "USL" to "Uchumi", "KCB" to "KCB", "MTNR" to "MTN Rwanda", "EQTY" to "Equity Bank Group")
@@ -156,21 +86,8 @@ fun StocksScreen(model: PortfolioModel, openShare: (JsonRecord) -> Unit) {
         if (model.isGuest || section != StockSection.SHARES) return@LaunchedEffect
         val symbol = watchlist[pager.settledPage].first
         val selectedPeriod = period.name.lowercase()
-        val key = "$symbol/$selectedPeriod"
         val revision = refreshRevision
-        if (histories.containsKey(key) && loadedRevisions[key] == revision) return@LaunchedEffect
-        loadingRevisions[key] = revision
-        failedHistories.remove(key)
-        try {
-            histories[key] = model.api.request("/api/bonds/rse/equity-history?tickers=$symbol&period=$selectedPeriod")
-            loadedRevisions[key] = revision
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (_: Exception) {
-            failedHistories[key] = true
-        } finally {
-            if (loadingRevisions[key] == revision) loadingRevisions.remove(key)
-        }
+        history.load(symbol, selectedPeriod, revision)
     }
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -178,7 +95,7 @@ fun StocksScreen(model: PortfolioModel, openShare: (JsonRecord) -> Unit) {
         item { Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) { ChoiceRow(StockSection.entries, section) { section = it } }
             model.quotes?.optJSONObject("source")?.let { source -> AppText(if (source.optBoolean("stale")) "Stale prices" else source.text("publishedAt").take(10), style = MaterialTheme.typography.labelSmall, color = if (source.optBoolean("stale")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant) }
-            IconButton(enabled = !model.busy, onClick = { failedHistories.clear(); refreshRevision++; model.loadMarket(true) }) { AppIcon(Icons.Outlined.Refresh, "Refresh prices") }
+            IconButton(enabled = !model.busy, onClick = { history.clearFailures(); refreshRevision++; model.loadMarket(true) }) { AppIcon(Icons.Outlined.Refresh, "Refresh prices") }
         } }
 
         if (section == StockSection.SHARES) {
@@ -213,7 +130,7 @@ fun StocksScreen(model: PortfolioModel, openShare: (JsonRecord) -> Unit) {
                             loading = loadingRevisions.containsKey(key) || histories[key] == null && failedHistories[key] != true,
                             period = period,
                             onPeriod = { period = it },
-                            onRetry = { failedHistories.remove(key); refreshRevision++ })
+                            onRetry = { history.clearFailure(symbol, period.name.lowercase()); refreshRevision++ })
                     }
                 }
                 item {

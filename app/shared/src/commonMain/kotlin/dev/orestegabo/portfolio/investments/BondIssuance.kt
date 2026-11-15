@@ -1,7 +1,9 @@
 package dev.orestegabo.portfolio.investments
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -171,8 +173,8 @@ fun mergeBondIssuances(published: List<JsonRecord>, documents: List<JsonRecord>,
 
 @Composable
 internal fun PublicIssuanceConsent(checked: Boolean, change: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { change(!checked) }, verticalAlignment = Alignment.CenterVertically) {
-        Checkbox(checked = checked, onCheckedChange = change)
+    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(value = checked, role = Role.Checkbox, onValueChange = change), verticalAlignment = Alignment.CenterVertically) {
+        Checkbox(checked = checked, onCheckedChange = null, modifier = Modifier.size(48.dp).clearAndSetSemantics {})
         AppText("This is a public BNR issuance report, not a personal contract or statement. I agree to share it with all users.", style = MaterialTheme.typography.bodySmall)
     }
 }

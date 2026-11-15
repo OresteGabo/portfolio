@@ -71,6 +71,16 @@
       "flow": "capture attachment ownership: releaseDoesNotEraseARegistrationInstalledByItsCallback",
       "class": "CaptureAttachmentTest",
       "method": "releaseDoesNotEraseARegistrationInstalledByItsCallback"
+    },
+    {
+      "flow": "chart keyboard/custom actions and hidden semantics",
+      "class": "ChartAccessibilityTest",
+      "method": "chartsExposeAllObservationsWithoutTouchAndRemoveFinancialSemanticsWhenHidden"
+    },
+    {
+      "flow": "large-text progress/form actions",
+      "class": "UiDesignConsistencyTest",
+      "method": "progressAndFormContentWrapAtLargeTextAndKeepTheirActionsReachable"
     }
   ]
 }
