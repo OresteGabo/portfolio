@@ -227,7 +227,7 @@ class LocalGuestPortfolioRepository(
         val existing = prior.singleOrNull { it.text("id") == id }
         if (existing != null) {
             require(listOf("kind", "date", "currency", "holdingId", "shares", "price", "fees", "tax", "amount", "note").all {
-                !entry.has(it) || entry.text(it) == existing.text(it)
+                !entry.has(it) || normalized.text(it) == existing.text(it)
             }) { "This transaction identity is already in use." }
         } else {
             require(prior.size < 5000) { "Local transaction storage is full." }

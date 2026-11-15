@@ -1,0 +1,58 @@
+[
+  {
+    "module": "core",
+    "task": "jvmTest",
+    "tests": 145,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "core",
+    "task": "testAndroidHostTest",
+    "tests": 145,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "app/shared",
+    "task": "testAndroidHostTest",
+    "tests": 526,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "core",
+    "task": "iosSimulatorArm64Test",
+    "tests": 144,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "app/shared",
+    "task": "iosSimulatorArm64Test",
+    "tests": 552,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "app/shared",
+    "task": "connectedAndroidDeviceTest",
+    "tests": 520,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "app/androidApp",
+    "task": "connectedDebugAndroidTest (three relevant native classes)",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+]

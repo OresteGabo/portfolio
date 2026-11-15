@@ -1,0 +1,27 @@
+{
+  "scope": "Three focused temporary faults in an isolated export; not a whole-codebase mutation score.",
+  "results": [
+    {
+      "mutation": "discard-final-cost",
+      "result": "caught by assertion",
+      "failing_tests": [
+        "completeDisposalConservesCostAndNetProceedsAcrossRoundedPartialSales[jvm]"
+      ]
+    },
+    {
+      "mutation": "exclude-reporting-day",
+      "result": "caught by assertion",
+      "failing_tests": [
+        "cashBalancesAreSeparatedByCurrencyAndStopAtTheInclusiveReportingDate[jvm]"
+      ]
+    },
+    {
+      "mutation": "remove-ledger-serialization",
+      "result": "caught by assertion",
+      "failing_tests": [
+        "concurrentSalesCannotOversellAndLinkedPurchaseCannotBeEditedOrDeleted"
+      ]
+    }
+  ],
+  "restoration": "Temporary faults restored to HEAD before initial verification; the subsequent intentional normalized-retry fix was separately verified in final staged sources."
+}
