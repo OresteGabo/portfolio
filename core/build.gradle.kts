@@ -14,6 +14,19 @@ tasks.register<JavaExec>("verifyLocalSpringApi") {
     mainClass.set("dev.orestegabo.portfolio.investments.LocalSpringApiCheckKt")
 }
 
+// Opt-in synthetic CPU/allocation benchmark; never a timing gate or a production data source.
+tasks.register<JavaExec>("benchmarkShareBalances") {
+    val target = kotlin.targets.getByName("jvm") as org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
+    val compilation = target.compilations.getByName("test")
+    dependsOn(compilation.compileTaskProvider)
+    classpath(compilation.output.allOutputs, compilation.runtimeDependencyFiles)
+    mainClass.set("dev.orestegabo.portfolio.investments.ShareBalancesBenchmarkKt")
+    workingDir(rootProject.projectDir)
+    jvmArgs("-Xms512m", "-Xmx512m")
+    args(providers.gradleProperty("benchmarkOutput").getOrElse(layout.buildDirectory.file("reports/benchmarks/share-balances.json").get().asFile.absolutePath),
+        providers.gradleProperty("benchmarkLabel").getOrElse("current"))
+}
+
 kotlin {
     iosArm64()
     iosSimulatorArm64()

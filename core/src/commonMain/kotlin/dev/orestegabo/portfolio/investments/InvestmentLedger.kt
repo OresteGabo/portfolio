@@ -3,12 +3,22 @@ package dev.orestegabo.portfolio.investments
 import kotlinx.datetime.LocalDate
 
 /** Original purchases stay immutable; balances are derived from a small ledger of actual events. */
-fun shareBalances(holdings: List<JsonRecord>, entries: List<JsonRecord>): List<JsonRecord> = holdings.map { lot ->
-    val sold = entries.filter { it.text("kind") == "sale" && it.text("holdingId") == lot.text("id") }.sumOf { it.optDouble("shares", 0.0) }
-    val original = lot.optDouble("shares", 0.0)
-    val remaining = (original - sold).coerceAtLeast(0.0)
-    JsonRecord(lot.toString()).put("remainingShares", remaining).put("soldShares", sold)
-        .put("remainingCost", if (original > 0) decimalAmount(emptyList(), addends = listOf(lot.optDouble("netAmountPayable", 0.0)) + entries.filter { it.text("kind") == "sale" && it.text("holdingId") == lot.text("id") }.map { -it.optDouble("allocatedCost", 0.0) }) else 0.0)
+fun shareBalances(holdings: List<JsonRecord>, entries: List<JsonRecord>): List<JsonRecord> {
+    if (holdings.isEmpty()) return emptyList()
+    // Per-call index only: keep encounter order and ignore unrelated holding IDs, without caching
+    // derived financial state or rounding allocated costs before the existing monetary boundary.
+    val holdingIds = holdings.mapTo(mutableSetOf()) { it.text("id") }
+    val salesByHolding = entries.asSequence()
+        .filter { it.text("kind") == "sale" && it.text("holdingId") in holdingIds }
+        .groupBy { it.text("holdingId") }
+    return holdings.map { lot ->
+        val sales = salesByHolding[lot.text("id")].orEmpty()
+        val sold = sales.sumOf { it.optDouble("shares", 0.0) }
+        val original = lot.optDouble("shares", 0.0)
+        val remaining = (original - sold).coerceAtLeast(0.0)
+        JsonRecord(lot.toString()).put("remainingShares", remaining).put("soldShares", sold)
+            .put("remainingCost", if (original > 0) decimalAmount(emptyList(), addends = listOf(lot.optDouble("netAmountPayable", 0.0)) + sales.map { -it.optDouble("allocatedCost", 0.0) }) else 0.0)
+    }
 }
 
 fun validateLedgerEntry(raw: JsonRecord, holdings: List<JsonRecord>, prior: List<JsonRecord>, today: LocalDate): JsonRecord {
