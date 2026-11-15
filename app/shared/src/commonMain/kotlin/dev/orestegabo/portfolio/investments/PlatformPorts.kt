@@ -34,12 +34,9 @@ interface ServerSettings {
     fun readTheme(): String? = null
     fun writeTheme(theme: String) {}
 }
-interface NativeActions {
+interface NativeActions : PdfPicker {
     val interactingWithSystem: Boolean get() = false
-    val pickedPdfName: String? get() = null
     suspend fun offerPasswordSave(origin: String, email: String, password: String) {}
-    suspend fun pickPdf(onSelected: () -> Unit = {}): ByteArray?
-    suspend fun pickPrivatePdf(onSelected: () -> Unit = {}): ByteArray? = pickPdf(onSelected)
     suspend fun pickBackup(): ByteArray? = error("Backup file selection is unavailable.")
     suspend fun saveBackup(fileName: String, bytes: ByteArray): Boolean = error("Backup export is unavailable.")
     suspend fun savePdf(fileName: String, bytes: ByteArray): Boolean

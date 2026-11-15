@@ -20,11 +20,11 @@ class GuestPdfImport(private val repository: GuestPortfolioRepository, private v
     var previewName by mutableStateOf(""); private set
     private var pdf: ByteArray? = null
     private var name = "investment.pdf"
-    suspend fun select(actions: NativeActions, parser: InvestmentDocumentParser) {
+    suspend fun select(actions: PdfPicker, parser: InvestmentDocumentParser) {
         clear()
         var selected: ByteArray? = null
         try {
-            val privateActions = object : NativeActions by actions {
+            val privateActions = object : PdfPicker by actions {
                 override suspend fun pickPdf(onSelected: () -> Unit) = actions.pickPrivatePdf(onSelected)
             }
             val loaded = readPurchasePdf(privateActions, parser = object : InvestmentDocumentParser {

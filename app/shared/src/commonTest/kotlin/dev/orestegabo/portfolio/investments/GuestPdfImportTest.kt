@@ -49,6 +49,24 @@ class GuestPdfImportTest {
         assertContentEquals(pdf(),repository.documentBytes(doc.text("id")))
         assertTrue(saved.portfolio.purchases.single().hasDocument(doc.text("id"))); assertNull(workflow.review)
     }
+    @Test fun guestSelectionUsesThePrivateCapabilityAndRetainsItsFilename() = runTest {
+        val repository = repo(Disk(), Files())
+        val workflow = GuestPdfImport(repository)
+        var selections = 0
+        val picker = object : PdfPicker {
+            override val pickedPdfName = "private-allocation.pdf"
+            override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? = error("Ordinary selection must not run")
+            override suspend fun pickPrivatePdf(onSelected: () -> Unit): ByteArray {
+                selections++; onSelected(); return pdf()
+            }
+        }
+        workflow.select(picker, parser())
+        assertNull(workflow.failure); assertNotNull(workflow.review)
+        assertEquals(1, selections)
+        workflow.confirmDetails(true)
+        val saved = workflow.save(guestBondFixture())
+        assertEquals("private-allocation.pdf", saved.portfolio.documents.single().text("fileName"))
+    }
     @Test fun sameBytesAreIdempotentAndRetainedOriginalCanRestoreDeletedPurchaseAfterReview() = runTest {
         val disk=Disk(); val files=Files(); val repository=repo(disk,files)
         val first=repository.importPdf(pdf(),"one.pdf","bond",guestBondFixture())

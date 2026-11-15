@@ -7,11 +7,55 @@ import kotlin.test.*
 
 class DocumentParserAdapterTest {
     private val pdf = "%PDF-1.7 synthetic parser fixture\n%%EOF".encodeToByteArray()
-    private fun actions() = object : NativeActions {
+    private fun actions() = object : PdfPicker {
         override suspend fun pickPdf(onSelected: () -> Unit): ByteArray { onSelected(); return pdf }
-        override suspend fun savePdf(fileName: String, bytes: ByteArray) = false
-        override fun openUrl(url: String) {}
-        override fun shareText(text: String) {}
+    }
+    @Test fun cancellingSelectionNeedsNoOtherDeviceCapabilitiesAndNeverParses() = runTest {
+        val picker = object : PdfPicker {
+            override suspend fun pickPdf(onSelected: () -> Unit): ByteArray? = null
+        }
+        val parser = object : InvestmentDocumentParser {
+            override var onProgress: (String) -> Unit = {}
+            override suspend fun parse(pdf: ByteArray): JsonRecord = error("No document selected")
+            override fun cancel() = error("Selection cancellation is not parser cancellation")
+        }
+        val progress = mutableListOf<PdfImportProgress?>()
+        assertNull(readPurchasePdf(picker, parser, progress = progress::add))
+        assertEquals(listOf<PdfImportProgress?>(null), progress)
+    }
+    @Test fun parserFailureReleasesCallbacksThroughTheSelectionContract() = runTest {
+        val failure = IllegalArgumentException("Unreadable document")
+        val progress = mutableListOf<PdfImportProgress?>()
+        val parser = object : InvestmentDocumentParser {
+            override var onProgress: (String) -> Unit = {}
+            override suspend fun parse(pdf: ByteArray): JsonRecord = throw failure
+            override fun cancel() = error("Failure is not cancellation")
+        }
+        assertSame(failure, assertFailsWith<IllegalArgumentException> {
+            readPurchasePdf(actions(), parser, progress = progress::add)
+        })
+        assertNull(progress.last())
+        val completed = progress.size
+        parser.onProgress("Late progress")
+        assertEquals(completed, progress.size)
+    }
+    @Test fun injectedMonotonicTimeControlsTheMinimumFeedbackDuration() = runTest {
+        var completed = false
+        val parser = object : InvestmentDocumentParser {
+            override var onProgress: (String) -> Unit = {}
+            override suspend fun parse(pdf: ByteArray) = JsonRecord().put("kind", "bond")
+            override fun cancel() = error("Successful import must not cancel")
+        }
+        val job = launch {
+            readPurchasePdf(actions(), parser, timeSource = testScheduler.timeSource)
+            completed = true
+        }
+        runCurrent()
+        advanceTimeBy(MIN_PDF_PROGRESS_MILLIS - 1); runCurrent()
+        assertFalse(completed)
+        advanceTimeBy(1); runCurrent()
+        assertTrue(completed)
+        job.join()
     }
     @Test fun aParserAdapterCanRunTheImportPipelineWithoutASimulationEngine() = runTest {
         val parsed = JsonRecord().put("kind", "equity")

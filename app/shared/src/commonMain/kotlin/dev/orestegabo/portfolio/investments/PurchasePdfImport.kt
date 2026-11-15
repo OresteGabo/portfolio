@@ -17,32 +17,34 @@ data class PdfImportProgress(val stage: PdfImportStage, val detail: String = "")
 
 /** All entry points use the same native picker, parser and document checks. */
 suspend fun readPurchasePdf(
-    actions: NativeActions,
+    actions: PdfPicker,
     engine: InvestmentEngine,
     bondOnly: Boolean = false,
     expectedStatement: JsonRecord? = null,
     selectedPdf: (ByteArray) -> Unit = {},
     openedPdf: suspend (ByteArray) -> Unit = {},
     progress: (PdfImportProgress?) -> Unit = {},
+    timeSource: TimeSource = TimeSource.Monotonic,
 ): JsonRecord? {
-    return readPurchasePdf(actions, EngineDocumentParser(engine), bondOnly, expectedStatement, selectedPdf, openedPdf, progress)
+    return readPurchasePdf(actions, EngineDocumentParser(engine), bondOnly, expectedStatement, selectedPdf, openedPdf, progress, timeSource)
 }
 
 /** Parser-specific entry point: native or broker adapters can be supplied without a simulation engine. */
 suspend fun readPurchasePdf(
-    actions: NativeActions,
+    actions: PdfPicker,
     parser: InvestmentDocumentParser,
     bondOnly: Boolean = false,
     expectedStatement: JsonRecord? = null,
     selectedPdf: (ByteArray) -> Unit = {},
     openedPdf: suspend (ByteArray) -> Unit = {},
     progress: (PdfImportProgress?) -> Unit = {},
+    timeSource: TimeSource = TimeSource.Monotonic,
 ): JsonRecord? {
     var selectedAt: TimeMark? = null
     fun remaining(minimum: Long) = (minimum - (selectedAt?.elapsedNow()?.inWholeMilliseconds ?: minimum)).coerceAtLeast(0L)
     try {
         val bytes = actions.pickPdf {
-            selectedAt = TimeSource.Monotonic.markNow()
+            selectedAt = timeSource.markNow()
             progress(PdfImportProgress(PdfImportStage.OPENING))
         } ?: return null
         // Give the UI a frame before parsing can occupy the main thread.
