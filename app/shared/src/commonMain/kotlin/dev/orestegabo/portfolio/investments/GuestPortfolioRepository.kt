@@ -34,13 +34,10 @@ internal class GuestDataDeletionException : IllegalStateException("Guest data de
  * failure may throw; implementations must not silently discard a successful write.
  * Backup bytes are the private archive payload; encryption is owned by the backup workflow.
  */
-interface GuestPortfolioRepository {
+interface GuestPortfolioRepository : GuestInvestmentImporter {
     suspend fun deleteAll(): GuestPortfolio
     suspend fun setMonthlyTarget(amount: Long): GuestPortfolio
-    suspend fun importPdf(bytes: ByteArray, fileName: String, kind: String, body: JsonRecord, targetId: String? = null): GuestPortfolio
-    suspend fun documentBytes(id: String): ByteArray
     suspend fun deleteDocument(id: String): GuestPortfolio
-    suspend fun load(): GuestPortfolio
     suspend fun saveLedgerEntry(entry: JsonRecord): GuestPortfolio
     suspend fun deleteLedgerEntry(id: String): GuestPortfolio
     suspend fun exportBackup(): ByteArray

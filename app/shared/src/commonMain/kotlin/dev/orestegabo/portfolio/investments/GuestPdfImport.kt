@@ -9,7 +9,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.currentCoroutineContext
 
 /** Private local workflow: no API/client/settings/telemetry/publication dependency. */
-class GuestPdfImport(private val repository: GuestPortfolioRepository, private val workDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Default) {
+class GuestPdfImport(private val repository: GuestInvestmentImporter, private val workDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Default) {
     var review by mutableStateOf<JsonRecord?>(null); private set
     var duplicate by mutableStateOf<JsonRecord?>(null); private set
     var failure by mutableStateOf<String?>(null); private set

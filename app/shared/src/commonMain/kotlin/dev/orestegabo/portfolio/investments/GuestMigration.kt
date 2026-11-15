@@ -50,7 +50,7 @@ internal class ApiGuestMigrationRemote(private val api: PortfolioApi): GuestMigr
 
 /** Only explicit prepare/apply calls; never called by auth restoration, login or account synchronization. */
 internal class GuestMigration(
-    private val repository: GuestPortfolioRepository,private val remote: GuestMigrationRemote,
+    private val repository: GuestPortfolioReader,private val remote: GuestMigrationRemote,
     val account: MigrationAccount,private val active: () -> Boolean,
 ) {
     var rows by mutableStateOf<List<MigrationRow>>(emptyList()); private set
