@@ -20,7 +20,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.Dispatchers
-import kotlin.io.encoding.Base64
 import kotlin.random.Random
 import kotlin.time.TimeSource
 import kotlin.time.TimeMark
@@ -57,12 +56,11 @@ class PortfolioModel(
     val isGuest get() = guestPath != null && !accountEntry
     val sessionState: SessionState get() = user?.let { SessionState.Authenticated(it.text("id"), origin) }
         ?: if (isGuest) SessionState.Guest(requireNotNull(guestPath)) else SessionState.SignedOut
-    var guestPortfolio by mutableStateOf<GuestPortfolio?>(null)
-        private set
-    var guestStorageLoading by mutableStateOf(false)
-        private set
-    var guestStorageError by mutableStateOf<String?>(null)
-        private set
+    private val guestWorkspace = PortfolioGuestWorkspace(viewModelScope, guestRepository, importWorkDispatcher,
+        currentGeneration = { generation }, isForeground = { foreground }, personalMode = { isGuest && guestPath == GuestPath.PERSONAL })
+    val guestPortfolio get() = guestWorkspace.guestPortfolio
+    val guestStorageLoading get() = guestWorkspace.guestStorageLoading
+    val guestStorageError get() = guestWorkspace.guestStorageError
     private var samplePortfolio by mutableStateOf(guestSamplePortfolio())
     var guestViewRevision by mutableIntStateOf(0); private set
     val sampleGuest get() = isGuest && guestPath == GuestPath.SAMPLE
@@ -72,34 +70,16 @@ class PortfolioModel(
     fun deleteGuestData() {
         if (!isGuest || !canEditInvestments) return
         guestImport?.clear(); closeDocumentPreview(); documentThumbnails.clear()
-        guestWrite({ guestPortfolio = null; requireNotNull(guestRepository).deleteAll() }) { guestViewRevision++ }
+        guestWrite({ guestWorkspace.dropPortfolio(); requireNotNull(guestRepository).deleteAll() }) { guestViewRevision++ }
     }
-    private var guestJob: Job? = null
-    var guestQuotes by mutableStateOf<GuestQuoteSnapshot?>(null); private set
-    var guestQuotesRefreshing by mutableStateOf(false); private set
-    var guestQuotesFailed by mutableStateOf(false); private set
-    val guestQuotesEnabled get() = guestMarketData?.enabled == true
-    private var guestQuoteJob: Job? = null
-    fun refreshGuestQuotes() {
-        if (!isGuest || guestPath != GuestPath.PERSONAL || !guestQuotesEnabled || guestQuoteJob?.isActive == true) return
-        val token = generation
-        guestQuotesRefreshing = true
-        guestQuoteJob = viewModelScope.launch {
-            fun current() = token == generation && isGuest && guestPath == GuestPath.PERSONAL
-            try {
-                val saved = guestMarketData?.load()
-                if (current()) guestQuotes = saved
-                val latest = guestMarketData?.refresh()
-                if (current()) { guestQuotes = latest; guestQuotesFailed = false }
-            } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { if (current()) guestQuotesFailed = true }
-            finally { if (current()) { guestQuotesRefreshing = false; guestQuoteJob = null } }
-        }
-    }
-    private fun stopGuestQuotes() {
-        guestQuoteJob?.cancel(); guestQuoteJob = null; guestQuotes = null
-        guestQuotesRefreshing = false; guestQuotesFailed = false
-    }
+    private val guestMarket = PortfolioGuestQuotes(viewModelScope, guestMarketData,
+        currentGeneration = { generation }, personalMode = { isGuest && guestPath == GuestPath.PERSONAL })
+    val guestQuotes get() = guestMarket.guestQuotes
+    val guestQuotesRefreshing get() = guestMarket.guestQuotesRefreshing
+    val guestQuotesFailed get() = guestMarket.guestQuotesFailed
+    val guestQuotesEnabled get() = guestMarket.guestQuotesEnabled
+    fun refreshGuestQuotes() = guestMarket.refresh()
+    private fun stopGuestQuotes() = guestMarket.stop()
     internal var guestMigration by mutableStateOf<GuestMigration?>(null); private set
     private var guestMigrationJob: Job? = null
     internal fun reviewGuestMigration() {
@@ -138,65 +118,36 @@ class PortfolioModel(
         guestMigrationJob?.cancel(); guestMigrationJob = null
         guestMigration?.clear(); guestMigration = null
     }
-    val guestImport = guestRepository?.let { GuestPdfImport(it, importWorkDispatcher) }
+    val guestImport = guestWorkspace.guestImport
     fun selectGuestPdf(actions: NativeActions, engine: InvestmentEngine) = guestAction {
         requireNotNull(guestImport).select(actions, EngineDocumentParser(engine))
         requireNotNull(guestRepository).load()
     }
-    fun dismissGuestStorageError() { guestStorageError = null }
+    fun dismissGuestStorageError() = guestWorkspace.dismissError()
     fun finishGuestImport() { guestImport?.clear() }
-    fun cancelGuestImport() { guestJob?.cancel(); guestImport?.clear() }
+    fun cancelGuestImport() { guestWorkspace.cancelOperation(); guestImport?.clear() }
     fun previewGuestPdf(id: String? = null, fileName: String = "investment.pdf") = guestAction {
         requireNotNull(guestImport).preview(id, fileName); requireNotNull(guestRepository).load()
     }
     fun deleteGuestDocument(id: String) = guestWrite({ requireNotNull(guestRepository).deleteDocument(id) }) { documentThumbnails.clear() }
     fun loadGuestPortfolio() = guestAction { requireNotNull(guestRepository).load() }
-    private fun guestAction(operation: suspend () -> GuestPortfolio) {
-        if (!foreground || !isGuest || guestPath != GuestPath.PERSONAL || guestJob?.isActive == true || guestRepository == null) return
-        val revision = generation
-        guestStorageLoading = true; guestStorageError = null
-        guestJob = viewModelScope.launch {
-            try {
-                val result = operation()
-                if (revision == generation && foreground && isGuest && guestPath == GuestPath.PERSONAL) guestPortfolio = result
-            } catch (cancelled: CancellationException) { throw cancelled }
-            catch (failure: Exception) {
-                if (revision == generation) guestStorageError = if (failure is GuestPdfReviewException || failure is GuestDataDeletionException) failure.message else "Local portfolio could not be opened or saved. Your existing data was not reset. Unlock your device and retry."
-            } finally { if (revision == generation) { guestStorageLoading = false; guestJob = null } }
-        }
-    }
-    private fun guestWrite(operation: suspend () -> GuestPortfolio, completed: () -> Unit = {}) {
-        val revision = generation
-        guestAction { operation().also { if (revision == generation && isGuest && guestPath == GuestPath.PERSONAL) completed() } }
-    }
+    private fun guestAction(operation: suspend () -> GuestPortfolio) = guestWorkspace.action(operation)
+    private fun guestWrite(operation: suspend () -> GuestPortfolio, completed: () -> Unit = {}) = guestWorkspace.write(operation, completed)
     private var activeApi: PortfolioSessionApi? = null
     internal var api: PortfolioSessionApi
         get() { check(!isGuest) { "Account features are unavailable in guest mode." }; return activeApi ?: apiFactory(origin).also { activeApi = it } }
         private set(value) { activeApi = value }
-    var screenCaptureAllowed by mutableStateOf(settings.readScreenCaptureAllowed())
-        private set
-    val captureProtectionEnabled get() = !screenCaptureAllowed
-    val numbersRevealBlocked get() = captureProtectionEnabled && (captureMaskRequired ?: captureProtectionRequiresMaskedNumbers)
-    val numbersConcealed get() = numbersHidden || numbersRevealBlocked
-    fun updateScreenCapturePermission(allowed: Boolean) {
-        settings.writeScreenCaptureAllowed(allowed)
-        screenCaptureAllowed = allowed
-    }
-    var shakeToHideEnabled by mutableStateOf(settings.readShakeToHideEnabled())
-        private set
-    fun updateShakeToHide(enabled: Boolean) {
-        settings.writeShakeToHideEnabled(enabled)
-        shakeToHideEnabled = enabled
-    }
-    var numbersHidden by mutableStateOf(settings.readNumbersHidden())
-        private set
+    private val privacy = PortfolioPrivacy(settings, captureMaskRequired)
+    val screenCaptureAllowed get() = privacy.screenCaptureAllowed
+    val captureProtectionEnabled get() = privacy.captureProtectionEnabled
+    val numbersRevealBlocked get() = privacy.numbersRevealBlocked
+    val numbersConcealed get() = privacy.numbersConcealed
+    val shakeToHideEnabled get() = privacy.shakeToHideEnabled
+    val numbersHidden get() = privacy.numbersHidden
+    fun updateScreenCapturePermission(allowed: Boolean) = privacy.updateScreenCapturePermission(allowed)
+    fun updateShakeToHide(enabled: Boolean) = privacy.updateShakeToHide(enabled)
     fun toggleNumberVisibility() {
-        if (numbersRevealBlocked) {
-            message = "Numbers are protected right now. Check Settings → Privacy."
-            return
-        }
-        settings.writeNumbersHidden(!numbersHidden)
-        numbersHidden = !numbersHidden
+        if (!privacy.toggleNumberVisibility()) message = "Numbers are protected right now. Check Settings → Privacy."
     }
     val secureSignInAvailable get() = vault?.available == true
     val unlockLabel get() = vault?.unlockLabel ?: "Device unlock"
@@ -255,7 +206,6 @@ class PortfolioModel(
         unlockToUi?.end(); unlockToUi = null
         deviceToUi?.end(); deviceToUi = null
     }
-    private var marketLoadedAt: TimeMark? = null
     private var automaticUnlockAttempted = false
     private var automaticUnlockPending = false
     private var sessionUser by mutableStateOf<JsonRecord?>(null)
@@ -284,24 +234,31 @@ class PortfolioModel(
     var message: String?
         get() = messageText
         set(value) { messageText = value; messageRevision++ }
-    internal var applicationBidForm by mutableStateOf<JsonRecord?>(null); private set
-    internal fun startApplicationBid(form: JsonRecord) {
-        val issue = calendar.firstOrNull { it.text("id") == form.optJSONObject("applicationForm")?.text("calendarId") } ?: return
-        if (!isGuest && !busy && applicationBidAllowed(form,issue,bondSubscriptionDate(kotlin.time.Clock.System.now()))) {
-            closeDocumentPreview(); applicationBidForm = form
-        }
-    }
-    internal fun closeApplicationBid() { applicationBidForm = null }
-    internal fun saveApplicationBid(form: JsonRecord, amount: Double, bidId: String, completed: () -> Unit) = action {
-        val issue = calendar.firstOrNull { it.text("id") == form.optJSONObject("applicationForm")?.text("calendarId") }
-        require(issue != null && applicationBidAllowed(form,issue,bondSubscriptionDate(kotlin.time.Clock.System.now()))) { "Bids are unavailable for this form or the subscription window has closed." }
-        val response = api.request("/api/bonds/application-forms/${form.text("id")}/bids", "POST", JsonRecord().put("amount", amount).put("bidId",bidId))
-        require(response.optJSONObject("purchase")?.text("id")?.isNotBlank() == true) { "The bid could not be verified. Refresh your portfolio before retrying." }
-        loadPrivateData(force = true)
-        applicationBidForm = null
-        message = "Bid saved. Awaiting BNR results and allocation confirmation."
-        completed()
-    }
+    private val applicationForms = PortfolioApplicationForms(object : PortfolioApplicationFormHost {
+        override val api get() = this@PortfolioModel.api
+        override val user get() = this@PortfolioModel.user
+        override val isGuest get() = this@PortfolioModel.isGuest
+        override val busy get() = this@PortfolioModel.busy
+        override val calendar get() = this@PortfolioModel.calendar
+        override var portfolio: PortfolioSnapshot
+            get() = this@PortfolioModel.portfolio
+            set(value) { this@PortfolioModel.portfolio = value }
+        override var message: String?
+            get() = this@PortfolioModel.message
+            set(value) { this@PortfolioModel.message = value }
+        override fun action(block: suspend () -> Unit) = this@PortfolioModel.action(block)
+        override fun closeDocumentPreview() = this@PortfolioModel.closeDocumentPreview()
+        override suspend fun loadPrivateData(force: Boolean) = this@PortfolioModel.loadPrivateData(force)
+    })
+    internal val applicationBidForm get() = applicationForms.applicationBidForm
+    val applicationFormsError get() = applicationForms.applicationFormsError
+    internal fun startApplicationBid(form: JsonRecord) = applicationForms.startApplicationBid(form)
+    internal fun closeApplicationBid() = applicationForms.closeApplicationBid()
+    internal fun saveApplicationBid(form: JsonRecord, amount: Double, bidId: String, completed: () -> Unit) =
+        applicationForms.saveApplicationBid(form, amount, bidId, completed)
+    fun refreshBondApplicationForms() = applicationForms.refreshBondApplicationForms()
+    fun publishBondApplicationForm(issue: JsonRecord, bytes: ByteArray, completed: () -> Unit) =
+        applicationForms.publishBondApplicationForm(issue, bytes, completed)
     var cashLedgerRequested by mutableStateOf(false)
     var backupRequested by mutableStateOf(false)
     var ledgerHoldingId by mutableStateOf<String?>(null)
@@ -413,9 +370,13 @@ class PortfolioModel(
     var historyComplete: Boolean
         get() = if (isGuest) portfolioReady else accountHistoryComplete
         private set(value) { accountHistoryComplete = value }
-    private var compactOverviewSupported: Boolean? = null
+    private val snapshotReader = AccountSnapshotReader({ api }, { portfolio })
     val purchases get() = portfolio.purchases
     val holdings get() = portfolio.holdings
+    internal suspend fun readEquityHistory(symbol: String, period: String): JsonRecord = marketData.equityHistory(symbol, period)
+    internal suspend fun readPurchase(id: String): JsonRecord = snapshotReader.purchase(id)
+    internal suspend fun readStatementItem(id: String): JsonRecord? = snapshotReader.statementItem(id)
+    internal suspend fun readSignInActivity(notificationId: String?): JsonRecord = notificationCenter.signInActivity(notificationId)
     private var accountMonthlyInvestmentTarget by mutableStateOf<Long>(DEFAULT_MONTHLY_INVESTMENT_TARGET)
     var monthlyInvestmentTarget: Long
         get() = if (isGuest) guestPortfolio?.metadata?.text("monthlyTarget")?.toLongOrNull() ?: DEFAULT_MONTHLY_INVESTMENT_TARGET else accountMonthlyInvestmentTarget
@@ -462,16 +423,13 @@ class PortfolioModel(
         pendingShareOrders.cancel(order, completed)
         message = "Pending share order cancelled."
     }
-    var market by mutableStateOf<JsonRecord?>(null)
-        private set
-    private var accountQuotes by mutableStateOf<JsonRecord?>(null)
-    var quotes: JsonRecord?
-        get() = if (isGuest) if (guestPath == GuestPath.PERSONAL) guestQuotes?.data else null else accountQuotes
-        private set(value) { accountQuotes = value }
-    private var accountQuoteRefreshFailed by mutableStateOf<Boolean>(false)
-    var quoteRefreshFailed: Boolean
-        get() = if (isGuest) guestQuotesFailed || guestQuotes?.stale(kotlin.time.Clock.System.now()) == true else accountQuoteRefreshFailed
-        private set(value) { accountQuoteRefreshFailed = value }
+    private val marketData = PortfolioMarketData({ api }, clock)
+    val market get() = marketData.market
+    val marketLoading get() = marketData.marketLoading
+    val quotes: JsonRecord?
+        get() = if (isGuest) if (guestPath == GuestPath.PERSONAL) guestQuotes?.data else null else marketData.quotes
+    val quoteRefreshFailed: Boolean
+        get() = if (isGuest) guestQuotesFailed || guestQuotes?.stale(kotlin.time.Clock.System.now()) == true else marketData.quoteRefreshFailed
     private var publishedCalendar by mutableStateOf<List<JsonRecord>>(emptyList())
     var sharedCouponTerms by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
@@ -528,7 +486,7 @@ class PortfolioModel(
         unlock()
     }
     fun background(systemInteraction: Boolean = false) {
-        if (isGuest && !systemInteraction) guestPortfolio = null
+        if (isGuest && !systemInteraction) guestWorkspace.dropPortfolio()
         foreground = false
         if (!systemInteraction && vault?.authenticating != true) {
             automaticUnlockPending = false
@@ -584,7 +542,7 @@ class PortfolioModel(
         try { settings.writeSessionChoice(path.stored) }
         catch (_: Exception) { error = "Guest mode could not be saved. Try again."; return false }
         closeDocumentPreview(); stopGuestQuotes()
-        ++generation; guestJob?.cancel(); guestJob = null; guestStorageLoading = false; guestPortfolio = null; guestStorageError = null; guestImport?.clear()
+        ++generation; guestWorkspace.reset()
         activeJob?.cancel(); activeJob = null; busy = false
         activeApi?.close(); activeApi = null
         vault?.lock(); clearPrivateData()
@@ -600,7 +558,7 @@ class PortfolioModel(
         if (!isGuest) return
         closeDocumentPreview(); stopGuestQuotes()
         NativePdfInbox.pending?.bytes?.fill(0); NativePdfInbox.dismiss() // Never forward a queued guest PDF into account ingestion.
-        guestJob?.cancel(); guestJob = null; guestPortfolio = null; guestStorageLoading = false; guestStorageError = null; guestImport?.clear()
+        guestWorkspace.reset()
         accountEntry = true
         error = null; message = null
     }
@@ -699,7 +657,7 @@ class PortfolioModel(
         api.close()
         api = next
         origin = candidate
-        compactOverviewSupported = null
+        snapshotReader.resetCompatibility()
         settings.writeOrigin(origin)
         checkSession()
     }
@@ -750,50 +708,17 @@ class PortfolioModel(
     private suspend fun loadPrivateSnapshot(force: Boolean, deferSupplementary: Boolean) {
         if (!force && privateDataLoadedAt?.elapsedNow()?.inWholeMilliseconds?.let { it < DATA_CACHE_MILLIS } == true) return
         privateDataLoadedAt = null
-        val overview = if (compactOverviewSupported == false) null else try {
-            val response = api.request("/api/bonds/mobile-overview")
-            if (response.optInt("version") == 1 && response.has("recentPurchaseIds") && response.has("recentHoldingIds")) {
-                compactOverviewSupported = true
-                response
-            } else { compactOverviewSupported = false; null }
-        } catch (failure: ApiException) {
-            if (failure.status == 404 || failure.status == 405) { compactOverviewSupported = false; null } else throw failure
-        }
-        val (purchases, holdings) = if (overview != null) overview.rows("purchases") to overview.rows("holdings")
-        else coroutineScope {
-            val bonds = async { api.request("/api/bonds/purchases").rows("purchases") }
-            val shares = async { api.request("/api/bonds/equities").rows("holdings") }
-            bonds.await() to shares.await()
-        }
-        val allBondsForPending = if (overview != null) try { api.request("/api/bonds/purchases").rows("purchases") }
-            catch (cancelled: CancellationException) { throw cancelled }
-            catch (failure: Exception) { if (failure is ApiException && failure.status == 401) throw failure; null }
-            else purchases
-        val completePendingBonds = (allBondsForPending ?: portfolio.purchases).filter { it.text("status") == "submitted" }
-        val documents = if (deferSupplementary) portfolio.documents else api.request("/api/bonds/documents").rows("documents")
-        val monthlyTotals = overview?.optJSONArray("monthlyInvestmentTotals")?.objects()
-            ?: if (overview != null) try {
-                // Old compact responses omit contribution totals. Fetch their source records once
-                // during this sync, derive the rolling summary, then discard those extra records.
-                monthlyGoalTotalsFromHistory(requireNotNull(allBondsForPending),
-                    api.request("/api/bonds/equities").rows("holdings"), Today)
-            } catch (cancelled: CancellationException) { throw cancelled }
-            catch (failure: Exception) {
-                if (failure is ApiException && failure.status == 401) throw failure
-                null // An unavailable secondary summary must not hide the rest of the portfolio.
-            } else null
-        fun ids(key: String): Set<String>? = overview?.optJSONArray(key)?.let { rows -> (0 until rows.length()).map { rows.getString(it) }.toSet() }
-        portfolio = PortfolioSnapshot((purchases + completePendingBonds).distinctBy { it.text("id") }, holdings, if (deferSupplementary) portfolio.documents else documents, ids("recentPurchaseIds"), ids("recentHoldingIds"),
-            monthlyTotals)
+        val loaded = snapshotReader.read(deferSupplementary)
+        portfolio = loaded.snapshot
         reloadLedger()
         reloadShareOrders()
         privateDataAvailable = true
         reconcileImportHistory()
-        historyComplete = overview == null
+        historyComplete = loaded.historyComplete
         if (!deferSupplementary) {
             refreshSharedCouponTerms()
             loadStatementItems()
-            if (portfolio.investmentShares(Today).isNotEmpty()) refreshEquityQuotes()
+            if (portfolio.investmentShares(Today).isNotEmpty()) marketData.refreshEquityQuotes()
             fetchNotifications()
         }
         privateDataLoadedAt = clock.markNow()
@@ -859,58 +784,13 @@ class PortfolioModel(
                         if (currentSync()) documentsLoading = false
                     }
                     launch { section("coupon-terms") { refreshSharedCouponTerms() } }
-                    launch { section("market") { prefetchMarket() } }
+                    launch { section("market") { marketData.prefetch() } }
                     launch { section("statements") { loadStatementItems() } }
                     launch { section("notifications") { fetchNotifications() } }
                 }
             } finally {
                 if (currentSync()) { portfolioSyncing = false; documentsLoading = false }
             }
-        }
-    }
-
-    var applicationFormsError by mutableStateOf<String?>(null)
-        private set
-
-    private suspend fun fetchBondApplicationForms() {
-        val forms = api.request("/api/bonds/application-forms").rows("forms")
-        portfolio = portfolio.copy(documents = portfolio.documents.filterNot { it.text("category") == BOND_APPLICATION_CATEGORY } + forms)
-        applicationFormsError = null
-    }
-
-    fun refreshBondApplicationForms() = action {
-        try { fetchBondApplicationForms() }
-        catch (cancelled: CancellationException) { throw cancelled }
-        catch (failure: Exception) {
-            if (failure is ApiException && failure.status == 401) throw failure
-            applicationFormsError = "Application forms could not be loaded. Try again."
-        }
-    }
-
-    fun publishBondApplicationForm(issue: JsonRecord, bytes: ByteArray, completed: () -> Unit) = action {
-        require(mayUploadBondApplication(user)) { "Only the owner can upload bond application forms." }
-        validatePdfEnvelope(bytes)
-        val metadata = JsonRecord().put("category", BOND_APPLICATION_CATEGORY).put("visibility", "shared")
-            .put("calendarId", issue.text("id")).put("documentDate", issue.text("closingBookDate"))
-            .put("label", "Bond application form").put("instrumentName", issue.text("title")).put("issuer", "BNR")
-        val uploadId = Random.nextBytes(16).joinToString("") { (it.toInt() and 255).toString(16).padStart(2, '0') }
-        val chunkSize = 512 * 1024
-        val count = (bytes.size + chunkSize - 1) / chunkSize
-        var saved = false
-        for (index in 0 until count) {
-            val response = api.request("/api/bonds/documents", "POST", JsonRecord()
-                .put("uploadId", uploadId).put("index", index).put("count", count).put("metadata", metadata)
-                .put("content", Base64.encode(bytes.copyOfRange(index * chunkSize, minOf(bytes.size, (index + 1) * chunkSize)))))
-            if (response.text("documentId").isNotBlank()) { saved = true; break }
-        }
-        require(saved) { "The application form could not be saved. Try again." }
-        completed()
-        message = "Shared application form saved."
-        try { fetchBondApplicationForms() }
-        catch (cancelled: CancellationException) { throw cancelled }
-        catch (failure: Exception) {
-            if (failure is ApiException && failure.status == 401) throw failure
-            applicationFormsError = "The form was saved. Reload application forms to see it."
         }
     }
 
@@ -924,23 +804,6 @@ class PortfolioModel(
             privateDataAvailable = true
             historyComplete = true
             reconcileImportHistory()
-        }
-    }
-
-    // Prices enrich the saved snapshot. An optional quote failure must not hide saved purchases.
-    private suspend fun refreshEquityQuotes(refresh: Boolean = false) {
-        try {
-            val latest = api.request("/api/bonds/rse/quotes?kind=equities" + if (refresh) "&refresh=1" else "")
-            if (latest.rows("quotes").isNotEmpty()) {
-                quotes = latest
-                quoteRefreshFailed = latest.optJSONObject("source")?.text("status") == "error"
-            } else {
-                quoteRefreshFailed = true
-            }
-        } catch (failure: CancellationException) { throw failure }
-        catch (failure: Exception) {
-            if (failure is ApiException && failure.status == 401) throw failure
-            quoteRefreshFailed = true
         }
     }
 
@@ -962,30 +825,12 @@ class PortfolioModel(
             if (showMessage) message = "Portfolio updated from your server."
         } finally { if (token == generation) refreshPhase = PortfolioRefreshPhase.IDLE }
     }
-    private val marketMutex = Mutex()
-    var marketLoading by mutableStateOf(false)
-        private set
-
-    private suspend fun prefetchMarket(refresh: Boolean = false) = marketMutex.withLock {
-        if (!refresh && marketLoadedAt?.elapsedNow()?.inWholeMilliseconds?.let { it < DATA_CACHE_MILLIS } == true) return@withLock
-        marketLoading = true
-        try {
-            // Independent upstream resources: equity prices never wait for the multi-page bond board.
-            supervisorScope {
-                val prices = async { refreshEquityQuotes(refresh) }
-                val board = async { market = api.request("/api/bonds/rse/market" + if (refresh) "?refresh=1" else "") }
-                prices.await(); board.await()
-            }
-            marketLoadedAt = clock.markNow()
-        } finally { marketLoading = false }
-    }
-
     fun loadMarket(refresh: Boolean = false) {
         if (isGuest) { refreshGuestQuotes(); return }
         if (!refresh && marketLoading) return
         action {
-            if (refresh) marketLoadedAt = null
-            prefetchMarket(refresh)
+            if (refresh) marketData.invalidate()
+            marketData.prefetch(refresh)
         }
     }
 
@@ -1102,11 +947,13 @@ class PortfolioModel(
         if (actions.sharePdf("Inzira-Annual-$year.pdf", bytes)) message = "Annual report ready to share."
     }
 
-    internal val documentThumbnails = DocumentThumbnailCache()
-    internal var documentPreview by mutableStateOf<DocumentPreview?>(null)
-        private set
-    private var loadingDocumentPreview = false
-    private var documentPreviewRequest = 0L
+    private val documentViewer = PortfolioDocumentViewer(
+        readAccountPdf = { api.bytes(it) },
+        readGuestPdf = { requireNotNull(guestRepository).documentBytes(it) },
+        readAnnualReport = { annualReportPdf(it) },
+    )
+    internal val documentThumbnails get() = documentViewer.thumbnails
+    internal val documentPreview get() = documentViewer.documentPreview
     suspend fun documentBytes(document: JsonRecord): ByteArray = if (isGuest || document.text("id").startsWith("guest:document:")) {
         check(isGuest && !sampleGuest); requireNotNull(guestRepository).documentBytes(document.text("id"))
     } else api.bytes(document.text("downloadUrl").also { require(it.matches(Regex("/api/bonds/documents/[A-Za-z0-9_-]+"))) })
@@ -1116,42 +963,15 @@ class PortfolioModel(
     internal fun openDocumentPreview(document: JsonRecord) {
         if (isGuest) {
             if (sampleGuest || busy) return
-            val request = ++documentPreviewRequest
-            val preview = DocumentPreview(document, document.text("label").ifBlank { "Local PDF" }, document.text("originalFileName"))
-            documentPreview = preview
+            val request = documentViewer.beginGuest(document)
             guestAction {
-                val bytes = requireNotNull(guestRepository).documentBytes(document.text("id"))
-                if (isGuest && documentPreviewRequest == request && documentPreview != null) documentPreview = preview.copy(bytes = bytes)
-                else bytes.fill(0)
-                guestRepository.load()
+                documentViewer.loadGuest(request) { isGuest }
+                requireNotNull(guestRepository).load()
             }
-            return
-        }
-        openAccountDocumentPreview(document)
+        } else action { documentViewer.openAccount(document) }
     }
-    private fun openAccountDocumentPreview(document: JsonRecord) = action {
-        val year = document.optInt("annualReportYear")
-        val title = if (year > 0) "${localized("Annual report")} · $year" else document.text("label").ifBlank { document.text("originalFileName").ifBlank { "PDF" } }
-        val preview = DocumentPreview(document, title, importDisplayName(document.text("originalFileName").ifBlank { "investment.pdf" }))
-        val request = ++documentPreviewRequest
-        documentPreview = preview
-        loadingDocumentPreview = true
-        try {
-            val data = if (year > 0) annualReportPdf(year) else {
-                val path = document.text("downloadUrl")
-                require(path.matches(Regex("/api/bonds/documents/[A-Za-z0-9_-]+"))) { "Invalid document URL." }
-                api.bytes(path)
-            }
-            require(data.size in 5..24 * 1024 * 1024 && data.copyOfRange(0, 5).decodeToString() == "%PDF-") { "The server did not return a PDF." }
-            if (documentPreviewRequest == request && documentPreview != null) documentPreview = preview.copy(bytes = data)
-        } finally { loadingDocumentPreview = false }
-    }
-    internal fun closeDocumentPreview() {
-        documentPreviewRequest++
-        if (isGuest) { documentPreview?.bytes?.fill(0); if (documentPreview != null && documentPreview?.bytes == null) guestJob?.cancel() }
-        if (loadingDocumentPreview) activeJob?.cancel()
-        documentPreview = null
-    }
+    internal fun closeDocumentPreview() = documentViewer.close(isGuest,
+        cancelGuest = { guestWorkspace.cancelOperation() }, cancelAccount = { activeJob?.cancel() })
 
     fun deleteAccount(password: String) = action {
         check(canDeleteAccount) { "Only invited accounts can be deleted here." }
@@ -1179,12 +999,12 @@ class PortfolioModel(
     override fun onCleared() {
         closeGuestMigration()
         stopGuestQuotes()
-        guestJob?.cancel()
+        guestWorkspace.cancelOperation()
         guestImport?.clear()
-        guestPortfolio = null
+        guestWorkspace.dropPortfolio()
         documentThumbnails.clear()
         backgroundLockJob?.cancel()
-        documentPreview = null
+        documentViewer.release()
         imports.release()
         vault?.lock()
         activeApi?.close()
@@ -1193,7 +1013,7 @@ class PortfolioModel(
     private fun clearPrivateData(clearWidgets: Boolean = true) {
         if (clearWidgets) HomeWidgetBridge.clear()
         NativePushBridge.reconcileReminders("")
-        applicationFormsError = null
+        applicationForms.clear()
         closeGuestMigration()
         ++startupSyncRevision
         startupSyncJob?.cancel(); startupSyncJob = null
@@ -1203,15 +1023,13 @@ class PortfolioModel(
         unlockToUi = null; deviceToUi = null
         notificationCenter.clear()
         backgroundLockJob?.cancel(); backgroundLockJob = null; backgroundedAt = null
-        privateDataLoadedAt = null; marketLoadedAt = null
+        privateDataLoadedAt = null; marketData.invalidate()
         privateDataAvailable = false
-        documentThumbnails.clear()
-        documentPreviewRequest++; documentPreview = null; loadingDocumentPreview = false
+        documentViewer.clear()
         imports.clear()
         refreshPhase = PortfolioRefreshPhase.IDLE
         monthlyInvestmentTarget = DEFAULT_MONTHLY_INVESTMENT_TARGET
         user = null
-        applicationBidForm = null
         cashLedgerRequested = false; backupRequested = false; ledgerHoldingId = null
         cashLedger.clear()
         portfolio = PortfolioSnapshot()
@@ -1220,9 +1038,7 @@ class PortfolioModel(
         reports.clearProgress()
         historyComplete = false
         pendingShareOrders.clear()
-        market = null
-        quotes = null
-        quoteRefreshFailed = false
+        marketData.clear()
     }
     // Main.immediate may execute startup (and its failure cleanup) inside this constructor.
     // Keep startup after every state delegate and cache has been initialized.

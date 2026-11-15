@@ -241,6 +241,11 @@ internal class PortfolioNotifications(
         } catch(cancelled: CancellationException) { throw cancelled }
         catch(_: Exception) { if(revision==notificationGeneration)notificationsError="Could not mark this notification as read." }
     } }
+    suspend fun signInActivity(notificationId: String?): JsonRecord {
+        require(notificationId == null || notificationId.matches(Regex("[A-Za-z0-9_-]{1,120}"))) { "Invalid security notification." }
+        return api.request("/api/bonds/notifications/sign-in-activity" + (notificationId?.let { "?notificationId=$it" } ?: ""))
+    }
+
     suspend fun syncPushDevice() {
         if(user==null || locked)return
         if(!bondRemindersLoaded) loadBondReminders()

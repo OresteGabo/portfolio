@@ -7,7 +7,6 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import kotlin.io.encoding.Base64
 
 /** Account-facing effects needed by imports; session/job ownership stays in PortfolioModel. */
 internal interface PortfolioImportHost {
@@ -28,6 +27,7 @@ internal class PortfolioImports(
     private val host: PortfolioImportHost,
 ) {
     private val api get() = host.api
+    private val uploader = PdfChunkUploader { api.request("/api/bonds/documents", "POST", it) }
     private val canPublishPublicData get() = host.canPublishPublicData
     private val shareOrders get() = host.shareOrders
     private val statementItems get() = host.statementItems
@@ -260,24 +260,15 @@ internal class PortfolioImports(
         try {
             if (uploadedDocument == null) {
                 val pdf = importedPdf!!
-                val chunkSize = 512 * 1024
-                val count = (pdf.size + chunkSize - 1) / chunkSize
-                for (index in 0 until count) {
-                    pdfImportProgress = PdfImportProgress(PdfImportStage.UPLOADING, "${index + 1} / $count")
-                    val metadata = JsonRecord().put("label", if (bond) "Bond confirmation" else "Share purchase contract")
+                val result = uploader.upload(pdf, pdfUploadId, metadata = {
+                    JsonRecord().put("label", if (bond) "Bond confirmation" else "Share purchase contract")
                         .put("instrumentName", purchase.text(if (bond) "bondName" else "securityName"))
                         .put("issuer", purchase.text(if (bond) "issuer" else "broker"))
                         .put("documentDate", purchase.text(if (bond) "purchaseDate" else "tradeDate"))
                         .put("category", if (bond) "Bond confirmation" else "Share contract")
-                    val result = api.request("/api/bonds/documents", "POST", JsonRecord()
-                        .put("uploadId", pdfUploadId).put("index", index).put("count", count)
-                        .put("content", Base64.encode(pdf.copyOfRange(index * chunkSize, minOf(pdf.size, (index + 1) * chunkSize))))
-                        .put("metadata", metadata))
-                    if (index == count - 1) {
-                        uploadedDocument = result.text("documentId").takeIf { it.isNotBlank() }
-                        updateImport { it.copy(documentId = uploadedDocument.orEmpty()) }
-                    }
-                }
+                }, progress = { sent, count -> pdfImportProgress = PdfImportProgress(PdfImportStage.UPLOADING, "$sent / $count") })
+                uploadedDocument = result.text("documentId").takeIf(String::isNotBlank)
+                updateImport { it.copy(documentId = uploadedDocument.orEmpty()) }
                 require(uploadedDocument != null) { "The PDF could not be saved. Try again." }
             }
             pdfImportProgress = PdfImportProgress(PdfImportStage.SAVING)
@@ -322,20 +313,12 @@ internal class PortfolioImports(
         try {
             if (uploadedDocument == null) {
                 val pdf = importedPdf!!
-                val chunkSize = 512 * 1024
-                val count = (pdf.size + chunkSize - 1) / chunkSize
-                for (index in 0 until count) {
-                    pdfImportProgress = PdfImportProgress(PdfImportStage.UPLOADING, "${index + 1} / $count")
-                    val result = api.request("/api/bonds/documents", "POST", JsonRecord().put("uploadId", pdfUploadId)
-                        .put("index", index).put("count", count)
-                        .put("content", Base64.encode(pdf.copyOfRange(index * chunkSize, minOf(pdf.size, (index + 1) * chunkSize))))
-                        .put("metadata", JsonRecord().put("label", "BK Capital statement").put("category", "Statement")
-                            .put("instrumentName", "Investment account statement").put("issuer", "BK Capital").put("documentDate", review.text("toDate"))))
-                    if (index == count - 1) {
-                        uploadedDocument = result.text("documentId").takeIf(String::isNotBlank)
-                        updateImport { it.copy(documentId = uploadedDocument.orEmpty()) }
-                    }
-                }
+                val result = uploader.upload(pdf, pdfUploadId, metadata = {
+                    JsonRecord().put("label", "BK Capital statement").put("category", "Statement")
+                        .put("instrumentName", "Investment account statement").put("issuer", "BK Capital").put("documentDate", review.text("toDate"))
+                }, progress = { sent, count -> pdfImportProgress = PdfImportProgress(PdfImportStage.UPLOADING, "$sent / $count") })
+                uploadedDocument = result.text("documentId").takeIf(String::isNotBlank)
+                updateImport { it.copy(documentId = uploadedDocument.orEmpty()) }
                 require(uploadedDocument != null) { "The PDF could not be saved. Try again." }
             }
             pdfImportProgress = PdfImportProgress(PdfImportStage.SAVING)
@@ -359,24 +342,18 @@ internal class PortfolioImports(
         try {
             require(uploadedDocument != null || sharingConfirmed) { "Confirm that this report is public before sharing it." }
             val pdf = importedPdf!!
-            val chunkSize = 512 * 1024
-            val count = (pdf.size + chunkSize - 1) / chunkSize
             val metadata = JsonRecord().put("visibility","shared").put("label", "Bond issuance results").put("category", "Bond issuance")
                 .put("instrumentName", issuance.text("bondName")).put("issuer", issuance.text("issuer"))
                 .put("documentDate", issuance.text("issuanceDate")).put("issuance", issuance)
             var duplicate = false
-            if (uploadedDocument == null) for (index in 0 until count) {
-                pdfImportProgress = PdfImportProgress(PdfImportStage.UPLOADING, "${index + 1} / $count")
-                val response = api.request("/api/bonds/documents", "POST", JsonRecord()
-                    .put("uploadId", pdfUploadId).put("index", index).put("count", count)
-                    .put("content", Base64.encode(pdf.copyOfRange(index * chunkSize, minOf(pdf.size, (index + 1) * chunkSize))))
-                    .put("metadata", metadata))
+            if (uploadedDocument == null) {
+                val response = uploader.upload(pdf, pdfUploadId, metadata = { metadata }, stopAtDocument = true,
+                    progress = { sent, count -> pdfImportProgress = PdfImportProgress(PdfImportStage.UPLOADING, "$sent / $count") })
                 if (response.text("documentId").isNotBlank()) {
-                    uploadedDocument = response.text("documentId").takeIf { it.isNotBlank() }
+                    uploadedDocument = response.text("documentId").takeIf(String::isNotBlank)
                     require(uploadedDocument != null) { "The issuance report could not be saved. Try again." }
                     updateImport { it.copy(documentId = uploadedDocument.orEmpty()) }
                     duplicate = response.optBoolean("duplicate")
-                    break // A globally saved report can be reused after the first chunk.
                 }
             }
             if (confirmationTarget != null && expectedConfirmation != null) {

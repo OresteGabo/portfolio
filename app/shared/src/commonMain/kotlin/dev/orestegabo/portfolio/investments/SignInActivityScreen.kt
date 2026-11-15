@@ -20,8 +20,7 @@ internal fun SignInActivityScreen(model: PortfolioModel, notificationId: String?
         if (!attempted && !model.busy) {
             attempted = true
             model.action {
-                require(notificationId == null || notificationId.matches(Regex("[A-Za-z0-9_-]{1,120}"))) { "Invalid security notification." }
-                activity = model.api.request("/api/bonds/notifications/sign-in-activity" + (notificationId?.let { "?notificationId=$it" } ?: ""))
+                activity = model.readSignInActivity(notificationId)
             }
         }
     }
