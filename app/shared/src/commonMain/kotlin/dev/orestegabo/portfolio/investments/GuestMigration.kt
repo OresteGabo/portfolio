@@ -120,47 +120,106 @@ internal class GuestMigration(
         return MigrationOutcome(result.text("status"),result.text("targetId"))
     }
     suspend fun transfer() {
-        if(running) return
+        if (running) return
         check(prepared && consent && selected.isNotEmpty()) { "Review and consent first" }
         authorized()
-        val selection=selected.toSet();val documentDates=dates.toMap()
-        check(rows.filter { it.id in selection && it.kind=="document" }.all { documentTypeSupported(it) && calendarDate(documentDates[it.id].orEmpty())!=null }) { "Verify selected document dates" }
-        check(rows.filter { it.id in selection }.all(::selectable)) { "Select the parent bond first" }
-        running=true;consent=false;failure=null
+        val selection = selected.toSet()
+        val documentDates = dates.toMap()
+        validateTransferSelection(selection, documentDates)
+        running = true
+        consent = false
+        failure = null
         try {
-            check(repository.load().revision==revision) { "Local data changed; review again" }
-            val ordered=rows.filter { it.id in selection }.sortedBy { when(it.kind) { "document"->0;"receipt"->2;"cash"->3;else->1 } }
-            for((index,row) in ordered.withIndex()) {
-                authorized();progress="${index+1} / ${ordered.size}"
-                try {
-                    val result=if(row.kind=="document") {
-                        val bytes=repository.documentBytes(row.id)
-                        try { authorized();remote.document(account,row,requireNotNull(documentDates[row.id]),bytes) { part,count -> authorized();progress="${index+1} / ${ordered.size} · PDF $part / $count" } }
-                        finally { bytes.fill(0) }
-                    } else {
-                        if(row.kind in listOf("receipt", "cash") && row.parent != null && row.parent !in priorBonds && results[row.parent]?.target.isNullOrBlank()) {
-                            results=results+(row.id to MigrationOutcome("review",message="Transfer this receipt's bond first."));continue
-                        }
-                        val refs=row.record.optJSONArray("documentIds")?.let { a -> (0 until a.length()).map { a.getString(it) }.filter { it in selection } }.orEmpty()
-                        if(refs.any { results[it]?.target.isNullOrBlank() }) {
-                            results=results+(row.id to MigrationOutcome("review",message="A selected PDF has not finished transferring."));continue
-                        }
-                        authorized()
-                        remote.item(account,row,migrationRecord(row),refs.map { requireNotNull(results[it]).target })
-                    }
-                    authorized();results=results+(row.id to outcome(row,result))
-                } catch(cancelled: CancellationException) { throw cancelled }
-                catch(failed: Exception) {
-                    authorized()
-                    if(failed is ApiException && failed.status in listOf(400,409,413)) {
-                        results=results+(row.id to MigrationOutcome("review",message="Review this item in Guest Mode and your account. No existing financial record was replaced."))
-                    } else throw failed
-                }
+            check(repository.load().revision == revision) { "Local data changed; review again" }
+            val ordered = rows.filter { it.id in selection }.sortedBy {
+                when (it.kind) { "document" -> 0; "receipt" -> 2; "cash" -> 3; else -> 1 }
             }
-        } catch(cancelled: CancellationException) { throw cancelled }
-        catch(_: Exception) { failure="Transfer stopped. Check the account and connection, then review and confirm a retry. Your original guest data is still on this device." }
-        finally { running=false;progress=null }
+            for ((index, row) in ordered.withIndex()) {
+                transferSelectedRow(row, selection, documentDates, "${index + 1} / ${ordered.size}")
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            failure = "Transfer stopped. Check the account and connection, then review and confirm a retry. Your original guest data is still on this device."
+        } finally {
+            running = false
+            progress = null
+        }
     }
+
+    private fun validateTransferSelection(selection: Set<String>, documentDates: Map<String, String>) {
+        val documents = rows.filter { it.id in selection && it.kind == "document" }
+        check(documents.all { documentTypeSupported(it) && calendarDate(documentDates[it.id].orEmpty()) != null }) {
+            "Verify selected document dates"
+        }
+        check(rows.filter { it.id in selection }.all(::selectable)) { "Select the parent bond first" }
+    }
+
+    private suspend fun transferSelectedRow(
+        row: MigrationRow,
+        selection: Set<String>,
+        documentDates: Map<String, String>,
+        position: String,
+    ) {
+        authorized()
+        progress = position
+        try {
+            if (row.kind == "document") {
+                val result = uploadOriginal(row, documentDates, position)
+                recordAcknowledgment(row, result)
+            } else {
+                transferRecordOrMarkForReview(row, selection)
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failed: Exception) {
+            authorized()
+            if (failed is ApiException && failed.status in listOf(400, 409, 413)) {
+                results = results + (row.id to MigrationOutcome("review",
+                    message = "Review this item in Guest Mode and your account. No existing financial record was replaced."))
+            } else {
+                throw failed
+            }
+        }
+    }
+
+    /** Borrow original bytes only for the upload; every exit erases this working copy. */
+    private suspend fun uploadOriginal(row: MigrationRow, documentDates: Map<String, String>, position: String): JsonRecord {
+        val bytes = repository.documentBytes(row.id)
+        try {
+            authorized()
+            return remote.document(account, row, requireNotNull(documentDates[row.id]), bytes) { part, count ->
+                authorized()
+                progress = "$position · PDF $part / $count"
+            }
+        } finally {
+            bytes.fill(0)
+        }
+    }
+
+    private suspend fun transferRecordOrMarkForReview(row: MigrationRow, selection: Set<String>) {
+        if (row.kind in listOf("receipt", "cash") && row.parent != null && row.parent !in priorBonds &&
+            results[row.parent]?.target.isNullOrBlank()) {
+            results = results + (row.id to MigrationOutcome("review", message = "Transfer this receipt's bond first."))
+            return
+        }
+        val references = row.record.optJSONArray("documentIds")?.let { ids ->
+            (0 until ids.length()).map { ids.getString(it) }.filter { it in selection }
+        }.orEmpty()
+        if (references.any { results[it]?.target.isNullOrBlank() }) {
+            results = results + (row.id to MigrationOutcome("review", message = "A selected PDF has not finished transferring."))
+            return
+        }
+        authorized()
+        val result = remote.item(account, row, migrationRecord(row), references.map { requireNotNull(results[it]).target })
+        recordAcknowledgment(row, result)
+    }
+
+    private fun recordAcknowledgment(row: MigrationRow, result: JsonRecord) {
+        authorized()
+        results = results + (row.id to outcome(row, result))
+    }
+
     fun clear() { closed=true;closePreview();rows=emptyList();selected=emptySet();results=emptyMap();dates=emptyMap();previous=emptySet();priorBonds=emptySet();revision=null;consent=false;prepared=false }
 }
 
