@@ -69,4 +69,35 @@ class PendingCouponEstimateTest {
         assertEquals(1, unknown.unavailablePendingCouponCount)
         assertEquals(0.0, unknown.netAnnualCoupon)
     }
+
+    @Test fun unavailableIsDistinctFromAKnownZeroCouponEvenWhenNeitherRateIsAssumed() {
+        val unavailable = pendingCouponEstimate(bond().put("withholdingTaxRate", null), emptyList(), today)
+        val knownZero = pendingCouponEstimate(bond().put("publishedTermsAvailable", true), emptyList(), today)
+
+        assertEquals(PendingCouponEstimate(null, null, false), unavailable)
+        assertEquals(PendingCouponEstimate(0.0, 0.0, false), knownZero)
+    }
+
+    @Test fun conflictingExactMatchRatesUseTheTenorMedianAsAnAssumption() {
+        val purchase = bond().put("isin", " rwsecurity /mn")
+        val publicTerms = listOf(reference(10, .11, "RWSECURITY"), reference(10, .13, "RWSECURITY"))
+        val originalTerms = publicTerms.map { it.toString() }
+
+        val estimate = pendingCouponEstimate(purchase, publicTerms, today)
+
+        assertEquals(.12, assertNotNull(estimate.rate), .0000001)
+        assertTrue(estimate.assumed)
+        assertEquals(originalTerms, publicTerms.map { it.toString() })
+    }
+
+    @Test fun todayFiltersBuiltInReferencesButNotCallerSuppliedPublicTerms() {
+        val beforeBuiltInReferences = LocalDate(2024, 1, 1)
+        val publicTerms = listOf(reference(10, .14).put("issueDate", "2026-01-01"))
+
+        val estimate = pendingCouponEstimate(bond(), publicTerms, beforeBuiltInReferences)
+
+        assertEquals(.14, estimate.rate)
+        assertTrue(estimate.assumed)
+    }
+
 }
