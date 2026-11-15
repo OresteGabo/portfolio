@@ -182,7 +182,7 @@ fun PortfolioScreen(
             item {
                 PortfolioHero(
                     !model.isGuest,
-                    if (model.sampleGuest) "Fictional sample · Not your investments" else if (model.isGuest) "Guest · On this device" else "Rwanda investments",
+                    if (model.sampleGuest) "Fictional sample · Not your investments" else if (model.isGuest) "Guest · On this device" else "Your way forward",
                     valuation,
                     topInset,
                     openNotifications,

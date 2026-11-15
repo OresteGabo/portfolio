@@ -923,7 +923,7 @@ internal val frenchStrings: Map<String, String> = mapOf(
     "Markets" to "Marchés",
     "Go to Home" to "Aller à l’accueil",
     "Portfolio" to "Portefeuille",
-    "Rwanda investments" to "Investissements au Rwanda",
+    "Your way forward" to "Votre voie vers l’avenir",
     "Shares at purchase cost" to "Actions au coût d’achat",
     "Some shares at purchase cost" to "Certaines actions au coût d’achat",
     "Cached closing prices" to "Cours de clôture en cache",
