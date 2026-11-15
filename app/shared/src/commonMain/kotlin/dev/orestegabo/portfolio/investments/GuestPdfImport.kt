@@ -27,15 +27,14 @@ class GuestPdfImport(private val repository: GuestPortfolioRepository, private v
             val privateActions = object : PdfPicker by actions {
                 override suspend fun pickPdf(onSelected: () -> Unit) = actions.pickPrivatePdf(onSelected)
             }
-            val loaded = readPurchasePdf(privateActions, parser = object : InvestmentDocumentParser by parser {
+            val loaded = readInvestmentPdf(privateActions, parser = object : InvestmentDocumentParser by parser {
                 override suspend fun parse(pdf: ByteArray): JsonRecord {
                     withContext(workDispatcher) { validatePdfEnvelope(pdf) }
                     return parser.parse(pdf)
                 }
             }, openedPdf = { selected = it }, selectedPdf = { pdf = it.copyOf() }, progress = { progress = it?.stage?.label })?.readOnlyCopy() ?: return
             currentCoroutineContext().ensureActive()
-            require(loaded.text("kind") in listOf("bond", "equity")) { "unsupported" }
-            require(loaded.optJSONObject("fields") != null) { "missing review fields" }
+            validateGuestPdfReview(loaded)
             name = importDisplayName(actions.pickedPdfName ?: "investment.pdf").take(180)
             val bytes = requireNotNull(pdf)
             val digest = withContext(workDispatcher) { importPdfDigest(bytes) }
