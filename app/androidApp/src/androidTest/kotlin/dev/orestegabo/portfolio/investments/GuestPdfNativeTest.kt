@@ -69,7 +69,7 @@ class GuestPdfNativeTest {
                 assertEquals(before,repository.load().portfolio.documents.size)
                 val body=requireNotNull(workflow.fields())
                 assertTrue(runCatching { workflow.save(body) }.isFailure)
-                workflow.confirmed=true
+                workflow.confirmDetails(true)
                 val saved=workflow.save(body)
                 assertEquals(before+1,saved.portfolio.documents.size)
                 val doc=saved.portfolio.documents.last()

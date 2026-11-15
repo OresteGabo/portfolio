@@ -71,7 +71,7 @@ class IosInvestmentEngineTest {
             withContext(Dispatchers.Default) { workflow.select(actions(original), timedParser) }
             assertNull(workflow.failure); assertEquals("bond", workflow.review?.text("kind"))
             assertTrue(repository.load().portfolio.documents.isEmpty())
-            workflow.confirmed = true
+            workflow.confirmDetails(true)
             // Explicit test-user choices for fields absent from this shortened notice: no fees/accrual,
             // 5% tax, semiannual estimated schedule. These are not attributed to the PDF.
             val corrected = requireNotNull(workflow.fields()).put("feesPaid", 0).put("accruedInterestPaid", 0).put("withholdingTaxRate", .05)
@@ -101,7 +101,7 @@ class IosInvestmentEngineTest {
             """.trimIndent())
             withContext(Dispatchers.Default) { workflow.select(actions(equity), timedParser) }
             assertNull(workflow.failure); assertEquals("equity", workflow.review?.text("kind"))
-            workflow.confirmed = true
+            workflow.confirmDetails(true)
             val shares = workflow.save(requireNotNull(workflow.fields()))
             assertEquals(340728.50, shares.portfolio.holdings.single().optDouble("netAmountPayable"))
             val locked = requireNotNull(PDFDocument(data = original.toData()).dataRepresentationWithOptions(mapOf(

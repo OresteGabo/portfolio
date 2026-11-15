@@ -196,4 +196,17 @@ class AccountRecordWorkflowsTest {
             assertTrue(model.statementItems.isEmpty()); assertNull(model.statementReviewRows)
         }
     }
+    @Test fun authenticatedIdentityAndRoleFieldsRemainOwnedByTheSession() = runTest {
+        withModel { _, model ->
+            val identity = assertNotNull(model.user)
+            assertFailsWith<IllegalStateException> { identity.put("id", "another-account") }
+            assertFailsWith<IllegalStateException> { identity.put("isOwner", true) }
+            assertEquals("test-account", model.user?.text("id"))
+            assertFalse(model.user!!.optBoolean("isOwner"))
+            model.logout(); advanceUntilIdle()
+            assertNull(model.user)
+            assertEquals("test-account", identity.text("id"))
+        }
+    }
+
 }

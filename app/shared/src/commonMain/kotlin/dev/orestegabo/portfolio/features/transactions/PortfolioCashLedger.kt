@@ -22,7 +22,7 @@ internal class PortfolioCashLedger(
             val response = api.request("/api/bonds/cash-ledger")
             error = null
             available = response.has("entries")
-            entries = response.rows("entries")
+            entries = JsonRecord.readOnlyList(response.rows("entries"))
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (failure: ApiException) {
             if (failure.status == 401) throw failure

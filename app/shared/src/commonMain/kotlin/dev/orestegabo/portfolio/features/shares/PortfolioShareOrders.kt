@@ -18,7 +18,7 @@ internal class PortfolioShareOrders(
 
     suspend fun reload() {
         try {
-            orders = api.request("/api/bonds/share-orders").rows("orders")
+            orders = JsonRecord.readOnlyList(api.request("/api/bonds/share-orders").rows("orders"))
             publishOrders(orders)
             available = true
         } catch (cancelled: CancellationException) { throw cancelled }

@@ -14,8 +14,8 @@ class GuestPdfImport(private val repository: GuestPortfolioRepository, private v
     var duplicate by mutableStateOf<JsonRecord?>(null); private set
     var failure by mutableStateOf<String?>(null); private set
     var progress by mutableStateOf<String?>(null); private set
-    var confirmed by mutableStateOf(false)
-    var targetId by mutableStateOf<String?>(null)
+    var confirmed by mutableStateOf(false); private set
+    var targetId by mutableStateOf<String?>(null); private set
     var previewBytes by mutableStateOf<ByteArray?>(null); private set
     var previewName by mutableStateOf(""); private set
     private var pdf: ByteArray? = null
@@ -36,7 +36,7 @@ class GuestPdfImport(private val repository: GuestPortfolioRepository, private v
                     return parser.parse(pdf)
                 }
                 override fun cancel() = parser.cancel()
-            }, openedPdf = { selected = it }, selectedPdf = { pdf = it.copyOf() }, progress = { progress = it?.stage?.label }) ?: return
+            }, openedPdf = { selected = it }, selectedPdf = { pdf = it.copyOf() }, progress = { progress = it?.stage?.label })?.readOnlyCopy() ?: return
             currentCoroutineContext().ensureActive()
             require(loaded.text("kind") in listOf("bond", "equity")) { "unsupported" }
             require(loaded.optJSONObject("fields") != null) { "missing review fields" }
@@ -49,7 +49,7 @@ class GuestPdfImport(private val repository: GuestPortfolioRepository, private v
                 repository.documentBytes(doc.text("id")).also { it.fill(0) }; true
             } catch (cancelled: CancellationException) { throw cancelled } catch (_: Exception) { false }
             if (doc != null && retained && (snapshot.purchases + snapshot.holdings).any { it.hasDocument(doc.text("id")) }) {
-                duplicate = doc; bytes.fill(0); pdf = null
+                duplicate = doc.readOnlyCopy(); bytes.fill(0); pdf = null
             } else review = loaded
         } catch (_: TimeoutCancellationException) {
             clear(); failure = "Local PDF processing timed out. Try a clearer text-based PDF or enter the investment manually."
@@ -58,6 +58,17 @@ class GuestPdfImport(private val repository: GuestPortfolioRepository, private v
             clear()
             failure = "Could not import this PDF. Use an unprotected BNR personal allocation notice or share contract, up to 10 MB and 10 pages. Statements and public issuance reports are not supported in Guest Mode yet."
         } finally { selected?.fill(0); progress = null }
+    }
+    fun confirmDetails(value: Boolean) {
+        if (value) check(review != null && pdf != null) { "Choose and review a PDF before confirming." }
+        confirmed = value
+    }
+    fun selectTarget(id: String?) {
+        if (id != null) {
+            check(review != null && pdf != null) { "Choose and review a PDF before selecting a purchase." }
+            require(id.isNotBlank()) { "Choose an existing purchase or create a new one." }
+        }
+        if (targetId != id) { targetId = id; confirmed = false }
     }
     fun fields(): JsonRecord? = review?.let { raw ->
         runCatching { importedPurchaseInput(raw) }.getOrElse {

@@ -64,17 +64,17 @@ internal fun GuestImportContent(model: PortfolioModel, engine: InvestmentEngine)
             if (choosingExisting) AlertDialog(onDismissRequest = { choosingExisting = false }, title = { AppText("Choose existing purchase") },
                 text = { LazyColumn(Modifier.heightIn(max = 240.dp)) {
                     items(records, key = { it.text("id") }) { record ->
-                        TextButton(onClick = { importer.targetId = record.text("id"); choosingExisting = false }) {
+                        TextButton(onClick = { if (importer.review != null) importer.selectTarget(record.text("id")); choosingExisting = false }) {
                             Column {
                                 FinancialText(record.text("bondName").ifBlank { record.text("securityName") })
                                 FinancialText(record.text("purchaseDate").ifBlank { record.text("tradeDate") }, style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
-                } }, confirmButton = { TextButton(onClick = { importer.targetId = null; choosingExisting = false }) { AppText("New purchase") } },
+                } }, confirmButton = { TextButton(onClick = { importer.selectTarget(null); choosingExisting = false }) { AppText("New purchase") } },
                 dismissButton = { TextButton(onClick = { choosingExisting = false }) { AppText("Cancel") } })
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(value = importer.confirmed,
-                enabled = !model.guestStorageLoading, role = Role.Checkbox, onValueChange = { importer.confirmed = it })) {
+                enabled = !model.guestStorageLoading, role = Role.Checkbox, onValueChange = { if (importer.review != null) importer.confirmDetails(it) })) {
                 Checkbox(checked = importer.confirmed, onCheckedChange = null, enabled = !model.guestStorageLoading)
                 AppText("I checked these details against the original PDF.", Modifier.weight(1f).padding(top = 12.dp))
             }

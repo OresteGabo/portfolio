@@ -3,11 +3,19 @@ package dev.orestegabo.portfolio.investments
 import kotlinx.serialization.json.*
 
 /** Shared lossless API values: document facts and instrument-specific fields remain intact. */
-class JsonRecord private constructor(private val values: MutableMap<String, JsonElement>) {
+class JsonRecord private constructor(
+    private val values: MutableMap<String, JsonElement>,
+    private val readOnly: Boolean = false,
+) {
     constructor() : this(linkedMapOf())
     constructor(raw: String) : this(Json.parseToJsonElement(raw).jsonObject.toMutableMap())
     internal constructor(raw: JsonObject) : this(raw.toMutableMap())
-    fun put(key: String, value: Any?): JsonRecord = apply { values[key] = jsonValue(value) }
+    fun put(key: String, value: Any?): JsonRecord = apply {
+        check(!readOnly) { "This record is read-only. Create a copy before editing." }
+        values[key] = jsonValue(value)
+    }
+    /** Detached publication snapshot; JsonRecord(snapshot.toString()) remains an editable draft. */
+    fun readOnlyCopy(): JsonRecord = JsonRecord(Json.parseToJsonElement(toString()).jsonObject.toMutableMap(), true)
     fun has(key: String) = values.containsKey(key)
     fun isNull(key: String) = values[key] == null || values[key] == JsonNull
     fun text(key: String) = (values[key] as? JsonPrimitive)?.contentOrNull.orEmpty()
@@ -25,7 +33,17 @@ class JsonRecord private constructor(private val values: MutableMap<String, Json
     fun rows(key: String) = optJSONArray(key)?.objects().orEmpty()
     internal fun element() = JsonObject(values.toMap())
     override fun toString() = element().toString()
-    companion object { fun quote(value: String) = JsonPrimitive(value).toString() }
+    companion object {
+        fun quote(value: String) = JsonPrimitive(value).toString()
+        /** Own both the list and its records; mutable caller inputs cannot alter published state. */
+        fun readOnlyList(records: List<JsonRecord>): List<JsonRecord> {
+            val owned = records.map { it.readOnlyCopy() }
+            return object : AbstractList<JsonRecord>() {
+                override val size: Int get() = owned.size
+                override fun get(index: Int): JsonRecord = owned[index]
+            }
+        }
+    }
 }
 
 class JsonList private constructor(private val values: List<JsonElement>) {

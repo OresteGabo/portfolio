@@ -41,7 +41,7 @@ class GuestPdfImportTest {
         workflow.select(actions(pdf()),parser())
         assertNotNull(workflow.review); assertTrue(repository.load().portfolio.purchases.isEmpty()); assertTrue(files.files.isEmpty())
         assertFailsWith<IllegalStateException> { workflow.save(guestBondFixture()) }
-        workflow.confirmed=true
+        workflow.confirmDetails(true)
         val corrected = guestBondFixture().put("feesPaid",1000)
         val saved = workflow.save(corrected)
         assertEquals(1000.0,saved.portfolio.purchases.single().optDouble("feesPaid"))
@@ -59,7 +59,7 @@ class GuestPdfImportTest {
         assertNotNull(workflow.duplicate); assertNull(workflow.review)
         repository.deleteBond(first.portfolio.purchases.single().text("id"))
         workflow.select(actions(pdf()),parser()); assertNotNull(workflow.review); assertNull(workflow.duplicate)
-        workflow.confirmed=true; val restored=workflow.save(guestBondFixture())
+        workflow.confirmDetails(true); val restored=workflow.save(guestBondFixture())
         assertEquals(doc.text("id"),restored.portfolio.documents.single().text("id")); assertEquals(doc.text("createdAt"),restored.portfolio.documents.single().text("createdAt"))
         assertEquals(1,restored.portfolio.purchases.size); assertEquals(1,files.files.size)
     }
@@ -69,7 +69,7 @@ class GuestPdfImportTest {
         files.files.clear()
         val workflow=GuestPdfImport(repository); workflow.select(actions(pdf()),parser())
         assertNotNull(workflow.review); assertNull(workflow.duplicate)
-        workflow.confirmed=true; val repaired=workflow.save(guestBondFixture())
+        workflow.confirmDetails(true); val repaired=workflow.save(guestBondFixture())
         assertEquals(first.portfolio.purchases.single().text("id"),repaired.portfolio.purchases.single().text("id"))
         assertContentEquals(pdf(),repository.documentBytes(first.portfolio.documents.single().text("id")))
     }
@@ -180,7 +180,7 @@ class GuestPdfImportTest {
         try {
             advanceUntilIdle(); model.selectGuestPdf(actions(pdf()),engine); advanceUntilIdle()
             assertNotNull(model.guestImport?.review); assertTrue(repository.load().portfolio.documents.isEmpty())
-            requireNotNull(model.guestImport).confirmed=true
+            requireNotNull(model.guestImport).confirmDetails(true)
             model.savePurchase(guestBondFixture(),null,model::finishGuestImport); advanceUntilIdle()
             assertEquals(1,model.guestPortfolio?.portfolio?.purchases?.size); assertEquals(1, model.documents.size); assertNull(model.user)
             val queued = pdf("queued-private")
@@ -190,4 +190,48 @@ class GuestPdfImportTest {
             assertEquals(1,repository.load().portfolio.documents.size)
         } finally { ViewModelStore().apply { put("fixture",model); clear() }; Dispatchers.resetMain() }
     }
+    @Test fun confirmationRequiresAPdfAndIsRevokedWhenTheSelectedPurchaseChanges() = runTest {
+        val disk = Disk(); val files = Files(); val repository = repo(disk, files)
+        val existing = repository.saveBond(guestBondFixture().put("status", "submitted")).portfolio.purchases.single().text("id")
+        val workflow = GuestPdfImport(repository)
+        assertFailsWith<IllegalStateException> { workflow.confirmDetails(true) }
+        assertFailsWith<IllegalStateException> { workflow.selectTarget(existing) }
+        assertFalse(workflow.confirmed); assertNull(workflow.targetId)
+        workflow.select(actions(pdf()), parser())
+        workflow.confirmDetails(true)
+        assertFailsWith<IllegalArgumentException> { workflow.selectTarget(" ") }
+        assertTrue(workflow.confirmed)
+        workflow.selectTarget(existing)
+        assertEquals(existing, workflow.targetId); assertFalse(workflow.confirmed)
+        workflow.confirmDetails(true); workflow.selectTarget(existing)
+        assertTrue(workflow.confirmed, "Reselecting the same purchase does not change the review")
+        workflow.selectTarget(null); assertFalse(workflow.confirmed)
+        assertFailsWith<IllegalStateException> { workflow.save(guestBondFixture()) }
+        workflow.confirmDetails(true); workflow.clear()
+        assertFailsWith<IllegalStateException> { workflow.confirmDetails(true) }
+        assertFalse(workflow.confirmed); assertNull(workflow.targetId)
+        assertTrue(files.files.isEmpty())
+    }
+
+    @Test fun publishedReviewCannotBeChangedByTheParserOrAnEditableFormDraft() = runTest {
+        val repository = repo(Disk(), Files())
+        val source = JsonRecord().put("kind", "bond").put("fields", guestBondFixture())
+            .put("missingFields", JsonList()).put("warnings", JsonList())
+        val expectedFace = source.getJSONObject("fields").getDouble("faceValue")
+        val base = parser()
+        val retained = object : InvestmentDocumentParser by base {
+            override suspend fun parse(pdf: ByteArray) = source
+        }
+        val workflow = GuestPdfImport(repository)
+        workflow.select(actions(pdf()), retained)
+        val published = assertNotNull(workflow.review)
+        source.put("kind", "statement")
+        assertEquals("bond", published.text("kind"))
+        assertFailsWith<IllegalStateException> { published.put("kind", "equity") }
+        assertNotNull(workflow.fields()).put("faceValue", expectedFace + 100000)
+        assertEquals(expectedFace, published.getJSONObject("fields").getDouble("faceValue"))
+        assertTrue(repository.load().portfolio.purchases.isEmpty())
+        workflow.clear()
+    }
+
 }

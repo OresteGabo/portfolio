@@ -169,7 +169,7 @@ class PortfolioModel(
         guestAction { operation().also { if (revision == generation && isGuest && guestPath == GuestPath.PERSONAL) completed() } }
     }
     private var activeApi: PortfolioApi? = null
-    var api: PortfolioApi
+    internal var api: PortfolioApi
         get() { check(!isGuest) { "Account features are unavailable in guest mode." }; return activeApi ?: apiFactory(origin).also { activeApi = it } }
         private set(value) { activeApi = value }
     var screenCaptureAllowed by mutableStateOf(settings.readScreenCaptureAllowed())
@@ -257,8 +257,10 @@ class PortfolioModel(
     private var marketLoadedAt: TimeMark? = null
     private var automaticUnlockAttempted = false
     private var automaticUnlockPending = false
-    var user by mutableStateOf<JsonRecord?>(null)
-        private set
+    private var sessionUser by mutableStateOf<JsonRecord?>(null)
+    var user: JsonRecord?
+        get() = sessionUser
+        private set(value) { sessionUser = value?.readOnlyCopy() }
     // Invited accounts use random UUIDv4 IDs. Environment-managed friends use UUIDv8.
     val canDeleteAccount get() = user?.optBoolean("isOwner") == false &&
         user?.text("id")?.matches(Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}")) == true
