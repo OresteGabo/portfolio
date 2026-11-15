@@ -4,6 +4,8 @@ package dev.orestegabo.portfolio.investments
  * A null result means selection was cancelled. [onSelected] runs when selection completes,
  * before potentially expensive reading; the filename is available after a successful read.
  * Implementations may also supply an already-received document without opening a picker.
+ * Reading failures may throw; they must not be reported as a successful empty document.
+ * A successful selection reports [onSelected] once. Cancellation does not report selection.
  */
 interface PdfPicker {
     val pickedPdfName: String? get() = null

@@ -18,7 +18,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import android.net.Uri
@@ -95,16 +94,8 @@ private class AndroidActions(private val context: Context) : NativeActions {
                     if (it.moveToFirst()) it.getString(0).take(180) else null
                 } }.getOrNull()
                 context.contentResolver.openInputStream(uri)?.use { input ->
-                    val output = java.io.ByteArrayOutputStream()
-                    val buffer = ByteArray(8192)
-                    while (true) {
-                        ensureActive()
-                        val count = input.read(buffer)
-                        if (count < 0) break
-                        require(output.size() + count <= if (backup) BACKUP_MAX_BYTES else MAX_PDF_BYTES) { if (backup) "Choose a backup of up to 48 MB." else "Choose a PDF of up to 10 MB." }
-                        output.write(buffer, 0, count)
-                    }
-                    output.toByteArray()
+                    readPickedFileBytes(input, if (backup) BACKUP_MAX_BYTES else MAX_PDF_BYTES,
+                        if (backup) "Choose a backup of up to 48 MB." else "Choose a PDF of up to 10 MB.")
                 } ?: error("Could not open the selected PDF.")
             }
         } finally { picked = null }

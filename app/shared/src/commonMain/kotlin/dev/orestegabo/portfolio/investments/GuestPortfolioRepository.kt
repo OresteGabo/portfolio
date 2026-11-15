@@ -29,6 +29,11 @@ interface GuestDocumentStorage {
 }
 internal class GuestDataDeletionException : IllegalStateException("Guest data deletion was interrupted. Retry local storage to finish removing it.")
 
+/** Full local portfolio capability. Production factories supply snapshot and document storage.
+ * Ledger and backup operations are required, not optional fallbacks. Invalid input or storage
+ * failure may throw; implementations must not silently discard a successful write.
+ * Backup bytes are the private archive payload; encryption is owned by the backup workflow.
+ */
 interface GuestPortfolioRepository {
     suspend fun deleteAll(): GuestPortfolio
     suspend fun setMonthlyTarget(amount: Long): GuestPortfolio
@@ -36,10 +41,10 @@ interface GuestPortfolioRepository {
     suspend fun documentBytes(id: String): ByteArray
     suspend fun deleteDocument(id: String): GuestPortfolio
     suspend fun load(): GuestPortfolio
-    suspend fun saveLedgerEntry(entry: JsonRecord): GuestPortfolio = error("Transactions are unavailable.")
-    suspend fun deleteLedgerEntry(id: String): GuestPortfolio = error("Transactions are unavailable.")
-    suspend fun exportBackup(): ByteArray = error("Backup is unavailable.")
-    suspend fun restoreBackup(bytes: ByteArray): GuestPortfolio = error("Restore is unavailable.")
+    suspend fun saveLedgerEntry(entry: JsonRecord): GuestPortfolio
+    suspend fun deleteLedgerEntry(id: String): GuestPortfolio
+    suspend fun exportBackup(): ByteArray
+    suspend fun restoreBackup(bytes: ByteArray): GuestPortfolio
     suspend fun saveBond(record: JsonRecord, id: String? = null): GuestPortfolio
     suspend fun saveShare(record: JsonRecord, id: String? = null): GuestPortfolio
     suspend fun deleteBond(id: String): GuestPortfolio

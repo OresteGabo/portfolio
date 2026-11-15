@@ -37,7 +37,9 @@ interface ServerSettings {
 interface NativeActions : PdfPicker {
     val interactingWithSystem: Boolean get() = false
     suspend fun offerPasswordSave(origin: String, email: String, password: String) {}
+    /** Optional host capability: the default throws if no backup picker is supplied. */
     suspend fun pickBackup(): ByteArray? = error("Backup file selection is unavailable.")
+    /** Optional host capability: the default throws if no backup exporter is supplied. */
     suspend fun saveBackup(fileName: String, bytes: ByteArray): Boolean = error("Backup export is unavailable.")
     suspend fun savePdf(fileName: String, bytes: ByteArray): Boolean
     /** Present native sharing, including available save/export actions. */
