@@ -5,7 +5,8 @@ import dev.orestegabo.portfolio.features.shares.PortfolioShareOrders
 import dev.orestegabo.portfolio.features.transactions.PortfolioCashLedger
 import dev.orestegabo.portfolio.network.ApiException
 import dev.orestegabo.portfolio.network.LEGACY_WEBSITE_API_ORIGIN
-import dev.orestegabo.portfolio.network.PortfolioApi
+import dev.orestegabo.portfolio.network.PortfolioSessionApi
+import dev.orestegabo.portfolio.network.createPortfolioSession
 import dev.orestegabo.portfolio.network.isLegacyWebsiteApiOrigin
 import dev.orestegabo.portfolio.network.nativeBackendOrigin
 
@@ -32,7 +33,7 @@ class PortfolioModel(
     private val settings: ServerSettings,
     private val assets: suspend (String) -> ByteArray = ::readSharedAsset,
     private val vault: SecureSignIn? = null,
-    private val apiFactory: (String) -> PortfolioApi = { PortfolioApi(it) },
+    private val apiFactory: (String) -> PortfolioSessionApi = ::createPortfolioSession,
     private val captureMaskRequired: Boolean? = null,
     private val clock: TimeSource = TimeSource.Monotonic,
     initialOrigin: String? = null,
@@ -168,8 +169,8 @@ class PortfolioModel(
         val revision = generation
         guestAction { operation().also { if (revision == generation && isGuest && guestPath == GuestPath.PERSONAL) completed() } }
     }
-    private var activeApi: PortfolioApi? = null
-    internal var api: PortfolioApi
+    private var activeApi: PortfolioSessionApi? = null
+    internal var api: PortfolioSessionApi
         get() { check(!isGuest) { "Account features are unavailable in guest mode." }; return activeApi ?: apiFactory(origin).also { activeApi = it } }
         private set(value) { activeApi = value }
     var screenCaptureAllowed by mutableStateOf(settings.readScreenCaptureAllowed())
@@ -653,7 +654,7 @@ class PortfolioModel(
             catch (failure: CancellationException) { throw failure }
             catch (_: Exception) { api.clearSession() }
             val session = try {
-                if (JsonRecord(api.sessionSnapshot()).rows("cookies").isEmpty()) JsonRecord().put("authenticated", false)
+                if (!api.hasSession()) JsonRecord().put("authenticated", false)
                 else api.request("/api/bonds/auth/session")
             }
             catch (failure: ApiException) { if (failure.status == 401) JsonRecord().put("authenticated", false) else throw failure }

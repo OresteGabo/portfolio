@@ -64,10 +64,10 @@ private class SessionCookies : CookiesStorage {
 
 /** Shared transport policy. Session snapshots are only persisted by the native authenticated vault. */
 class PortfolioApi(
-    val origin: String,
+    override val origin: String,
     engine: HttpClientEngine = createPlatformHttpEngine(),
     allowHttp: Boolean = allowsDevelopmentHttp,
-) : PortfolioDataApi {
+) : PortfolioSessionApi {
     private val cookies = SessionCookies()
     private val client: HttpClient
     init {
@@ -132,8 +132,12 @@ class PortfolioApi(
             }
         } finally { timing?.end(outcome) }
     }
-    suspend fun sessionSnapshot(): String = cookies.snapshot(origin)
-    suspend fun restoreSession(snapshot: String) = cookies.restore(origin, snapshot)
-    suspend fun clearSession() = cookies.clear()
-    fun close() = client.close()
+    override suspend fun hasSession(): Boolean = JsonRecord(sessionSnapshot()).rows("cookies").isNotEmpty()
+    override suspend fun sessionSnapshot(): String = cookies.snapshot(origin)
+    override suspend fun restoreSession(snapshot: String) = cookies.restore(origin, snapshot)
+    override suspend fun clearSession() = cookies.clear()
+    override fun close() = client.close()
 }
+
+/** Default transport composition; callers own and close the returned session. */
+fun createPortfolioSession(origin: String): PortfolioSessionApi = PortfolioApi(origin)

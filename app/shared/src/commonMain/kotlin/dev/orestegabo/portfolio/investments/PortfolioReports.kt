@@ -1,7 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
 import dev.orestegabo.portfolio.network.ApiException
-import dev.orestegabo.portfolio.network.PortfolioApi
+import dev.orestegabo.portfolio.network.PortfolioDataApi
 
 import androidx.compose.runtime.*
 import kotlinx.coroutines.CancellationException
@@ -12,7 +12,7 @@ import kotlinx.datetime.LocalDate
 
 /** Fetches complete report inputs without expanding the dashboard's compact snapshot. */
 internal class PortfolioReports(
-    private val currentApi: () -> PortfolioApi,
+    private val currentApi: () -> PortfolioDataApi,
     private val loadLedger: suspend () -> List<JsonRecord>,
     private val loadCouponTerms: suspend () -> List<JsonRecord>,
     private val reportWorkDispatcher: CoroutineDispatcher,

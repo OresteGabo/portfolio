@@ -1,7 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
 import dev.orestegabo.portfolio.network.ApiException
-import dev.orestegabo.portfolio.network.PortfolioApi
+import dev.orestegabo.portfolio.network.PortfolioDataApi
 
 import androidx.compose.runtime.*
 import kotlinx.coroutines.CancellationException
@@ -11,7 +11,7 @@ import kotlin.io.encoding.Base64
 
 /** Account-facing effects needed by imports; session/job ownership stays in PortfolioModel. */
 internal interface PortfolioImportHost {
-    val api: PortfolioApi
+    val api: PortfolioDataApi
     var portfolio: PortfolioSnapshot
     val documents: List<JsonRecord>
     val shareOrders: List<JsonRecord>

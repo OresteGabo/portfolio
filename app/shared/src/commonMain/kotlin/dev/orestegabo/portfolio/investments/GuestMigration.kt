@@ -1,7 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
 import dev.orestegabo.portfolio.network.ApiException
-import dev.orestegabo.portfolio.network.PortfolioApi
+import dev.orestegabo.portfolio.network.OriginBoundDataApi
 
 import androidx.compose.runtime.*
 import io.ktor.http.encodeURLParameter
@@ -18,7 +18,7 @@ internal interface GuestMigrationRemote {
     suspend fun document(account: MigrationAccount,row: MigrationRow,date: String,bytes: ByteArray,progress: (Int,Int)->Unit): JsonRecord
     suspend fun item(account: MigrationAccount,row: MigrationRow,record: JsonRecord,documents: List<String>): JsonRecord
 }
-internal class ApiGuestMigrationRemote(private val api: PortfolioApi): GuestMigrationRemote {
+internal class ApiGuestMigrationRemote(private val api: OriginBoundDataApi): GuestMigrationRemote {
     private fun checkAccount(account: MigrationAccount) { check(api.origin == account.origin) }
     override suspend fun status(account: MigrationAccount): JsonRecord {
         checkAccount(account)

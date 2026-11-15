@@ -1,7 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
 import dev.orestegabo.portfolio.network.ApiException
-import dev.orestegabo.portfolio.network.PortfolioApi
+import dev.orestegabo.portfolio.network.PortfolioDataApi
 
 import androidx.compose.runtime.*
 import kotlinx.coroutines.CancellationException
@@ -14,7 +14,7 @@ import kotlin.time.TimeSource
 
 /** Narrow account boundary: this feature never owns authentication or replaces the session. */
 internal interface PortfolioNotificationHost {
-    val api: PortfolioApi
+    val api: PortfolioDataApi
     val user: JsonRecord?
     val locked: Boolean
     val isGuest: Boolean

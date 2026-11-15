@@ -1,6 +1,6 @@
 package dev.orestegabo.portfolio.investments
 
-import dev.orestegabo.portfolio.network.PortfolioApi
+import dev.orestegabo.portfolio.network.PortfolioDataApi
 
 
 internal data class InvestmentEvidence(val label: String, val document: JsonRecord)
@@ -25,7 +25,7 @@ internal fun investmentEvidence(record: JsonRecord, documents: List<JsonRecord>)
     }).distinctBy { it.document.text("id") }
 
 /** Same authenticated download and native share/save behavior as the document library. */
-internal suspend fun shareInvestmentDocument(api: PortfolioApi, actions: NativeActions, document: JsonRecord): Boolean {
+internal suspend fun shareInvestmentDocument(api: PortfolioDataApi, actions: NativeActions, document: JsonRecord): Boolean {
     val path = document.text("downloadUrl")
     require(path.matches(Regex("/api/bonds/documents/[A-Za-z0-9_-]+"))) { "Invalid document URL." }
     val data = api.bytes(path)
