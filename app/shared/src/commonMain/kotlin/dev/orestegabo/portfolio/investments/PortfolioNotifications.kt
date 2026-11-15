@@ -5,6 +5,8 @@ import dev.orestegabo.portfolio.network.PortfolioDataApi
 
 import androidx.compose.runtime.*
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -120,15 +122,20 @@ internal class PortfolioNotifications(
         val revision=notificationGeneration;val account=user?.text("id")
         try {
             var value=api.request("/api/bonds/notifications/preferences")
+            currentCoroutineContext().ensureActive()
             if(revision!=notificationGeneration || account!=user?.text("id") || !value.has("categories"))return@withLock
             if(!value.optBoolean("configured")) value=api.request("/api/bonds/notifications/preferences","PUT",JsonRecord().put("monthlyTarget",monthlyInvestmentTarget))
+            currentCoroutineContext().ensureActive()
             if(revision!=notificationGeneration || account!=user?.text("id"))return@withLock
             notificationPreferences=value;notificationSettingsAvailable=true
             value.text("monthlyTarget").toLongOrNull()?.takeIf(::validInvestmentTarget)?.let {
                 host.applyMonthlyTarget(it)
             }
         } catch(cancelled: CancellationException) { throw cancelled }
-        catch(failure: Exception) { invalidateRejectedSession(failure) }
+        catch(failure: Exception) {
+            currentCoroutineContext().ensureActive()
+            if (revision == notificationGeneration && account == user?.text("id")) invalidateRejectedSession(failure)
+        }
     }
     fun updateNotificationPreference(category: String? = null, enabled: Boolean) {
         if (!notificationSettingsAvailable || notificationPreferenceSaving(category) || user == null || locked) return
@@ -190,15 +197,19 @@ internal class PortfolioNotifications(
         notificationsLoading=true
         try {
             if(!more)fetchNotificationSettings()
-            if (user == null || locked) return
+            currentCoroutineContext().ensureActive()
+            if (revision != notificationGeneration || account != user?.text("id") || user == null || locked) return
             val response=api.request("/api/bonds/notifications"+(if(more) "?before=${notificationNextBefore ?: return}" else ""))
+            currentCoroutineContext().ensureActive()
             if(revision!=notificationGeneration || account!=user?.text("id"))return
             notificationDate=calendarDate(response.text("serverDate")) ?: Today
             try {
                 val receipts=api.request("/api/bonds/notifications/coupons")
+                currentCoroutineContext().ensureActive()
                 if(revision==notificationGeneration && receipts.has("receipts")) { couponReceipts=receipts.rows("receipts");couponTrackingAvailable=true }
             } catch(cancelled: CancellationException) { throw cancelled }
             catch(_: Exception) { }
+            currentCoroutineContext().ensureActive()
             if(revision!=notificationGeneration || account!=user?.text("id"))return
             val rows=response.rows("notifications")
             notifications=if(more)(notifications+rows).distinctBy { it.text("id") } else rows
@@ -207,6 +218,8 @@ internal class PortfolioNotifications(
             notificationsError=null;notificationLoadedAt=clock.markNow()
         } catch(cancelled: CancellationException) { throw cancelled }
         catch(failure: Exception) {
+            currentCoroutineContext().ensureActive()
+            if (revision != notificationGeneration || account != user?.text("id")) return
             if (invalidateRejectedSession(failure)) return
             if(revision==notificationGeneration) notificationsError=if(failure is ApiException && failure.status==404)
                 "Notifications need the updated server." else "Notifications could not be loaded. Try again."

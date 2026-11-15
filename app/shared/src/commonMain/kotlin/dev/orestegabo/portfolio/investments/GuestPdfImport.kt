@@ -47,7 +47,10 @@ class GuestPdfImport(private val repository: GuestInvestmentImporter, private va
                 duplicate = doc.readOnlyCopy(); bytes.fill(0); pdf = null
             } else review = loaded
         } catch (_: TimeoutCancellationException) {
-            clear(); failure = "Local PDF processing timed out. Try a clearer text-based PDF or enter the investment manually."
+            clear()
+            // A parser's own timeout is a local error; a cancelled owner must keep unwinding.
+            currentCoroutineContext().ensureActive()
+            failure = "Local PDF processing timed out. Try a clearer text-based PDF or enter the investment manually."
         } catch (cancelled: CancellationException) { clear(); throw cancelled }
         catch (_: Exception) {
             clear()

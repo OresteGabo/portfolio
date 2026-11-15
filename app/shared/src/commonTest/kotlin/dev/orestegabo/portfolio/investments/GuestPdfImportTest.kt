@@ -254,4 +254,25 @@ class GuestPdfImportTest {
         workflow.clear()
     }
 
+
+    @Test fun parentTimeoutCancelsSelectionWithoutReturningOrPublishingALocalError() = runTest {
+        val disk = Disk(); val files = Files()
+        val workflow = GuestPdfImport(repo(disk, files), StandardTestDispatcher(testScheduler))
+        val waiting = object : InvestmentDocumentParser {
+            override var onProgress: (String) -> Unit = {}
+            override suspend fun parse(pdf: ByteArray): JsonRecord = awaitCancellation()
+            override fun cancel() {}
+        }
+        var returned = false
+        assertFailsWith<kotlinx.coroutines.TimeoutCancellationException> {
+            kotlinx.coroutines.withTimeout(200) {
+                workflow.select(actions(pdf()), waiting)
+                returned = true
+            }
+        }
+        assertFalse(returned)
+        assertNull(workflow.failure); assertNull(workflow.review); assertNull(workflow.progress)
+        assertEquals(0, disk.writes); assertTrue(files.files.isEmpty())
+    }
+
 }
