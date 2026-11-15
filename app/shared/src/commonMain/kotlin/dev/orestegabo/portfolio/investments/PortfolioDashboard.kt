@@ -2,8 +2,9 @@ package dev.orestegabo.portfolio.investments
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,7 +42,6 @@ import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.EventAvailable
 import androidx.compose.material.icons.outlined.Flag
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Percent
 import androidx.compose.material3.AlertDialog
@@ -70,6 +70,9 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -77,12 +80,12 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -90,9 +93,6 @@ import androidx.compose.ui.unit.sp
 import dev.orestegabo.portfolio.design.StructColors
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
-import org.jetbrains.compose.resources.painterResource
-import portfolio.app.shared.generated.resources.Res
-import portfolio.app.shared.generated.resources.kigali_hero
 import kotlin.math.roundToInt
 
 enum class BondStatus(val value: String, val label: String) {
@@ -167,10 +167,6 @@ fun PortfolioScreen(
     val valuation = remember(model.portfolio, model.quotes, today) {
         model.portfolio.valuation(today, model.quotes)
     }
-    //val recentBonds = model.portfolio.recentBonds(Today)
-    //val recentShares = model.portfolio.recentShares(Today)
-    //val summary = model.portfolio.summary(Today)
-    //val valuation = model.portfolio.valuation(Today, model.quotes)
     val insights = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val reducedMotion = LocalReducedMotion.current
@@ -471,86 +467,40 @@ private fun InvestmentActionIcon(icon: ImageVector) {
 
 @Composable
 private fun PortfolioHero(showNotifications: Boolean, subtitle: String, totals: List<CurrencyValuation>, topInset: Dp, openNotifications: () -> Unit, unreadNotifications: Int, stale: Boolean, priceDate: String, notice: @Composable () -> Unit) {
-    val background = MaterialTheme.colorScheme.background
+    val dark = MaterialTheme.colorScheme.background.luminance() < .5f
+    val glow = StructColors.Dashboard.balanceGlow.resolve(dark)
     Box(Modifier.fillMaxWidth()) {
-        Box(Modifier.fillMaxWidth().height(300.dp + topInset)) {
-            Image(painterResource(Res.drawable.kigali_hero), null, Modifier.matchParentSize(), contentScale = ContentScale.Crop,
-                alignment = Alignment.Center)
-            Box(
-                Modifier.matchParentSize().background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            StructColors.Dashboard.imageScrimStart,
-                            StructColors.Dashboard.imageScrimEnd
-                        )
-                    )
-                )
-            )
-            Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, background), startY = 100f)))
-            ImigongoMotif(
-                Modifier.align(Alignment.CenterEnd).size(230.dp).offset(x = 52.dp, y = 24.dp),
-                StructColors.Dashboard.gold.copy(alpha = .26f)
-            )
+        Canvas(Modifier.matchParentSize()) {
+            drawRect(Brush.radialGradient(
+                colors = listOf(glow.copy(alpha = if (dark) .10f else .09f), Color.Transparent),
+                center = Offset(size.width * .85f, size.height * .32f),
+                radius = size.width * .85f))
         }
-        Column(Modifier.fillMaxWidth().smoothContentSize().padding(start = 20.dp, end = 20.dp, top = 20.dp + topInset), verticalArrangement = Arrangement.spacedBy(38.dp)) {
+        Column(Modifier.fillMaxWidth().smoothContentSize().padding(start = 20.dp, end = 20.dp, top = 16.dp + topInset),
+            verticalArrangement = Arrangement.spacedBy(28.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Surface(
-                        shape = RoundedCornerShape(15.dp),
-                        color = StructColors.Dashboard.logoBacking
-                    ) {
-                        StructMark(Modifier.padding(7.dp).size(40.dp), onDark = false)
+                    StructMark(Modifier.size(44.dp), onDark = dark)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        AppText("Struct Capital", style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
+                        AppText(subtitle, style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Column(Modifier.weight(1f)) {
-                        AppText(
-                            "Struct Capital",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = StructColors.Dashboard.onImage
-                        )
-                        AppText(
-                            subtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = StructColors.Dashboard.onImage.copy(alpha = .75f)
-                        )
-                    }
-                    if (showNotifications) NotificationBell(
-                        unreadNotifications,
-                        openNotifications,
-                        tint = StructColors.Dashboard.onImage
-                    )
+                    if (showNotifications) NotificationBell(unreadNotifications, openNotifications,
+                        tint = MaterialTheme.colorScheme.onBackground)
                 }
                 notice()
             }
-            if (totals.isEmpty()) {
-                Spacer(Modifier.height(46.dp))
-            } else totals.forEach { total -> PortfolioMoneyCard(total, stale, priceDate) }
-        }
-    }
-}
-
-/** A geometric line motif inspired by Rwanda’s traditional imigongo patterns. */
-@Composable
-private fun ImigongoMotif(modifier: Modifier, color: Color) {
-    Canvas(modifier.clipToBounds()) {
-        val step = size.width / 3f
-        for (row in -1..3) for (column in -1..3) {
-            val cx = column * step + if (row % 2 == 0) 0f else step / 2
-            val cy = row * step
-            for (inset in 0..2) {
-                val radius = step * (.46f - inset * .105f)
-                val path = Path().apply {
-                    moveTo(cx, cy - radius); lineTo(cx + radius, cy)
-                    lineTo(cx, cy + radius); lineTo(cx - radius, cy); close()
-                }
-                drawPath(path, color, style = Stroke(1.dp.toPx()))
-            }
+            if (totals.isEmpty()) Spacer(Modifier.height(46.dp))
+            else totals.forEach { total -> PortfolioBalance(total, stale, priceDate) }
         }
     }
 }
 
 @Composable
-private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, priceDate: String) {
+private fun PortfolioBalance(valuation: CurrencyValuation, stale: Boolean, priceDate: String) {
+    val dark = MaterialTheme.colorScheme.background.luminance() < .5f
     val total = valuation.cost
     val priceLabel = when {
         valuation.unpricedShares > 0 && valuation.pricedShares == 0 -> "Shares at purchase cost"
@@ -566,7 +516,7 @@ private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, pri
             onDismissRequest = { showBasis = false },
             title = { AppText("About this estimate") },
             text = {
-                Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement=Arrangement.spacedBy(12.dp)) {
                     AppText("$priceBasis\n\nTracked investments, including pending requests at recorded amounts. Bonds use principal value; shares use the latest available RSE closing price. Unpriced shares use purchase cash cost. Cash balances, liabilities, dividends and selling fees are excluded. Annual coupons are shown separately.")
                     HorizontalDivider()
                     Fact("Confirmed annual net coupon",money(total.confirmedAnnualCoupon,total.currency))
@@ -581,116 +531,50 @@ private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, pri
         )
     }
 
-    Surface(
-        shape = RoundedCornerShape(28.dp),
-        color = Color.Transparent,
-        contentColor = StructColors.Dashboard.onImage,
-        border = BorderStroke(1.dp, StructColors.Dashboard.gold.copy(alpha = .24f))
-    ) {
-        Box(Modifier.background(Brush.linearGradient(StructColors.Dashboard.worthGradient))) {
-            ImigongoMotif(
-                Modifier.align(Alignment.CenterEnd).size(200.dp).offset(x = 75.dp),
-                StructColors.Dashboard.gold.copy(alpha = .075f)
-            )
-            Column(
-                Modifier.fillMaxWidth().padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp) // Slightly better breathing room
-            ) {
-                // Top section: Net Worth Header & Primary Value
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        AppText(
-                            "Estimated net worth",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = StructColors.Dashboard.worthLabel
-                        )
-                        // Improved touch target semantics and padding alignment
-                        IconButton(
-                            onClick = { showBasis = true },
-                            modifier = Modifier.size(36.dp) // Compact yet touch-friendly
-                        ) {
-                            AppIcon(
-                                Icons.Outlined.Info,
-                                contentDescription = "Valuation basis details",
-                                tint = StructColors.Dashboard.worthLabel,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                    FinancialText(
-                        money(valuation.estimatedNetWorth, total.currency),
-                        modifier = Modifier.fillMaxWidth(),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        softWrap = false,
-                        autoSize = TextAutoSize.StepBased(
-                            minFontSize = 16.sp,
-                            maxFontSize = 24.sp,
-                            stepSize = .5.sp
-                        )
-                    )
+    Column(Modifier.fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                .clickable(role = androidx.compose.ui.semantics.Role.Button,
+                    onClickLabel = localized("Valuation basis details")) { showBasis = true }
+                .semantics { contentDescription = localized("Valuation basis details") },
+                horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.Bottom) {
+                FinancialText(money(valuation.estimatedNetWorth, total.currency).removePrefix("${total.currency} "),
+                    modifier = Modifier.weight(1f, fill = false).alignByBaseline(), textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.displayMedium.copy(fontFeatureSettings = "tnum", letterSpacing = (-1).sp),
+                    color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Medium,
+                    maxLines = 1, softWrap = false,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 24.sp, maxFontSize = 48.sp, stepSize = .5.sp))
+                AppText(total.currency, Modifier.padding(start = 8.dp).alignByBaseline(),
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (stale || valuation.unpricedShares > 0) AppText(priceLabel,
+                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Surface(shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp), color = Color.Transparent,
+            contentColor = StructColors.Dashboard.worthText.resolve(dark)) {
+            Box(Modifier.fillMaxWidth()) {
+                // Mask only the artwork layer so the metrics retain full contrast.
+                Canvas(Modifier.matchParentSize().graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)) {
+                    drawRect(Brush.linearGradient(StructColors.Dashboard.worthGradient.resolve(dark)))
+                    drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black), endY = 40.dp.toPx()),
+                        blendMode = BlendMode.DstIn)
                 }
-
-                HorizontalDivider(color = StructColors.Dashboard.gold.copy(alpha = .15f))
-
-                // Bottom metrics: Clean layout switch without heavy measurement passes
-                val isCompact = LocalDensity.current.fontScale > 1.3f
-
-                if (isCompact) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        MoneyMetric(
-                            "Bond principal",
-                            total.bondFaceValue,
-                            total.currency,
-                            Icons.Outlined.AccountBalance,
-                            Modifier.fillMaxWidth()
-                        )
-                        MoneyMetric(
-                            "RSE equity value",
-                            valuation.shareValue,
-                            total.currency,
-                            Icons.Outlined.BarChart,
-                            Modifier.fillMaxWidth()
-                        )
-                        MoneyMetric(
-                            "Annual net coupon",
-                            total.netAnnualCoupon,
-                            total.currency,
-                            Icons.Outlined.Percent,
-                            Modifier.fillMaxWidth(), estimated=total.estimatedPendingCouponCount > 0
-                        )
-                    }
-                } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        MoneyMetric(
-                            "Bond principal",
-                            total.bondFaceValue,
-                            total.currency,
-                            Icons.Outlined.AccountBalance,
-                            Modifier.weight(1f)
-                        )
-                        MoneyMetric(
-                            "RSE equity value",
-                            valuation.shareValue,
-                            total.currency,
-                            Icons.Outlined.BarChart,
-                            Modifier.weight(1f)
-                        )
-                        MoneyMetric(
-                            "Annual net coupon",
-                            total.netAnnualCoupon,
-                            total.currency,
-                            Icons.Outlined.Percent,
-                            Modifier.weight(1f), estimated=total.estimatedPendingCouponCount > 0
-                        )
+                BoxWithConstraints(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 56.dp, bottom = 20.dp)) {
+                    val longestAmount = listOf(total.bondFaceValue, valuation.shareValue, total.netAnnualCoupon)
+                        .maxOf { money(it, total.currency).removePrefix("${total.currency} ").length }
+                    val columns = maxWidth >= 300.dp && LocalDensity.current.fontScale <= 1.1f && longestAmount <= 12
+                    if (columns) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        MoneyMetric("Bond principal", total.bondFaceValue, total.currency, Icons.Outlined.AccountBalance, Modifier.weight(1f), column = true)
+                        MoneyMetric("RSE equity value", valuation.shareValue, total.currency, Icons.Outlined.BarChart, Modifier.weight(1f), column = true)
+                        MoneyMetric("Annual net coupon", total.netAnnualCoupon, total.currency, Icons.Outlined.Percent,
+                            Modifier.weight(1f), estimated = total.estimatedPendingCouponCount > 0, column = true)
+                    } else Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        val stacked = LocalDensity.current.fontScale > 1.3f
+                        MoneyMetric("Bond principal", total.bondFaceValue, total.currency, Icons.Outlined.AccountBalance, Modifier.fillMaxWidth(), stacked = stacked)
+                        MoneyMetric("RSE equity value", valuation.shareValue, total.currency, Icons.Outlined.BarChart, Modifier.fillMaxWidth(), stacked = stacked)
+                        MoneyMetric("Annual net coupon", total.netAnnualCoupon, total.currency, Icons.Outlined.Percent,
+                            Modifier.fillMaxWidth(), estimated = total.estimatedPendingCouponCount > 0, stacked = stacked)
                     }
                 }
             }
@@ -699,25 +583,38 @@ private fun PortfolioMoneyCard(valuation: CurrencyValuation, stale: Boolean, pri
 }
 
 @Composable
-private fun MoneyMetric(label: String, value: Double, currency: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier, estimated: Boolean = false) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(7.dp)) {
-        AppIcon(icon, null, Modifier.size(20.dp), tint = StructColors.Dashboard.gold)
-        AppText(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            minLines = 2,
-            color = StructColors.Dashboard.worthMetricLabel
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            AppText(
-                currency,
-                style = MaterialTheme.typography.labelSmall,
-                color = StructColors.Dashboard.worthMetricLabel,
-                maxLines = 1, softWrap = false)
-            FinancialText((if (estimated) "≈ " else "") + money(value, currency).removePrefix("$currency "), modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
-                maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
-                autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = 14.sp, stepSize = .5.sp))
+private fun MoneyMetric(label: String, value: Double, currency: String, icon: ImageVector, modifier: Modifier,
+                        estimated: Boolean = false, stacked: Boolean = false, column: Boolean = false) {
+    val dark = MaterialTheme.colorScheme.background.luminance() < .5f
+    val accent = StructColors.Dashboard.worthAccent.resolve(dark)
+    val labelColor = StructColors.Dashboard.worthMetricLabel.resolve(dark)
+    val amount = (if (estimated) "≈ " else "") + money(value, currency).removePrefix("$currency ")
+    if (column) {
+        Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            AppIcon(icon, null, Modifier.size(20.dp), tint = accent)
+            AppText(label, style = MaterialTheme.typography.labelSmall, minLines = 2,
+                color = labelColor)
+            FinancialText(amount, Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
+                autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 16.sp, stepSize = .5.sp))
+        }
+        return
+    }
+    val columnLayout = stacked || amount.length > 15
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        AppIcon(icon, null, Modifier.size(18.dp), tint = accent)
+        if (columnLayout) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                AppText(label, style = MaterialTheme.typography.labelMedium, color = labelColor)
+                FinancialText(amount, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            }
+        } else {
+            AppText(label, Modifier.weight(1f), style = MaterialTheme.typography.labelMedium,
+                color = labelColor)
+            FinancialText(amount, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold, textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                maxLines = 1, softWrap = false,
+                autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = 18.sp, stepSize = .5.sp))
         }
     }
 }
@@ -910,7 +807,7 @@ private fun CouponIncomeCard(
     }
 }
 
-/** The photo scrolls; this light/dark veil keeps system icons legible above every list item. */
+/** Keep system icons legible as dashboard content scrolls beneath them. */
 @Composable
 fun Modifier.portfolioStatusBarFade(enabled: Boolean): Modifier {
     if (!enabled) return this

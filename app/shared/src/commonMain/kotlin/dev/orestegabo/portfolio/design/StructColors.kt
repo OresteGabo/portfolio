@@ -104,14 +104,15 @@ object StructColors {
 
     object Dashboard {
         val gold = Color(0xFFECC75F)
+        val worthGradient = ThemeGradient(
+            listOf(Color(0xFFF5F0DF), Color(0xFFEDE3C4), Color(0xFFF2ECD9)),
+            listOf(Color(0xFF2E321C), Color(0xFF4D4117), Color(0xFF20251B))
+        )
+        val worthText = ThemeColor(Brand.ink, Theme.darkOnSurface)
+        val worthMetricLabel = ThemeColor(Color(0xFF615C4D), Color(0xFFDAD7C6))
+        val worthAccent = ThemeColor(Brand.olive, gold)
+        val balanceGlow = ThemeColor(Color(0xFFAD8940), Color(0xFFCFB46A))
         val allocationGreen = Color(0xFF739A87)
-        val imageScrimStart = Color(0xE6101814)
-        val imageScrimEnd = Color(0x65202B21)
-        val logoBacking = Color(0xFFFAF7E8)
-        val onImage = Fixed.white
-        val worthGradient = listOf(Color(0xF02E321C), Color(0xF24D4117), Color(0xFA20251B))
-        val worthLabel = Color(0xFFE8E4D3)
-        val worthMetricLabel = Color(0xFFDAD7C6)
         val allocationAccent = ThemeColor(Color(0xFF9A731B), gold)
         val incomeAccent = ThemeColor(Color(0xFF63732E), Color(0xFFD5CC7D))
         val paymentAccent = ThemeColor(Color(0xFF386D71), Color(0xFFACCECB))

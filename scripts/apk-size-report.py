@@ -39,7 +39,7 @@ def inspect(path, verify=False):
             assert {n for n in names if n.startswith(prefix)} == expected, 'Unexpected OCR core payload'
             assert 'assets/engine/bond-import/eng.traineddata' in names, 'Offline English OCR model missing'
             photos = {n.rsplit('/', 1)[-1] for n in names if '/drawable/kigali_' in n}
-            assert photos == {'kigali_hero.jpg', 'kigali_assets_36653828.jpg'}, 'Unused photos packaged or active photos missing'
+            assert photos == {'kigali_assets_36653828.jpg'}, 'Unused photos packaged or active photos missing'
             for name in names:
                 if name.endswith('.dex'):
                     assert b'androidx/compose/ui/tooling/ComposeViewAdapter' not in archive.read(name), 'Developer UI tooling packaged in release'

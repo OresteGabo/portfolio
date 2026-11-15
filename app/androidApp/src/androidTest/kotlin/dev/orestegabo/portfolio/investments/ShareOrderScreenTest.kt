@@ -48,6 +48,14 @@ class ShareOrderScreenTest {
             error("Expected UI text: $text")
         }
         fun click(text: String, lastMatch: Boolean = false) { var node=await(text);if(lastMatch)node=nodes(instrumentation.uiAutomation.rootInActiveWindow).last {it.isVisibleToUser && (it.text?.toString()==text || it.contentDescription?.toString()==text)};while(!node.isClickable && node.parent!=null)node=node.parent;assertTrue(node.performAction(AccessibilityNodeInfo.ACTION_CLICK));instrumentation.waitForIdleSync() }
+        fun reveal(text: String) {
+            val deadline=System.currentTimeMillis()+5000
+            while(nodes(instrumentation.uiAutomation.rootInActiveWindow).none {it.text?.toString()==text && it.isVisibleToUser} && System.currentTimeMillis()<deadline) {
+                nodes(instrumentation.uiAutomation.rootInActiveWindow).firstOrNull {it.isScrollable}?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+                instrumentation.waitForIdleSync()
+            }
+            await(text)
+        }
         val priorLanguage=AppLanguage.preference
         try { ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             lateinit var model: PortfolioModel
@@ -91,6 +99,19 @@ class ShareOrderScreenTest {
                 if(!ready)Thread.sleep(50)
             }
             assertTrue("Synthetic account and orders API ready",ready)
+            await("Valuation basis details")
+            Thread.sleep(300)
+            val dashboardScreenshot=instrumentation.uiAutomation.takeScreenshot()
+            java.io.File(instrumentation.targetContext.cacheDir,"synthetic-dashboard-top.png").outputStream().use {dashboardScreenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
+            dashboardScreenshot.recycle()
+            if (InstrumentationRegistry.getArguments().getString("dashboardOnly")=="true") {
+                click("Valuation basis details")
+                await("About this estimate")
+                reveal("Pending annual net coupon")
+                click("Done")
+                await("Valuation basis details")
+                return@use
+            }
             await("Annual net coupon");await("≈ 116,850")
             scenario.onActivity {
                 val total=model.portfolio.summary(Today).single()
@@ -99,7 +120,7 @@ class ShareOrderScreenTest {
                 assertEquals(116850.0,total.pendingAnnualCoupon,0.0)
             }
             click("Valuation basis details")
-            await("Confirmed annual net coupon");await("Pending annual net coupon")
+            await("Confirmed annual net coupon");reveal("Pending annual net coupon")
             Thread.sleep(300) // Capture the dialog after its opening fade.
             val estimateScreenshot=instrumentation.uiAutomation.takeScreenshot()
             java.io.File(instrumentation.targetContext.cacheDir,"synthetic-coupon-assumptions.png").outputStream().use {estimateScreenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
@@ -143,7 +164,7 @@ class ShareOrderScreenTest {
             val screenshot=instrumentation.uiAutomation.takeScreenshot()
             java.io.File(instrumentation.targetContext.cacheDir,"synthetic-share-order-screen.png").outputStream().use {screenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
             screenshot.recycle()
-            click("Save pending order")
+            reveal("Save pending order"); click("Save pending order")
             val deadline=System.currentTimeMillis()+5000
             while(writes.get()==0 && System.currentTimeMillis()<deadline)Thread.sleep(50)
             assertEquals(1,writes.get());assertEquals(0,equityWrites.get())
