@@ -162,6 +162,8 @@ class GuestPdfImportTest {
         val job=launch { workflow.select(actions(pdf()),waiting) }
         entered.await(); job.cancelAndJoin()
         assertTrue(cancelled); assertNull(workflow.review); assertNull(workflow.previewBytes); assertTrue(files.files.isEmpty()); assertEquals(0,disk.writes)
+        waiting.onProgress("Late parser progress")
+        assertNull(workflow.progress)
     }
     @Test fun localParserTimeoutShowsAnErrorWithoutSavingOrUploading() = runTest {
         val disk=Disk(); val files=Files(); val workflow=GuestPdfImport(repo(disk,files),StandardTestDispatcher(testScheduler))

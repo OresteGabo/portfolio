@@ -127,8 +127,11 @@ internal object NextWidgetStore {
     }
 }
 
-open class NextSmallWidget : AppWidgetProvider() {
+class NextSmallWidget : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) = NextWidgetStore.updateAll(context)
     override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: Bundle) = NextWidgetStore.updateAll(context)
 }
-class NextMediumWidget : NextSmallWidget()
+class NextMediumWidget : AppWidgetProvider() {
+    override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) = NextWidgetStore.updateAll(context)
+    override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: Bundle) = NextWidgetStore.updateAll(context)
+}

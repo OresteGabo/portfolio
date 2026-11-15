@@ -7,7 +7,7 @@ import androidx.compose.runtime.setValue
 class ReceivedPdf(val id: Long, val bytes: ByteArray, val fileName: String)
 
 /** Main-thread mailbox: retain one external file through onboarding/sign-in, never overwrite it. */
-open class PdfImportInbox {
+class PdfImportInbox {
     var pending: ReceivedPdf? by mutableStateOf(null)
         private set
     var error: String? by mutableStateOf(null)
@@ -36,7 +36,21 @@ open class PdfImportInbox {
     fun dismissError() { error = null }
 }
 
-object NativePdfInbox : PdfImportInbox()
+/** Stable native/Swift singleton facade; the mailbox owns delivery and preparation state. */
+object NativePdfInbox {
+    private val inbox = PdfImportInbox()
+    val pending: ReceivedPdf? get() = inbox.pending
+    val error: String? get() = inbox.error
+    val requiresPreparation: Boolean get() = inbox.requiresPreparation
+
+    fun offer(bytes: ByteArray, deliveryId: String, fileName: String = "Shared PDF", prepareFirst: Boolean = false): Boolean =
+        inbox.offer(bytes, deliveryId, fileName, prepareFirst)
+    fun continueImport(id: Long) = inbox.continueImport(id)
+    fun take(id: Long): ReceivedPdf? = inbox.take(id)
+    fun dismiss() = inbox.dismiss()
+    fun reject(message: String) = inbox.reject(message)
+    fun dismissError() = inbox.dismissError()
+}
 
 /** Reuse the exact picker-import validation/parser, without asking for a second file selection. */
 internal class ReceivedPdfActions(private val original: NativeActions, private val bytes: ByteArray, override val pickedPdfName: String? = null) : NativeActions by original {

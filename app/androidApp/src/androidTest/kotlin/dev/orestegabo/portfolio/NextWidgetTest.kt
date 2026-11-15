@@ -17,6 +17,19 @@ import java.time.LocalDate
 
 class NextWidgetTest {
     private val today = LocalDate.parse("2026-11-12")
+    @Test fun bothProviderVariantsRefreshThroughFrameworkCallbacks() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val context = instrumentation.targetContext
+        val before = NextWidgetStore.snapshot(context).toString()
+        val manager = AppWidgetManager.getInstance(context)
+        instrumentation.runOnMainSync {
+            for (provider in listOf(NextSmallWidget(), NextMediumWidget())) {
+                provider.onUpdate(context, manager, intArrayOf())
+                provider.onAppWidgetOptionsChanged(context, manager, -1, android.os.Bundle())
+            }
+        }
+        assertEquals(before, NextWidgetStore.snapshot(context).toString())
+    }
     private fun issue(id: String, open: String, close: String, form: Boolean = false) = JSONObject()
         .put("id",id).put("title","Public Treasury bond").put("open",open).put("close",close).put("form",form)
 

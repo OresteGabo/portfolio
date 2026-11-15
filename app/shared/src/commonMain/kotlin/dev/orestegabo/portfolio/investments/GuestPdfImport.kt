@@ -27,15 +27,11 @@ class GuestPdfImport(private val repository: GuestPortfolioRepository, private v
             val privateActions = object : PdfPicker by actions {
                 override suspend fun pickPdf(onSelected: () -> Unit) = actions.pickPrivatePdf(onSelected)
             }
-            val loaded = readPurchasePdf(privateActions, parser = object : InvestmentDocumentParser {
-                override var onProgress: (String) -> Unit
-                    get() = parser.onProgress
-                    set(value) { parser.onProgress = value }
+            val loaded = readPurchasePdf(privateActions, parser = object : InvestmentDocumentParser by parser {
                 override suspend fun parse(pdf: ByteArray): JsonRecord {
                     withContext(workDispatcher) { validatePdfEnvelope(pdf) }
                     return parser.parse(pdf)
                 }
-                override fun cancel() = parser.cancel()
             }, openedPdf = { selected = it }, selectedPdf = { pdf = it.copyOf() }, progress = { progress = it?.stage?.label })?.readOnlyCopy() ?: return
             currentCoroutineContext().ensureActive()
             require(loaded.text("kind") in listOf("bond", "equity")) { "unsupported" }

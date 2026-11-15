@@ -6,6 +6,36 @@ import kotlin.test.*
 class IncomingPdfTest {
     private val bytes = "%PDF-1.7 synthetic\n%%EOF".encodeToByteArray()
 
+    @Test fun nativeFacadePreservesMailboxPreparationDeliveryAndErrorBehavior() {
+        NativePdfInbox.dismiss(); NativePdfInbox.dismissError()
+        try {
+            assertTrue(NativePdfInbox.offer(bytes, "composition-prepare", "allocation.pdf", true))
+            val first = assertNotNull(NativePdfInbox.pending)
+            assertEquals("allocation.pdf", first.fileName)
+            assertTrue(NativePdfInbox.requiresPreparation)
+            assertNull(NativePdfInbox.take(first.id))
+            NativePdfInbox.continueImport(first.id + 1)
+            assertTrue(NativePdfInbox.requiresPreparation)
+            assertFalse(NativePdfInbox.offer(bytes, "composition-blocked"))
+            assertNotNull(NativePdfInbox.error)
+            NativePdfInbox.dismissError(); assertNull(NativePdfInbox.error)
+            NativePdfInbox.continueImport(first.id)
+            assertSame(first, NativePdfInbox.take(first.id))
+            assertNull(NativePdfInbox.pending)
+            assertFalse(NativePdfInbox.offer(bytes, "composition-prepare"))
+            assertTrue(NativePdfInbox.offer(bytes, "composition-defaults"))
+            assertEquals("Shared PDF", NativePdfInbox.pending?.fileName)
+            assertFalse(NativePdfInbox.requiresPreparation)
+            NativePdfInbox.dismiss()
+            assertNull(NativePdfInbox.pending)
+            assertFailsWith<IllegalArgumentException> { NativePdfInbox.offer(byteArrayOf(), "composition-invalid") }
+            NativePdfInbox.reject("private native error")
+            assertEquals(GENERAL_ERROR_MESSAGE, NativePdfInbox.error)
+        } finally {
+            NativePdfInbox.dismiss(); NativePdfInbox.dismissError()
+        }
+    }
+
     @Test fun oneFileSurvivesUntilItIsTakenAndCannotBeOverwritten() {
         val inbox = PdfImportInbox()
         assertTrue(inbox.offer(bytes, "first-delivery"))
