@@ -33,7 +33,7 @@ fun validateLedgerEntry(raw: JsonRecord, holdings: List<JsonRecord>, prior: List
             val fees = raw.optDouble("fees", 0.0); val tax = raw.optDouble("tax", 0.0)
             require(quantity > 0 && quantity % 1.0 == 0.0 && quantity <= available && price > 0 && price <= 1e12 && fees.isFinite() && fees >= 0 && tax.isFinite() && tax >= 0) { "Check the quantity, price and charges. You cannot sell more shares than remain." }
             val gross = decimalAmount(listOf(quantity, price))
-            require(gross <= 1e15 && fees + tax <= gross) { "Sale charges cannot exceed proceeds." }
+            require(gross <= 1e15 && saleChargesWithinProceeds(fees, tax, gross)) { "Sale charges cannot exceed proceeds." }
             val remainingCost = decimalAmount(emptyList(), addends = listOf(lot.optDouble("netAmountPayable")) + prior.filter { it.text("kind") == "sale" && it.text("holdingId") == lot.text("id") }.map { -it.optDouble("allocatedCost", 0.0) })
             val allocated = if (quantity == available) remainingCost
                 else proportionalCost(lot.optDouble("netAmountPayable"), quantity, lot.optDouble("shares")).coerceAtMost(remainingCost)
