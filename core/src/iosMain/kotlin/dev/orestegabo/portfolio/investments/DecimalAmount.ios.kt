@@ -14,7 +14,9 @@ internal actual fun decimalAmount(factors: List<Double>, divisor: Int, taxRate: 
     val denominator = decimal(divisor.toDouble())
     numerator = numerator.decimalNumberByAdding(addends.fold(zero) { total, value -> total.decimalNumberByAdding(decimal(value)) }.decimalNumberByMultiplyingBy(denominator))
     val rounding = NSDecimalNumberHandler.decimalNumberHandlerWithRoundingMode(NSRoundingMode.NSRoundPlain, 2, false, false, false, true)
-    return numerator.decimalNumberByDividingBy(denominator).decimalNumberByRoundingAccordingToBehavior(rounding).doubleValue
+    // Foundation's doubleValue can introduce an extra ULP; parse the rounded decimal text
+    // through Kotlin, matching BigDecimal.toDouble on the JVM-backed targets.
+    return numerator.decimalNumberByDividingBy(denominator).decimalNumberByRoundingAccordingToBehavior(rounding).stringValue.toDouble()
 }
 
 internal actual fun proportionalCost(cost: Double, quantity: Double, original: Double): Double {
@@ -22,5 +24,5 @@ internal actual fun proportionalCost(cost: Double, quantity: Double, original: D
     val rounding = NSDecimalNumberHandler.decimalNumberHandlerWithRoundingMode(NSRoundingMode.NSRoundPlain, 2, false, false, false, true)
     return NSDecimalNumber.decimalNumberWithString(cost.toString()).decimalNumberByMultiplyingBy(NSDecimalNumber.decimalNumberWithString(quantity.toString()))
         .decimalNumberByDividingBy(NSDecimalNumber.decimalNumberWithString(original.toString()))
-        .decimalNumberByRoundingAccordingToBehavior(rounding).doubleValue
+        .decimalNumberByRoundingAccordingToBehavior(rounding).stringValue.toDouble()
 }

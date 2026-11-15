@@ -45,6 +45,9 @@ kotlin {
             implementation("androidx.biometric:biometric:1.1.0")
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
         }
+        getByName("androidDeviceTest").dependencies {
+            implementation("androidx.test:runner:1.7.0")
+        }
         commonMain.dependencies {
             api(project(":core"))
             implementation(libs.compose.runtime)

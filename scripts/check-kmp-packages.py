@@ -59,6 +59,16 @@ def ownership_error(module, package, imported):
     return None
 
 
+
+def common_platform_import_error(path, imported):
+    """AndroidX is not an Android SDK namespace: Compose/lifecycle APIs can be multiplatform."""
+    platform_only = ("android.", "java.", "javax.", "platform.", "kotlinx.cinterop.")
+    parts = Path(path).parts
+    source_set = parts[parts.index("src") + 1] if "src" in parts else None
+    if source_set == "commonMain" and imported.startswith(platform_only):
+        return "commonMain cannot import platform-only APIs"
+    return None
+
 def main():
     errors, checked = [], 0
     graph = {}
@@ -67,6 +77,11 @@ def main():
         graph[module] = set(re.findall(r'project\("(:[^\"]+)"\)', build))
         for path in directory.glob("src/*/kotlin/**/*.kt"):
             text = path.read_text()
+            imports = re.findall(r"^import ([\w.*]+)", text, re.M)
+            for imported in imports:
+                problem = common_platform_import_error(path.relative_to(ROOT), imported)
+                if problem:
+                    errors.append(f"{path.relative_to(ROOT)}: {problem}: {imported}")
             declaration = re.search(r"^package ([\w.]+)", text, re.M)
             if not declaration or not declaration[1].startswith(PREFIX):
                 continue
@@ -76,7 +91,7 @@ def main():
                 errors.append(f"{path.relative_to(ROOT)}: package/path mismatch ({package})")
             if "/commonMain/" not in str(path):
                 continue
-            for imported in re.findall(r"^import ([\w.*]+)", text, re.M):
+            for imported in imports:
                 problem = ownership_error(module, package, imported)
                 if problem:
                     errors.append(f"{path.relative_to(ROOT)}: {problem}: {imported}")
@@ -88,7 +103,7 @@ def main():
     if errors:
         print("\n".join(errors), file=sys.stderr)
         return 1
-    print(f"KMP packages: {checked} source/test files match paths; migrated ownership and module DAG pass.")
+    print(f"KMP packages: {checked} source/test files match paths; common platform imports, migrated ownership and module DAG pass.")
     return 0
 
 

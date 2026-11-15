@@ -37,6 +37,9 @@ kotlin {
     }
     
     sourceSets {
+        // The same JVM implementation is compiled by each leaf; this is not a JVM+Android hierarchy.
+        androidMain { kotlin.srcDir("src/jvmShared/kotlin") }
+        jvmMain { kotlin.srcDir("src/jvmShared/kotlin") }
         androidMain.dependencies { implementation(libs.ktor.client.cio) }
         iosMain.dependencies { implementation(libs.ktor.client.darwin) }
         jvmMain.dependencies { implementation(libs.ktor.client.cio) }
