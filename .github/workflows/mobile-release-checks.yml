@@ -41,7 +41,7 @@ jobs:
           node --test tests/*.test.mjs
           python3 -m unittest discover -s scripts/tests -p 'test_*.py'
       - name: Tests, full release lint, unsigned release bundle
-        run: ./gradlew --no-daemon :core:jvmTest :app:shared:testAndroidHostTest :app:androidApp:lintRelease :app:androidApp:bundleRelease
+        run: ./gradlew --no-daemon :core:jvmTest :core:testAndroidHostTest :app:shared:testAndroidHostTest :app:androidApp:lintRelease :app:androidApp:bundleRelease
       - name: Keep unsigned artifact and test evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

@@ -40,7 +40,28 @@ def cyclic(graph):
     return any(visit(node) for node in graph)
 
 
+def project_dependencies(build_script):
+    """Recognize the literal Kotlin DSL project dependency forms used by these modules."""
+    return set(re.findall(r'\bproject\(\s*(?:path\s*=\s*)?"(:[^"]+)"\s*\)', build_script))
+
+
+def module_dependencies_error(module, dependencies):
+    allowed = {
+        ":core": set(),
+        ":app:shared": {":core"},
+        ":app:androidApp": {":core", ":app:shared"},
+    }
+    if module not in allowed:
+        return None  # Server/other module ownership is outside the mobile rule.
+    unexpected = dependencies - allowed[module]
+    if unexpected:
+        return f"{module} cannot depend on {', '.join(sorted(unexpected))}"
+    return None
+
+
 def ownership_error(module, package, imported):
+    if module == ":core" and imported.startswith(("androidx.compose.", "org.jetbrains.compose.", "androidx.lifecycle.")):
+        return "core financial/network contracts cannot depend on presentation frameworks"
     if not imported.startswith(PREFIX + "."):
         return None
     in_network = package == NETWORK or package.startswith(NETWORK + ".")
@@ -74,7 +95,10 @@ def main():
     graph = {}
     for module, directory in MODULES.items():
         build = (directory / "build.gradle.kts").read_text()
-        graph[module] = set(re.findall(r'project\("(:[^\"]+)"\)', build))
+        graph[module] = project_dependencies(build)
+        problem = module_dependencies_error(module, graph[module])
+        if problem:
+            errors.append(problem)
         for path in directory.glob("src/*/kotlin/**/*.kt"):
             text = path.read_text()
             imports = re.findall(r"^import ([\w.*]+)", text, re.M)

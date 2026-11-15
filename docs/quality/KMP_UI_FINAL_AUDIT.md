@@ -225,3 +225,7 @@ Working-tree integration (separate from the scoped commit): Android host **551 t
 Recommended next steps: separately review the pending UI/accessibility/transparency changes and their golden differences; add dedicated reference-device CI execution and portfolio/bond/import/error/modal goldens; perform physical Android/iOS accessibility/IME/safe-area and native-extension checks; profile release startup/biometrics and scrolling on dedicated hardware. No backend or financial behavior changes are included in this patch.
 
 Additional release check: `./gradlew --project-dir /tmp/inzira-ui-final-export :app:androidApp:compileReleaseKotlin --console=plain` returned **BUILD SUCCESSFUL, 1s** (`/tmp/inzira-ui-final-release-compile.log`); the release compilation output was valid/up-to-date. This is compilation, not a signed release, distribution or physical-device verification.
+
+## Subsequent integration of the pending work — 15 November 2026
+
+The earlier scoped results and working-tree caveat above remain historical evidence. The [pending-change review](KMP_PENDING_CHANGES_REVIEW.md) now covers the previously excluded responsibility, design/accessibility and financial-presentation changes. It includes separate visually reviewed reference sets for the UI-only and financial variants, comparison-mode tests, final combined verification and the remaining device/platform limitations. Consult that review for the current integration disposition.

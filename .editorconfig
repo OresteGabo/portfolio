@@ -1,0 +1,12 @@
+# Mobile-only editing defaults; no repository-wide formatting or file-length budget.
+[{core,app/shared,app/androidApp}/src/**.kt]
+charset = utf-8
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+
+[{core,app/shared,app/androidApp}/build.gradle.kts]
+charset = utf-8
+indent_style = space
+indent_size = 4
+insert_final_newline = true

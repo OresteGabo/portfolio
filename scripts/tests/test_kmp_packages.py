@@ -48,3 +48,29 @@ class KmpPackageChecksTest(unittest.TestCase):
         path = "app/shared/src/commonMain/kotlin/Example.kt"
         for imported in ("androidx.compose.ui.Modifier", "androidx.lifecycle.ViewModel", "kotlinx.coroutines.Dispatchers", "kotlin.native.HiddenFromObjC"):
             self.assertIsNone(checks.common_platform_import_error(path, imported))
+
+
+class KmpMaintainabilityGuardrailsTest(unittest.TestCase):
+    def test_literal_project_dependencies_include_named_and_multiline_forms(self):
+        script = 'api(project(":core"))\nimplementation(project( path = ":app:shared" ))'
+        self.assertEqual({":core", ":app:shared"}, checks.project_dependencies(script))
+        self.assertEqual({":core"}, checks.project_dependencies('api(project(\n path = ":core"\n))'))
+
+    def test_acyclic_backend_dependency_is_still_rejected_for_mobile(self):
+        graph = {":app:shared": {":server"}, ":server": {":core"}, ":core": set()}
+        self.assertFalse(checks.cyclic(graph))
+        self.assertIsNotNone(checks.module_dependencies_error(":app:shared", graph[":app:shared"]))
+        self.assertIsNotNone(checks.module_dependencies_error(":core", {":server"}))
+        self.assertIsNotNone(checks.module_dependencies_error(":app:androidApp", {":server"}))
+
+    def test_mobile_dependencies_allow_existing_direction_without_enforcing_server_policy(self):
+        for module, dependencies in ((":core", set()), (":app:shared", {":core"}),
+                                     (":app:androidApp", {":app:shared", ":core"}), (":server", {":core"})):
+            self.assertIsNone(checks.module_dependencies_error(module, dependencies))
+
+    def test_core_rejects_ui_frameworks_while_shared_presentation_remains_valid(self):
+        for imported in ("androidx.compose.runtime.mutableStateOf", "androidx.lifecycle.ViewModel", "org.jetbrains.compose.resources.DrawableResource"):
+            for package in (checks.NETWORK, checks.PREFIX + ".investments"):
+                self.assertIsNotNone(checks.ownership_error(":core", package, imported))
+            self.assertIsNone(checks.ownership_error(":app:shared", checks.PREFIX + ".investments", imported))
+        self.assertIsNone(checks.ownership_error(":core", checks.PREFIX + ".investments", "kotlinx.datetime.LocalDate"))

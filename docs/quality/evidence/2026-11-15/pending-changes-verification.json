@@ -1,0 +1,207 @@
+{
+  "baseline": "c3f5df97ec3a22ac27d42618862fc3f137c73a54",
+  "scope": "79 original pending paths plus review corrections, reviewed references and integration evidence; mobile only",
+  "status": "PASS: all required available local gates completed before committing; four operator-gated skips and existing lint warnings documented",
+  "intermediateTrees": {
+    "data": "61d919e6dae0173f87d532c1aa3a7b1a0a371a7d",
+    "ui": "218db5fadff8506dc570c79a5481ce803679ccc7",
+    "financial": "f271a3dce574280fa9d80dced9e982179ea0839a"
+  },
+  "suites": [
+    {
+      "module": "core",
+      "task": "iosSimulatorArm64Test",
+      "tests": 144,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "core",
+      "task": "jvmTest",
+      "tests": 145,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "core",
+      "task": "testAndroidHostTest",
+      "tests": 145,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "app/shared",
+      "task": "iosSimulatorArm64Test",
+      "tests": 578,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "app/shared",
+      "task": "testAndroidHostTest",
+      "tests": 552,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "app/androidApp",
+      "task": "connectedDebugAndroidTest",
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 4
+    },
+    {
+      "module": "app/shared",
+      "task": "connectedAndroidDeviceTest",
+      "tests": 546,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "initialFailedGate": {
+    "log": "/tmp/pending-final-host-native.log",
+    "cause": "Native SnapshotMapKeySet equality in new cache test; exact key contents asserted via keys.toSet() in corrected test",
+    "correctedGate": "/tmp/pending-cache-native-corrected.log",
+    "correctedStatus": "BUILD SUCCESSFUL"
+  },
+  "staticChecks": {
+    "packageAndBoundaryPaths": 454,
+    "pythonTests": 31,
+    "nodeTests": 84,
+    "swiftHarnesses": 3,
+    "designColors": "pass",
+    "goldenInventory": "pass",
+    "workflowYamlParsing": "pass",
+    "diffWhitespace": "pass"
+  },
+  "lint": {
+    "errors": 0,
+    "debugWarnings": 92,
+    "releaseWarnings": 94
+  },
+  "screenshots": {
+    "profiles": 6,
+    "themes": 2,
+    "candidateSetsVisuallyReviewed": [
+      "UI only",
+      "final financial presentation"
+    ],
+    "uiOnlyComparisonAndInteractionTests": 7,
+    "finalComparison": "passed in full unfiltered app suite",
+    "sharedSourceSha256": "1bf96d6a2fecc75aad1436d9239a5f0087652ae0a60f3215a89e7074984e18b1"
+  },
+  "limitations": [
+    "No physical-device or iOS visual/manual screen-reader verification",
+    "Four existing operator/fixture-gated app tests skipped, as listed; all 17 required journeys executed successfully",
+    "No hosted CI execution, coverage percent or configured ktlint/detekt/release macrobenchmark claim",
+    "Legal audit contains unresolved operator/regulatory questions; no new legal product obligations published"
+  ],
+  "intermediateGates": {
+    "data": {
+      "hostTests": 539,
+      "status": "BUILD SUCCESSFUL",
+      "compilation": [
+        "Android UI test APK",
+        "iosArm64",
+        "iosSimulatorArm64"
+      ]
+    },
+    "ui": {
+      "hostTests": 550,
+      "nativeTests": 576,
+      "status": "BUILD SUCCESSFUL",
+      "comparisonAndInteractionTests": 7,
+      "log": "/tmp/pending-ui-native-final.log"
+    }
+  },
+  "fullGateDuration": "11m 2s",
+  "skippedTests": [
+    "dev.orestegabo.portfolio.FirebaseDeliverySetupTest.receivesARealFirebaseMessageWithoutAnAccountSession",
+    "dev.orestegabo.portfolio.investments.BondPdfRegressionTest.suppliedConfirmationReachesValidatedReviewWithoutSaving",
+    "dev.orestegabo.portfolio.investments.GuestPersistenceTest.guestInvestmentsSurviveProcessRestartAndReboot",
+    "dev.orestegabo.portfolio.investments.GuestStartupFixtureTest.prepareEmptyOfflineGuestForProcessLaunchMeasurements"
+  ],
+  "requiredUiJourneysPassed": 17,
+  "reportCheckTimingNote": "One inventory check was invoked before UTP wrote its final XML and correctly rejected incomplete evidence. It passed after the same unfiltered run completed; no test rerun or exclusion.",
+  "runnerCounterNote": "Gradle live counter ended inconsistently at 58/54; completed JUnit XML has 54 tests, 4 skipped, 0 failures/errors. Use XML, not that transient counter.",
+  "frameObservation": {
+    "fixtureLots": 200,
+    "frames": 327,
+    "refreshRateHz": 60.000003814697266,
+    "p50TotalMs": 23.4665,
+    "p95TotalMs": 46.910229,
+    "maxTotalMs": 69.931738,
+    "droppedMetricReports": 0,
+    "sdk": 36,
+    "hardware": "ranchu",
+    "scope": "debug emulator, ShareDetailsScreen accessibility scroll; excludes startup/biometric/PDF/platform capture",
+    "interpretation": "single debug emulator observation; no performance improvement claimed"
+  },
+  "releasePackaging": {
+    "androidBundle": "BUILD SUCCESSFUL in 1m 2s",
+    "iosAppAndExtensions": "BUILD SUCCEEDED; device Release, CODE_SIGNING_ALLOWED=NO",
+    "iosPackage": "passed; distribution signing not verified"
+  },
+  "exportTreeByteChecks": {
+    "data": 607,
+    "ui": 626,
+    "financial": 629
+  },
+  "logs": {
+    "pending-stage1": {
+      "sha256": "6ceff4830ea08270575afff37bf7d81ef6f2da0c742dcd0072bd5ddc6bf766fd",
+      "localPath": "/tmp/pending-stage1.log"
+    },
+    "pending-stage2": {
+      "sha256": "3d6a9d94e3ab1f5b582da537322ef79307c314adec26979c3cb3af44f3d753b1",
+      "localPath": "/tmp/pending-stage2.log"
+    },
+    "pending-ui-native-final": {
+      "sha256": "293459a65cc581257e82c0282b05d47bd59d2a29c39b6c8b0f84834806e6382b",
+      "localPath": "/tmp/pending-ui-native-final.log"
+    },
+    "pending-ui-comparison": {
+      "sha256": "fea7ceebc136292e6aa24201a8421bb610ac133b661f5a21ec0cde4b0a17ec08",
+      "localPath": "/tmp/pending-ui-comparison.log"
+    },
+    "pending-final-host-native": {
+      "sha256": "e7b41928cf3092b3db9b40461e522f16e33ac6c31481b1583cd061e1d6341006",
+      "localPath": "/tmp/pending-final-host-native.log"
+    },
+    "pending-cache-native-corrected": {
+      "sha256": "5d127cb5ee35e2f699ff2ce042fb5be5e59488d41206c8be88ba753870dd60ad",
+      "localPath": "/tmp/pending-cache-native-corrected.log"
+    },
+    "pending-final-gate": {
+      "sha256": "46901f84c83be3bb62baadff40509091def605edc57113bce739717fc5911b26",
+      "localPath": "/tmp/pending-final-gate.log"
+    },
+    "pending-release-bundle": {
+      "sha256": "b7c884bc5dcc093f4f89b294918a5e24f5984f5de2d34934b6ddeead68eefcf7",
+      "localPath": "/tmp/pending-release-bundle.log"
+    },
+    "pending-ios-release": {
+      "sha256": "a5b16e240fe8af9227ca27b9231c003ef086674bda1731f5f157bb85fa98a433",
+      "localPath": "/tmp/pending-ios-release.log"
+    },
+    "pending-ios-package": {
+      "sha256": "feb15820d8e365a90333749661701996df8fb9b1053866bbf7de472ce0a34af1",
+      "localPath": "/tmp/pending-ios-package.log"
+    },
+    "pending-python": {
+      "sha256": "35d2fbac54e2b043f01271aa12ea2469c7f8e296b876a40a0ce050b591e838e3",
+      "localPath": "/tmp/pending-python.log"
+    },
+    "pending-js": {
+      "sha256": "871d539636e7b9d4cd3246ce28cb39aa4da3421f0ee74762369e5c10dfc5b6be",
+      "localPath": "/tmp/pending-js.log"
+    }
+  }
+}

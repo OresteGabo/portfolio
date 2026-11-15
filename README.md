@@ -1,5 +1,7 @@
 # Inzira
 
+Architecture maintenance: [responsibility and SOLID review](docs/architecture/RESPONSIBILITY_REVIEW.md).
+
 Audit documentation: [current feature inventory](docs/CURRENT_STATE.md) · [prioritized technical debt](docs/TECHNICAL_DEBT.md) · [product roadmap](docs/PRODUCT_ROADMAP.md) · [architecture assessment](docs/architecture/ASSESSMENT.md) · [target architecture](docs/architecture/TARGET_ARCHITECTURE.md) · [implementation decisions](docs/architecture/DECISIONS.md).
 
 Financial workflows: [document parsing](docs/DOCUMENT_PARSING.md) · [calculation policy and reference tests](docs/FINANCIAL_CALCULATIONS.md) · [reconciliation and evidence](docs/RECONCILIATION.md).

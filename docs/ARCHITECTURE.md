@@ -48,10 +48,19 @@ Feature responsibilities are separated behind the existing screen-facing model A
 | `PortfolioImports` | Import journal, PDF selection/review, duplicate checks, resumable uploads and import completion |
 | `PortfolioNotifications` | Notification preferences, inbox pagination, month reminders, push registration and stale-response revision checks |
 | `PortfolioReports` | Complete report inputs, annual price history, report generation and report progress |
+| `AccountSnapshotReader` | Compatible account reads and snapshot assembly; publication remains in the session facade |
+| `PortfolioMarketData` / `EquityPriceHistory` | Optional quote/market enrichment and per-screen history request state |
+| `PortfolioGuestWorkspace` / `PortfolioGuestQuotes` | Serialized local operations and optional guest market reads |
+| `LocalGuestPortfolioRepository` / `GuestPortfolioSchema` | Durable guest storage operations and pure schema/financial validation |
+| `PortfolioApplicationForms` | Public application forms, uploads and subscription bids |
+| `PortfolioDocumentViewer` / `PortfolioPrivacy` | Preview byte/request ownership and device privacy preferences |
+| `PortfolioAdministration` | Account/invitation/publication-permission commands through the authenticated action boundary |
+| `PdfChunkUploader` | Shared PDF transport chunking, with caller-owned receipt and retry policy |
+| `InvestmentPlatformEffects` / `PresentationComponents` | Native integration effects and reusable presentation primitives |
 | `PortfolioDashboard` | Dashboard screen composition, filtering and investment list routing |
 | `PortfolioHero` / `PortfolioInsights` | Balance/summary presentation and dashboard insight cards |
 
-Imports and notifications receive narrow host interfaces rather than the whole model. The model retains its coroutine scope and action guard, so extracting these features does not create independent session lifetimes or parallel write paths. Clearing private state detaches import history, drops PDF references and advances the notification revision before a new account can publish feature data. Feature state remains observable Compose state; screens keep their existing model entry points.
+Imports, notifications and application forms receive narrow host interfaces rather than the whole model. Data features depend on `PortfolioDataApi`, which exposes request/download capabilities without session restoration, cookie clearing or client shutdown. The model retains its coroutine scope and action guard, so extracting these features does not create independent session lifetimes or parallel write paths. Clearing private state detaches import history, drops PDF references and advances the notification revision before a new account can publish feature data. Feature state remains observable Compose state; screens keep their existing model entry points.
 
 The calculation and purchase-text parsing rules have one TypeScript source snapshot in `web-logic/source`. `scripts/bundle-shared-logic.mjs` generates one portable bundle used on both platforms. Android's extraction adapter obtains text with PDF.js/Tesseract; iOS obtains text with PDFKit/Vision. Both feed the same purchase parser and shared review form. Scanned documents are marked for review. Neither adapter executes PDF JavaScript or submits extracted records automatically.
 
@@ -233,3 +242,5 @@ Android's experimental capture renderer receives a navigation refresh request wh
 A successful shake visibility change produces one shared Compose haptic (`ToggleOn` when hiding and `ToggleOff` when revealing). The native Android/iOS implementations supply the feedback through `LocalHapticFeedback`; no extra vibration permission or platform-specific shake code is needed. Feedback runs only after the saved manual visibility state actually changes, so blocked reveals and ignored shakes produce no confirmation. The existing shake cooldown also limits haptic repetition.
 
 Settings owns a full-size overlay Box containing its list and in-scene financial editors. The monthly-target editor must share that parent so it draws above the list rather than being measured as a second child below the app's full-height Settings content. This retains the protected rendering scene used for financial inputs.
+
+The repository-wide [responsibility review](architecture/RESPONSIBILITY_REVIEW.md) records the module scope, SOLID decisions, retained coordination boundaries and regression evidence.

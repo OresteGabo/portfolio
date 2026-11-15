@@ -1,0 +1,101 @@
+{
+  "baseline": "f7ef53f",
+  "overall": "FAILED: full app instrumentation remains unresolved; no commit or push",
+  "successful_kmp_suites": [
+    {
+      "module": "core",
+      "task": "jvmTest",
+      "tests": 145,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "core",
+      "task": "testAndroidHostTest",
+      "tests": 145,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "app/shared",
+      "task": "testAndroidHostTest",
+      "tests": 526,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "core",
+      "task": "iosSimulatorArm64Test",
+      "tests": 144,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "app/shared",
+      "task": "iosSimulatorArm64Test",
+      "tests": 552,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "app/shared",
+      "task": "connectedAndroidDeviceTest",
+      "tests": 520,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "failed_app_test_cases": [
+    {
+      "class_name": "dev.orestegabo.portfolio.investments.PdfSharingTest",
+      "test": "pdfTargetsReceiveColdAndWarmIntentsAndExportsGrantOnlyReadAccess"
+    }
+  ],
+  "diagnostic_runs": [
+    {
+      "mode": "Original full shared process",
+      "result": "notification setup failed and PDF-sharing RenderThread crash"
+    },
+    {
+      "mode": "Software renderer with synchronous permission fix",
+      "result": "PDF-sharing RenderThread crash"
+    },
+    {
+      "mode": "Test Orchestrator 1.6.1 trial",
+      "result": "same PDF-sharing test failed; unsuccessful configuration removed"
+    }
+  ],
+  "focused_checks": {
+    "original_notification": "failed",
+    "synchronous_notification_setup": "passed",
+    "pdf_sharing_alone": "passed"
+  },
+  "native_trace_frames": [
+    "libutils.so: RefBase::incStrongRequireStrong",
+    "libgui.so: Surface::hook_cancelBuffer",
+    "libEGL_emulation.so: egl_window_surface_t destructor",
+    "libhwui.so: EglManager::destroySurface"
+  ],
+  "other_checks": {
+    "unsigned_ios_release": "passed",
+    "ios_release_package": "passed; signing not verified",
+    "standalone_swift_harnesses": 3,
+    "python_tests": 23,
+    "javascript_tests": 84,
+    "android_lint_warnings": 94,
+    "android_lint_errors": 0
+  },
+  "limitations": [
+    "Crash root cause not established; do not certify long-lived/native capture sequences",
+    "Four existing operator/fixture-gated Android cases not exercised",
+    "No production code or retained dependency change"
+  ],
+  "historicalScope": "Earlier isolated f7ef53f guardrail attempt; unchanged historical failure evidence.",
+  "subsequentIntegration": "pending-changes-verification.json"
+}
