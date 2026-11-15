@@ -3,6 +3,7 @@ package dev.orestegabo.portfolio
 import android.app.*
 import android.content.*
 import android.os.Build
+import androidx.core.content.edit
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 
@@ -13,12 +14,13 @@ internal object BondReminderNotifications {
     fun reconcile(context: Context, months: String) {
         val prefs = context.getSharedPreferences("portfolio.push", Context.MODE_PRIVATE)
         val selected = months.split(',').filter(String::isNotBlank).toSet()
-        val editor = prefs.edit().putStringSet("bond.months", selected)
-        for((key, value) in prefs.all) if(key.startsWith("bond.card.") && value !in selected) {
-            NotificationManagerCompat.from(context).cancel(liveId(key.removePrefix("bond.card.")))
-            editor.remove(key)
+        prefs.edit {
+            putStringSet("bond.months", selected)
+            for ((key, value) in prefs.all) if (key.startsWith("bond.card.") && value !in selected) {
+                NotificationManagerCompat.from(context).cancel(liveId(key.removePrefix("bond.card.")))
+                remove(key)
+            }
         }
-        editor.apply()
     }
     fun receive(context: Context, data: Map<String,String>) {
         val issue = data["calendarId"].orEmpty()
@@ -37,7 +39,7 @@ internal object BondReminderNotifications {
         val live = stage in listOf("open", "closing") && !prefs.getBoolean("bond.dismissed.$issue",false)
         if(stage == "closed") {
             manager.cancel(liveId(issue))
-            prefs.edit().remove("bond.card.$issue").apply()
+            prefs.edit { remove("bond.card.$issue") }
         }
         val open = Intent(context,MainActivity::class.java).putExtra("stockNotifications",true)
             .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -65,10 +67,10 @@ internal object BondReminderNotifications {
         val id = if(live) liveId(issue) else data["notificationId"].orEmpty().hashCode()
         // Permission may be revoked after areNotificationsEnabled() was checked.
         try { manager.notify(id,notification) } catch (_: SecurityException) { return }
-        if(live) prefs.edit().putString("bond.card.$issue",month).apply()
+        if(live) prefs.edit { putString("bond.card.$issue",month) }
     }
     fun dismiss(context: Context, issue: String) {
-        context.getSharedPreferences("portfolio.push", Context.MODE_PRIVATE).edit().putBoolean("bond.dismissed.$issue",true).apply()
+        context.getSharedPreferences("portfolio.push", Context.MODE_PRIVATE).edit { putBoolean("bond.dismissed.$issue",true) }
         NotificationManagerCompat.from(context).cancel(liveId(issue))
     }
 }

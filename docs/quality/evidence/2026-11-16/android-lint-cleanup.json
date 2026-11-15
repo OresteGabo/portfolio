@@ -1,0 +1,129 @@
+{
+  "date": "2026-11-16",
+  "phase": "Android code/resource lint cleanup before dependency upgrade",
+  "baseline": "54fbb5f",
+  "baselineReleaseWarnings": 94,
+  "currentWarnings": 35,
+  "remaining": {
+    "NewerVersionAvailable": 25,
+    "GradleDependency": 5,
+    "AndroidGradlePluginVersion": 3,
+    "OldTargetApi": 2
+  },
+  "status": "PASS: full corrected gate BUILD SUCCESSFUL in 10m 28s; version/target notices retained for authorized next phase",
+  "failuresAndCorrections": [
+    {
+      "run": "initial incremental build",
+      "result": "resource link failed after drawable-v24 to drawable move",
+      "correction": "clean Android generated outputs; clean build succeeded"
+    },
+    {
+      "run": "initial full gate",
+      "result": "cancelled for widget render investigation, not counted as passed"
+    },
+    {
+      "run": "strict widget focused regression",
+      "result": "failed: relative compound drawable padding not resolved in unattached English fixture",
+      "correction": "resolve fixture LTR before layout; preserve strict width/bounds/padding assertions; native 20dp vector; corrected 6-test run passed"
+    }
+  ],
+  "focusedTests": 6,
+  "visualReview": [
+    "small/medium synthetic widget output with logo",
+    "light/dark legacy launcher icons"
+  ],
+  "lintExceptions": [
+    {
+      "files": [
+        "layout/next_widget_small.xml",
+        "layout/next_widget_medium.xml"
+      ],
+      "issue": "UseCompatTextViewDrawableXml",
+      "reason": "RemoteViews requires framework TextView; AppCompat attribute is not a supported launcher solution; runtime drawable bounds are tested"
+    },
+    {
+      "file": "xml/app_shortcuts.xml",
+      "issue": "UnusedAttribute",
+      "reason": "tools:targetApi=25 documents launcher shortcut metadata availability without dropping App Actions metadata on older systems"
+    }
+  ],
+  "upgrades": "User explicitly requested Kotlin, Compose, Gradle and dependency upgrades as a separate verified phase",
+  "suites": [
+    {
+      "module": "core",
+      "task": "iosSimulatorArm64Test",
+      "tests": 144,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "core",
+      "task": "jvmTest",
+      "tests": 145,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "core",
+      "task": "testAndroidHostTest",
+      "tests": 145,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "app/shared",
+      "task": "iosSimulatorArm64Test",
+      "tests": 578,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "app/shared",
+      "task": "testAndroidHostTest",
+      "tests": 552,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "app/androidApp",
+      "task": "connected instrumentation",
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 4
+    },
+    {
+      "module": "app/shared",
+      "task": "connected instrumentation",
+      "tests": 546,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "requiredUiJourneysPassed": 17,
+  "static": {
+    "pythonTests": 31,
+    "nodeTests": 84,
+    "packagePaths": 454,
+    "designColors": "pass",
+    "yaml": "pass",
+    "swiftHarnesses": 3,
+    "diffWhitespace": "pass"
+  },
+  "releaseBundle": "BUILD SUCCESSFUL",
+  "sharedIosTargets": "iosArm64, iosSimulatorArm64, device test sources compiled",
+  "logSha256": "85738c603fcb371e94bcf2dd9d52b47ab3b2ffafda6d3be44005f233927567de",
+  "limits": [
+    "4 existing operator-gated app tests skipped",
+    "No physical device or API24 launcher verification",
+    "No iOS UI or distribution-signing verification; iOS production sources unchanged",
+    "No shared screenshot reference changes or relaxed assertions",
+    "Remaining 35 version/target notices intentionally visible until next phase"
+  ]
+}

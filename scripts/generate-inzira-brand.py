@@ -40,8 +40,9 @@ for theme,color in [('light','#6D5E0F'),('dark','#F2E6A7')]:
  save(f'app/shared/src/commonMain/composeResources/drawable/inzira_wordmark_{theme}.xml',NOTE+xml)
 # Adaptive and status icons are monochrome vector resources, not raster logo substitutions.
 for file,color,viewport,scale,tx,ty,dp in [
- ('drawable-v24/ic_launcher_foreground.xml','@color/struct_launcher_foreground',108,72/440,18,(108-400*72/440)/2,108),
+ ('drawable/ic_launcher_foreground.xml','@color/struct_launcher_foreground',108,72/440,18,(108-400*72/440)/2,108),
  ('drawable/ic_launcher_monochrome.xml','@color/struct_launcher_foreground',108,72/440,18,(108-400*72/440)/2,108),
+ ('drawable/ic_widget_brand.xml','@color/struct_fixed_white',512,512/440,0,(512-400*512/440)/2,20),
  ('drawable/ic_price_notification.xml','@color/struct_fixed_white',512,512/440,0,(512-400*512/440)/2,24)]:
  save('app/androidApp/src/main/res/'+file,vector(color,viewport,scale,tx,ty,dp))
 save('branding/inzira/inzira-widget-symbol.svg',svg(mark(),512,'#F2E6A7'))

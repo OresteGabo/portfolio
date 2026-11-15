@@ -1,21 +1,24 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@android:id/background" android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical" android:padding="16dp" android:background="@drawable/next_widget_background">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="20dp" android:gravity="center_vertical">
-        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_price_notification" android:contentDescription="@string/app_name" />
-        <TextView android:id="@+id/next_heading" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/next_widget_heading" android:textColor="@color/struct_brand_cream" android:textSize="12sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
-    </LinearLayout>
-    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:layout_marginTop="8dp">
-        <LinearLayout android:id="@+id/next_primary" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical">
+    android:padding="16dp" android:background="@drawable/next_widget_background">
+    <!-- RemoteViews permits framework TextView, not AppCompatTextView. The framework
+         drawableStart supports this vector at minSdk 24; app:drawableStartCompat would be ignored. -->
+    <TextView tools:ignore="UseCompatTextViewDrawableXml" android:id="@+id/next_heading" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="20dp"
+        android:gravity="center_vertical" android:drawableStart="@drawable/ic_widget_brand" android:drawablePadding="8dp"
+        android:text="@string/next_widget_heading" android:textColor="@color/struct_brand_cream"
+        android:textSize="12sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:layout_below="@id/next_heading" android:layout_marginTop="8dp">
+        <RelativeLayout android:id="@+id/next_primary" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent">
             <TextView android:id="@+id/next_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/next_widget_preview_status" android:textColor="@color/struct_widget_secondary_text" android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
-            <TextView android:id="@+id/next_date" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/next_widget_preview_date" android:textColor="@color/struct_brand_cream" android:textSize="28sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
-            <TextView android:id="@+id/next_title" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:gravity="center_vertical" android:text="@string/next_widget_preview_title" android:textColor="@color/struct_widget_text" android:textSize="13sp" android:textStyle="bold" android:maxLines="2" android:ellipsize="end" />
-        </LinearLayout>
+            <TextView android:id="@+id/next_date" android:layout_below="@id/next_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/next_widget_preview_date" android:textColor="@color/struct_brand_cream" android:textSize="28sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+            <TextView android:id="@+id/next_title" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_below="@id/next_date" android:layout_alignParentBottom="true" android:gravity="center_vertical" android:text="@string/next_widget_preview_title" android:textColor="@color/struct_widget_text" android:textSize="13sp" android:textStyle="bold" android:maxLines="2" android:ellipsize="end" />
+        </RelativeLayout>
         <ImageView android:id="@+id/next_divider" android:importantForAccessibility="no" android:layout_width="1dp" android:layout_height="match_parent" android:layout_marginStart="12dp" android:layout_marginEnd="12dp" android:background="@color/struct_widget_outline" />
-        <LinearLayout android:id="@+id/next_secondary" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" >
+        <RelativeLayout android:id="@+id/next_secondary" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" >
             <TextView android:id="@+id/next_second_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/struct_widget_secondary_text" android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
-            <TextView android:id="@+id/next_second_date" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/next_widget_preview_date" android:textColor="@color/struct_brand_cream" android:textSize="28sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
-            <TextView android:id="@+id/next_second_title" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:gravity="center_vertical" android:text="@string/next_widget_preview_second" android:textColor="@color/struct_widget_text" android:textSize="13sp" android:maxLines="2" android:ellipsize="end" />
-        </LinearLayout>
+            <TextView android:id="@+id/next_second_date" android:layout_below="@id/next_second_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/next_widget_preview_date" android:textColor="@color/struct_brand_cream" android:textSize="28sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+            <TextView android:id="@+id/next_second_title" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_below="@id/next_second_date" android:layout_alignParentBottom="true" android:gravity="center_vertical" android:text="@string/next_widget_preview_second" android:textColor="@color/struct_widget_text" android:textSize="13sp" android:maxLines="2" android:ellipsize="end" />
+        </RelativeLayout>
     </LinearLayout>
-</LinearLayout>
+</RelativeLayout>

@@ -1,6 +1,7 @@
 package dev.orestegabo.portfolio
 
 import android.app.PendingIntent
+import androidx.core.content.edit
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
@@ -28,10 +29,10 @@ internal object NextWidgetStore {
 
     fun save(context: Context, value: String?) {
         val prefs = preferences(context)
-        if (value == null) prefs.edit().clear().apply()
+        if (value == null) prefs.edit { clear() }
         else {
             if (prefs.getString("snapshot", null) == value) return
-            prefs.edit().putString("snapshot", value).putLong("updated", System.currentTimeMillis()).apply()
+            prefs.edit { putString("snapshot", value); putLong("updated", System.currentTimeMillis()) }
         }
         updateAll(context)
     }

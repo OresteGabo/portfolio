@@ -1,6 +1,7 @@
 package dev.orestegabo.portfolio
 
 import android.app.*
+import androidx.core.content.edit
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -17,7 +18,7 @@ import dev.orestegabo.portfolio.investments.NativePushBridge
 class PriceMessagingService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         // Tokens are device-specific, never credentials. The authenticated app links them to its account.
-        getSharedPreferences("portfolio.push",MODE_PRIVATE).edit().putString("token",token).apply()
+        getSharedPreferences("portfolio.push",MODE_PRIVATE).edit { putString("token",token) }
     }
     override fun onMessageReceived(message: RemoteMessage) {
         if (getSharedPreferences("connection", MODE_PRIVATE).getString("sessionChoice", null)?.startsWith("guest-") == true) return

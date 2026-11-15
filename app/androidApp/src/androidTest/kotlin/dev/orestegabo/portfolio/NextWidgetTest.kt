@@ -71,6 +71,9 @@ class NextWidgetTest {
             instrumentation.runOnMainSync {
                 for(medium in listOf(false,true)) {
                     val view=NextWidgetStore.render(context,medium).apply(context,FrameLayout(context))
+                    // An unattached render has no launcher parent to resolve inherited RTL properties.
+                    // Resolve the English fixture direction before measuring relative drawables.
+                    view.layoutDirection = View.LAYOUT_DIRECTION_LTR
                     assertNotNull(view.findViewById<View>(R.id.next_title))
                     assertEquals("Closes", view.findViewById<TextView>(R.id.next_status).text.toString())
                     if (medium) {
@@ -83,6 +86,21 @@ class NextWidgetTest {
                     view.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),
                         View.MeasureSpec.makeMeasureSpec(height,View.MeasureSpec.EXACTLY))
                     view.layout(0,0,width,height)
+                    val heading = view.findViewById<TextView>(R.id.next_heading)
+                    assertNotNull(heading.compoundDrawablesRelative[0])
+                    assertTrue("Brand drawable must have measurable width", heading.compoundDrawablesRelative[0].intrinsicWidth > 0)
+                    assertTrue("Brand drawable must have drawable bounds", heading.compoundDrawablesRelative[0].bounds.width() > 0)
+                    assertTrue("Header text must leave room for its brand mark", heading.compoundPaddingStart > heading.paddingStart)
+                    assertTrue("Brand/header must remain visible", heading.height >= heading.compoundDrawablesRelative[0].intrinsicHeight)
+                    val title = view.findViewById<TextView>(R.id.next_title)
+                    assertTrue("Event title needs remaining vertical space", title.height > 0)
+                    if (medium) {
+                        val primary = view.findViewById<View>(R.id.next_primary)
+                        val secondary = view.findViewById<View>(R.id.next_secondary)
+                        assertTrue("Both event columns must receive equal width", kotlin.math.abs(primary.width - secondary.width) <= 1)
+                        assertTrue("Columns must stay below the header", (primary.parent as View).top >= heading.bottom)
+                        assertTrue(title.top >= view.findViewById<View>(R.id.next_date).bottom)
+                    }
                     val bitmap=Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888)
                     view.draw(Canvas(bitmap))
                     File(context.cacheDir,"next-widget-${if(medium) "medium" else "small"}.png").outputStream().use {
@@ -104,11 +122,21 @@ class NextWidgetTest {
             instrumentation.runOnMainSync {
                 for (medium in listOf(false,true)) {
                     val view=NextWidgetStore.render(context,medium).apply(context,FrameLayout(context))
+                    // An unattached render has no launcher parent to resolve inherited RTL properties.
+                    // Resolve the English fixture direction before measuring relative drawables.
+                    view.layoutDirection = View.LAYOUT_DIRECTION_LTR
                     assertEquals("Open Inzira",view.findViewById<TextView>(R.id.next_title).text.toString())
                     assertEquals(View.GONE,view.findViewById<View>(R.id.next_date).visibility)
                     if (medium) {
                         assertEquals(View.GONE,view.findViewById<View>(R.id.next_secondary).visibility)
                         assertEquals(View.GONE,view.findViewById<View>(R.id.next_divider).visibility)
+                        val density = context.resources.displayMetrics.density
+                        val width = (320 * density).toInt(); val height = (160 * density).toInt()
+                        view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                            View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
+                        view.layout(0, 0, width, height)
+                        assertEquals("A single event must use the full row", width - view.paddingLeft - view.paddingRight,
+                            view.findViewById<View>(R.id.next_primary).width)
                     }
                 }
             }

@@ -1,4 +1,7 @@
-<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+<!-- Android 7.1 introduced launcher shortcuts. Older launchers ignore this metadata;
+     the App Actions capability definitions remain available to metadata consumers. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" tools:targetApi="25">
     <shortcut android:shortcutId="import-pdf" android:icon="@drawable/ic_price_notification" android:shortcutShortLabel="@string/shortcut_import">
         <intent android:action="android.intent.action.VIEW" android:targetPackage="dev.orestegabo.portfolio" android:targetClass="dev.orestegabo.portfolio.MainActivity" android:data="structcapital://action/import-pdf" />
         <capability-binding android:key="actions.intent.OPEN_APP_FEATURE">
