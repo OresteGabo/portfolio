@@ -33,7 +33,7 @@ internal fun DetailAmount(label: String, value: Double?, currency: String, promi
                 AppText(label, Modifier.weight(1f, fill = false), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 FinancialText(currency, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            FinancialText(value?.let(::formatNumber) ?: "—", style = style.copy(fontFeatureSettings = "tnum"), fontWeight = FontWeight.Medium)
+            FinancialText(displayAmountOrUnavailable(value), style = style.copy(fontFeatureSettings = "tnum"), fontWeight = FontWeight.Medium)
         }
     }
 }

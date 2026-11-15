@@ -77,7 +77,7 @@ class ShareOrderScreenTest {
                             writes.incrementAndGet();JsonRecord().put("order",saved!!).toString()
                         }
                         path.endsWith("/equities") -> { if(request.method==HttpMethod.Post)equityWrites.incrementAndGet();"""{"holdings":[{"id":"synthetic-owned-shares","instrumentType":"equity","exchange":"RSE","currency":"RWF","securityName":"SYNTHETIC Bralirwa","ticker":"BLR","shares":100,"pricePerShare":571,"grossConsideration":57100,"totalCharges":0,"netAmountPayable":57100,"status":"active","tradeDate":"$Today","settlementDate":"$Today"}]}""" }
-                        path.endsWith("/rse/quotes") -> """{"source":{"status":"available","publishedAt":"2026-11-13T12:00:00Z"},"quotes":[{"ticker":"BOK","name":"SYNTHETIC BK Group","closing":720},{"ticker":"BLR","name":"SYNTHETIC Bralirwa","closing":571}]}"""
+                        path.endsWith("/rse/quotes") -> """{"source":{"status":"available","stale":true,"publishedAt":"2026-11-13T12:00:00Z"},"quotes":[{"ticker":"BOK","name":"SYNTHETIC BK Group","closing":720},{"ticker":"BLR","name":"SYNTHETIC Bralirwa","closing":571}]}"""
                         else -> "{}"
                     }
                     respond(response,headers=headersOf(HttpHeaders.ContentType,"application/json"))
@@ -147,6 +147,7 @@ class ShareOrderScreenTest {
             click("Bond")
             assertEquals(1,bondRequests.get())
             click("Investment actions");await("Add pending investment");click("Shares",lastMatch=true)
+            await("Cached closing price")
             await("Security name"); click("Security name")
             await("SYNTHETIC Bralirwa (BLR)")
             click("SYNTHETIC BK Group (BOK)")
@@ -166,6 +167,7 @@ class ShareOrderScreenTest {
             val screenshot=instrumentation.uiAutomation.takeScreenshot()
             java.io.File(instrumentation.targetContext.cacheDir,"synthetic-share-order-screen.png").outputStream().use {screenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
             screenshot.recycle()
+            reveal("Using previously loaded closing prices."); await("Using previously loaded closing prices.")
             reveal("Save pending order"); click("Save pending order")
             val deadline=System.currentTimeMillis()+5000
             while(writes.get()==0 && System.currentTimeMillis()<deadline)Thread.sleep(50)

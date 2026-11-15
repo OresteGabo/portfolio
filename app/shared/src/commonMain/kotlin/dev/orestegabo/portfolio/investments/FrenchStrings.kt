@@ -2,6 +2,10 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Estimated market value" to "Valeur de marché estimée",
+    "Illustrative projection, not a guaranteed return. Review your assumptions." to "Projection indicative, sans rendement garanti. Vérifiez vos hypothèses.",
+    "Projection chart unavailable: some values are missing." to "Graphique de projection indisponible : certaines valeurs sont manquantes.",
+    "Saving stores the PDF and extracted details on the server for your account." to "L’enregistrement conserve le PDF et les données extraites sur le serveur pour votre compte.",
     "Discard changes?" to "Abandonner les modifications ?",
     "Your unsaved changes will be lost. Saved investments will not change." to "Vos modifications non enregistrées seront perdues. Les investissements enregistrés ne changeront pas.",
     "Discard changes" to "Abandonner les modifications",

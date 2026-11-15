@@ -50,6 +50,7 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
     val quote = companies.firstOrNull { it.text("ticker") == ticker }
     val sameSecurity = savedOrder && ticker == existing.text("ticker")
     val name = quote?.text("name")?.ifBlank { ticker } ?: if (sameSecurity) existing.text("securityName") else ""
+    val cachedQuotes = model.quoteRefreshFailed || model.quotes?.optJSONObject("source")?.optBoolean("stale") == true
     val price = if (sameSecurity) existing.optDouble("pricePerShare") else quote?.optDouble("closing") ?: 0.0
     val estimate = runCatching { shareOrderEstimate(quantity.toInputNumberOrNull() ?: 0.0, price) }.getOrNull()
     val changed = savedOrder && (ticker != existing.text("ticker") || quantity.toInputNumberOrNull() != existing.optDouble("shares") || price != existing.optDouble("pricePerShare"))
@@ -95,7 +96,7 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
                             }
                             HorizontalDivider(color=colors.outlineVariant.copy(alpha=.45f))
                             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-                                AppText(if (sameSecurity) "Order price" else "Latest closing price",style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
+                                AppText(if (sameSecurity) "Order price" else if (cachedQuotes) "Cached closing price" else "Latest closing price",style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
                                 FinancialText(if (price>0) money(price) else "—",style=MaterialTheme.typography.titleSmall,fontWeight=FontWeight.SemiBold,color=colors.primary)
                             }
                         }
@@ -111,7 +112,7 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
                 decrease={quantity=((quantity.toInputNumberOrNull()?.toLong() ?: 0L)-100).coerceAtLeast(100).toString()},
                 increase={quantity=((quantity.toInputNumberOrNull()?.toLong() ?: 0L)+100).coerceAtMost(1_000_000_000).toString()}) }
             val pricesLoading = model.marketLoading || (model.busy && companies.isEmpty())
-            val priceFeedback = closingPriceFeedback(companies.isNotEmpty(), pricesLoading, model.quoteRefreshFailed)
+            val priceFeedback = closingPriceFeedback(companies.isNotEmpty(), pricesLoading, cachedQuotes)
             if (editMode && priceFeedback != null) item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     AppText(priceFeedback, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)

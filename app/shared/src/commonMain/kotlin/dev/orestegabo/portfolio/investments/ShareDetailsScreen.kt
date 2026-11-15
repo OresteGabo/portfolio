@@ -61,7 +61,7 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, openPurchase
                 DetailAmount(when {
                     valuation == null -> "Closing price"
                     valuation.closingPrice == null -> "Purchase cost"
-                    else -> "Market value"
+                    else -> "Estimated market value"
                 }, valuation?.estimatedValue ?: quote.price, currency)
                 valuation?.let { ShareReturnSummary(it) }
             }
@@ -160,6 +160,8 @@ private fun ShareReturnSummary(valuation: ValuedSharePosition, compact: Boolean 
         val change = (if (gain > 0) "+" else "") + money(gain, valuation.position.currency)
         val rate = valuation.gainLossRate?.let { (if (it > 0) "+" else "") + percent(it) }
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            AppText("Unrealized gain / loss", style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
             FinancialText(listOfNotNull(change, rate).joinToString("  ·  "),
                 style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
                 color = color, fontWeight = FontWeight.Medium)
@@ -207,7 +209,7 @@ fun SharePurchaseDetailsScreen(model: PortfolioModel, selected: JsonRecord,
                     ShareValuesInfoButton(quote, model.quoteRefreshFailed, singlePurchase = true)
                 }
                 valuation?.let {
-                    DetailAmount(if (it.closingPrice == null) "Purchase cost" else "Market value", it.estimatedValue, lot.text("currency"))
+                    DetailAmount(if (it.closingPrice == null) "Purchase cost" else "Estimated market value", it.estimatedValue, lot.text("currency"))
                     ShareReturnSummary(it)
                 }
                 if (valuation?.gainLoss == null) DetailNote(if (lot.optDouble("remainingShares", lot.optDouble("shares")) <= 0) "No shares remaining" else "Return unavailable")

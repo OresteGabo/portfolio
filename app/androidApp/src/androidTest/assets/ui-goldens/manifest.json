@@ -45,51 +45,51 @@
   "goldens": [
     {
       "file": "small-light.png",
-      "sha256": "a0531a0050238da37b5da35fac86382d7d438e41c91e7c614295958c7665ff16"
+      "sha256": "3aa8dd9c17da6eab1c87ef5266584d9815241b3b76c2b177ca09d9481c090617"
     },
     {
       "file": "small-dark.png",
-      "sha256": "f720c2534f876d515e55616debfdfc9822d6d5d89ce7b321e8b85b7224283f70"
+      "sha256": "b117ef47c879a43e4a9ebe41608ed871222305601f712416fbbcad6a7d13f6a5"
     },
     {
       "file": "phone-light.png",
-      "sha256": "40665a9b9dd6c7fa9fad2c65c494ded4fdf44dfff25104336ba41f4186c6fc08"
+      "sha256": "c88ab2d8a6089ebfa83a46a909bfabfdbe9053e56dbfe0940ae890a135f0a7c3"
     },
     {
       "file": "phone-dark.png",
-      "sha256": "fe13386fee7bbb3c70f5eb02c23b77fbca15ce5d69d7418da1b50ef480157207"
+      "sha256": "e29df8d7ceedf1839606e2c03a205cb930db4870a0fbe8a95378ac1a04d2cb63"
     },
     {
       "file": "large-phone-light.png",
-      "sha256": "6eeb5eb2d865dcb9e5f5664025ad5469247b508bba6d36dee165b0453e9854cc"
+      "sha256": "90a46f18043d682cc5f701a2e46f3ccdaadec7c4f1e87b64ab8bdd1417303342"
     },
     {
       "file": "large-phone-dark.png",
-      "sha256": "f25a99eabbda17c827375164329a3349f87bff620947b823725e603173d03704"
+      "sha256": "53ac4a23ca87b880bfb403f2dfe203970eb24df87a00d1b592e955a67d45dedf"
     },
     {
       "file": "tablet-light.png",
-      "sha256": "1f18f61d5b28dd5eec4fe86ce09b9e08e66ce7bbe9d8ae150be3c832d373db92"
+      "sha256": "dabe8a9d44908dea6f6611f974deaa9ec0c0aee3cae0b53b49d8b60af7ae862c"
     },
     {
       "file": "tablet-dark.png",
-      "sha256": "f422fbcb2ceaee70baf5d79479b454c3624d69428a05f46caa8b51fab4e89e99"
+      "sha256": "01439ffdcc1db1af021e8e6f77d5e2a7396fafb1b83bff048c2a673d46ce50d6"
     },
     {
       "file": "landscape-light.png",
-      "sha256": "0af5850ad5fe5396a05e98aa65b69ee3bd80da64c70285ad718871aec09e7ce2"
+      "sha256": "eb3e31620893b5c180374508649c300e879ba0947ae6155961d4b64a9dccf03f"
     },
     {
       "file": "landscape-dark.png",
-      "sha256": "0e7c1e7748fbdfc91bbf42307f239530179d4f8a1768ffed37d7961ecddb5ce7"
+      "sha256": "8829aa97b86d3e966787430c7c64fdf98d818c16656234e7f23320500ae749aa"
     },
     {
       "file": "large-text-light.png",
-      "sha256": "0ed92851ebad07c9f90bc56feeab5e3f2db077bb3716ee61c0b002f0c1a89a52"
+      "sha256": "673bd1a16465ee8f9b0d90ec61d36009f6f7ebba3d9703d90eeac17e35faa83e"
     },
     {
       "file": "large-text-dark.png",
-      "sha256": "4750f0520240da49b12b5ae127d04910b2dad818da7032230508a44e0633b0f2"
+      "sha256": "4f787ec4a0bd0095f23fc39199af81e669db3ff3bdf4e4825fe08871326bcda4"
     }
   ],
   "referenceEnvironment": {
@@ -100,6 +100,6 @@
     "composeMultiplatform": "1.11.1",
     "note": "Parent revision plus the explicitly identified reviewed source variant; source digest pins rendered Kotlin. Native modal asserted separately."
   },
-  "sourceVariant": "reviewed data refactor and UI/design/accessibility changes; financial presentation unchanged",
-  "sharedSourceSha256": "1b39d4445573e3b3c8b7a965afe9dcdbd0ca391f7dd33ecd8f44adfa03043d26"
+  "sourceVariant": "reviewed data/UI/accessibility plus financial presentation",
+  "sharedSourceSha256": "1bf96d6a2fecc75aad1436d9239a5f0087652ae0a60f3215a89e7074984e18b1"
 }

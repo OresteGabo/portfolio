@@ -204,7 +204,7 @@ class InvestmentDetailLayoutTest {
                     }
                     capture("${if (isShare) "share" else "bond"}-${if (isDark) "dark" else "light"}")
                     if (large) {
-                        val numeric = formatNumber(if (isShare) 4000000000.0 else 2200000000.0)
+                        val numeric = formatNumber(if (!isShare) 2200000000.0 else if (mode == "missing") 3661560000.0 else 4000000000.0)
                         scrollTo(numeric)
                         capture("${if (isShare) "share" else "bond"}-${if (isDark) "dark" else "light"}-value")
                     }
@@ -214,6 +214,10 @@ class InvestmentDetailLayoutTest {
                     }
                     File(instrumentation.targetContext.filesDir, "redesign-state.txt").writeText(instrumentation.uiAutomation.rootInActiveWindow?.let(::collect).orEmpty())
                     assertNotNull("Instrument identity visible ($prefix)", visible { it.text?.toString()?.contains(prefix) == true })
+                    if (isShare && !large && mode != "missing") {
+                        assertNotNull("Valuation is explicitly an estimate", find(localized("Estimated market value")))
+                        assertNotNull("Return is explicitly unrealized", find(localized("Unrealized gain / loss")))
+                    }
                 }
                 if (profile == "normal" && mode == "fresh" && language == "en") {
                     scenario.onActivity { share.value = false; dark.value = false; composition.intValue++ }

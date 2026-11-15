@@ -119,21 +119,26 @@ fun SimulatorScreen(model: PortfolioModel, engine: InvestmentEngine, back: () ->
             else {
                 item { Panel {
                     AppText("Projected account value", fontWeight = FontWeight.Bold)
-                    FinancialText(money(summary.optDouble("finalAccountValue", 0.0)), style = MaterialTheme.typography.headlineMedium)
-                    listOf("finalPortfolio" to "Bond portfolio", "finalCashBalance" to "Cash balance", "totalContributions" to "Total contributions & charges", "totalCoupons" to "Total net coupons", "totalReinvested" to "Reinvested coupons", "annualPassiveIncome" to "Annual passive income", "monthlyPassiveIncome" to "Monthly passive income").forEach { (key, title) -> Fact(title, money(summary.optDouble(key, 0.0))) }
+                    DetailNote("Illustrative projection, not a guaranteed return. Review your assumptions.")
+                    FinancialText(recordAmountText(summary, "finalAccountValue"), style = MaterialTheme.typography.headlineMedium)
+                    listOf("finalPortfolio" to "Bond portfolio", "finalCashBalance" to "Cash balance", "totalContributions" to "Total contributions & charges", "totalCoupons" to "Total net coupons", "totalReinvested" to "Reinvested coupons", "annualPassiveIncome" to "Annual passive income", "monthlyPassiveIncome" to "Monthly passive income").forEach { (key, title) -> Fact(title, recordAmountText(summary, key)) }
                     listOf("milestone50m" to "50M milestone month", "milestone100m" to "100M milestone month", "milestone200m" to "200M milestone month", "passiveIncomeCrossoverYear" to "Income crossover year").forEach { (key, title) -> Fact(title, summary.text(key).ifBlank { "Not reached" }) }
                 } }
                 val rows = result!!.rows("rows")
-                if (rows.size > 1) item { HistoryGraph(rows.map { it.optDouble("totalAccountValue", 0.0) }, "Projected monthly account value") }
+                if (rows.size > 1) item {
+                    val values = projectionChartValues(rows)
+                    if (values != null) HistoryGraph(values, "Projected monthly account value")
+                    else DetailNote("Projection chart unavailable: some values are missing.")
+                }
                 item { AppText("Monthly projection", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
                 items(rows) { row -> Panel {
                     AppText("${row.text("calendarYear")}-${row.text("calendarMonth").padStart(2, '0')}", fontWeight = FontWeight.Bold)
-                    Fact("Closing account", money(row.optDouble("totalAccountValue", 0.0)))
-                    Fact("Contribution", money(row.optDouble("personalContribution", 0.0)))
-                    Fact("New bond purchase", money(row.optDouble("newBondPurchase", 0.0)))
-                    Fact("Coupons", money(row.optDouble("couponPayment", 0.0)))
-                    Fact("Matured principal", money(row.optDouble("maturedPrincipal", 0.0)))
-                    Fact("Cash balance", money(row.optDouble("closingCashBalance", 0.0)))
+                    Fact("Closing account", recordAmountText(row, "totalAccountValue"))
+                    Fact("Contribution", recordAmountText(row, "personalContribution"))
+                    Fact("New bond purchase", recordAmountText(row, "newBondPurchase"))
+                    Fact("Coupons", recordAmountText(row, "couponPayment"))
+                    Fact("Matured principal", recordAmountText(row, "maturedPrincipal"))
+                    Fact("Cash balance", recordAmountText(row, "closingCashBalance"))
                 } }
             }
         }

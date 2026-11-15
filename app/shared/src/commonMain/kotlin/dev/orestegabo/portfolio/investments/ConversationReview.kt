@@ -15,6 +15,9 @@ import androidx.compose.ui.unit.dp
 internal fun ConversationReview(model: PortfolioModel, review: JsonRecord, target: JsonRecord?, entry: ImportReceipt, done: () -> Unit) {
     val related = entry.targetId.takeIf(String::isNotBlank)?.let { id -> model.purchases.firstOrNull { it.text("id") == id }
         ?: target?.takeIf { it.text("id") == id } }
+    if (!model.isGuest && review.text("kind") in listOf("bond", "equity", "statement")) {
+        AppText("Saving stores the PDF and extracted details on the server for your account.", style = MaterialTheme.typography.bodySmall)
+    }
     when (review.text("kind")) {
         "bond", "equity" -> PurchaseConversationReview(model, review, related, entry, done)
         "bond-issuance" -> IssuanceConversationReview(model, review, related, entry, done)
@@ -54,7 +57,6 @@ private fun PurchaseConversationReview(model: PortfolioModel, review: JsonRecord
     }
     var selection by rememberSaveable(entry.id) { mutableStateOf(target?.text("id")) }
     val state = PurchaseReviewState(review, model.documents, model.purchases, model.historyComplete, target, selection, model.sharedCouponTerms)
-    if (state.bond) AppText("Your PDF and its extracted terms stay private. Shared reference data is published by authorized Inzira staff.", style = MaterialTheme.typography.bodySmall)
     LaunchedEffect(entry.id, model.busy, model.historyComplete) {
         if (state.bond && !model.historyComplete && !model.busy && model.error == null) model.loadInvestmentHistory()
     }

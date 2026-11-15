@@ -81,6 +81,11 @@
       "flow": "large-text progress/form actions",
       "class": "UiDesignConsistencyTest",
       "method": "progressAndFormContentWrapAtLargeTextAndKeepTheirActionsReachable"
+    },
+    {
+      "flow": "incomplete financial projection presentation",
+      "class": "FinancialTransparencyUiTest",
+      "method": "incompleteProjectionExplainsUnknownValuesAndKeepsActualZeroDistinct"
     }
   ]
 }
