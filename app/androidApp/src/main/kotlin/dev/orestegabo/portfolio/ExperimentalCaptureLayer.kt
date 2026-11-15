@@ -12,6 +12,7 @@ import android.view.View
 import android.widget.FrameLayout
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.Lifecycle
 import dev.orestegabo.portfolio.investments.ExperimentalCaptureBackdrop
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 
@@ -28,8 +29,19 @@ fun installExperimentalCaptureLayer(activity: MainActivity) {
         isFocusable = false
     }
     var excluded = false
+    var disposed = false
+    var generation = 0
+    var releaseAttachment: (() -> Unit)? = null
+    fun retireSurface() {
+        generation++
+        // Stop hardware-canvas access before destroying the surface or invoking its release callback.
+        excluded = false
+        releaseAttachment?.invoke()
+        releaseAttachment = null
+    }
     fun render(bitmap: Bitmap?): Boolean {
-        if (!excluded || !surface.holder.surface.isValid) return false
+        if (!excluded || disposed || !activity.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) ||
+            !surface.holder.surface.isValid) return false
         return try {
             val canvas = surface.holder.lockHardwareCanvas()
             try {
@@ -44,14 +56,17 @@ fun installExperimentalCaptureLayer(activity: MainActivity) {
     }
     surface.holder.addCallback(object : SurfaceHolder.Callback {
         override fun surfaceCreated(holder: SurfaceHolder) {
+            retireSurface()
+            val createdGeneration = generation
             try {
                 SurfaceControl.Transaction().use { transaction ->
                     HiddenApiBypass.invoke(SurfaceControl.Transaction::class.java, transaction,
                         "setSkipScreenshot", surface.surfaceControl, true)
                     transaction.addTransactionCommittedListener(activity.mainExecutor) {
-                        if (surface.holder.surface.isValid) {
+                        // A transaction may commit after destruction or after another surface was created.
+                        if (!disposed && generation == createdGeneration && surface.holder.surface.isValid) {
                             excluded = true
-                            ExperimentalCaptureBackdrop.attach(::render)
+                            releaseAttachment = ExperimentalCaptureBackdrop.attach(::render)
                         }
                     }
                     transaction.apply()
@@ -62,14 +77,14 @@ fun installExperimentalCaptureLayer(activity: MainActivity) {
         }
         override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) = Unit
         override fun surfaceDestroyed(holder: SurfaceHolder) {
-            ExperimentalCaptureBackdrop.detach()
-            excluded = false
+            retireSurface()
         }
     })
     root.addView(surface, FrameLayout.LayoutParams(-1, -1))
     activity.lifecycle.addObserver(object : DefaultLifecycleObserver {
         override fun onDestroy(owner: LifecycleOwner) {
-            ExperimentalCaptureBackdrop.detach()
+            disposed = true
+            retireSurface()
             root.removeView(surface)
             owner.lifecycle.removeObserver(this)
         }

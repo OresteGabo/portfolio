@@ -3,6 +3,7 @@ package dev.orestegabo.portfolio.investments
 import android.os.Bundle
 import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityEvent
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.*
 
@@ -38,11 +39,35 @@ internal class UsabilityTestDriver {
         Thread.sleep(150)
     }
     fun scroll(label: String) {
-        for (direction in listOf(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD, AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) repeat(16) {
-            if (nodes().any { matches(it, label) }) return
-            nodes().filter { it.isScrollable && !it.isEditable }.maxByOrNull { Rect().also(it::getBoundsInScreen).height() }
-                ?.performAction(direction)
-            instrumentation.waitForIdleSync(); Thread.sleep(80)
+        val automation = instrumentation.uiAutomation
+        waitUntil("visible content for $label") {
+            nodes().any { matches(it, label) || it.isVisibleToUser && it.isScrollable && !it.isEditable &&
+                it.actionList.any { action -> action.id == AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD ||
+                    action.id == AccessibilityNodeInfo.ACTION_SCROLL_FORWARD } }
+        }
+        for (direction in listOf(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD, AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
+            for (step in 0 until 16) {
+                if (nodes().any { matches(it, label) }) return
+                val container = nodes().filter { it.isVisibleToUser && it.isScrollable && !it.isEditable &&
+                    it.actionList.any { action -> action.id == direction } }
+                    .maxByOrNull { Rect().also(it::getBoundsInScreen).height() } ?: break
+                // Compose may announce scrolling as a subtree update rather than TYPE_VIEW_SCROLLED.
+                // Arm the event wait before dispatch; a quiet queue can precede the first scroll frame.
+                var accepted = false
+                try {
+                    val event = automation.executeAndWaitForEvent({ accepted = container.performAction(direction) }, {
+                        it.windowId == container.windowId && (it.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED ||
+                            it.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)
+                    }, 1_000)
+                    @Suppress("DEPRECATION")
+                    event.recycle()
+                } catch (_: java.util.concurrent.TimeoutException) {
+                    // Some scroll/boundary actions emit no event. Re-read the tree after the bounded
+                    // wait; this never substitutes for finding and activating the requested target.
+                }
+                if (!accepted) break
+                automation.waitForIdle(200, 3_000)
+            }
         }
         await(label)
     }

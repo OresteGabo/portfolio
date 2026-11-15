@@ -19,6 +19,7 @@ coroutines = "1.10.2"
 androidx-biometric = "1.1.0"
 androidx-fragment = "1.8.9"
 androidx-testRunner = "1.7.0"
+androidx-testOrchestrator = "1.6.1"
 firebaseBom = "35.1.0"
 googleServices = "4.5.0"
 desugarJdk = "2.1.5"
@@ -55,6 +56,7 @@ ktor-serverTestHost = { module = "io.ktor:ktor-server-test-host-jvm", version.re
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "androidx-biometric" }
 androidx-fragment = { module = "androidx.fragment:fragment", version.ref = "androidx-fragment" }
+androidx-test-orchestrator = { module = "androidx.test:orchestrator", version.ref = "androidx-testOrchestrator" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-testRunner" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 # Firebase Messaging is versioned exclusively by the BOM in the Android application.

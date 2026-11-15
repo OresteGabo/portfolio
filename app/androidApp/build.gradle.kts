@@ -50,6 +50,7 @@ dependencies {
     androidTestImplementation(libs.androidx.testExt.junit)
     androidTestImplementation(libs.ktor.client.mock)
     androidTestImplementation(libs.androidx.test.runner)
+    androidTestUtil(libs.androidx.test.orchestrator)
     androidTestImplementation(libs.compose.foundation)
     androidTestImplementation(libs.compose.material3)
     coreLibraryDesugaring(libs.android.desugar.jdk)
@@ -69,6 +70,10 @@ android {
         versionCode = appVersionCode
         versionName = appVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+    testOptions {
+        // Each method retains its full lifecycle scenario; a crash cannot abort later tests.
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
     packaging {
         resources {

@@ -18,14 +18,29 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlin.coroutines.*
 
-/** The optional debug host accepts live pixels only after excluding its own surface from capture. */
+/** The optional Android host accepts live pixels only after excluding its own surface from capture. */
 object ExperimentalCaptureBackdrop {
     private var renderer by mutableStateOf<((Bitmap?) -> Boolean)?>(null)
+    private var attachment: Any? = null
     var ready by mutableStateOf(false)
         private set
     val available get() = renderer != null
-    fun attach(draw: (Bitmap?) -> Boolean) { ready = false; renderer = draw }
-    fun detach() { renderer?.invoke(null); renderer = null; ready = false }
+    /** Releases only this registration, even when a later Activity reuses the same callback. */
+    fun attach(draw: (Bitmap?) -> Boolean): () -> Unit {
+        val owner = Any()
+        attachment = owner
+        ready = false
+        renderer = draw
+        return { if (attachment === owner) detach() }
+    }
+    fun detach() {
+        val previous = renderer
+        attachment = null
+        renderer = null
+        ready = false
+        // Retire state first: releasing an old renderer may itself register its replacement.
+        previous?.invoke(null)
+    }
     internal fun publish(bitmap: Bitmap): Boolean {
         val rendered = renderer?.invoke(bitmap) == true
         ready = rendered

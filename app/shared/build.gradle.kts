@@ -73,3 +73,11 @@ tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimu
     standalone.set(false)
     device.set(providers.gradleProperty("iosTestDevice").orElse("booted"))
 }
+
+// Diagnostics are opt-in, toolchain-native, and separated by target/compilation by the plugin.
+composeCompiler {
+    if (providers.gradleProperty("composeReports").map(String::toBoolean).getOrElse(false)) {
+        reportsDestination.set(layout.buildDirectory.dir("reports/compose"))
+        metricsDestination.set(layout.buildDirectory.dir("reports/compose-metrics"))
+    }
+}

@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "sdk": 36,
+  "sourceRevision": "40aedf4",
+  "screen": "ShareDetailsScreen",
+  "fixture": "Synthetic TEST, 100 shares at RWF 90, cached RWF 100 close dated 2000-01-02",
+  "profiles": [
+    {
+      "id": "small",
+      "width": 320,
+      "height": 568,
+      "fontScale": 1.0
+    },
+    {
+      "id": "phone",
+      "width": 360,
+      "height": 720,
+      "fontScale": 1.0
+    },
+    {
+      "id": "large-phone",
+      "width": 412,
+      "height": 892,
+      "fontScale": 1.0
+    },
+    {
+      "id": "tablet",
+      "width": 800,
+      "height": 1000,
+      "fontScale": 1.0
+    },
+    {
+      "id": "landscape",
+      "width": 740,
+      "height": 360,
+      "fontScale": 1.0
+    },
+    {
+      "id": "large-text",
+      "width": 360,
+      "height": 720,
+      "fontScale": 2.0
+    }
+  ],
+  "goldens": [
+    {
+      "file": "small-light.png",
+      "sha256": "46044c14a02155bf30c145544b16f8f9671d67e2dfa86f46e582d6ed0ba93e80"
+    },
+    {
+      "file": "small-dark.png",
+      "sha256": "f720c2534f876d515e55616debfdfc9822d6d5d89ce7b321e8b85b7224283f70"
+    },
+    {
+      "file": "phone-light.png",
+      "sha256": "1b4d434b046977510dd18a4648391ce9164918b6f9791e453b95d60a5bb06a99"
+    },
+    {
+      "file": "phone-dark.png",
+      "sha256": "fe13386fee7bbb3c70f5eb02c23b77fbca15ce5d69d7418da1b50ef480157207"
+    },
+    {
+      "file": "large-phone-light.png",
+      "sha256": "8c43e8c97b858ee5dbae150982f70a22ee0121932ade4faabaa0b1be36673636"
+    },
+    {
+      "file": "large-phone-dark.png",
+      "sha256": "f25a99eabbda17c827375164329a3349f87bff620947b823725e603173d03704"
+    },
+    {
+      "file": "tablet-light.png",
+      "sha256": "8462021c3b9bed19329f0deadbf6b547280c4e2e8edccdfc55dd4ea0a5de09f4"
+    },
+    {
+      "file": "tablet-dark.png",
+      "sha256": "f422fbcb2ceaee70baf5d79479b454c3624d69428a05f46caa8b51fab4e89e99"
+    },
+    {
+      "file": "landscape-light.png",
+      "sha256": "7c96e64ab64e4566955ef7ef87cbef7ba68ddea633f1e593f0a12a4efbefcf8a"
+    },
+    {
+      "file": "landscape-dark.png",
+      "sha256": "0e7c1e7748fbdfc91bbf42307f239530179d4f8a1768ffed37d7961ecddb5ce7"
+    },
+    {
+      "file": "large-text-light.png",
+      "sha256": "f6cc642f4ca29f02f7ca2cf3e8fa8de51071e8b6d4162e686114fd2badee4196"
+    },
+    {
+      "file": "large-text-dark.png",
+      "sha256": "4750f0520240da49b12b5ae127d04910b2dad818da7032230508a44e0633b0f2"
+    }
+  ],
+  "referenceEnvironment": {
+    "fingerprint": "google/sdk_gphone64_arm64/emu64a:16/BE4B.251210.005/14574095:user/release-keys",
+    "hardware": "ranchu",
+    "density": "Compose Density(1f); viewport pixels equal dp",
+    "kotlin": "2.3.21",
+    "composeMultiplatform": "1.11.1",
+    "note": "Committed UI at 40aedf4; unrelated pending theme changes excluded. Native modal asserted separately."
+  }
+}

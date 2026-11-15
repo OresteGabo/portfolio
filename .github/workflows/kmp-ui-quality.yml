@@ -1,0 +1,42 @@
+name: KMP UI quality
+on:
+  pull_request:
+    paths: ['app/**', 'core/**', 'gradle/**', '*.gradle.kts', 'scripts/**', 'docs/quality/**', '.github/workflows/kmp-ui-quality.yml']
+  push:
+    branches: [main]
+    paths: ['app/**', 'core/**', 'gradle/**', '*.gradle.kts', 'scripts/**', 'docs/quality/**', '.github/workflows/kmp-ui-quality.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  host-guardrails:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - name: Reviewed UI evidence inventory
+        run: |
+          python3 scripts/check-kmp-ui.py
+          python3 -m unittest discover -s scripts/tests -p 'test_kmp_ui.py'
+      - name: Compile UI tests, unit regressions, lint and compiler diagnostics
+        run: ./gradlew --no-daemon -PcomposeReports=true :core:jvmTest :core:testAndroidHostTest :app:shared:testAndroidHostTest :app:androidApp:assembleDebugAndroidTest :app:androidApp:lintDebug
+      - name: Preserve compiler and test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: kmp-ui-host-${{ github.sha }}
+          retention-days: 7
+          path: |
+            app/shared/build/reports/compose*/
+            app/shared/build/reports/tests/
+            core/build/reports/tests/
+            app/androidApp/build/reports/lint-results-debug.*
+# Device pixels need the documented API 36 ARM reference image. This host job does
+# not claim to execute device UI tests; run the documented device gate separately.

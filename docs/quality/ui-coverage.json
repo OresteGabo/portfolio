@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "note": "Evidence inventory, not code coverage. Required device gate runs on the reference API 36 emulator. Opt-in delivery/reboot/user-PDF tests remain separately documented.",
+  "flows": [
+    {
+      "flow": "onboarding",
+      "class": "OnboardingUiTest",
+      "method": "tourSupportsThemesFrenchSkipCompletionAndPersistence"
+    },
+    {
+      "flow": "portfolio and guest deletion",
+      "class": "GuestExperienceUiTest",
+      "method": "sharedScreensAndConfirmedDeletionWorkWithoutAnyAccountOrNetwork"
+    },
+    {
+      "flow": "bond/share details",
+      "class": "InvestmentDetailLayoutTest",
+      "method": "investmentOverviewsRenderInBothThemes"
+    },
+    {
+      "flow": "PDF review/retry/library",
+      "class": "ImportConversationUiTest",
+      "method": "conversationReviewsRetriesPersistsAndLinksToTheRealLibraryAndPurchase"
+    },
+    {
+      "flow": "external PDF lifecycle",
+      "class": "PdfSharingTest",
+      "method": "pdfTargetsReceiveColdAndWarmIntentsAndExportsGrantOnlyReadAccess"
+    },
+    {
+      "flow": "form/back/error/retry/double submit",
+      "class": "NavigationUsabilityTest",
+      "method": "draftSurvivesBackErrorAndRetryAndSavingCannotBeSubmittedTwice"
+    },
+    {
+      "flow": "backup confirmation",
+      "class": "BackupUsabilityTest",
+      "method": "validationCancelledExportAndDestructiveRestoreHavePredictableRecovery"
+    },
+    {
+      "flow": "capture privacy",
+      "class": "CaptureProtectionTest",
+      "method": "unavailableCaptureLayerBlocksCapturesWithoutForcingNumbersHidden"
+    },
+    {
+      "flow": "synthetic visual matrix",
+      "class": "UiGoldenTest",
+      "method": "syntheticShareDetailsMatchReviewedLightDarkAndLargeTextReferences"
+    },
+    {
+      "flow": "visual comparator",
+      "class": "UiGoldenTest",
+      "method": "comparatorRejectsChangedFinancialDigitsAndDimensions"
+    },
+    {
+      "flow": "sign-in loading/error/retry and cancelled guest dialog",
+      "class": "AuthenticationUiQualityTest",
+      "method": "signInShowsLoadingRetainsInputAfterFailureAndGuestChoiceCanBeCancelled"
+    },
+    {
+      "flow": "capture attachment ownership: detachRetiresTheOldRegistrationBeforeInvokingItsRenderer",
+      "class": "CaptureAttachmentTest",
+      "method": "detachRetiresTheOldRegistrationBeforeInvokingItsRenderer"
+    },
+    {
+      "flow": "capture attachment ownership: oldReleaseCannotDetachAReplacementUsingTheSameCallback",
+      "class": "CaptureAttachmentTest",
+      "method": "oldReleaseCannotDetachAReplacementUsingTheSameCallback"
+    },
+    {
+      "flow": "capture attachment ownership: releaseDoesNotEraseARegistrationInstalledByItsCallback",
+      "class": "CaptureAttachmentTest",
+      "method": "releaseDoesNotEraseARegistrationInstalledByItsCallback"
+    }
+  ]
+}

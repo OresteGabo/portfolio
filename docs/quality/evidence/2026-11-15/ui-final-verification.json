@@ -1,0 +1,184 @@
+{
+  "date": "2026-11-15",
+  "baselineRevision": "40aedf4",
+  "scope": "isolated HEAD plus reviewed UI guardrails; pending unrelated code excluded",
+  "suites": {
+    "coreJvm": {
+      "tests": 145,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skippedMethods": []
+    },
+    "coreAndroidHost": {
+      "tests": 145,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skippedMethods": []
+    },
+    "sharedAndroidHost": {
+      "tests": 533,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skippedMethods": []
+    },
+    "coreIosSimulator": {
+      "tests": 144,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skippedMethods": []
+    },
+    "sharedIosSimulator": {
+      "tests": 559,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skippedMethods": []
+    },
+    "sharedAndroidDevice": {
+      "tests": 527,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skippedMethods": []
+    },
+    "appAndroidDevice": {
+      "tests": 51,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 4,
+      "skippedMethods": [
+        "dev.orestegabo.portfolio.FirebaseDeliverySetupTest.receivesARealFirebaseMessageWithoutAnAccountSession",
+        "dev.orestegabo.portfolio.investments.BondPdfRegressionTest.suppliedConfirmationReachesValidatedReviewWithoutSaving",
+        "dev.orestegabo.portfolio.investments.GuestPersistenceTest.guestInvestmentsSurviveProcessRestartAndReboot",
+        "dev.orestegabo.portfolio.investments.GuestStartupFixtureTest.prepareEmptyOfflineGuestForProcessLaunchMeasurements"
+      ]
+    }
+  },
+  "initialFullDeviceRun": {
+    "app": {
+      "tests": 48,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 5,
+      "skippedMethods": [
+        "dev.orestegabo.portfolio.FirebaseDeliverySetupTest.receivesARealFirebaseMessageWithoutAnAccountSession",
+        "dev.orestegabo.portfolio.investments.BondPdfRegressionTest.suppliedConfirmationReachesValidatedReviewWithoutSaving",
+        "dev.orestegabo.portfolio.investments.GuestPersistenceTest.guestInvestmentsSurviveProcessRestartAndReboot",
+        "dev.orestegabo.portfolio.investments.GuestStartupFixtureTest.prepareEmptyOfflineGuestForProcessLaunchMeasurements",
+        "dev.orestegabo.portfolio.investments.UiFrameBenchmarkTest.syntheticPurchaseHistoryFrameBaseline"
+      ]
+    },
+    "status": "failed",
+    "reason": "NavigationUsabilityTest could not click About Inzira; retained, not counted as success"
+  },
+  "captureFixFocused": {
+    "tests": 6,
+    "failures": 0,
+    "seconds": 26.89,
+    "log": "/tmp/inzira-ui-capture-fixed-focused.log"
+  },
+  "captureContractBeforeFix": {
+    "tests": 1,
+    "failures": 1,
+    "log": "/tmp/inzira-ui-capture-before.log"
+  },
+  "preCaptureFixFullRun": {
+    "app": {
+      "tests": 48,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 4,
+      "skippedMethods": [
+        "dev.orestegabo.portfolio.FirebaseDeliverySetupTest.receivesARealFirebaseMessageWithoutAnAccountSession",
+        "dev.orestegabo.portfolio.investments.BondPdfRegressionTest.suppliedConfirmationReachesValidatedReviewWithoutSaving",
+        "dev.orestegabo.portfolio.investments.GuestPersistenceTest.guestInvestmentsSurviveProcessRestartAndReboot",
+        "dev.orestegabo.portfolio.investments.GuestStartupFixtureTest.prepareEmptyOfflineGuestForProcessLaunchMeasurements"
+      ]
+    },
+    "status": "failed; native EGL crash"
+  },
+  "focusedFinal": {
+    "tests": 4,
+    "failures": 0,
+    "seconds": 44.181,
+    "log": "/tmp/inzira-ui-final-content-event-focused.log"
+  },
+  "lint": {
+    "debug": {
+      "errors": 0,
+      "warnings": 92
+    },
+    "release": {
+      "errors": 0,
+      "warnings": 94
+    }
+  },
+  "static": {
+    "pythonTests": 27,
+    "javascriptTests": 84,
+    "uiCheckerTests": 8,
+    "goldenProfiles": 6,
+    "goldenReferences": 12,
+    "packageAndSourceSetChecks": "passed",
+    "generatedColors": "passed",
+    "workflowYaml": "parsed, hosted workflow not executed locally"
+  },
+  "nativeFixtures": [
+    "widget data passed",
+    "shared PDF inbox passed",
+    "calendar civil dates passed"
+  ],
+  "composeCompilerAndroidMain": {
+    "totalComposables": 1692,
+    "restartable": 1667,
+    "skippable": 1184,
+    "runtimePerformanceClaim": false
+  },
+  "frameDiagnostic": {
+    "fixtureLots": 200,
+    "frames": 328,
+    "refreshRateHz": 60.000003814697266,
+    "p50TotalMs": 17.482391,
+    "p95TotalMs": 31.337324,
+    "maxTotalMs": 35.502581,
+    "droppedMetricReports": 0,
+    "sdk": 36,
+    "hardware": "ranchu",
+    "scope": "debug emulator, ShareDetailsScreen accessibility scroll; excludes startup/biometric/PDF/platform capture"
+  },
+  "referenceDisplay": {
+    "pixels": "1080x2400",
+    "densityDpi": 420,
+    "fingerprint": "google/sdk_gphone64_arm64/emu64a:16/BE4B.251210.005/14574095:user/release-keys"
+  },
+  "workingTreeIntegration": {
+    "sharedAndroidHostTests": 551,
+    "failures": 0,
+    "androidTestCompilation": "passed",
+    "androidLintDebug": "passed",
+    "iosArm64Compilation": "passed",
+    "iosSimulatorArm64Compilation": "passed",
+    "goldens": "not approved against unrelated pending theme changes"
+  },
+  "notVerified": [
+    "physical Android/iPhone UI",
+    "iOS UI screenshot/VoiceOver",
+    "human TalkBack session",
+    "native IME/system-bar and actual tablet/orientation matrix",
+    "release startup/biometric/memory profiling",
+    "opt-in real FCM/private PDF/reboot/startup scenarios",
+    "hosted GitHub Actions execution"
+  ],
+  "knownRisk": "Shared-process emulator EGL teardown root cause remains unconfirmed; Orchestrator isolates methods and does not prove a production renderer fix",
+  "finalGate": {
+    "status": "passed",
+    "duration": "9m36s",
+    "log": "/tmp/inzira-ui-final-capture-gate.log",
+    "androidReleaseCompilation": "passed, valid up-to-date output, 1s"
+  },
+  "productionCorrection": "Android capture attachment/surface lifecycle only; source defect regression-tested, vendor EGL root cause unproven"
+}
