@@ -1648,7 +1648,7 @@ class PortfolioModel(
                     missing, account.text("email"), target, date, language, receipts, ledgerEntries))
             }
             reportProgress = "Choose where to share the PDF"
-            if (actions.sharePdf("Struct-Capital-$date.pdf", bytes)) {
+            if (actions.sharePdf("Inzira-$date.pdf", bytes)) {
                 message = "Portfolio report ready to share."
                 try {
                     api.request("/api/bonds/notifications/report","POST",JsonRecord().put("date",date.toString())
@@ -1691,7 +1691,7 @@ class PortfolioModel(
     }
     fun exportAnnualReport(year: Int, actions: NativeActions) = action {
         val bytes = annualReportPdf(year)
-        if (actions.sharePdf("Struct-Capital-Annual-$year.pdf", bytes)) message = "Annual report ready to share."
+        if (actions.sharePdf("Inzira-Annual-$year.pdf", bytes)) message = "Annual report ready to share."
     }
 
     internal val documentThumbnails = DocumentThumbnailCache()

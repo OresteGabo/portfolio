@@ -187,7 +187,7 @@ internal fun SignInScreen(
                             StructMark(Modifier.size(32.dp))
                             Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
                                 AppText(
-                                    "STRUCT CAPITAL",
+                                    "INZIRA",
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary

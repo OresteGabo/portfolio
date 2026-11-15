@@ -1,4 +1,4 @@
-// Export native launcher sizes from the checked-in Struct Capital masters.
+// Export native launcher sizes from the checked-in Inzira masters.
 // Run from the repository root: swift scripts/generate-app-icons.swift
 import AppKit
 import ImageIO
@@ -18,8 +18,8 @@ func render(source: String, size: Int, destination: String) {
     CGImageDestinationAddImage(output, context.makeImage()!, nil)
     precondition(CGImageDestinationFinalize(output))
 }
-let dark = "branding/struct-capital/struct-capital-icon-1024.png"
-let light = "branding/struct-capital/struct-capital-icon-light-1024.png"
+let dark = "branding/inzira/inzira-icon-dark-1024.png"
+let light = "branding/inzira/inzira-icon-light-1024.png"
 let ios = "app/iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/"
 render(source: light, size: 1024, destination: ios + "app-icon-1024.png")
 render(source: dark, size: 1024, destination: ios + "app-icon-dark-1024.png")
@@ -29,4 +29,4 @@ for (density, size) in [("mdpi", 48), ("hdpi", 72), ("xhdpi", 96), ("xxhdpi", 14
         render(source: dark, size: size, destination: "app/androidApp/src/main/res/mipmap-night-\(density)/\(name).png")
     }
 }
-print("Rendered Struct Capital launcher icons for Android and iOS (light/dark)")
+print("Rendered Inzira launcher icons for Android and iOS (light/dark)")

@@ -32,6 +32,6 @@ class DisplayDatesTest {
         assertEquals("Unknown device", securityDeviceTitle(JsonRecord()))
         val device = JsonRecord().put("deviceModel", "Google Pixel 8").put("osVersion", "Android 16").put("appVersion", "1.0 (42)")
         assertEquals("Google Pixel 8", securityDeviceTitle(device))
-        assertEquals("Android 16 · Struct Capital 1.0 (42)", securityDeviceSoftware(device))
+        assertEquals("Android 16 · Inzira 1.0 (42)", securityDeviceSoftware(device))
     }
 }

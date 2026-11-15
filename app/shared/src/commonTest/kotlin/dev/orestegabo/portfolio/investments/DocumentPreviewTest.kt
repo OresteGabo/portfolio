@@ -116,7 +116,7 @@ class DocumentPreviewTest {
         try {
             advanceUntilIdle()
             m.openDocumentPreview(JsonRecord().put("id", "generated-annual-2025").put("annualReportYear", 2025)
-                .put("originalFileName", "Struct-Capital-Annual-2025.pdf")); advanceUntilIdle()
+                .put("originalFileName", "Inzira-Annual-2025.pdf")); advanceUntilIdle()
             val bytes = assertNotNull(m.documentPreview?.bytes)
             assertTrue(bytes.decodeToString().startsWith("%PDF-"))
             assertTrue(bytes.decodeToString().contains("2025-01-01"))

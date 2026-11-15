@@ -31,13 +31,13 @@ internal fun PdfImportPreparationScreen(pdf: ReceivedPdf, continueImport: () -> 
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     StructMark(Modifier.size(44.dp))
                     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        AppText("Struct Capital", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        AppText("Inzira", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         AppText("DOCUMENT IMPORT", style = MaterialTheme.typography.labelSmall, color = colors.primary)
                     }
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     AppText(if (prepared) "Ready for your review" else "Your PDF.\nA clearer portfolio.", style = MaterialTheme.typography.headlineLarge.copy(lineHeight = 38.sp), fontSize = 32.sp, fontWeight = FontWeight.Bold)
-                    AppText(if (prepared) "Open Struct Capital to review your document and choose what to save." else "Prepare your document, then review its details in Struct Capital.", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
+                    AppText(if (prepared) "Open Inzira to review your document and choose what to save." else "Prepare your document, then review its details in Inzira.", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
                 }
                 Surface(shape = RoundedCornerShape(22.dp), color = colors.surface, border = BorderStroke(1.dp, colors.primary.copy(alpha = .13f))) {
                     Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(15.dp)) {
@@ -66,7 +66,7 @@ internal fun PdfImportPreparationScreen(pdf: ReceivedPdf, continueImport: () -> 
                 Button(onClick = { if (prepared) continueImport() else prepared = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), shape = RoundedCornerShape(50)) {
                     Icon(if (prepared) Icons.AutoMirrored.Outlined.OpenInNew else Icons.Outlined.Download, null, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(10.dp))
-                    AppText(if (prepared) "Open Struct Capital" else "Prepare import", fontWeight = FontWeight.SemiBold)
+                    AppText(if (prepared) "Open Inzira" else "Prepare import", fontWeight = FontWeight.SemiBold)
                 }
                 TextButton(onClick = cancel, modifier = Modifier.heightIn(min = 44.dp)) { AppText("Cancel", color = colors.onSurfaceVariant) }
             }

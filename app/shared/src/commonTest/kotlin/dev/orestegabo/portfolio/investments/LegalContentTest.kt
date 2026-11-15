@@ -9,7 +9,7 @@ class LegalContentTest {
         val fr = privacy.sections.joinToString(" ") { it.body.fr }
         assertTrue(en.contains("authenticated account that saved"))
         assertTrue(en.contains("not other users’ private contracts"))
-        assertTrue(en.contains("Only the owner and specifically authorized Struct Capital staff"))
+        assertTrue(en.contains("Only the owner and specifically authorized Inzira staff"))
         assertTrue(en.contains("Ordinary accounts cannot publish shared data"))
         assertTrue(en.contains("Format validation is not independent verification by BNR"))
         assertTrue(en.contains("Private confirmation uploads do not contribute data to the shared reference pool"))
@@ -17,7 +17,7 @@ class LegalContentTest {
         assertFalse(en.contains("no in-app opt-out"))
         assertTrue(fr.contains("compte authentifié"))
         assertTrue(fr.contains("contrats privés des autres utilisateurs"))
-        assertTrue(fr.contains("personnel de Struct Capital expressément autorisé"))
+        assertTrue(fr.contains("personnel d’Inzira expressément autorisé"))
         assertTrue(fr.contains("Les comptes ordinaires ne peuvent pas publier"))
     }
     @Test fun deletionAndExportsDescribeTheirActualLimits() {

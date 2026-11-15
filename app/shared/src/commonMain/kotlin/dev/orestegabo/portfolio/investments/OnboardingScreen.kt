@@ -100,7 +100,7 @@ internal fun OnboardingScreen(
                         verticalAlignment = Alignment.CenterVertically) {
                         StructMark(Modifier.size(30.dp))
                         Spacer(Modifier.width(10.dp))
-                        AppText("STRUCT CAPITAL", Modifier.weight(1f), style = MaterialTheme.typography.labelLarge,
+                        AppText("INZIRA", Modifier.weight(1f), style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.SemiBold, color = colors.primary)
                         TextButton(onClick = finish) { AppText(if (replay) "Close" else "Skip") }
                     }

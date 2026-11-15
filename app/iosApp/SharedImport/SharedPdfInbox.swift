@@ -6,7 +6,7 @@ enum SharedPdfError: Error {
         switch self {
         case .notPDF: return french ? "Choisissez un fichier PDF." : "Choose a PDF file."
         case .tooLarge: return french ? "Choisissez un PDF de 10 Mo maximum." : "Choose a PDF of up to 10 MB."
-        case .waiting: return french ? "Ouvrez Struct Capital pour traiter le PDF en attente." : "Open Struct Capital to finish the waiting PDF first."
+        case .waiting: return french ? "Ouvrez Inzira pour traiter le PDF en attente." : "Open Inzira to finish the waiting PDF first."
         case .unavailable: return french ? "Impossible de préparer ce PDF. Réessayez." : "Could not prepare this PDF. Try again."
         }
     }

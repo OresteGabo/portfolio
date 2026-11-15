@@ -47,7 +47,7 @@ final class ShareViewController: UIViewController {
         logo.clipsToBounds = true
         logo.isAccessibilityElement = false
         NSLayoutConstraint.activate([logo.widthAnchor.constraint(equalToConstant: 44), logo.heightAnchor.constraint(equalToConstant: 44)])
-        let brand = label("Struct Capital", style: .headline)
+        let brand = label("Inzira", style: .headline)
         let overline = label(text("DOCUMENT IMPORT", "IMPORT DE DOCUMENT"), style: .caption2, color: accent)
         let brandText = column([brand, overline], spacing: 3)
         let header = UIStackView(arrangedSubviews: [logo, brandText])
@@ -58,8 +58,8 @@ final class ShareViewController: UIViewController {
         configure(heroTitle, text: text("Your PDF.\nA clearer portfolio.", "Votre PDF.\nUn portefeuille plus clair."), style: .largeTitle)
         heroTitle.font = UIFontMetrics(forTextStyle: .largeTitle).scaledFont(for: .systemFont(ofSize: 32, weight: .bold))
         heroTitle.accessibilityTraits.insert(.header)
-        configure(subtitle, text: text("Prepare your document, then review its details in Struct Capital.",
-            "Préparez votre document, puis vérifiez ses données dans Struct Capital."), style: .body, color: .secondaryLabel)
+        configure(subtitle, text: text("Prepare your document, then review its details in Inzira.",
+            "Préparez votre document, puis vérifiez ses données dans Inzira."), style: .body, color: .secondaryLabel)
         content.addArrangedSubview(column([heroTitle, subtitle], spacing: 10))
 
         fileCard.backgroundColor = cardColor
@@ -260,8 +260,8 @@ final class ShareViewController: UIViewController {
                     self.pdf = nil
                     self.cancel.isHidden = true
                     self.heroTitle.text = self.text("Ready for\nyour review.", "Prêt pour\nvotre vérification.")
-                    self.subtitle.text = self.text("Open Struct Capital next to review and import this PDF.",
-                        "Ouvrez ensuite Struct Capital pour vérifier et importer ce PDF.")
+                    self.subtitle.text = self.text("Open Inzira next to review and import this PDF.",
+                        "Ouvrez ensuite Inzira pour vérifier et importer ce PDF.")
                     self.stepIcons[0].image = UIImage(systemName: "checkmark.circle.fill")
                     self.stepIcons[1].tintColor = self.accent
                     self.statusIcon.image = UIImage(systemName: "checkmark.shield")

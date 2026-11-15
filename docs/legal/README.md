@@ -10,7 +10,7 @@ The generated `*.en.md` and `*.fr.md` exports stay local and are ignored by Git.
 
 ## Confirm before relying on these documents
 
-- Identify the responsible natural person or registered entity behind the supplied service name **Struct Capital**. Only the service name, Rwanda, contact email and invited-user scope have been confirmed.
+- Identify the responsible natural person or registered entity behind the supplied service name **Inzira**. Only the service name, Rwanda, contact email and invited-user scope have been confirmed.
 - Check controller/processor registration with Rwanda's Data Protection and Privacy Office. Verify actual Vercel/Neon deployment and backup locations, processor agreements, subprocessors and any required authorization for storage or transfers outside Rwanda. No country-local storage is promised.
 - Establish exact retention and erasure schedules for security logs, provider backups, abandoned uploads and legally required records. The policy explicitly discloses that these periods are not yet specified; this needs resolution rather than an invented duration.
 - Review lawful bases for each purpose. In particular, assess the cross-account ticker/date/unit-price feed and whether separate consent or an effective opt-out is required. The existing feature has no in-app opt-out. Disclosure alone is not proof of valid consent or a substitute for any required lawful basis. Restrict secondary use until an appropriate basis and necessary controls are established.

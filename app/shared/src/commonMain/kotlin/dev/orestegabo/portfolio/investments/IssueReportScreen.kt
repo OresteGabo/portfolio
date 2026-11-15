@@ -121,7 +121,7 @@ fun IssueReportScreen(source: String, close: () -> Unit) {
                         scope.launch {
                             try {
                                 val opened = actions.composeEmail(BrandContacts.SUPPORT,
-                                    "Struct Capital · ${localized(draft.category.label)}", body)
+                                    "Inzira · ${localized(draft.category.label)}", body)
                                 message = if (opened) "Email draft opened. Send it from your email app; opening the draft does not send the report."
                                     else "No email app could be opened. Copy the report and email it to support@structcapital.net."
                             } catch (cancelled: CancellationException) { throw cancelled }

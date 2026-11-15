@@ -15,8 +15,8 @@ enum HomeWidgetHost {
     private static func showInstructions() {
         let french = AppLanguage.shared.code == "fr"
         let message = french
-            ? "Maintenez le doigt sur l’écran d’accueil, touchez Modifier puis Ajouter un widget. Recherchez Struct Capital et choisissez le format petit ou moyen."
-            : "Touch and hold your Home Screen, tap Edit, then Add Widget. Search for Struct Capital and choose the small or medium size."
+            ? "Maintenez le doigt sur l’écran d’accueil, touchez Modifier puis Ajouter un widget. Recherchez Inzira et choisissez le format petit ou moyen."
+            : "Touch and hold your Home Screen, tap Edit, then Add Widget. Search for Inzira and choose the small or medium size."
         let alert = UIAlertController(title: french ? "Ajouter le widget À venir" : "Add What’s next", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: french ? "Compris" : "Got it", style: .default))
         var presenter = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }

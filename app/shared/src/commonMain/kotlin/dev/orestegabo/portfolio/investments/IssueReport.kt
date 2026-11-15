@@ -32,7 +32,7 @@ internal fun issueReportBody(draft: IssueReportDraft, details: IssueReportDetail
     require(draft.valid)
     fun label(text: String) = localized(text, language)
     return buildString {
-        appendLine("Struct Capital · ${label("Report a problem")}")
+        appendLine("Inzira · ${label("Report a problem")}")
         appendLine("${label("Issue type")}: ${label(draft.category.label)}")
         appendLine()
         appendLine(label("What happened?"))

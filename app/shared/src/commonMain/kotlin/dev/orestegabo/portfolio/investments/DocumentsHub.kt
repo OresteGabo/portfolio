@@ -81,7 +81,7 @@ internal fun DocumentHeader(section: String, account: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         if (section == "Import") StructMark(Modifier.size(32.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            AppText(if (section == "Import") "Struct Capital" else "Documents",
+            AppText(if (section == "Import") "Inzira" else "Documents",
                 style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
                 maxLines = 1, overflow = TextOverflow.Ellipsis)
             FinancialText(account, style = MaterialTheme.typography.labelSmall,

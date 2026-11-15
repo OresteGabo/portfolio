@@ -26,7 +26,7 @@ internal fun phoneCalendarEvent(event: InvestmentCalendarEvent): PhoneCalendarEv
         CalendarCategory.COUPON -> localized("Expected coupon payment")
         CalendarCategory.MATURITY -> localized("Expected principal repayment")
     }
-    return PhoneCalendarEvent(event.date.toString(), "Struct Capital · $title",
+    return PhoneCalendarEvent(event.date.toString(), "Inzira · $title",
         localized("Dates are indicative. Confirm subscription deadlines and payments with your broker.") +
             "\nstructcapital://calendar?date=${event.date}")
 }

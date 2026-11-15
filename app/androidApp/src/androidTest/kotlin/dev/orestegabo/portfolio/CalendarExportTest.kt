@@ -9,7 +9,7 @@ import java.time.ZoneOffset
 
 class CalendarExportTest {
     @Test fun allDayCivilDateAndExclusiveEndDoNotDependOnPhoneTimeZone() {
-        val intent = calendarInsertIntent("2028-02-29", "Struct Capital · Expected coupon payment", "Indicative date")
+        val intent = calendarInsertIntent("2028-02-29", "Inzira · Expected coupon payment", "Indicative date")
         val start = LocalDate.parse("2028-02-29").atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
         assertEquals(Intent.ACTION_INSERT, intent.action)
         assertEquals(CalendarContract.Events.CONTENT_URI, intent.data)

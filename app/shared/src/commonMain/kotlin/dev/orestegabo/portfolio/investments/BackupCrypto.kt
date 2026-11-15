@@ -20,7 +20,7 @@ internal fun encryptBackup(plain: ByteArray, password: String): ByteArray {
     } finally { key.fill(0) }
 }
 internal fun decryptBackup(bytes: ByteArray, password: String): ByteArray {
-    require(bytes.size in 85..BACKUP_MAX_BYTES && bytes.copyOfRange(0, 5).contentEquals(backupMagic) && (bytes.size - 69) % 16 == 0) { "Choose a valid Struct Capital backup." }
+    require(bytes.size in 85..BACKUP_MAX_BYTES && bytes.copyOfRange(0, 5).contentEquals(backupMagic) && (bytes.size - 69) % 16 == 0) { "Choose a valid Inzira backup." }
     require(password.length in 12..256) { "Use a backup password between 12 and 256 characters." }
     val key = backupKey(password, bytes.copyOfRange(5, 21))
     try {

@@ -13,7 +13,7 @@ internal fun readerFixturePdf(pageHeight: Int = 560, pageCount: Int = 2): ByteAr
             val page = document.startPage(PdfDocument.PageInfo.Builder(400, pageHeight, number).create())
             page.canvas.drawColor(Color.WHITE)
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(50, 90, 65); textSize = 22f }
-            page.canvas.drawText("Struct Capital PDF fixture", 28f, 56f, paint)
+            page.canvas.drawText("Inzira PDF fixture", 28f, 56f, paint)
             paint.textSize = 16f
             page.canvas.drawText("Original page $number", 28f, 96f, paint)
             page.canvas.drawRect(28f, 130f, 340f, 190f, paint)

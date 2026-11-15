@@ -791,7 +791,7 @@
 				DEVELOPMENT_TEAM = X5HS2K2N42;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NextWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Struct Capital";
+				INFOPLIST_KEY_CFBundleDisplayName = "Inzira";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -845,7 +845,7 @@
 				DEVELOPMENT_TEAM = X5HS2K2N42;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NextWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Struct Capital";
+				INFOPLIST_KEY_CFBundleDisplayName = "Inzira";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

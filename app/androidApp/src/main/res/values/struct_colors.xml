@@ -3,6 +3,7 @@
     <color name="struct_brand_olive">#6D5E0F</color>
     <color name="struct_brand_cream">#F2E6A7</color>
     <color name="struct_brand_canvas">#FAF8F2</color>
+    <color name="struct_brand_night_canvas">#11150F</color>
     <color name="struct_fixed_white">#FFFFFF</color>
     <color name="struct_widget_background">#142014</color>
     <color name="struct_widget_outline">#34422B</color>

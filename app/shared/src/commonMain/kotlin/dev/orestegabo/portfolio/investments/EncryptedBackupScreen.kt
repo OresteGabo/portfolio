@@ -42,7 +42,7 @@ internal fun EncryptedBackupScreen(model: PortfolioModel) {
                     require(password.length in 12..256) { "Use a backup password between 12 and 256 characters." }
                     val plain = model.exportGuestBackup()
                     val encrypted = try { withContext(Dispatchers.Default) { encryptBackup(plain, password) } } finally { plain.fill(0) }
-                    try { if (actions.saveBackup("Struct-Capital-$Today.scbackup", encrypted)) { status = localized("Encrypted backup saved."); password = ""; confirmation = "" } }
+                    try { if (actions.saveBackup("Inzira-$Today.scbackup", encrypted)) { status = localized("Encrypted backup saved."); password = ""; confirmation = "" } }
                     finally { encrypted.fill(0) }
                 } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
                 catch (failure: Exception) { status = failure.message ?: localized("Could not create backup.") }

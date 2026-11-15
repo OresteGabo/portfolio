@@ -104,7 +104,7 @@ class GuestExperienceUiTest {
                     model = PortfolioModel(settings,guestRepository=repo,apiFactory={ error("Guest UI attempted private HTTP") })
                     host.setContent { CompositionLocalProvider(LocalImportEngine provides engine, LocalNativeActions provides actions) { InvestmentApp(requireNotNull(model)) } }
                 }
-                await("Struct Capital"); scroll("Synthetic bond — UI test"); click("Synthetic bond — UI test")
+                await("Inzira"); scroll("Synthetic bond — UI test"); click("Synthetic bond — UI test")
                 scroll("View bond details"); click("View bond details"); await("Bond details"); scroll("Next coupon"); await("Next coupon")
                 readerFixtureScreenshot(requireNotNull(window),File(i.targetContext.filesDir,"guest-shared-bond-light.png"))
                 click("Back"); scroll("Synthetic company — UI test"); click("Synthetic company — UI test"); await("Share details")
@@ -115,7 +115,7 @@ class GuestExperienceUiTest {
                 click("Back"); click("Home"); scroll("See all"); click("See all"); await("Search investments"); click("Back")
                 click("Settings"); await("Local storage"); scroll("Delete Guest Data"); click("Delete Guest Data"); await("Keep my data"); click("Keep my data")
                 assertEquals(1,runBlocking { repo.load() }.portfolio.purchases.size)
-                click("Delete Guest Data"); await("Keep my data"); click("Delete Guest Data"); await("Struct Capital")
+                click("Delete Guest Data"); await("Keep my data"); click("Delete Guest Data"); await("Inzira")
                 assertTrue(runBlocking { repo.load() }.portfolio.purchases.isEmpty()); assertTrue(originals.isEmpty())
                 scene.onActivity { model?.let { ViewModelStore().apply { put("test",it); clear() } } }
             }
@@ -130,7 +130,7 @@ class GuestExperienceUiTest {
                 await("Fictional sample · Read only"); scroll("Example bond — fictional"); click("Example bond — fictional")
                 scroll("View bond details"); click("View bond details"); await("Bond details")
                 readerFixtureScreenshot(requireNotNull(darkWindow),File(i.targetContext.filesDir,"guest-shared-bond-dark.png"))
-                click("Back"); click("Settings"); scroll("Reset sample"); click("Reset sample"); await("Struct Capital")
+                click("Back"); click("Settings"); scroll("Reset sample"); click("Reset sample"); await("Inzira")
                 assertTrue(runBlocking { repo.load() }.portfolio.purchases.isEmpty())
                 scene.onActivity { model?.let { ViewModelStore().apply { put("test",it); clear() } } }
             }

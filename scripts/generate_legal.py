@@ -23,7 +23,7 @@ for doc in data['documents']:
         lines += [f'        LegalSection({pair(section["title"])}, {pair(section["body"])}),']
     lines += ['    )),']
     for lang in ('en', 'fr'):
-        text = '# ' + doc['title'][lang] + '\n\nStruct Capital · ' + data['version'] + '\n\n' + doc['summary'][lang] + '\n'
+        text = '# ' + doc['title'][lang] + '\n\nInzira · ' + data['version'] + '\n\n' + doc['summary'][lang] + '\n'
         for section in doc['sections']:
             text += '\n## ' + section['title'][lang] + '\n\n' + section['body'][lang] + '\n'
         (ROOT / f'docs/legal/{doc["id"]}.{lang}.md').write_text(resolve(text))

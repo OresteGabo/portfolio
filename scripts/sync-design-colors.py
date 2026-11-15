@@ -12,6 +12,7 @@ GENERATED_NOTE = '<!-- Generated colors: scripts/sync-design-colors.py; edit des
 def palette(source):
     result = {}
     for group, names in [('Brand', ['olive', 'cream', 'canvas']), ('Fixed', ['white']),
+                         ('Theme', ['darkBackground']),
                          ('Widget', ['background', 'outline', 'secondaryText', 'text']),
                          ('BondNotification', ['trackLight', 'trackDark', 'badgeLight', 'badgeDark'])]:
         section = re.search(r'object ' + group + r' \{(.*?)\n    \}', source, re.S).group(1)
@@ -24,21 +25,22 @@ def palette(source):
 def outputs():
     colors = palette(SOURCE.read_text())
     rows = [('struct_brand_olive', 'Brand.olive'), ('struct_brand_cream', 'Brand.cream'),
-            ('struct_brand_canvas', 'Brand.canvas'), ('struct_fixed_white', 'Fixed.white'),
+            ('struct_brand_canvas', 'Brand.canvas'), ('struct_brand_night_canvas', 'Theme.darkBackground'), ('struct_fixed_white', 'Fixed.white'),
             ('struct_widget_background', 'Widget.background'), ('struct_widget_outline', 'Widget.outline'),
             ('struct_widget_secondary_text', 'Widget.secondaryText'), ('struct_widget_text', 'Widget.text'),
             ('struct_bond_track_light', 'BondNotification.trackLight'), ('struct_bond_track_dark', 'BondNotification.trackDark'),
             ('struct_bond_badge_light', 'BondNotification.badgeLight'), ('struct_bond_badge_dark', 'BondNotification.badgeDark')]
     result = {ROOT / 'app/androidApp/src/main/res/values/struct_colors.xml':
               GENERATED_NOTE + '<resources>\n' + ''.join(f'    <color name="{name}">{colors[key]}</color>\n' for name, key in rows) + '</resources>\n'}
-    for theme, key in [('light', 'Brand.olive'), ('dark', 'Brand.cream')]:
-        path = ROOT / f'app/shared/src/commonMain/composeResources/drawable/struct_mark_{theme}.xml'
-        text = path.read_text().removeprefix(GENERATED_NOTE)
-        def paint(match):
-            if match.group(2).upper() == '#00000000':
-                return match.group(0)  # Transparent geometry is not a brand color.
-            return f'android:{match.group(1)}="{colors[key]}"'
-        result[path] = GENERATED_NOTE + re.sub(r'android:(fillColor|strokeColor)="(#[A-Fa-f0-9]{6,8})"', paint, text)
+    for mark in ('struct_mark', 'inzira_wordmark'):
+        for theme, key in [('light', 'Brand.olive'), ('dark', 'Brand.cream')]:
+            path = ROOT / f'app/shared/src/commonMain/composeResources/drawable/{mark}_{theme}.xml'
+            text = path.read_text().removeprefix(GENERATED_NOTE)
+            def paint(match):
+                if match.group(2).upper() == '#00000000':
+                    return match.group(0)  # Transparent geometry is not a brand color.
+                return f'android:{match.group(1)}="{colors[key]}"'
+            result[path] = GENERATED_NOTE + re.sub(r'android:(fillColor|strokeColor)="(#[A-Fa-f0-9]{6,8})"', paint, text)
     return result
 
 

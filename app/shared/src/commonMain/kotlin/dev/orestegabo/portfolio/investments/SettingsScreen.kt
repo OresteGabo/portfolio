@@ -83,7 +83,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
             dismissButton = { TextButton(onClick = { publisherChange = null }) { AppText("Cancel") } })
     }
 
-    if (dialog == "guestPrivacy") AlertDialog(onDismissRequest = { dialog = null }, title = { AppText("Private on-device imports") }, text = { AppText("PDFs are parsed and saved locally. They are not sent to Struct Capital or an AI service. Selecting a file from a cloud provider may download it through that provider. Sharing a PDF sends it only to the destination you choose.") }, confirmButton = { TextButton(onClick = { dialog = null }) { AppText("Done") } })
+    if (dialog == "guestPrivacy") AlertDialog(onDismissRequest = { dialog = null }, title = { AppText("Private on-device imports") }, text = { AppText("PDFs are parsed and saved locally. They are not sent to Inzira or an AI service. Selecting a file from a cloud provider may download it through that provider. Sharing a PDF sends it only to the destination you choose.") }, confirmButton = { TextButton(onClick = { dialog = null }) { AppText("Done") } })
 
     // In-scene financial editors must overlay the list, not become another child of the app's Column.
     Box(Modifier.fillMaxSize()) {
@@ -212,9 +212,9 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 SettingsRow(Icons.Outlined.Search, "Find bond purchases", onClick = { ownerSection = "bonds" })
             } }
             item { SettingsSection("About") {
-                SettingsRow(Icons.Outlined.Info, "About Struct Capital", "The app, the brand and how to reach us", onClick = openAbout)
+                SettingsRow(Icons.Outlined.Info, "About Inzira", "The app, the brand and how to reach us", onClick = openAbout)
                 SettingsDivider()
-                SettingsRow(Icons.Outlined.AutoStories, "Replay introduction", "A quick tour of Struct Capital", onClick = openIntroduction)
+                SettingsRow(Icons.Outlined.AutoStories, "Replay introduction", "A quick tour of Inzira", onClick = openIntroduction)
             } }
             item { SettingsSection("Help & support") {
                 SettingsRow(Icons.Outlined.BugReport, "Report a problem", "Bugs, incorrect data or anything that is not working", onClick = openIssueReport)
@@ -226,7 +226,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
             } }
             item { SettingsSection("Links", "These links open in your browser.") {
                 val links = listOf(
-                    Triple(OFFICIAL_WEBSITE_ORIGIN, "Struct Capital", Icons.Outlined.Language),
+                    Triple(OFFICIAL_WEBSITE_ORIGIN, "Inzira", Icons.Outlined.Language),
                     *if (!model.isGuest) arrayOf(Triple(model.origin + "/portfolio", "Portfolio website", Icons.Outlined.AccountBalanceWallet)) else emptyArray(),
                     *if (!model.isGuest) arrayOf(Triple(model.origin + "/create-password", "Password setup", Icons.Outlined.Key)) else emptyArray(),
                 )

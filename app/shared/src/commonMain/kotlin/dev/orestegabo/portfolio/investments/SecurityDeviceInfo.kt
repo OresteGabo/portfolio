@@ -7,5 +7,5 @@ internal fun securityDeviceTitle(record: JsonRecord): String = record.text("devi
 }
 
 internal fun securityDeviceSoftware(record: JsonRecord): String = listOf(
-    record.text("osVersion"), record.text("appVersion").takeIf { it.isNotBlank() }?.let { "Struct Capital $it" }.orEmpty()
+    record.text("osVersion"), record.text("appVersion").takeIf { it.isNotBlank() }?.let { "Inzira $it" }.orEmpty()
 ).filter { it.isNotBlank() }.joinToString(" · ")

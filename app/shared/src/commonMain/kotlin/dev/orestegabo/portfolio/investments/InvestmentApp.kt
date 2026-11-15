@@ -322,7 +322,7 @@ fun InvestmentApp(model: PortfolioModel) {
             documentDetail != null -> "Document details"
             couponList -> "Coupons"
             investmentHistory -> "All investments"
-            model.user == null && !model.isGuest -> "Struct Capital"
+            model.user == null && !model.isGuest -> "Inzira"
             tab == "Settings" -> "Settings"
             else -> destinations.firstOrNull { it.key == tab }?.label ?: tab
         }

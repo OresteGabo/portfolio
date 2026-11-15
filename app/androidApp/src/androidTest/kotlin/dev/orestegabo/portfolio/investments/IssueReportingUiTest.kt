@@ -32,7 +32,7 @@ class IssueReportingUiTest {
             override fun shareText(text: String) = error("No external share in report test")
             override suspend fun composeEmail(address: String, subject: String, body: String): Boolean {
                 assertEquals("support@structcapital.net", address)
-                assertTrue(subject.startsWith("Struct Capital"))
+                assertTrue(subject.startsWith("Inzira"))
                 reportBody = body
                 calls++
                 return calls > 1

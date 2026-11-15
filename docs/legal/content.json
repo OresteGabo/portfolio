@@ -14,8 +14,8 @@
             "fr": "À propos du service"
           },
           "body": {
-            "en": "Struct Capital is an invitation-only app operated in Rwanda. It helps you keep investment records, follow payments and prepare reports. These terms cover the app and its connected service.\n\nFor help or questions, contact {{support}}.",
-            "fr": "Struct Capital est une application accessible sur invitation, exploitée au Rwanda. Elle permet de conserver vos investissements, suivre les paiements et préparer des rapports. Ces conditions concernent l’application et son service connecté.\n\nPour toute aide ou question : {{support}}."
+            "en": "Inzira is an invitation-only app operated in Rwanda. It helps you keep investment records, follow payments and prepare reports. These terms cover the app and its connected service.\n\nFor help or questions, contact {{support}}.",
+            "fr": "Inzira est une application accessible sur invitation, exploitée au Rwanda. Elle permet de conserver vos investissements, suivre les paiements et préparer des rapports. Ces conditions concernent l’application et son service connecté.\n\nPour toute aide ou question : {{support}}."
           }
         },
         {
@@ -24,8 +24,8 @@
             "fr": "Votre compte"
           },
           "body": {
-            "en": "Use your own invitation and keep your sign-in details private. Contact {{security}} if you suspect someone else has accessed your account or receive a suspicious message claiming to be from Struct Capital. You are responsible for the records you submit and should only upload documents you are entitled to use.",
-            "fr": "Utilisez votre propre invitation et gardez vos identifiants confidentiels. Contactez {{security}} si vous soupçonnez un accès non autorisé ou recevez un message suspect prétendant provenir de Struct Capital. Vous êtes responsable des informations transmises et devez uniquement importer des documents que vous êtes autorisé à utiliser."
+            "en": "Use your own invitation and keep your sign-in details private. Contact {{security}} if you suspect someone else has accessed your account or receive a suspicious message claiming to be from Inzira. You are responsible for the records you submit and should only upload documents you are entitled to use.",
+            "fr": "Utilisez votre propre invitation et gardez vos identifiants confidentiels. Contactez {{security}} si vous soupçonnez un accès non autorisé ou recevez un message suspect prétendant provenir d’Inzira. Vous êtes responsable des informations transmises et devez uniquement importer des documents que vous êtes autorisé à utiliser."
           }
         },
         {
@@ -80,8 +80,8 @@
         }
       ],
       "summary": {
-        "en": "The rules for using Struct Capital.",
-        "fr": "Les règles d’utilisation de Struct Capital."
+        "en": "The rules for using Inzira.",
+        "fr": "Les règles d’utilisation d’Inzira."
       }
     },
     {
@@ -97,8 +97,8 @@
             "fr": "Qui est responsable"
           },
           "body": {
-            "en": "Struct Capital operates this invitation-only app in Rwanda and is responsible for its use of your personal data. This policy covers the app and its connected service.\n\nFor privacy questions or requests, contact {{privacy}}.",
-            "fr": "Struct Capital exploite cette application sur invitation au Rwanda et est responsable de l’utilisation de vos données personnelles. Cette politique concerne l’application et son service connecté.\n\nPour une question ou demande relative à vos données : {{privacy}}."
+            "en": "Inzira operates this invitation-only app in Rwanda and is responsible for its use of your personal data. This policy covers the app and its connected service.\n\nFor privacy questions or requests, contact {{privacy}}.",
+            "fr": "Inzira exploite cette application sur invitation au Rwanda et est responsable de l’utilisation de vos données personnelles. Cette politique concerne l’application et son service connecté.\n\nPour une question ou demande relative à vos données : {{privacy}}."
           }
         },
         {
@@ -127,8 +127,8 @@
             "fr": "Mode invité privé"
           },
           "body": {
-            "en": "Guest Mode does not require an account. Your personal guest investments, coupon receipt states and selected original PDFs are stored on this device using platform protection. They are not automatically sent to Struct Capital, a broker, cloud OCR or an AI service. Fictional samples are separate from personal records. Guest market retrieval is currently disabled.\n\nGuest data is not cloud-backed up or synchronized. Device loss, uninstalling the app or loss of access to protected storage can make it unavailable. Guest Mode does not add a separate app PIN or biometric lock; protect access to your device.\n\nSigning in does not transfer guest data. After normal authentication, you can open Transfer Guest Data, review the destination account and separately select investments, receipts and PDFs. Only after your confirmation are selected items sent to that account. A selected PDF is sent in full. Original guest records and files remain on this device after transfer; conflicts do not silently replace existing account records.\n\nDelete Guest Data in local storage settings requires confirmation and removes the personal guest workspace. Deleting guest data does not delete previously transferred account records or copies you exported/shared. Deleting an account does not delete the separate guest workspace.",
-            "fr": "Le mode invité ne nécessite pas de compte. Vos placements personnels, états de réception de coupons et PDF originaux sélectionnés restent sur cet appareil avec la protection de la plateforme. Ils ne sont pas envoyés automatiquement à Struct Capital, à un courtier, à un OCR cloud ou à un service d’IA. Les exemples fictifs sont séparés de vos données personnelles. La récupération des cours en mode invité est actuellement désactivée.\n\nLes données invité ne sont ni sauvegardées dans le cloud ni synchronisées. La perte de l’appareil, la désinstallation ou la perte d’accès au stockage protégé peut les rendre indisponibles. Le mode invité n’ajoute pas de code ou de verrou biométrique propre à l’app ; protégez l’accès à votre appareil.\n\nLa connexion ne transfère pas les données invité. Après authentification normale, vous pouvez ouvrir le transfert des données invité, vérifier le compte destinataire et sélectionner séparément placements, réceptions et PDF. Seule votre confirmation autorise leur envoi vers ce compte. Un PDF sélectionné est envoyé en entier. Les données et fichiers invité restent sur cet appareil après le transfert ; les conflits ne remplacent pas silencieusement les données du compte.\n\nLa suppression des données invité dans les paramètres de stockage local demande confirmation et supprime l’espace personnel invité. Elle ne supprime pas les données déjà transférées vers un compte ou les copies exportées ou partagées. La suppression d’un compte ne supprime pas l’espace invité distinct."
+            "en": "Guest Mode does not require an account. Your personal guest investments, coupon receipt states and selected original PDFs are stored on this device using platform protection. They are not automatically sent to Inzira, a broker, cloud OCR or an AI service. Fictional samples are separate from personal records. Guest market retrieval is currently disabled.\n\nGuest data is not cloud-backed up or synchronized. Device loss, uninstalling the app or loss of access to protected storage can make it unavailable. Guest Mode does not add a separate app PIN or biometric lock; protect access to your device.\n\nSigning in does not transfer guest data. After normal authentication, you can open Transfer Guest Data, review the destination account and separately select investments, receipts and PDFs. Only after your confirmation are selected items sent to that account. A selected PDF is sent in full. Original guest records and files remain on this device after transfer; conflicts do not silently replace existing account records.\n\nDelete Guest Data in local storage settings requires confirmation and removes the personal guest workspace. Deleting guest data does not delete previously transferred account records or copies you exported/shared. Deleting an account does not delete the separate guest workspace.",
+            "fr": "Le mode invité ne nécessite pas de compte. Vos placements personnels, états de réception de coupons et PDF originaux sélectionnés restent sur cet appareil avec la protection de la plateforme. Ils ne sont pas envoyés automatiquement à Inzira, à un courtier, à un OCR cloud ou à un service d’IA. Les exemples fictifs sont séparés de vos données personnelles. La récupération des cours en mode invité est actuellement désactivée.\n\nLes données invité ne sont ni sauvegardées dans le cloud ni synchronisées. La perte de l’appareil, la désinstallation ou la perte d’accès au stockage protégé peut les rendre indisponibles. Le mode invité n’ajoute pas de code ou de verrou biométrique propre à l’app ; protégez l’accès à votre appareil.\n\nLa connexion ne transfère pas les données invité. Après authentification normale, vous pouvez ouvrir le transfert des données invité, vérifier le compte destinataire et sélectionner séparément placements, réceptions et PDF. Seule votre confirmation autorise leur envoi vers ce compte. Un PDF sélectionné est envoyé en entier. Les données et fichiers invité restent sur cet appareil après le transfert ; les conflits ne remplacent pas silencieusement les données du compte.\n\nLa suppression des données invité dans les paramètres de stockage local demande confirmation et supprime l’espace personnel invité. Elle ne supprime pas les données déjà transférées vers un compte ou les copies exportées ou partagées. La suppression d’un compte ne supprime pas l’espace invité distinct."
           }
         },
         {
@@ -137,8 +137,8 @@
             "fr": "Prix des contrats et rapports publics partagés"
           },
           "body": {
-            "en": "Contract-derived tickers, trade dates and unit prices are returned only to the authenticated account that saved those purchases. Public price history uses exchange observations, not other users’ private contracts.\\n\\nOnly the owner and specifically authorized Struct Capital staff can publish shared public BNR issuance reports and reference terms. Ordinary accounts cannot publish shared data. Published reports and terms are available to signed-in users and can update matching pending applications without confirming a personal allocation. Format validation is not independent verification by BNR. The publishing account identifier is retained internally for source review; it is not shown to other users. Reports without trusted publication provenance are excluded from shared reference data until an authorized publisher reviews and republishes them.\\n\\nPersonal allocation confirmations, broker contracts and account statements remain scoped to the account that saved them. Private confirmation uploads do not contribute data to the shared reference pool. Previously derived private-document aggregates are no longer used as shared reference terms. Independently published public reference data may remain after an investment or account is deleted.\\n\\nThese access rules do not remove copies you deliberately export or share, and do not guarantee anonymity of information you disclose elsewhere.",
-            "fr": "Les codes, dates de négociation et prix unitaires issus des contrats sont accessibles uniquement au compte authentifié qui a enregistré les achats. L’historique public des cours utilise les observations de la bourse, et non les contrats privés des autres utilisateurs.\\n\\nSeuls le responsable et le personnel de Struct Capital expressément autorisé peuvent publier des rapports publics d’émission BNR et des données de référence partagées. Les comptes ordinaires ne peuvent pas publier de données partagées. Les rapports publiés et leurs conditions sont accessibles aux utilisateurs connectés et peuvent actualiser des demandes correspondantes sans confirmer une allocation personnelle. La validation du format ne constitue pas une vérification indépendante par la BNR. L’identifiant du compte qui publie est conservé en interne pour examiner la source et n’est pas affiché aux autres utilisateurs. Les rapports sans provenance de publication fiable sont exclus des données de référence jusqu’à leur examen et leur republication par une personne autorisée.\\n\\nLes confirmations personnelles d’allocation, contrats de courtier et relevés de compte restent limités au compte qui les a enregistrés. Les confirmations privées ne contribuent pas au référentiel partagé. Les anciens agrégats issus de documents privés ne sont plus utilisés comme données de référence partagées. Les données publiques publiées indépendamment peuvent subsister après la suppression d’un investissement ou compte.\\n\\nCes règles d’accès ne suppriment pas les copies que vous exportez ou partagez volontairement et ne garantissent pas l’anonymat des informations divulguées ailleurs."
+            "en": "Contract-derived tickers, trade dates and unit prices are returned only to the authenticated account that saved those purchases. Public price history uses exchange observations, not other users’ private contracts.\\n\\nOnly the owner and specifically authorized Inzira staff can publish shared public BNR issuance reports and reference terms. Ordinary accounts cannot publish shared data. Published reports and terms are available to signed-in users and can update matching pending applications without confirming a personal allocation. Format validation is not independent verification by BNR. The publishing account identifier is retained internally for source review; it is not shown to other users. Reports without trusted publication provenance are excluded from shared reference data until an authorized publisher reviews and republishes them.\\n\\nPersonal allocation confirmations, broker contracts and account statements remain scoped to the account that saved them. Private confirmation uploads do not contribute data to the shared reference pool. Previously derived private-document aggregates are no longer used as shared reference terms. Independently published public reference data may remain after an investment or account is deleted.\\n\\nThese access rules do not remove copies you deliberately export or share, and do not guarantee anonymity of information you disclose elsewhere.",
+            "fr": "Les codes, dates de négociation et prix unitaires issus des contrats sont accessibles uniquement au compte authentifié qui a enregistré les achats. L’historique public des cours utilise les observations de la bourse, et non les contrats privés des autres utilisateurs.\\n\\nSeuls le responsable et le personnel d’Inzira expressément autorisé peuvent publier des rapports publics d’émission BNR et des données de référence partagées. Les comptes ordinaires ne peuvent pas publier de données partagées. Les rapports publiés et leurs conditions sont accessibles aux utilisateurs connectés et peuvent actualiser des demandes correspondantes sans confirmer une allocation personnelle. La validation du format ne constitue pas une vérification indépendante par la BNR. L’identifiant du compte qui publie est conservé en interne pour examiner la source et n’est pas affiché aux autres utilisateurs. Les rapports sans provenance de publication fiable sont exclus des données de référence jusqu’à leur examen et leur republication par une personne autorisée.\\n\\nLes confirmations personnelles d’allocation, contrats de courtier et relevés de compte restent limités au compte qui les a enregistrés. Les confirmations privées ne contribuent pas au référentiel partagé. Les anciens agrégats issus de documents privés ne sont plus utilisés comme données de référence partagées. Les données publiques publiées indépendamment peuvent subsister après la suppression d’un investissement ou compte.\\n\\nCes règles d’accès ne suppriment pas les copies que vous exportez ou partagez volontairement et ne garantissent pas l’anonymat des informations divulguées ailleurs."
           }
         },
         {
@@ -240,8 +240,8 @@
             "fr": "Des informations de suivi"
           },
           "body": {
-            "en": "Struct Capital helps you understand your recorded investments. Its figures are estimates, not investment recommendations or guarantees. Use official statements and qualified advice when making financial decisions.",
-            "fr": "Struct Capital vous aide à comprendre les investissements enregistrés. Ses chiffres sont des estimations, pas des recommandations ou garanties. Appuyez-vous sur les relevés officiels et un conseil qualifié pour vos décisions financières."
+            "en": "Inzira helps you understand your recorded investments. Its figures are estimates, not investment recommendations or guarantees. Use official statements and qualified advice when making financial decisions.",
+            "fr": "Inzira vous aide à comprendre les investissements enregistrés. Ses chiffres sont des estimations, pas des recommandations ou garanties. Appuyez-vous sur les relevés officiels et un conseil qualifié pour vos décisions financières."
           }
         },
         {
@@ -392,8 +392,8 @@
       "sections": [
         {
           "title": {
-            "en": "Struct Capital",
-            "fr": "Struct Capital"
+            "en": "Inzira",
+            "fr": "Inzira"
           },
           "body": {
             "en": "An invitation-only investment tracking app operated in Rwanda.\n\nGeneral enquiries: {{hello}}\nApp support: {{support}}\nPrivacy and data requests: {{privacy}}\nSecurity and phishing reports: {{security}}\nBusiness enquiries: {{info}}\nWebsite: https://structcapital.net/",
@@ -406,8 +406,8 @@
             "fr": "Photographie et identité visuelle"
           },
           "body": {
-            "en": "The Kigali photograph is by Faustin Nkurunziza, from Pexels, and was supplied by the operator. The operator also supplied the Struct Capital branding.",
-            "fr": "La photographie de Kigali est de Faustin Nkurunziza, sur Pexels, et a été fournie par le responsable. Celui-ci a également fourni l’identité visuelle Struct Capital."
+            "en": "The Kigali photograph is by Faustin Nkurunziza, from Pexels, and was supplied by the operator. The operator also supplied the Inzira branding.",
+            "fr": "La photographie de Kigali est de Faustin Nkurunziza, sur Pexels, et a été fournie par le responsable. Celui-ci a également fourni l’identité visuelle Inzira."
           }
         },
         {
@@ -416,8 +416,8 @@
             "fr": "Noms et logos des institutions"
           },
           "body": {
-            "en": "BNR, BK, I&M, Bralirwa, Cimerwa, KCB, MTN and Equity names and logos belong to their respective owners. They identify investments and institutions. Their appearance does not imply a partnership, endorsement or financial authorization for Struct Capital.",
-            "fr": "Les noms et logos BNR, BK, I&M, Bralirwa, Cimerwa, KCB, MTN et Equity appartiennent à leurs propriétaires respectifs. Ils identifient les investissements et institutions. Leur présence ne signifie ni partenariat, ni soutien, ni agrément financier de Struct Capital."
+            "en": "BNR, BK, I&M, Bralirwa, Cimerwa, KCB, MTN and Equity names and logos belong to their respective owners. They identify investments and institutions. Their appearance does not imply a partnership, endorsement or financial authorization for Inzira.",
+            "fr": "Les noms et logos BNR, BK, I&M, Bralirwa, Cimerwa, KCB, MTN et Equity appartiennent à leurs propriétaires respectifs. Ils identifient les investissements et institutions. Leur présence ne signifie ni partenariat, ni soutien, ni agrément financier d’Inzira."
           }
         },
         {

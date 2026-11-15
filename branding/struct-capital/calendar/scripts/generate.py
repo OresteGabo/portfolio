@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-LOGO = ET.parse(ROOT / 'scripts/struct-capital-symbol.svg').getroot()
+LOGO = ET.parse(ROOT.parents[1] / 'inzira/inzira-artwork-symbol.svg').getroot()
 TEXT = json.loads((ROOT / 'scripts/text-outlines.json').read_text())
 PALETTES = {
     'dark': dict(line='#E3D19A', muted='#B6A66F', accent='#B89A28', band='#6D5E0F', surface='#272B1B', card='#FAF8ED', ink='#272B1B', badge='#6D5E0F'),

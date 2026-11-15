@@ -54,7 +54,7 @@ internal object NextWidgetStore {
             val manager = AppWidgetManager.getInstance(app)
             if (Build.VERSION.SDK_INT >= 26 && manager.isRequestPinAppWidgetSupported) {
                 manager.requestPinAppWidget(component(app, medium), null, null)
-            } else Toast.makeText(app, "Long-press your home screen, choose Widgets, then Struct Capital.", Toast.LENGTH_LONG).show()
+            } else Toast.makeText(app, "Long-press your home screen, choose Widgets, then Inzira.", Toast.LENGTH_LONG).show()
         })
     }
 
@@ -84,7 +84,7 @@ internal object NextWidgetStore {
         val format = DateTimeFormatter.ofPattern("d MMM", locale)
         view.setTextViewText(R.id.next_heading, text("What’s next", "À venir"))
         view.setTextViewText(R.id.next_status, first?.status ?: text("Your investment calendar", "Votre calendrier"))
-        view.setTextViewText(R.id.next_title, first?.title ?: if (snapshot.has("issues")) text("No upcoming events", "Aucun événement à venir") else text("Open Struct Capital", "Ouvrir Struct Capital"))
+        view.setTextViewText(R.id.next_title, first?.title ?: if (snapshot.has("issues")) text("No upcoming events", "Aucun événement à venir") else text("Open Inzira", "Ouvrir Inzira"))
         view.setTextViewText(R.id.next_date, first?.date?.format(format) ?: text("Calendar", "Calendrier"))
         view.setTextViewText(R.id.next_detail, first?.detail ?: text("Open the app to update", "Ouvrir l’app pour actualiser"))
         val updated = preferences(context).getLong("updated", 0)

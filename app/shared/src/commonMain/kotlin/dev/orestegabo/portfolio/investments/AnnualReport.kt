@@ -13,7 +13,7 @@ internal fun annualReportDocuments(snapshot: PortfolioSnapshot, today: LocalDate
     return (today.year downTo first).map { year ->
         JsonRecord().put("id", "generated-annual-$year").put("annualReportYear", year)
             .put("category", ANNUAL_REPORT_CATEGORY).put("label", "Annual report · $year")
-            .put("issuer", "Struct Capital").put("originalFileName", "Struct-Capital-Annual-$year.pdf")
+            .put("issuer", "Inzira").put("originalFileName", "Inzira-Annual-$year.pdf")
             .put("documentDate", minOf(today, LocalDate(year, 12, 31)).toString())
             .put("description", if (year == today.year) "Year to date · Generated on download" else "Full calendar year · Generated on download")
     }
@@ -66,7 +66,7 @@ internal fun generateAnnualReport(data: PortfolioReportData, year: Int, historie
         return "$currency ${if (value < 0) "-" else ""}$whole" +
             if (decimals) (if (fr) "," else ".") + (units % 100).toString().padStart(2, '0') else ""
     }
-    val pdf = ReportPdf(t("STRUCT CAPITAL / ANNUAL REPORT $year", "STRUCT CAPITAL / RAPPORT ANNUEL $year"),
+    val pdf = ReportPdf(t("INZIRA / ANNUAL REPORT $year", "INZIRA / RAPPORT ANNUEL $year"),
         "$year | ${scope.start} - ${scope.cutoff}", fr)
     pdf.heading(t("Annual investment report", "Rapport annuel d'investissement"), true)
     pdf.paragraph("${data.email} | ${t("Generated", "Genere le")} ${data.today}")

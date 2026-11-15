@@ -21,7 +21,9 @@ class DesignColorTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         for relative in [str(colors.SOURCE.relative_to(colors.ROOT)),
                          'app/shared/src/commonMain/composeResources/drawable/struct_mark_light.xml',
-                         'app/shared/src/commonMain/composeResources/drawable/struct_mark_dark.xml']:
+                         'app/shared/src/commonMain/composeResources/drawable/struct_mark_dark.xml',
+                         'app/shared/src/commonMain/composeResources/drawable/inzira_wordmark_light.xml',
+                         'app/shared/src/commonMain/composeResources/drawable/inzira_wordmark_dark.xml']:
             target = self.root / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(colors.ROOT / relative, target)
@@ -39,11 +41,10 @@ class DesignColorTests(unittest.TestCase):
         light = outputs[self.root / 'app/shared/src/commonMain/composeResources/drawable/struct_mark_light.xml']
         dark = outputs[self.root / 'app/shared/src/commonMain/composeResources/drawable/struct_mark_dark.xml']
         self.assertIn('>#123456</color>', native)
-        self.assertIn('android:strokeColor="#123456"', light)
         self.assertIn('android:fillColor="#123456"', light)
         self.assertNotIn('#6D5E0F', light)
         self.assertNotIn('#123456', dark)
-        self.assertIn('android:fillColor="#00000000"', light)
+        self.assertNotIn('android:strokeColor', light)
         for output in outputs.values():
             ET.fromstring(output)
 

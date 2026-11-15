@@ -43,7 +43,7 @@ class FirebaseDeliverySetupTest {
             assertTrue("Firebase token request failed: ${failure.get()}",file.exists() && file.length()>16)
             val deadline = System.currentTimeMillis()+120_000
             while(System.currentTimeMillis()<deadline) {
-                if(manager.activeNotifications.any { it.notification.extras.getCharSequence("android.title").toString()=="Struct Capital delivery check" }) return
+                if(manager.activeNotifications.any { it.notification.extras.getCharSequence("android.title").toString()=="Inzira delivery check" }) return
                 Thread.sleep(100)
             }
             fail("The external Firebase test message was not received")

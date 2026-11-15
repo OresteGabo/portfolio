@@ -129,7 +129,7 @@ class GuestMigrationUiTest {
                     host.setContent { CompositionLocalProvider(LocalImportEngine provides engine,LocalNativeActions provides actions) { InvestmentApp(requireNotNull(model)) } }
                     model.login("tester@example.test","synthetic-only-password")
                 }
-                await("Struct Capital");click("Settings");scroll("Transfer Guest Data");click("Transfer Guest Data")
+                await("Inzira");click("Settings");scroll("Transfer Guest Data");click("Transfer Guest Data")
                 await("tester@example.test");scroll("Synthetic bond — UI test");click("Synthetic bond — UI test")
                 scroll("Not now");click("Not now")
                 assertTrue(requests.none { it.first=="POST" && it.second.contains("guest-migration") })

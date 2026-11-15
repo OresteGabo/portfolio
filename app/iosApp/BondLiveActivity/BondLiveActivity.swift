@@ -14,7 +14,7 @@ struct BondLiveActivity: Widget {
         ActivityConfiguration(for: BondSubscriptionAttributes.self) { context in
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Label("Struct Capital", systemImage: "building.columns.fill")
+                    Label("Inzira", systemImage: "building.columns.fill")
                         .font(.caption.weight(.semibold))
                     Spacer()
                     Text(status(context)).font(.caption.weight(.bold))
@@ -45,7 +45,7 @@ struct BondLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(context.attributes.title).font(.headline).lineLimit(2)
-                        Text(context.attributes.language == "fr" ? "Ouvrez Struct Capital pour le formulaire et les dates." : "Open Struct Capital for the form and published dates.").font(.caption)
+                        Text(context.attributes.language == "fr" ? "Ouvrez Inzira pour le formulaire et les dates." : "Open Inzira for the form and published dates.").font(.caption)
                     }
                 }
             } compactLeading: {

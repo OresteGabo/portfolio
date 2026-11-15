@@ -12,7 +12,7 @@
     <key>CFBundleVersion</key>
     <string>$(CURRENT_PROJECT_VERSION)</string>
     <key>CFBundleDisplayName</key>
-    <string>Struct Capital</string>
+    <string>Inzira</string>
 	<key>GaboDevelopmentApiOrigin</key>
 	<string>$(GABO_DEVELOPMENT_API_ORIGIN)</string>
 	<key>NSMotionUsageDescription</key>

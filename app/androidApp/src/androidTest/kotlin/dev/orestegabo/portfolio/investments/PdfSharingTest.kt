@@ -55,7 +55,7 @@ class PdfSharingTest {
             assertEquals(uri, outgoing.clipData!!.getItemAt(0).uri)
             assertArrayEquals(bytes, context.contentResolver.openInputStream(uri)!!.use { it.readBytes() })
             val matches = context.packageManager.queryIntentActivities(Intent(Intent.ACTION_SEND).setType("application/pdf"), 0)
-            assertTrue("Struct Capital appears as a PDF share target", matches.any { it.activityInfo.packageName == context.packageName && it.activityInfo.name.endsWith("MainActivity") })
+            assertTrue("Inzira appears as a PDF share target", matches.any { it.activityInfo.packageName == context.packageName && it.activityInfo.name.endsWith("MainActivity") })
             val component = ComponentName(context, MainActivity::class.java)
             val cold = Intent(outgoing).setComponent(component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             ActivityScenario.launch<MainActivity>(cold).use { scenario ->

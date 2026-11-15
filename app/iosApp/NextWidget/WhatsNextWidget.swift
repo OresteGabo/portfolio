@@ -47,7 +47,7 @@ struct WhatsNextWidgetView: View {
         event.map { NextWidgetData.formatted($0.date, pattern: "d MMM", french: french) } ?? text("Calendar", "Calendrier")
     }
     private func title(_ event: NextWidgetEvent?) -> String {
-        event?.title ?? (entry.envelope == nil ? text("Open Struct Capital", "Ouvrir Struct Capital") : text("No upcoming events", "Aucun événement à venir"))
+        event?.title ?? (entry.envelope == nil ? text("Open Inzira", "Ouvrir Inzira") : text("No upcoming events", "Aucun événement à venir"))
     }
     private var header: some View {
         HStack(spacing: 6) {

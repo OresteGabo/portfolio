@@ -10,7 +10,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
-LOGO = ET.parse(ROOT / 'scripts/struct-capital-symbol.svg').getroot()
+LOGO = ET.parse(ROOT.parents[1] / 'inzira/inzira-artwork-symbol.svg').getroot()
 LOGO_PATHS = list(LOGO.iter('{http://www.w3.org/2000/svg}path'))
 THEMES = {
     'dark': dict(ink='#E3D19A', fine='#AFA16A', accent='#C7AC50', surface='#272B1B', face='#343723', inset='#1E2419'),

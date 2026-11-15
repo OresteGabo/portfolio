@@ -482,8 +482,7 @@ private fun PortfolioHero(showNotifications: Boolean, subtitle: String, totals: 
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     StructMark(Modifier.size(44.dp), onDark = dark)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        AppText("Struct Capital", style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
+                        InziraWordmark(Modifier.height(26.dp), onDark = dark)
                         AppText(subtitle, style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -557,7 +556,7 @@ private fun PortfolioBalance(valuation: CurrencyValuation, stale: Boolean, price
                 // Mask only the artwork layer so the metrics retain full contrast.
                 Canvas(Modifier.matchParentSize().graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)) {
                     drawRect(Brush.linearGradient(StructColors.Dashboard.worthGradient.resolve(dark)))
-                    drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black), endY = 40.dp.toPx()),
+                    drawRect(Brush.verticalGradient(listOf(Color.Transparent, StructColors.Fixed.black), endY = 40.dp.toPx()),
                         blendMode = BlendMode.DstIn)
                 }
                 BoxWithConstraints(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 56.dp, bottom = 20.dp)) {

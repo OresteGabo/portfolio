@@ -60,7 +60,7 @@ internal fun readableLicence(source: String): String {
     }.joinToString("\n").trim()
 }
 
-internal fun legalTitle(route: String): String = if (route == "about") localized("About Struct Capital") else legalDocuments.find { it.id == route }?.title?.display()
+internal fun legalTitle(route: String): String = if (route == "about") localized("About Inzira") else legalDocuments.find { it.id == route }?.title?.display()
     ?: legalNoticeGroups.find { "notices:${it.id}" == route }?.title?.display()
     ?: if (route == "notices") localized("Open-source notices") else localized("Legal & privacy")
 
@@ -131,8 +131,8 @@ internal fun LegalScreen(route: String, open: (String) -> Unit) {
                 }
             }
             else -> {
-                item { AppText("Struct Capital · Rwanda", style = MaterialTheme.typography.titleMedium) }
-                item { LegalLink(localized("About Struct Capital"), localized("The app, the brand and how to reach us"), "about") { open("about") } }
+                item { AppText("Inzira · Rwanda", style = MaterialTheme.typography.titleMedium) }
+                item { LegalLink(localized("About Inzira"), localized("The app, the brand and how to reach us"), "about") { open("about") } }
                 items(legalDocuments, key = { it.id }) { document ->
                     LegalLink(document.title.display(), document.summary.display(), document.id) { open(document.id) }
                 }

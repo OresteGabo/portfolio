@@ -49,7 +49,7 @@ internal fun AboutScreen(open: (String) -> Unit) {
                                 style = MaterialTheme.typography.labelMedium, color = colors.primary, fontWeight = FontWeight.SemiBold)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            AppText("Struct Capital", Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineLarge,
+                            AppText("Inzira", Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineLarge,
                                 fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                             AppText("Your investments, clearly structured.", style = MaterialTheme.typography.titleMedium,
                                 color = colors.primary, textAlign = TextAlign.Center)
@@ -77,7 +77,7 @@ internal fun AboutScreen(open: (String) -> Unit) {
                 Surface(shape = RoundedCornerShape(24.dp), color = colors.primaryContainer.copy(alpha = .35f)) {
                     Row(Modifier.padding(20.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                         AppIcon(Icons.Outlined.Info, null, tint = colors.primary)
-                        AppText("Struct Capital helps you track and understand your records. It does not place trades or hold your money. Figures and projections are estimates; confirm important details with your broker.",
+                        AppText("Inzira helps you track and understand your records. It does not place trades or hold your money. Figures and projections are estimates; confirm important details with your broker.",
                             style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                     }
                 }
