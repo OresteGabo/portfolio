@@ -10,7 +10,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlin.io.encoding.Base64
 import kotlin.random.Random
 import kotlin.time.TimeSource
@@ -33,7 +32,8 @@ class PortfolioModel(
     private val deferAccountStartup: Boolean = false,
     private val guestRepository: GuestPortfolioRepository? = null,
     private val guestMarketData: GuestMarketData? = null,
-) : ViewModel() {
+) : ViewModel()
+{
     private val savedOrigin = settings.readOrigin()
     private val savedEntryChoice = restoredSessionChoice(runCatching { settings.readSessionChoice() }.getOrDefault(MANUAL_ACCOUNT_ENTRY))
     private val backendOriginMigrated = initialOrigin == null && (isLegacyWebsiteApiOrigin(savedOrigin) ||
@@ -196,44 +196,26 @@ class PortfolioModel(
         private set
     var verifyingSession by mutableStateOf(false)
         private set
-    private val importJournal = ImportJournal(settings)
-    internal val importHistory get() = importJournal.entries
-    internal val importHistoryStorageFailed get() = importJournal.persistenceFailed
-    internal var activeImportId by mutableStateOf<String?>(null)
-        private set
-    // Selection events, rather than receipt IDs, route every upload source into chat.
-    // A dismissed picker emits nothing; retrying an existing receipt emits a new event.
-    internal var importSelectionRevision by mutableStateOf(0)
-        private set
-    private var retryPdf: ByteArray? = null
-    private var resumingImport = false
-    private val savedPdfDigests = mutableMapOf<String, String>()
-    private var retryBondOnly = false
-    private var retryStatement: JsonRecord? = null
-    internal fun activeImportReceipt() = importJournal.find(activeImportId)
-    private fun updateImport(change: (ImportReceipt) -> ImportReceipt) { activeImportId?.let { importJournal.update(it, change) } }
-    private fun startSavingImport() { updateImport { it.copy(state = ImportState.SAVING, error = "") } }
-    private fun finishImport(outcome: ImportOutcome, purchaseId: String = "", recorded: Int = 0, missing: Int = 0) {
-        updateImport { it.copy(state = ImportState.SAVED, error = "", outcome = outcome,
-            documentId = uploadedDocument ?: it.documentId, purchaseId = purchaseId, recorded = recorded, missing = missing) }
-    }
-    private fun reconcileImportHistory() {
-        importHistory.filter { it.state !in listOf(ImportState.SAVED, ImportState.EXISTS) && it.documentId.isNotBlank() }.forEach { entry ->
-            val purchase = portfolio.purchases.firstOrNull {
-                it.text("status") != "submitted" && (entry.kind == "bond" && it.text("confirmationDocumentId") == entry.documentId ||
-                    entry.kind == "bond-issuance" && entry.targetId.isNotBlank() && it.text("id") == entry.targetId &&
-                    it.text("issuanceDocumentId") == entry.documentId && it.text("confirmationMethod") == "manual")
-            }
-            if (purchase != null) importJournal.update(entry.id) { it.copy(state = ImportState.SAVED, outcome = ImportOutcome.PURCHASE, error = "", purchaseId = purchase.text("id")) }
-            else if (entry.kind == "bond-issuance" && entry.targetId.isBlank() && portfolio.documents.any { it.text("id") == entry.documentId })
-                importJournal.update(entry.id) { it.copy(state = ImportState.SAVED, outcome = ImportOutcome.ISSUANCE, error = "") }
-        }
-    }
-    private var importedPdf: ByteArray? = null
-    private var importedReview: JsonRecord? = null
-    internal fun currentImportReview(): JsonRecord? = importedReview
-    private var pdfUploadId = ""
-    private var uploadedDocument: String? = null
+    // PDF imports own their journal and selected bytes; this model owns the action job.
+    private val imports = PortfolioImports(settings, importWorkDispatcher, object : PortfolioImportHost {
+        override val api get() = this@PortfolioModel.api
+        override var portfolio: PortfolioSnapshot
+            get() = this@PortfolioModel.portfolio
+            set(value) { this@PortfolioModel.portfolio = value }
+        override val documents get() = this@PortfolioModel.documents
+        override val shareOrders get() = this@PortfolioModel.shareOrders
+        override val statementItems get() = this@PortfolioModel.statementItems
+        override val canPublishPublicData get() = this@PortfolioModel.canPublishPublicData
+        override fun action(block: suspend () -> Unit) = this@PortfolioModel.action(block)
+        override suspend fun refreshAfterWrite(success: String) = this@PortfolioModel.refreshAfterWrite(success)
+    })
+    internal val importHistory get() = imports.importHistory
+    internal val importHistoryStorageFailed get() = imports.importHistoryStorageFailed
+    internal val activeImportId get() = imports.activeImportId
+    internal val importSelectionRevision get() = imports.importSelectionRevision
+    internal fun activeImportReceipt() = imports.activeImportReceipt()
+    internal fun currentImportReview() = imports.currentImportReview()
+    private fun reconcileImportHistory() = imports.reconcileImportHistory()
     private var activeJob: Job? = null
     private var generation = 0
     private var foreground = true
@@ -277,8 +259,7 @@ class PortfolioModel(
     var busy: Boolean
         get() = if (isGuest) guestStorageLoading else accountBusy
         private set(value) { accountBusy = value }
-    var pdfImportProgress by mutableStateOf<PdfImportProgress?>(null)
-        private set
+    val pdfImportProgress get() = imports.pdfImportProgress
     var errorRevision by mutableStateOf(0)
         private set
     var messageRevision by mutableStateOf(0)
@@ -358,146 +339,58 @@ class PortfolioModel(
     var portfolio: PortfolioSnapshot
         get() = if (isGuest) guestViewPortfolio(guestPath, guestPortfolio, samplePortfolio) else accountPortfolio
         private set(value) { accountPortfolio = value.copy(shareOrders = shareOrders, couponReferences = sharedCouponTerms) }
-    var bondReminderFeedback by mutableStateOf<String?>(null)
-        private set
-    fun dismissBondReminderFeedback() { bondReminderFeedback = null }
-    private var bondReminderRevision = 0
-    var bondReminderMonths by mutableStateOf<Set<String>>(emptySet())
-        private set
-    var bondRemindersLoaded by mutableStateOf(false)
-        private set
-    var bondRemindersLoading by mutableStateOf(false)
-        private set
-    var bondReminderSaving by mutableStateOf<String?>(null)
-        private set
-    var bondRemindersError by mutableStateOf<String?>(null)
-        private set
-    fun loadBondReminders() {
-        if (isGuest || user == null || locked || bondRemindersLoading || bondReminderSaving != null) return
-        val revision = notificationGeneration
-        bondRemindersLoading = true
-        val readRevision = ++bondReminderRevision
-        viewModelScope.launch {
-            try {
-                val result = api.request("/api/bonds/notifications/bond-reminders")
-                if (revision == notificationGeneration && readRevision == bondReminderRevision) {
-                    require(result.has("months"))
-                    bondReminderMonths = result.optJSONArray("months")?.let { values ->
-                        (0 until values.length()).map { values.getString(it) }.toSet()
-                    }.orEmpty()
-                    bondRemindersLoaded = true; bondRemindersError = null
-                    NativePushBridge.reconcileReminders(bondReminderMonths.joinToString(","))
-                }
-            } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { if (revision == notificationGeneration && readRevision == bondReminderRevision) { bondRemindersError = "Bond reminders could not be loaded. Try again."; bondReminderFeedback = bondRemindersError } }
-            finally { if (revision == notificationGeneration) bondRemindersLoading = false }
+    // Account notification state is isolated; session invalidation still runs through this model.
+    private val notificationCenter = PortfolioNotifications(viewModelScope, clock, object : PortfolioNotificationHost {
+        override val api get() = this@PortfolioModel.api
+        override val user get() = this@PortfolioModel.user
+        override val locked get() = this@PortfolioModel.locked
+        override val isGuest get() = this@PortfolioModel.isGuest
+        override val monthlyInvestmentTarget get() = this@PortfolioModel.monthlyInvestmentTarget
+        override var error: String?
+            get() = this@PortfolioModel.error
+            set(value) { this@PortfolioModel.error = value }
+        override fun applyMonthlyTarget(amount: Long) {
+            this@PortfolioModel.monthlyInvestmentTarget = amount
+            targetAccount()?.let { settings.writeMonthlyTarget(it, amount) }
         }
-    }
-    fun setBondMonthReminder(month: String, enabled: Boolean) {
-        if (user == null || locked || !bondRemindersLoaded || bondReminderSaving != null || !validBondReminderMonth(month)) return
-        val revision = notificationGeneration
-        bondReminderSaving = month
-        ++bondReminderRevision // An earlier refresh must not overwrite this acknowledged choice.
-        viewModelScope.launch {
-            try {
-                val result = api.request("/api/bonds/notifications/bond-reminders/$month", "PUT", JsonRecord().put("enabled", enabled))
-                require(result.has("months"))
-                if (revision == notificationGeneration) {
-                    val values = result.optJSONArray("months")
-                    bondReminderMonths = if(values == null) emptySet() else (0 until values.length()).map { values.getString(it) }.toSet()
-                    bondRemindersError = null
-                    NativePushBridge.reconcileReminders(bondReminderMonths.joinToString(","))
-                    if(enabled && NativePushBridge.available && !NativePushBridge.allowed) NativePushBridge.requestPermission()
-                    bondReminderFeedback = when {
-                        !enabled -> "Reminder removed."
-                        !NativePushBridge.available -> "Reminder saved. Phone alerts need setup."
-                        !NativePushBridge.allowed -> "Reminder saved. Enable phone notifications."
-                        else -> "Reminder saved. We’ll alert you when the form is ready."
-                    }
-                    if(enabled) fetchNotificationSettings()
-                }
-            } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { if (revision == notificationGeneration) { bondRemindersError = "Bond reminder could not be saved. Try again."; bondReminderFeedback = bondRemindersError } }
-            finally { if (revision == notificationGeneration) bondReminderSaving = null }
-        }
-    }
-    var notificationPreferences by mutableStateOf(JsonRecord())
-        private set
-    var notificationSettingsAvailable by mutableStateOf(false)
-        private set
-    private var pendingNotificationPreferences by mutableStateOf<Map<String, Boolean>>(emptyMap())
-    val notificationSettingsSaving get() = pendingNotificationPreferences.isNotEmpty()
-    private val notificationSettingsMutex = Mutex()
-    fun notificationPreferenceSaving(category: String? = null) = pendingNotificationPreferences.containsKey(category ?: "autoCoupon")
-    fun notificationPreferenceEnabled(category: String? = null): Boolean = pendingNotificationPreferences[category ?: "autoCoupon"]
-        ?: if (category == null) notificationPreferences.optBoolean("autoCoupon")
-        else notificationPreferences.optJSONObject("categories")?.optBoolean(category, true) ?: true
-    var notificationDate by mutableStateOf(Today)
-        private set
-    private var accountCouponReceipts by mutableStateOf<List<JsonRecord>>(emptyList())
+        override suspend fun invalidateRejectedSession(failure: Exception) = this@PortfolioModel.invalidateRejectedSession(failure)
+    })
+    val bondReminderFeedback get() = notificationCenter.bondReminderFeedback
+    val bondReminderMonths get() = notificationCenter.bondReminderMonths
+    val bondRemindersLoaded get() = notificationCenter.bondRemindersLoaded
+    val bondRemindersLoading get() = notificationCenter.bondRemindersLoading
+    val bondReminderSaving get() = notificationCenter.bondReminderSaving
+    val bondRemindersError get() = notificationCenter.bondRemindersError
+    val notificationSettingsAvailable get() = notificationCenter.notificationSettingsAvailable
+    val notificationSettingsSaving get() = notificationCenter.notificationSettingsSaving
+    val notificationDate get() = notificationCenter.notificationDate
+    val notifications get() = notificationCenter.notifications
+    val unreadNotifications get() = notificationCenter.unreadNotifications
+    val notificationNextBefore get() = notificationCenter.notificationNextBefore
+    val notificationsLoading get() = notificationCenter.notificationsLoading
+    val notificationsError get() = notificationCenter.notificationsError
+    var notificationPreferences: JsonRecord
+        get() = notificationCenter.notificationPreferences
+        private set(value) { notificationCenter.notificationPreferences = value }
+    private val notificationGeneration get() = notificationCenter.notificationGeneration
+    private val notificationLoadedAt get() = notificationCenter.notificationLoadedAt
+    fun dismissBondReminderFeedback() = notificationCenter.dismissBondReminderFeedback()
+    fun loadBondReminders() = notificationCenter.loadBondReminders()
+    fun setBondMonthReminder(month: String, enabled: Boolean) = notificationCenter.setBondMonthReminder(month, enabled)
+    fun notificationPreferenceSaving(category: String? = null) = notificationCenter.notificationPreferenceSaving(category)
+    fun notificationPreferenceEnabled(category: String? = null) = notificationCenter.notificationPreferenceEnabled(category)
+    private suspend fun fetchNotifications(more: Boolean = false) = notificationCenter.fetchNotifications(more)
+    fun updateNotificationPreference(category: String? = null, enabled: Boolean) = notificationCenter.updateNotificationPreference(category, enabled)
+    fun refreshNotifications() = notificationCenter.refreshNotifications()
+    fun moreNotifications() = notificationCenter.moreNotifications()
+    fun readNotification(id: String) = notificationCenter.readNotification(id)
+    suspend fun syncPushDevice() = notificationCenter.syncPushDevice()
     var couponReceipts: List<JsonRecord>
-        get() = if (isGuest) if (guestPath == GuestPath.PERSONAL) guestPortfolio?.receipts.orEmpty() else emptyList() else accountCouponReceipts
-        private set(value) { accountCouponReceipts = value }
-    private var accountCouponTrackingAvailable by mutableStateOf<Boolean>(false)
+        get() = if (isGuest) if (guestPath == GuestPath.PERSONAL) guestPortfolio?.receipts.orEmpty() else emptyList() else notificationCenter.couponReceipts
+        private set(value) { notificationCenter.couponReceipts = value }
     var couponTrackingAvailable: Boolean
-        get() = if (isGuest) portfolioReady else accountCouponTrackingAvailable
-        private set(value) { accountCouponTrackingAvailable = value }
-    private suspend fun fetchNotificationSettings() = notificationSettingsMutex.withLock {
-        val revision=notificationGeneration;val account=user?.text("id")
-        try {
-            var value=api.request("/api/bonds/notifications/preferences")
-            if(revision!=notificationGeneration || account!=user?.text("id") || !value.has("categories"))return@withLock
-            if(!value.optBoolean("configured")) value=api.request("/api/bonds/notifications/preferences","PUT",JsonRecord().put("monthlyTarget",monthlyInvestmentTarget))
-            if(revision!=notificationGeneration || account!=user?.text("id"))return@withLock
-            notificationPreferences=value;notificationSettingsAvailable=true
-            value.text("monthlyTarget").toLongOrNull()?.takeIf(::validInvestmentTarget)?.let {
-                monthlyInvestmentTarget=it;targetAccount()?.let { account -> settings.writeMonthlyTarget(account,it) }
-            }
-        } catch(cancelled: CancellationException) { throw cancelled }
-        catch(failure: Exception) { invalidateRejectedSession(failure) }
-    }
-    fun updateNotificationPreference(category: String? = null, enabled: Boolean) {
-        if (!notificationSettingsAvailable || notificationPreferenceSaving(category) || user == null || locked) return
-        val revision = notificationGeneration
-        val account = user?.text("id")
-        val key = category ?: "autoCoupon"
-        // Pending values are presentation-only; unrelated switches retain their acknowledged values.
-        pendingNotificationPreferences = pendingNotificationPreferences + (key to enabled)
-        viewModelScope.launch {
-            var updated = false
-            try {
-                notificationSettingsMutex.withLock {
-                    if (revision != notificationGeneration || account != user?.text("id") || locked) return@withLock
-                    val change = JsonRecord()
-                    if (category == null) change.put("autoCoupon", enabled)
-                    else {
-                        // Build inside the serialized write, after preceding changes were acknowledged.
-                        val categories = JsonRecord(notificationPreferences.optJSONObject("categories")?.toString() ?: "{}")
-                        categories.put(category, enabled); change.put("categories", categories)
-                    }
-                    val saved = api.request("/api/bonds/notifications/preferences", "PUT", change)
-                    if (revision != notificationGeneration || account != user?.text("id")) return@withLock
-                    val next = JsonRecord(notificationPreferences.toString())
-                    if (category == null) {
-                        check(saved.has("autoCoupon") && saved.optBoolean("autoCoupon", !enabled) == enabled)
-                        next.put("autoCoupon", enabled)
-                    } else {
-                        val acknowledged = saved.optJSONObject("categories")
-                        check(acknowledged?.has(category) == true && acknowledged.optBoolean(category, !enabled) == enabled)
-                        val categories = JsonRecord(notificationPreferences.optJSONObject("categories")?.toString() ?: "{}")
-                        categories.put(category, enabled); next.put("categories", categories)
-                    }
-                    notificationPreferences = next
-                    updated = true
-                }
-            } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { if (revision == notificationGeneration) error = "Notification settings could not be saved." }
-            finally {
-                if (revision == notificationGeneration) pendingNotificationPreferences = pendingNotificationPreferences - key
-            }
-            if (updated && revision == notificationGeneration && account == user?.text("id")) fetchNotifications()
-        }
-    }
+        get() = if (isGuest) portfolioReady else notificationCenter.couponTrackingAvailable
+        private set(value) { notificationCenter.couponTrackingAvailable = value }
     fun confirmCoupon(purchaseId: String,dueDate: String,received: Boolean=true) {
         if (isGuest) { guestWrite({ requireNotNull(guestRepository).setReceipt(purchaseId, dueDate, received) }); return }
         action {
@@ -507,83 +400,11 @@ class PortfolioModel(
         }
     }
     fun couponReceipt(purchaseId: String,dueDate: String)=couponReceipts.firstOrNull { it.text("purchaseId")==purchaseId && it.text("dueDate")==dueDate }
-    var notifications by mutableStateOf<List<JsonRecord>>(emptyList())
-        private set
-    var unreadNotifications by mutableIntStateOf(0)
-        private set
-    var notificationNextBefore by mutableStateOf<String?>(null)
-        private set
-    var notificationsLoading by mutableStateOf(false)
-        private set
-    var notificationsError by mutableStateOf<String?>(null)
-        private set
-    private var notificationLoadedAt: TimeMark? = null
-    private var notificationGeneration = 0
-    private suspend fun fetchNotifications(more: Boolean = false) {
-        if(user==null || notificationsLoading)return
-        val account=user?.text("id");val revision=notificationGeneration
-        notificationsLoading=true
-        try {
-            if(!more)fetchNotificationSettings()
-            if (user == null || locked) return
-            val response=api.request("/api/bonds/notifications"+(if(more) "?before=${notificationNextBefore ?: return}" else ""))
-            if(revision!=notificationGeneration || account!=user?.text("id"))return
-            notificationDate=calendarDate(response.text("serverDate")) ?: Today
-            try {
-                val receipts=api.request("/api/bonds/notifications/coupons")
-                if(revision==notificationGeneration && receipts.has("receipts")) { couponReceipts=receipts.rows("receipts");couponTrackingAvailable=true }
-            } catch(cancelled: CancellationException) { throw cancelled }
-            catch(_: Exception) { }
-            if(revision!=notificationGeneration || account!=user?.text("id"))return
-            val rows=response.rows("notifications")
-            notifications=if(more)(notifications+rows).distinctBy { it.text("id") } else rows
-            unreadNotifications=response.optInt("unreadCount")
-            notificationNextBefore=response.text("nextBefore").takeIf { it.isNotBlank() && it!="null" }
-            notificationsError=null;notificationLoadedAt=clock.markNow()
-        } catch(cancelled: CancellationException) { throw cancelled }
-        catch(failure: Exception) {
-            if (invalidateRejectedSession(failure)) return
-            if(revision==notificationGeneration) notificationsError=if(failure is ApiException && failure.status==404)
-                "Notifications need the updated server." else "Notifications could not be loaded. Try again."
-        } finally { if(revision==notificationGeneration)notificationsLoading=false }
-    }
     private suspend fun invalidateRejectedSession(failure: Exception): Boolean {
         if (failure !is ApiException || failure.status != 401) return false
         api.clearSession()
         if (secureSignInEnabled) lock() else { ++generation; clearPrivateData() }
         return true
-    }
-    fun refreshNotifications() { if(user!=null && !locked)viewModelScope.launch { fetchNotifications() } }
-    fun moreNotifications() { if(user!=null && !locked)viewModelScope.launch { fetchNotifications(true) } }
-    fun readNotification(id: String) { viewModelScope.launch {
-        val revision=notificationGeneration
-        try {
-            api.request("/api/bonds/notifications/read","POST",JsonRecord().put("ids",JsonList(listOf(id))))
-            if(revision==notificationGeneration) {
-                val wasUnread=notifications.any { it.text("id")==id && !it.optBoolean("read") }
-                notifications=notifications.map { if(it.text("id")==id)JsonRecord(it.toString()).put("read",true) else it }
-                if(wasUnread)unreadNotifications=(unreadNotifications-1).coerceAtLeast(0)
-                notificationsError=null
-            }
-        } catch(cancelled: CancellationException) { throw cancelled }
-        catch(_: Exception) { if(revision==notificationGeneration)notificationsError="Could not mark this notification as read." }
-    } }
-    suspend fun syncPushDevice() {
-        if(user==null || locked)return
-        if(!bondRemindersLoaded) loadBondReminders()
-        try {
-            if(NativePushBridge.deviceId.isNotBlank())api.request("/api/bonds/notifications/session-device","POST",JsonRecord().withDeviceIdentity())
-        } catch(cancelled: CancellationException) { throw cancelled }
-        catch(_: Exception) { }
-        val registration=NativePushBridge.registration ?: return
-        try {
-            if(NativePushBridge.allowed) api.request("/api/bonds/notifications/devices","POST",JsonRecord(registration.toString()).put("language",AppLanguage.code).put("liveStartToken",NativePushBridge.liveStartToken))
-            else api.request("/api/bonds/notifications/devices/${registration.text("deviceId")}","DELETE")
-            if(NativePushBridge.allowed) for (activity in NativePushBridge.liveActivities) {
-                api.request("/api/bonds/notifications/bond-live-activities", "POST", JsonRecord(activity.toString()).put("deviceId",registration.text("deviceId")))
-            }
-        } catch(cancelled: CancellationException) { throw cancelled }
-        catch(_: Exception) { /* A provider or older API must not block the portfolio. */ }
     }
     var statementItems by mutableStateOf<List<JsonRecord>>(emptyList())
         private set
@@ -628,7 +449,7 @@ class PortfolioModel(
         private set(value) { accountMonthlyInvestmentTarget = value }
     private fun targetAccount() = user?.text("id")?.takeIf { it.isNotBlank() }?.let { "$origin|$it" }
     private fun loadInvestmentTarget() {
-        importJournal.attach(targetAccount())
+        imports.attach(targetAccount())
         monthlyInvestmentTarget = targetAccount()?.let(settings::readMonthlyTarget)?.takeIf { validInvestmentTarget(it) }
             ?: DEFAULT_MONTHLY_INVESTMENT_TARGET
     }
@@ -714,14 +535,12 @@ class PortfolioModel(
         activeJob = viewModelScope.launch {
             try { block() }
             catch (cancelled: CancellationException) {
-                if (token == generation && activeImportReceipt()?.state in listOf(ImportState.READING, ImportState.SAVING))
-                    updateImport { it.copy(state = ImportState.CANCELLED, error = "") }
+                if (token == generation) imports.recordCancellation()
                 throw cancelled
             }
             catch (failure: Exception) {
                 if (token == generation) {
-                    if (activeImportReceipt()?.state in listOf(ImportState.READING, ImportState.SAVING))
-                        updateImport { it.copy(state = ImportState.FAILED, error = userErrorMessage(failure, failureMessage)) }
+                    imports.recordFailure(userErrorMessage(failure, failureMessage))
                     if (failure is ApiException && failure.status == 401) {
                         api.clearSession(); clearPrivateData()
                         locked = secureSignInEnabled
@@ -1219,175 +1038,12 @@ class PortfolioModel(
 
     fun importPurchasePdf(actions: NativeActions, engine: InvestmentEngine, bondOnly: Boolean = false,
         expectedStatement: JsonRecord? = null, targetPurchaseId: String? = null, retryEntryId: String? = null,
-        completed: (JsonRecord) -> Unit) = action {
-        require(importedReview == null || retryEntryId == activeImportId) { "Finish or cancel the current import first." }
-        val previous = retryEntryId?.let { importJournal.find(it) }
-        if (retryEntryId != activeImportId) retryPdf = null
-        require(previous?.state !in listOf(ImportState.SAVED, ImportState.EXISTS)) { "This import is already complete." }
-        importedPdf = null; importedReview = null; uploadedDocument = null
-        resumingImport = previous?.documentId?.isNotBlank() == true
-        retryBondOnly = bondOnly; retryStatement = expectedStatement
-        var selected = false
-        try {
-            readPurchasePdf(actions, engine, bondOnly, expectedStatement,
-                openedPdf = { bytes ->
-                    val digest = withContext(importWorkDispatcher) { importPdfDigest(bytes) }
-                    require(previous == null || previous.digest.isBlank() || previous.digest == digest) {
-                        "This is a different PDF. Start a new import for this file."
-                    }
-                    retryPdf = bytes
-                    updateImport { it.copy(fileName = actions.pickedPdfName?.let(::importDisplayName) ?: it.fileName, digest = digest) }
-                }, selectedPdf = { importedPdf = it }, progress = { progress ->
-                    if (!selected && progress?.stage == PdfImportStage.OPENING) {
-                        selected = true
-                        val entry = previous ?: importJournal.begin(actions.pickedPdfName ?: "Investment PDF", targetPurchaseId.orEmpty(), expectedStatement?.text("id").orEmpty())
-                        activeImportId = entry.id
-                        importSelectionRevision++
-                        pdfUploadId = entry.id
-                        uploadedDocument = entry.documentId.takeIf(String::isNotBlank)
-                        updateImport { it.copy(state = ImportState.READING, error = "") }
-                    }
-                    pdfImportProgress = progress
-                })?.let { review ->
-                require(review.text("kind") != "bond-issuance" || canPublishPublicData) { PUBLIC_DATA_PERMISSION_ERROR }
-                if (review.text("kind") == "statement") {
-                    retryBondOnly = false; retryStatement = null
-                    updateImport { it.copy(targetId = "", statementId = "") }
-                }
-                if (targetPurchaseId?.startsWith("share-order:") == true) {
-                    require(review.text("kind") == "equity") { "Choose the share purchase contract for this order." }
-                    val order = shareOrders.singleOrNull { it.text("id") == targetPurchaseId.removePrefix("share-order:") }
-                        ?: error("This order is no longer pending. Refresh your portfolio.")
-                    pendingShareContractInput(review, order) // Validate before offering confirmation.
-                    review.put("pendingOrderId", order.text("id")).put("pendingOrderVersion", order.optInt("version"))
-                }
-                updateImport { it.copy(kind = review.text("kind")) }
-                pdfImportProgress = PdfImportProgress(PdfImportStage.CHECKING)
-                val existing = findExistingImportPdf(review)
-                val importTarget = targetPurchaseId.takeUnless { review.text("kind") == "statement" }
-                val alreadySaved = !review.has("pendingOrderId") && existing != null && showExistingImport(existing, review,
-                    requireComplete = true, targetId = importTarget)
-                if (!alreadySaved) {
-                    if (existing != null) {
-                        uploadedDocument = existing.text("id")
-                        updateImport { it.copy(documentId = existing.text("id")) }
-                    }
-                    importedReview = review
-                    updateImport { it.copy(state = ImportState.REVIEW, error = "") }
-                    completed(review)
-                }
-            }
-        } finally { pdfImportProgress = null }
-    }
-
-    private suspend fun findExistingImportPdf(review: JsonRecord): JsonRecord? {
-        val bytes = importedPdf ?: retryPdf ?: return null
-        val digest = activeImportReceipt()?.digest?.takeIf(String::isNotBlank)
-            ?: withContext(importWorkDispatcher) { importPdfDigest(bytes) }
-        // A fresh account-authorized list prevents a stale local receipt from reviving a deleted file.
-        val current = api.request("/api/bonds/documents").rows("documents")
-        portfolio = portfolio.copy(documents = current)
-        sharedIssuanceDocument(review, current)?.let { return it }
-        val knownIds = importHistory.filter { it.digest == digest && it.documentId.isNotBlank() }.map { it.documentId }.toSet()
-        current.firstOrNull { it.text("id") in knownIds }?.let { return it }
-        val candidates = current.filter { duplicatePdfCandidate(it, review, activeImportReceipt()?.fileName.orEmpty()) }
-        for (document in candidates) {
-            val id = document.text("id")
-            require(id.matches(Regex("[A-Za-z0-9_-]{1,120}"))) { "Invalid document URL." }
-            val existingDigest = savedPdfDigests[id] ?: run {
-                val data = try { api.bytes("/api/bonds/documents/$id") }
-                catch (failure: ApiException) { if (failure.status == 404) continue else throw failure }
-                require(data.size in 1..MAX_PDF_BYTES && data.take(5).toByteArray().decodeToString() == "%PDF-") { "The server did not return a PDF." }
-                withContext(importWorkDispatcher) { importPdfDigest(data) }.also { savedPdfDigests[id] = it }
-            }
-            if (existingDigest == digest) return document
-        }
-        return null
-    }
-
-    private suspend fun showExistingImport(document: JsonRecord, review: JsonRecord, requireComplete: Boolean = false, targetId: String? = null): Boolean {
-        val id = document.text("id")
-        val kind = review.text("kind")
-        val prior = importHistory.firstOrNull { it.documentId == id && it.kind == kind && it.state == ImportState.SAVED }
-        val records = try {
-            when (kind) {
-                "bond", "bond-issuance" -> api.request("/api/bonds/purchases").rows("purchases").also {
-                    portfolio = portfolio.copy(purchases = it)
-                }
-                "equity" -> api.request("/api/bonds/equities").rows("holdings").also {
-                    portfolio = portfolio.copy(holdings = it)
-                }
-                else -> emptyList()
-            }
-        } catch (cancelled: CancellationException) { throw cancelled }
-        catch (failure: Exception) {
-            if (requireComplete || failure is ApiException && failure.status == 401) throw failure
-            emptyList()
-        }
-        val purchase = completedImportPurchase(document, review, records, targetId)
-        val statementRows = if (kind == "statement") try {
-            api.request("/api/bonds/statement-items?documentId=$id").rows("items").filter { row -> row.rows("sources").any { it.text("documentId") == id } }
-        } catch (cancelled: CancellationException) { throw cancelled } catch (failure: ApiException) {
-            if (failure.status in listOf(404, 405)) emptyList() else throw failure
-        } else emptyList()
-        val outcome = when {
-            purchase != null -> ImportOutcome.PURCHASE
-            kind == "bond-issuance" && targetId.isNullOrBlank() && (document.has("issuance") || prior?.outcome == ImportOutcome.ISSUANCE) -> ImportOutcome.ISSUANCE
-            kind == "statement" && (statementRows.isNotEmpty() || prior?.outcome == ImportOutcome.STATEMENT) -> ImportOutcome.STATEMENT
-            else -> null
-        }
-        if ((requireComplete || kind == "statement") && outcome == null) return false
-        updateImport { it.copy(state = ImportState.EXISTS, kind = kind, error = "",
-            documentId = id, purchaseId = purchase?.text("id").orEmpty(), outcome = outcome,
-            recorded = if (outcome == ImportOutcome.STATEMENT) if (statementRows.isEmpty()) prior?.recorded ?: 0 else statementRows.count { it.text("state") == "recorded" } else 0,
-            missing = if (outcome == ImportOutcome.STATEMENT) if (statementRows.isEmpty()) prior?.missing ?: 0 else statementRows.count { it.text("state") in listOf("missing", "review-required") } else 0) }
-        importedPdf = null; importedReview = null; uploadedDocument = null; retryPdf = null
-        return true
-    }
-
-    /** A concurrent import may have saved this file since the review was opened. */
-    private suspend fun checkExistingBeforeSave(review: JsonRecord, continueConfirmation: Boolean, completed: () -> Unit, targetId: String? = null): Boolean {
-        val requestedTarget = targetId ?: activeImportReceipt()?.targetId?.takeIf(String::isNotBlank)
-        if (uploadedDocument != null) {
-            val existing = documents.firstOrNull { it.text("id") == uploadedDocument }
-            if (existing != null && showExistingImport(existing, review, requireComplete = true,
-                    targetId = requestedTarget)) {
-                completed(); return true
-            }
-            return false
-        }
-        pdfImportProgress = PdfImportProgress(PdfImportStage.CHECKING)
-        try {
-            val existing = findExistingImportPdf(review) ?: return false
-            if (showExistingImport(existing, review, requireComplete = true, targetId = requestedTarget)) {
-                completed(); return true
-            }
-            // The file can outlive its investment. Reuse the bytes, but still save the missing record.
-            uploadedDocument = existing.text("id")
-            updateImport { it.copy(documentId = existing.text("id")) }
-            return false
-        } finally { pdfImportProgress = null }
-    }
-
-    internal fun retryImport(id: String, actions: NativeActions, engine: InvestmentEngine, completed: (JsonRecord) -> Unit) {
-        val entry = importJournal.find(id) ?: return
-        val same = id == activeImportId && retryPdf != null
-        val target = entry.targetId.takeIf(String::isNotBlank)
-        val statement = if (same) retryStatement else statementItems.firstOrNull { it.text("id") == entry.statementId }
-        val picker = if (same) ReceivedPdfActions(actions, retryPdf!!, entry.fileName) else actions
-        importPurchasePdf(picker, engine, bondOnly = if (same) retryBondOnly else target != null && !target.startsWith("share-order:"),
-            expectedStatement = statement, targetPurchaseId = target, retryEntryId = id, completed = completed)
-    }
-
-    internal fun cancelImportReview(review: JsonRecord) { discardImportedPdf(review) }
-
-    fun discardImportedPdf(review: JsonRecord) {
-        if (importedReview === review) {
-            if (activeImportReceipt()?.state !in listOf(ImportState.SAVED, ImportState.EXISTS)) updateImport { it.copy(state = ImportState.CANCELLED, error = "") }
-            importedPdf = null; importedReview = null; uploadedDocument = null; retryPdf = null
-        }
-    }
-
+        completed: (JsonRecord) -> Unit) = imports.importPurchasePdf(actions, engine, bondOnly,
+            expectedStatement, targetPurchaseId, retryEntryId, completed)
+    internal fun retryImport(id: String, actions: NativeActions, engine: InvestmentEngine, completed: (JsonRecord) -> Unit) =
+        imports.retryImport(id, actions, engine, completed)
+    internal fun cancelImportReview(review: JsonRecord) = imports.cancelImportReview(review)
+    fun discardImportedPdf(review: JsonRecord) = imports.discardImportedPdf(review)
     fun cancelPdfImport() { if (pdfImportProgress != null) activeJob?.cancel() }
 
     fun checkStatement(review: JsonRecord, completed: (List<JsonRecord>) -> Unit) = action {
@@ -1399,109 +1055,9 @@ class PortfolioModel(
         completed(response.rows("rows"))
     }
 
-    fun saveImportedPurchase(review: JsonRecord, purchase: JsonRecord, id: String?, completed: () -> Unit) = action {
-        require(importedReview === review && importedPdf != null) { "Choose the PDF again before confirming." }
-        startSavingImport()
-        val pendingOrderId = review.text("pendingOrderId")
-        if (pendingOrderId.isNotBlank()) {
-            val order = shareOrders.singleOrNull { it.text("id") == pendingOrderId }
-                ?: error("This order is no longer pending. Refresh your portfolio.")
-            pendingShareContractInput(review, order)
-        }
-        if (pendingOrderId.isBlank() && checkExistingBeforeSave(review, id != null, completed, targetId = id)) return@action
-        val bond = review.text("kind") == "bond"
-        val reusingDocument = uploadedDocument != null
-        try {
-            if (uploadedDocument == null) {
-                val pdf = importedPdf!!
-                val chunkSize = 512 * 1024
-                val count = (pdf.size + chunkSize - 1) / chunkSize
-                for (index in 0 until count) {
-                    pdfImportProgress = PdfImportProgress(PdfImportStage.UPLOADING, "${index + 1} / $count")
-                    val metadata = JsonRecord().put("label", if (bond) "Bond confirmation" else "Share purchase contract")
-                        .put("instrumentName", purchase.text(if (bond) "bondName" else "securityName"))
-                        .put("issuer", purchase.text(if (bond) "issuer" else "broker"))
-                        .put("documentDate", purchase.text(if (bond) "purchaseDate" else "tradeDate"))
-                        .put("category", if (bond) "Bond confirmation" else "Share contract")
-                    val result = api.request("/api/bonds/documents", "POST", JsonRecord()
-                        .put("uploadId", pdfUploadId).put("index", index).put("count", count)
-                        .put("content", Base64.encode(pdf.copyOfRange(index * chunkSize, minOf(pdf.size, (index + 1) * chunkSize))))
-                        .put("metadata", metadata))
-                    if (index == count - 1) {
-                        uploadedDocument = result.text("documentId").takeIf { it.isNotBlank() }
-                        updateImport { it.copy(documentId = uploadedDocument.orEmpty()) }
-                    }
-                }
-                require(uploadedDocument != null) { "The PDF could not be saved. Try again." }
-            }
-            pdfImportProgress = PdfImportProgress(PdfImportStage.SAVING)
-            require(bond || !reusingDocument || purchase.text("contractNote").isNotBlank()) {
-                "This import may already be saved. Check your portfolio before trying again."
-            }
-            val storedDocument = uploadedDocument.orEmpty()
-            // Resolve a completed write before retrying a new-record POST after a lost response.
-            val existingMatches = if (bond && id == null) api.request("/api/bonds/purchases").rows("purchases")
-                .filter { it.text("confirmationDocumentId") == storedDocument && it.text("status") != "submitted" }
-                else if (!bond && purchase.text("contractNote").isNotBlank()) api.request("/api/bonds/equities").rows("holdings")
-                    .filter { it.text("contractNote") == purchase.text("contractNote") && it.text("ticker") == purchase.text("ticker") && it.text("tradeDate") == purchase.text("tradeDate") }
-                else emptyList()
-            require(existingMatches.size <= 1) { "This import may already be saved. Check your portfolio before trying again." }
-            val existing = existingMatches.singleOrNull()
-            require(bond || existing == null || existing.text("broker").equals(purchase.text("broker"), true) &&
-                listOf("shares", "pricePerShare", "netAmountPayable").all { existing.optDouble(it) == purchase.optDouble(it) }) {
-                "The saved purchase differs from this PDF. Review your portfolio before importing again."
-            }
-            val response = if (pendingOrderId.isNotBlank()) {
-                api.request("/api/bonds/share-orders/$pendingOrderId/confirm", "POST", JsonRecord()
-                    .put("confirmed", true).put("version", review.optInt("pendingOrderVersion"))
-                    .put("purchase", JsonRecord(purchase.toString()).put("contractDocumentId", uploadedDocument)))
-            } else if (existing != null && existing.text("contractDocumentId").isNotBlank()) JsonRecord().put("id", existing.text("id")) else api.request(if (bond) "/api/bonds/purchases" + (id?.let { "/$it" } ?: "") else "/api/bonds/equities",
-                if (bond && id != null) "PUT" else "POST", JsonRecord(purchase.toString()).apply { if(bond)put("confirmationDocumentId",uploadedDocument) else put("contractDocumentId",uploadedDocument) })
-            val purchaseId = id ?: response.optJSONObject(if (bond) "purchase" else "holding")?.text("id")
-                ?: response.text("id")
-            finishImport(ImportOutcome.PURCHASE, purchaseId)
-            importedPdf = null; importedReview = null; uploadedDocument = null; retryPdf = null
-            completed()
-            refreshAfterWrite("Purchase and PDF saved.")
-        } finally { pdfImportProgress = null }
-    }
-
-    internal fun saveImportedStatement(review: JsonRecord, completed: () -> Unit) = action {
-        require(importedReview === review && importedPdf != null && review.text("kind") == "statement") { "Choose the PDF again before saving." }
-        val rows = review.rows("rows").map { JsonRecord(it.toString()).put("currency", "RWF").put("broker", "BK Capital") }
-        val movements = review.rows("movements").map { JsonRecord(it.toString()).put("currency", "RWF").put("broker", "BK Capital") }
-        require(rows.size + movements.size in 1..500) { "No records were found in this statement." }
-        startSavingImport()
-        if (checkExistingBeforeSave(review, false, completed)) return@action
-        try {
-            if (uploadedDocument == null) {
-                val pdf = importedPdf!!
-                val chunkSize = 512 * 1024
-                val count = (pdf.size + chunkSize - 1) / chunkSize
-                for (index in 0 until count) {
-                    pdfImportProgress = PdfImportProgress(PdfImportStage.UPLOADING, "${index + 1} / $count")
-                    val result = api.request("/api/bonds/documents", "POST", JsonRecord().put("uploadId", pdfUploadId)
-                        .put("index", index).put("count", count)
-                        .put("content", Base64.encode(pdf.copyOfRange(index * chunkSize, minOf(pdf.size, (index + 1) * chunkSize))))
-                        .put("metadata", JsonRecord().put("label", "BK Capital statement").put("category", "Statement")
-                            .put("instrumentName", "Investment account statement").put("issuer", "BK Capital").put("documentDate", review.text("toDate"))))
-                    if (index == count - 1) {
-                        uploadedDocument = result.text("documentId").takeIf(String::isNotBlank)
-                        updateImport { it.copy(documentId = uploadedDocument.orEmpty()) }
-                    }
-                }
-                require(uploadedDocument != null) { "The PDF could not be saved. Try again." }
-            }
-            pdfImportProgress = PdfImportProgress(PdfImportStage.SAVING)
-            val result = api.request("/api/bonds/statement-items", "POST", JsonRecord().put("items", JsonList(rows)).put("movements", JsonList(movements)).put("documentId", uploadedDocument))
-            val checked = result.rows("rows")
-            require(checked.isNotEmpty()) { "Statement results could not be verified. Try again." }
-            finishImport(ImportOutcome.STATEMENT, recorded = checked.count { it.text("state") == "recorded" }, missing = checked.count { it.text("state") in listOf("missing", "review-required") })
-            discardImportedPdf(review)
-            completed()
-            refreshAfterWrite("Statement PDF saved and records checked.")
-        } finally { pdfImportProgress = null }
-    }
+    fun saveImportedPurchase(review: JsonRecord, purchase: JsonRecord, id: String?, completed: () -> Unit) =
+        imports.saveImportedPurchase(review, purchase, id, completed)
+    internal fun saveImportedStatement(review: JsonRecord, completed: () -> Unit) = imports.saveImportedStatement(review, completed)
 
     fun confirmPendingPurchase(purchase: JsonRecord,completed: () -> Unit = {}) = action {
         require(purchase.optBoolean("canConfirmWithoutPdf")) { "Use your personal PDF to confirm the final allocation and price." }
@@ -1510,65 +1066,8 @@ class PortfolioModel(
         refreshAfterWrite("Purchase confirmed. No personal PDF was added.")
     }
 
-    fun saveImportedIssuance(review: JsonRecord, confirmationTarget: JsonRecord? = null, sharingConfirmed: Boolean = false, completed: () -> Unit) = action {
-        require(canPublishPublicData) { PUBLIC_DATA_PERMISSION_ERROR }
-        require(importedReview === review && importedPdf != null) { "Choose the PDF again before saving." }
-        val issuance = importedIssuanceInput(review)
-        val expectedConfirmation = confirmationTarget?.let { pendingIssuanceConfirmation(review, it) }
-        startSavingImport()
-        if (checkExistingBeforeSave(review, confirmationTarget != null, completed, targetId = confirmationTarget?.text("id"))) return@action
-        try {
-            require(uploadedDocument != null || sharingConfirmed) { "Confirm that this report is public before sharing it." }
-            val pdf = importedPdf!!
-            val chunkSize = 512 * 1024
-            val count = (pdf.size + chunkSize - 1) / chunkSize
-            val metadata = JsonRecord().put("visibility","shared").put("label", "Bond issuance results").put("category", "Bond issuance")
-                .put("instrumentName", issuance.text("bondName")).put("issuer", issuance.text("issuer"))
-                .put("documentDate", issuance.text("issuanceDate")).put("issuance", issuance)
-            var duplicate = false
-            if (uploadedDocument == null) for (index in 0 until count) {
-                pdfImportProgress = PdfImportProgress(PdfImportStage.UPLOADING, "${index + 1} / $count")
-                val response = api.request("/api/bonds/documents", "POST", JsonRecord()
-                    .put("uploadId", pdfUploadId).put("index", index).put("count", count)
-                    .put("content", Base64.encode(pdf.copyOfRange(index * chunkSize, minOf(pdf.size, (index + 1) * chunkSize))))
-                    .put("metadata", metadata))
-                if (response.text("documentId").isNotBlank()) {
-                    uploadedDocument = response.text("documentId").takeIf { it.isNotBlank() }
-                    require(uploadedDocument != null) { "The issuance report could not be saved. Try again." }
-                    updateImport { it.copy(documentId = uploadedDocument.orEmpty()) }
-                    duplicate = response.optBoolean("duplicate")
-                    break // A globally saved report can be reused after the first chunk.
-                }
-            }
-            if (confirmationTarget != null && expectedConfirmation != null) {
-                pdfImportProgress = PdfImportProgress(PdfImportStage.SAVING)
-                val current = api.request("/api/bonds/purchases").rows("purchases")
-                    .singleOrNull { it.text("id") == confirmationTarget.text("id") }
-                    ?: error("This pending purchase is no longer available. Refresh your portfolio.")
-                require(current.text("issuanceDocumentId") == uploadedDocument) { "This PDF does not match the pending bond or applied amount." }
-                // A retry after a lost success response must not apply the purchase twice.
-                if (current.text("status") == "active") {
-                    require(current.text("confirmationMethod") == "manual" &&
-                        listOf("faceValue", "feesPaid", "pricePercent", "couponRate").all {
-                            current.optDouble(it, Double.NaN) == expectedConfirmation.optDouble(it, Double.NaN)
-                        }) { "The purchase changed. Review its latest details before confirming." }
-                } else {
-                    val latest = pendingIssuanceConfirmation(review, current)
-                    require(current.optBoolean("canConfirmWithoutPdf")) { "Use your personal PDF to confirm the final allocation and price." }
-                    require(listOf("faceValue", "feesPaid", "accruedInterestPaid", "amountInvested").all {
-                            latest.optDouble(it) == expectedConfirmation.optDouble(it)
-                        }) { "The purchase changed. Review its latest details before confirming." }
-                    api.request("/api/bonds/purchases/${current.text("id")}/confirm", "POST",
-                        JsonRecord().put("confirmed", true).put("issuanceDocumentId", uploadedDocument))
-                }
-            }
-            finishImport(if (confirmationTarget != null) ImportOutcome.PURCHASE else ImportOutcome.ISSUANCE, confirmationTarget?.text("id").orEmpty())
-            if (duplicate && confirmationTarget == null) updateImport { it.copy(state = ImportState.EXISTS) }
-            discardImportedPdf(review)
-            completed()
-            refreshAfterWrite(if (confirmationTarget != null) "PDF saved and purchase confirmed." else if (duplicate) "This issuance is already saved. No extra copy was stored." else "Bond issuance and PDF saved.")
-        } finally { pdfImportProgress = null }
-    }
+    fun saveImportedIssuance(review: JsonRecord, confirmationTarget: JsonRecord? = null, sharingConfirmed: Boolean = false, completed: () -> Unit) =
+        imports.saveImportedIssuance(review, confirmationTarget, sharingConfirmed, completed)
 
     fun savePurchase(purchase: JsonRecord, id: String?, completed: () -> Unit) {
         if (isGuest) { guestWrite({ if (guestImport?.review != null) guestImport.save(purchase) else requireNotNull(guestRepository).saveBond(purchase, id) }, completed); return }
@@ -1615,79 +1114,41 @@ class PortfolioModel(
         }
     }
 
-    var reportProgress by mutableStateOf<String?>(null)
-        private set
+    // Reports fetch complete inputs independently of the dashboard snapshot.
+    private val reports = PortfolioReports(
+        currentApi = { api },
+        loadLedger = { reloadLedger(); ledgerEntries },
+        loadCouponTerms = { refreshSharedCouponTerms(); sharedCouponTerms },
+        reportWorkDispatcher = reportWorkDispatcher,
+    )
+    val reportProgress get() = reports.progress
+    val annualReportYear get() = reports.annualReportYear
+
     fun exportPortfolioReport(actions: NativeActions) = action {
         val account = requireNotNull(user)
         val language = AppLanguage.code
         val target = monthlyInvestmentTarget
         val date = Today
         try {
-            reportProgress = "Loading all investment years…"
-            // Export requires complete, fresh records. Do not inflate the dashboard's compact cache.
-            val bonds = api.request("/api/bonds/purchases").rows("purchases")
-            val shares = api.request("/api/bonds/equities").rows("holdings")
-            val files = api.request("/api/bonds/documents").rows("documents")
-            val missing = try { api.request("/api/bonds/statement-items").rows("items") }
-            catch (failure: ApiException) {
-                if (failure.status == 404 || failure.status == 405) emptyList() else throw failure
-            }
-            val latestQuotes = if (shares.isEmpty()) null else try { api.request("/api/bonds/rse/quotes?kind=equities") }
-            catch (cancelled: CancellationException) { throw cancelled }
-            catch (failure: Exception) { if (failure is ApiException && failure.status == 401) throw failure; null }
-            val receipts=try { api.request("/api/bonds/notifications/coupons").let { if(it.has("receipts")) it.rows("receipts") else null } }
-            catch(cancelled: CancellationException) { throw cancelled }
-            catch(_: Exception) { null }
-            reloadLedger()
-            val apiOrders = api.request("/api/bonds/share-orders").rows("orders")
-            refreshSharedCouponTerms()
-            val reportCouponTerms = sharedCouponTerms
-            reportProgress = "Building your report…"
-            val bytes = withContext(Dispatchers.Default) {
-                generatePortfolioReport(PortfolioReportData(PortfolioSnapshot(bonds, shares, files, shareOrders = apiOrders, couponReferences = reportCouponTerms), latestQuotes,
-                    missing, account.text("email"), target, date, language, receipts, ledgerEntries))
-            }
-            reportProgress = "Choose where to share the PDF"
+            val bytes = reports.portfolioPdf(account.text("email"), target, date, language)
+            reports.sharing()
             if (actions.sharePdf("Inzira-$date.pdf", bytes)) {
                 message = "Portfolio report ready to share."
                 try {
-                    api.request("/api/bonds/notifications/report","POST",JsonRecord().put("date",date.toString())
-                        .put("exportId",Random.nextBytes(16).joinToString("") { (it.toInt() and 255).toString(16).padStart(2,'0') }))
+                    api.request("/api/bonds/notifications/report", "POST", JsonRecord().put("date", date.toString())
+                        .put("exportId", Random.nextBytes(16).joinToString("") { (it.toInt() and 255).toString(16).padStart(2, '0') }))
                     fetchNotifications()
-                } catch(cancelled: CancellationException) { throw cancelled }
-                catch(_: Exception) { /* Exporting the report remains successful if its optional notice fails. */ }
+                } catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { /* An optional notice cannot fail a completed export. */ }
             }
-        } finally { reportProgress = null }
+        } finally { reports.clearProgress() }
     }
 
-    var annualReportYear by mutableStateOf<Int?>(null)
-        private set
     private suspend fun annualReportPdf(year: Int): ByteArray {
         val account = requireNotNull(user)
         val date = bondSubscriptionDate(kotlin.time.Clock.System.now())
         val language = AppLanguage.code
-        annualReportYear = year
-        try {
-            reportProgress = "Loading annual investment records…"
-            val bonds = api.request("/api/bonds/purchases").rows("purchases")
-            val shares = api.request("/api/bonds/equities").rows("holdings")
-            reloadLedger()
-            val data = PortfolioReportData(PortfolioSnapshot(bonds, shares), null, emptyList(), account.text("email"),
-                monthlyInvestmentTarget, date, language, ledgerEntries = ledgerEntries)
-            val scope = annualReportScope(data, year)
-            val histories = mutableMapOf<String, JsonRecord>()
-            scope.closingShares.filter { it.text("currency") == "RWF" }.map { it.text("ticker") }.distinct().forEach { ticker ->
-                require(ticker.matches(Regex("[A-Za-z0-9._-]{1,24}"))) { "Invalid security ticker." }
-                try { histories[ticker] = api.request("/api/bonds/rse/equity-history?tickers=$ticker&period=all") }
-                catch (cancelled: CancellationException) { throw cancelled }
-                catch (failure: Exception) { if (failure is ApiException && failure.status == 401) throw failure }
-            }
-            val receipts = try { api.request("/api/bonds/notifications/coupons").let { if (it.has("receipts")) it.rows("receipts") else null } }
-            catch (cancelled: CancellationException) { throw cancelled }
-            catch (failure: Exception) { if (failure is ApiException && failure.status == 401) throw failure; null }
-            reportProgress = "Building your report…"
-            return withContext(reportWorkDispatcher) { generateAnnualReport(data.copy(couponReceipts = receipts), year, histories) }
-        } finally { reportProgress = null; annualReportYear = null }
+        return reports.annualPdf(year, account.text("email"), { monthlyInvestmentTarget }, date, language)
     }
     fun exportAnnualReport(year: Int, actions: NativeActions) = action {
         val bytes = annualReportPdf(year)
@@ -1768,13 +1229,23 @@ class PortfolioModel(
         }
     }
 
-    override fun onCleared() { closeGuestMigration(); stopGuestQuotes(); guestJob?.cancel(); guestImport?.clear(); guestPortfolio = null; documentThumbnails.clear(); backgroundLockJob?.cancel(); documentPreview = null; importedPdf = null; importedReview = null; retryPdf = null; vault?.lock(); activeApi?.close() }
+    override fun onCleared() {
+        closeGuestMigration()
+        stopGuestQuotes()
+        guestJob?.cancel()
+        guestImport?.clear()
+        guestPortfolio = null
+        documentThumbnails.clear()
+        backgroundLockJob?.cancel()
+        documentPreview = null
+        imports.release()
+        vault?.lock()
+        activeApi?.close()
+    }
 
     private fun clearPrivateData(clearWidgets: Boolean = true) {
         if (clearWidgets) HomeWidgetBridge.clear()
         NativePushBridge.reconcileReminders("")
-        bondReminderMonths = emptySet(); bondRemindersLoaded = false; bondRemindersLoading = false
-        bondReminderSaving = null; bondRemindersError = null; bondReminderFeedback = null
         applicationFormsError = null
         closeGuestMigration()
         ++startupSyncRevision
@@ -1783,17 +1254,13 @@ class PortfolioModel(
         portfolioSyncing = false; documentsLoading = false
         portfolioSyncError = null; documentsSyncError = null
         unlockToUi = null; deviceToUi = null
-        notificationPreferences=JsonRecord();notificationSettingsAvailable=false;pendingNotificationPreferences=emptyMap()
-        couponReceipts=emptyList();couponTrackingAvailable=false;notificationDate=Today
-        notificationGeneration++;notifications=emptyList();unreadNotifications=0;notificationNextBefore=null
-        notificationsError=null;notificationsLoading=false;notificationLoadedAt=null
+        notificationCenter.clear()
         backgroundLockJob?.cancel(); backgroundLockJob = null; backgroundedAt = null
         privateDataLoadedAt = null; marketLoadedAt = null
         privateDataAvailable = false
-        importedPdf = null; importedReview = null; uploadedDocument = null; retryPdf = null
         documentThumbnails.clear()
         documentPreviewRequest++; documentPreview = null; loadingDocumentPreview = false
-        activeImportId = null; importJournal.detach(); savedPdfDigests.clear(); resumingImport = false
+        imports.clear()
         refreshPhase = PortfolioRefreshPhase.IDLE
         monthlyInvestmentTarget = DEFAULT_MONTHLY_INVESTMENT_TARGET
         user = null
@@ -1805,8 +1272,7 @@ class PortfolioModel(
         sharedCouponTerms = emptyList(); accountPortfolio = accountPortfolio.copy(couponReferences = emptyList())
         statementItems = emptyList()
         statementReviewRows = null
-        pdfImportProgress = null
-        reportProgress = null
+        reports.clearProgress()
         historyComplete = false
         shareOrders = emptyList(); accountPortfolio = accountPortfolio.copy(shareOrders = emptyList()); shareOrdersAvailable = false
         market = null
@@ -1830,6 +1296,7 @@ class PortfolioModel(
     }
 
 }
+
 
 internal const val SESSION_BACKGROUND_GRACE_MILLIS = 30_000L
 internal const val DATA_CACHE_MILLIS = 60_000L
