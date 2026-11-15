@@ -6,34 +6,52 @@ import dev.orestegabo.portfolio.network.PortfolioDataApi
 
 import androidx.compose.runtime.*
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 
-/** Account cash activity; session guards and local guest writes remain with the model. */
+/** One publication for ledger data and refresh status; records are detached read-only snapshots. */
+internal data class CashLedgerUiState(
+    val entries: List<JsonRecord> = emptyList(), val available: Boolean = false,
+    val error: String? = null, val isRefreshing: Boolean = false,
+)
+
+/** Account cash activity; session guards and local guest writes remain with the model.
+ * Owned by the ViewModel and called on its UI dispatcher, like its Compose state.
+ */
 internal class PortfolioCashLedger(
     private val currentApi: () -> PortfolioDataApi,
     private val refreshPortfolio: suspend () -> Unit,
 ) {
     private val api get() = currentApi()
-    var entries by mutableStateOf<List<JsonRecord>>(emptyList()); private set
-    var available by mutableStateOf(false); private set
-    var error by mutableStateOf<String?>(null); private set
+    var state by mutableStateOf(CashLedgerUiState()); private set
+    val entries get() = state.entries
+    val available get() = state.available
+    val error get() = state.error
+    private var refreshGeneration = 0L
 
     suspend fun reload() {
+        val client = api
+        val generation = ++refreshGeneration
+        fun ownsRefresh() = generation == refreshGeneration && client === api
+        state = state.copy(isRefreshing = true)
         try {
-            val response = api.request("/api/bonds/cash-ledger")
-            error = null
-            available = response.has("entries")
-            entries = JsonRecord.readOnlyList(response.rows("entries"))
+            val response = client.request("/api/bonds/cash-ledger")
+            currentCoroutineContext().ensureActive()
+            if (!ownsRefresh()) return
+            state = CashLedgerUiState(JsonRecord.readOnlyList(response.rows("entries")), response.has("entries"))
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (failure: ApiException) {
+            if (!ownsRefresh()) return
             if (failure.status == 401) throw failure
-            available = false
-            if (failure.status in listOf(404, 405)) {
-                entries = emptyList()
-                error = "Cash activity is currently unavailable. Your investments remain available."
-            } else error = "Cash activity could not be refreshed. Try again."
+            state = if (failure.status in listOf(404, 405)) {
+                CashLedgerUiState(error = "Cash activity is currently unavailable. Your investments remain available.")
+            } else state.copy(available = false, error = "Cash activity could not be refreshed. Try again.", isRefreshing = false)
         } catch (_: Exception) {
-            available = false
-            error = "Cash activity could not be refreshed. Try again."
+            if (!ownsRefresh()) return
+            state = state.copy(available = false, error = "Cash activity could not be refreshed. Try again.", isRefreshing = false)
+        } finally {
+            // An older request must not stop the newer request's loading indicator.
+            if (generation == refreshGeneration) state = state.copy(isRefreshing = false)
         }
     }
 
@@ -49,5 +67,8 @@ internal class PortfolioCashLedger(
         refreshPortfolio()
     }
 
-    fun clear() { error = null; entries = emptyList(); available = false }
+    fun clear() {
+        ++refreshGeneration
+        state = CashLedgerUiState()
+    }
 }

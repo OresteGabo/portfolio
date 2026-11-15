@@ -6,6 +6,8 @@ import dev.orestegabo.portfolio.network.PortfolioDataApi
 
 import androidx.compose.runtime.*
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 
 /** Pending account orders and their projection; never converts an order into an executed holding. */
 internal class PortfolioShareOrders(
@@ -16,17 +18,26 @@ internal class PortfolioShareOrders(
     var orders by mutableStateOf<List<JsonRecord>>(emptyList()); private set
     var available by mutableStateOf(false); private set
 
+    private var refreshGeneration = 0L
+
     suspend fun reload() {
+        val client = api
+        val generation = ++refreshGeneration
+        fun ownsRefresh() = generation == refreshGeneration && client === api
         try {
-            orders = JsonRecord.readOnlyList(api.request("/api/bonds/share-orders").rows("orders"))
+            val response = client.request("/api/bonds/share-orders")
+            currentCoroutineContext().ensureActive()
+            if (!ownsRefresh()) return
+            orders = JsonRecord.readOnlyList(response.rows("orders"))
             publishOrders(orders)
             available = true
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (failure: ApiException) {
+            if (!ownsRefresh()) return
             if (failure.status == 401) throw failure
             available = false
             if (failure.status in listOf(404, 405)) { orders = emptyList(); publishOrders(orders) }
-        } catch (_: Exception) { available = false }
+        } catch (_: Exception) { if (ownsRefresh()) available = false }
     }
 
     suspend fun save(id: String, order: JsonRecord, completed: () -> Unit) {
@@ -41,5 +52,5 @@ internal class PortfolioShareOrders(
         reload()
     }
 
-    fun clear() { orders = emptyList(); publishOrders(orders); available = false }
+    fun clear() { ++refreshGeneration; orders = emptyList(); publishOrders(orders); available = false }
 }

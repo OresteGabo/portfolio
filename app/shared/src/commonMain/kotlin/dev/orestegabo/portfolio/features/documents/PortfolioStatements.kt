@@ -6,6 +6,8 @@ import dev.orestegabo.portfolio.network.ApiException
 import dev.orestegabo.portfolio.network.PortfolioDataApi
 
 import androidx.compose.runtime.*
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 
 /** Statement evidence/reconciliation state; authenticated action and portfolio refresh stay with the host. */
 internal class PortfolioStatements(
@@ -16,12 +18,19 @@ internal class PortfolioStatements(
     var items by mutableStateOf<List<JsonRecord>>(emptyList()); private set
     var reviewRows by mutableStateOf<List<JsonRecord>?>(null); private set
 
-    fun closeReview() { reviewRows = null }
-    fun showRecord(row: JsonRecord) { reviewRows = JsonRecord.readOnlyList(listOf(row)) }
+    private var reviewGeneration = 0L
+    private var listGeneration = 0L
+
+    fun closeReview() { ++reviewGeneration; reviewRows = null }
+    fun showRecord(row: JsonRecord) { ++reviewGeneration; reviewRows = JsonRecord.readOnlyList(listOf(row)) }
 
     suspend fun showDocument(id: String) {
         require(id.matches(Regex("[A-Za-z0-9_-]{1,120}"))) { "Invalid statement document." }
-        reviewRows = JsonRecord.readOnlyList(api.request("/api/bonds/statement-items?documentId=$id").rows("items"))
+        val client = api
+        val generation = ++reviewGeneration
+        val response = client.request("/api/bonds/statement-items?documentId=$id")
+        currentCoroutineContext().ensureActive()
+        if (generation == reviewGeneration && client === api) reviewRows = JsonRecord.readOnlyList(response.rows("items"))
     }
 
     suspend fun resolve(item: JsonRecord, purchaseId: String?, reason: String, completed: () -> Unit) {
@@ -49,10 +58,17 @@ internal class PortfolioStatements(
     }
 
     suspend fun load() {
-        items = try { JsonRecord.readOnlyList(api.request("/api/bonds/statement-items").rows("items")) }
-        catch (failure: ApiException) {
+        val client = api
+        val generation = ++listGeneration
+        fun ownsLoad() = generation == listGeneration && client === api
+        try {
+            val response = client.request("/api/bonds/statement-items")
+            currentCoroutineContext().ensureActive()
+            if (ownsLoad()) items = JsonRecord.readOnlyList(response.rows("items"))
+        } catch (failure: ApiException) {
+            if (!ownsLoad()) return
             if (failure.status == 401) throw failure
-            if (failure.status == 404 || failure.status == 405) emptyList() else items
+            if (failure.status == 404 || failure.status == 405) items = emptyList()
         }
     }
 
@@ -65,5 +81,5 @@ internal class PortfolioStatements(
         completed(response.rows("rows"))
     }
 
-    fun clear() { items = emptyList(); reviewRows = null }
+    fun clear() { ++listGeneration; items = emptyList(); closeReview() }
 }

@@ -23,6 +23,7 @@ class AccountRecordWorkflowsTest {
         var statement = JsonRecord().put("id", "statement-one").put("state", "review-required")
             .put("decisions", JsonList(listOf(JsonRecord().put("at", "2026-11-01T12:00:00Z"))))
         var holdLedger = false
+        var ledgerRelease: CompletableDeferred<Unit>? = null
         val ledgerStarted = CompletableDeferred<Unit>()
     }
 
@@ -48,7 +49,7 @@ class AccountRecordWorkflowsTest {
                         "/api/bonds/auth/session" -> JsonRecord().put("authenticated", true).put("user", JsonRecord().put("id", "test-account"))
                         "/api/bonds/mobile-overview" -> return@addHandler respond("{}", HttpStatusCode.NotFound)
                         "/api/bonds/cash-ledger" -> {
-                            if (scenario.holdLedger) { scenario.ledgerStarted.complete(Unit); awaitCancellation() }
+                            if (scenario.holdLedger) { scenario.ledgerStarted.complete(Unit); scenario.ledgerRelease?.await() ?: awaitCancellation() }
                             if (request.method == HttpMethod.Post) scenario.ledger = listOf(requireNotNull(body))
                             JsonRecord().put("entries", JsonList(scenario.ledger))
                         }
@@ -206,6 +207,29 @@ class AccountRecordWorkflowsTest {
             model.logout(); advanceUntilIdle()
             assertNull(model.user)
             assertEquals("test-account", identity.text("id"))
+        }
+    }
+
+
+    @Test fun logoutCannotBeUndoneByAnInFlightLedgerRefresh() = runTest {
+        withModel { scenario, model ->
+            scenario.holdLedger = true
+            val release = CompletableDeferred<Unit>()
+            scenario.ledgerRelease = release
+            val refresh = launch { model.reloadLedger() }
+            scenario.ledgerStarted.await()
+            model.logout()
+            advanceUntilIdle()
+            assertNull(model.user)
+            assertTrue(model.ledgerEntries.isEmpty())
+
+            release.complete(Unit)
+            refresh.join()
+
+            assertNull(model.user)
+            assertTrue(model.ledgerEntries.isEmpty(), "A late refresh must not restore signed-out account rows")
+            assertFalse(model.ledgerAvailable)
+            assertNull(model.ledgerError)
         }
     }
 
