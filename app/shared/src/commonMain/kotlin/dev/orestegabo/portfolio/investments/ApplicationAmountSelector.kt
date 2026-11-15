@@ -15,7 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 
-internal const val ApplicationAmountStep = 100_000L
+internal const val ApplicationAmountStep = TREASURY_PRINCIPAL_INCREMENT
 internal const val MaximumApplicationAmount = 10_000_000_000_000L
 
 internal fun steppedApplicationAmount(value: String, increase: Boolean): String {

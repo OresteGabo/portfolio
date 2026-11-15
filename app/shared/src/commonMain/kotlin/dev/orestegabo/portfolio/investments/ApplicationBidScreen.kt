@@ -13,6 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlin.uuid.Uuid
 
+internal fun applicationBidAmount(value: String): Double? = value.toDoubleOrNull()?.takeIf {
+    validTreasuryPrincipal(it) && it <= MaximumApplicationAmount.toDouble()
+}
+
 @Composable
 internal fun ApplicationBidScreen(model: PortfolioModel, form: JsonRecord, saved: () -> Unit) {
     var amount by rememberSaveable(form.text("id")) { mutableStateOf(ApplicationAmountStep.toString()) }
@@ -21,7 +25,7 @@ internal fun ApplicationBidScreen(model: PortfolioModel, form: JsonRecord, saved
     val issue = model.calendar.firstOrNull { it.text("id") == form.optJSONObject("applicationForm")?.text("calendarId") }
     val terms = form.optJSONObject("bidTerms")
     val allowed = issue != null && applicationBidAllowed(form,issue,today)
-    val value = amount.toDoubleOrNull()?.takeIf { it.isFinite() && it >= 100_000 && it <= 10_000_000_000_000.0 && it % 100_000 == 0.0 }
+    val value = applicationBidAmount(amount)
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { PendingBondHeader(terms?.text("bondName").orEmpty(), terms?.text("settlementDate").orEmpty(), terms?.text("maturityDate").orEmpty()) }
         item { PendingPurchaseNotice() }

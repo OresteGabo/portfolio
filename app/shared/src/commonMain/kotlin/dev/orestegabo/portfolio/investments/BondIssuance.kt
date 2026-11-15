@@ -49,7 +49,7 @@ fun pendingIssuanceConfirmation(review: JsonRecord, pending: JsonRecord): JsonRe
     val accrued = pending.optDouble("accruedInterestPaid", 0.0)
     val recordedCash = pending.optDouble("amountInvested", principal + fees + accrued)
     val cost = principal * issue.optDouble("pricePercent") / 100 + fees + accrued
-    require(principal.isFinite() && principal >= 100_000 && principal % 100_000 == 0.0 &&
+    require(validTreasuryPrincipal(principal) &&
         fees.isFinite() && fees >= 0 && accrued.isFinite() && accrued >= 0 &&
         recordedCash.isFinite() && kotlin.math.abs(recordedCash - cost) < .01) {
         "Use your personal PDF to confirm the final allocation and price."

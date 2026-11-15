@@ -6,7 +6,7 @@ const val PendingBondCommission = 11_000.0
 
 /** Submitted requests enter portfolio projections at recorded amounts until confirmed. */
 fun pendingBondInput(issue: JsonRecord, amount: Double, recorded: LocalDate): JsonRecord {
-    require(amount.isFinite() && amount >= 100_000 && amount % 100_000 == 0.0) { "Use an amount in RWF 100,000 increments." }
+    require(validTreasuryPrincipal(amount)) { "Use an amount in RWF 100,000 increments." }
     val settlement = calendarDate(issue.text("settlementDate")) ?: error("This bond has no settlement date yet.")
     val maturity = calendarDate(issue.text("maturityDate")) ?: error("This bond has no maturity date yet.")
     require(maturity > recorded && maturity > settlement) { "Choose a bond that has not matured." }
@@ -46,7 +46,7 @@ fun importedPurchaseInput(review: JsonRecord): JsonRecord {
         val dates = listOf("purchaseDate", "settlementDate", "maturityDate", "firstCouponDate").associateWith { LocalDate.parse(body.text(it)) }
         require(dates.getValue("settlementDate") >= dates.getValue("purchaseDate") &&
             dates.getValue("maturityDate") > dates.getValue("settlementDate")) { "The PDF dates could not be verified." }
-        require(body.optDouble("faceValue", 0.0).let { it.isFinite() && it >= 100_000 && it % 100_000 == 0.0 } &&
+        require(validTreasuryPrincipal(body.optDouble("faceValue", 0.0)) &&
             body.optDouble("pricePercent", 0.0).let { it.isFinite() && it > 0 && it <= 1000 } &&
             body.has("couponRate") && body.optDouble("couponRate").let { it.isFinite() && it in 0.0..1.0 } &&
             body.optDouble("tenorYears", 0.0).let { it.isFinite() && it > 0 && it <= 100 }) { "Some figures could not be read. Try a clearer PDF." }
