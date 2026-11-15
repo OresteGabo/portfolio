@@ -40,6 +40,19 @@ The shared layer decides which API calls to make, validates values, presents dat
 
 The shared `PortfolioModel` extends the multiplatform lifecycle `ViewModel`. It retains no Activity, UIViewController, file picker or browser instance. Native actions and engines are owned by the UI lifecycle and cleaned up when that host is disposed. Preferences persist only connection configuration, theme, and non-secret opt-in metadata. When the user enables secure sign-in, a separate native `SecureSignIn` service persists the password and session snapshot under device authentication. iOS uses Keychain user-presence ACLs and `WhenPasscodeSetThisDeviceOnly`; Android uses an authenticated Keystore wrapping key and AES-GCM envelope encryption. Android's service references the active authentication host weakly so the shared ViewModel does not retain an Activity. Native contexts/data keys are dropped on lock. Private account records remain in memory and are reloaded from the API after unlock.
 
+Feature responsibilities are separated behind the existing screen-facing model API:
+
+| Owner | Responsibility |
+|---|---|
+| `PortfolioModel` | Session/authentication, lifecycle jobs, guest/account routing, portfolio synchronization and screen entry points |
+| `PortfolioImports` | Import journal, PDF selection/review, duplicate checks, resumable uploads and import completion |
+| `PortfolioNotifications` | Notification preferences, inbox pagination, month reminders, push registration and stale-response revision checks |
+| `PortfolioReports` | Complete report inputs, annual price history, report generation and report progress |
+| `PortfolioDashboard` | Dashboard screen composition, filtering and investment list routing |
+| `PortfolioHero` / `PortfolioInsights` | Balance/summary presentation and dashboard insight cards |
+
+Imports and notifications receive narrow host interfaces rather than the whole model. The model retains its coroutine scope and action guard, so extracting these features does not create independent session lifetimes or parallel write paths. Clearing private state detaches import history, drops PDF references and advances the notification revision before a new account can publish feature data. Feature state remains observable Compose state; screens keep their existing model entry points.
+
 The calculation and purchase-text parsing rules have one TypeScript source snapshot in `web-logic/source`. `scripts/bundle-shared-logic.mjs` generates one portable bundle used on both platforms. Android's extraction adapter obtains text with PDF.js/Tesseract; iOS obtains text with PDFKit/Vision. Both feed the same purchase parser and shared review form. Scanned documents are marked for review. Neither adapter executes PDF JavaScript or submits extracted records automatically.
 
 ## Resources and entry points
