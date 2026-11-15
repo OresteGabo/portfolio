@@ -19,8 +19,9 @@ data class BondTerms(
     val firstCoupon: LocalDate? = null,
     val confirmedDates: List<LocalDate> = emptyList(),
 ) {
+    internal val couponFrequency = CouponFrequency(frequency)
+
     init {
-        require(frequency in 1..12) { "Coupon frequency must be between 1 and 12." }
         require(maturityDate > purchaseDate && maturityDate <= purchaseDate.plus(DatePeriod(years = 100))) {
             "Bond dates must describe a positive term of at most 100 years."
         }
@@ -41,8 +42,7 @@ fun couponSchedule(terms: BondTerms): List<LocalDate> {
     if (terms.confirmedDates.isNotEmpty()) return terms.confirmedDates.distinct().filter { it > terms.purchaseDate && it <= terms.maturityDate }.sorted()
     // A calendar-month schedule cannot represent e.g. seven equally spaced payments/year.
     // Published dates still work for those instruments; do not manufacture a calendar for them.
-    if (12 % terms.frequency != 0) return emptyList()
-    val interval = 12 / terms.frequency
+    val interval = terms.couponFrequency.calendarIntervalMonths ?: return emptyList()
     val dates = mutableListOf<LocalDate>()
     if (terms.firstCoupon != null) {
         var step = 0
@@ -80,5 +80,5 @@ fun trackBond(terms: BondTerms, today: LocalDate): BondTracking {
     return BondTracking(schedule, net, decimalAmount(listOf(completed.size.toDouble(), net)), accrued, decimalAmount(listOf(future.size.toDouble(), net)), next, progress)
 }
 
-fun BondTerms.grossCouponPayment(): Double = decimalAmount(listOf(faceValue, couponRate), frequency)
-fun BondTerms.netCouponPayment(): Double = decimalAmount(listOf(faceValue, couponRate), frequency, taxRate)
+fun BondTerms.grossCouponPayment(): Double = decimalAmount(listOf(faceValue, couponRate), couponFrequency.paymentsPerYear)
+fun BondTerms.netCouponPayment(): Double = decimalAmount(listOf(faceValue, couponRate), couponFrequency.paymentsPerYear, taxRate)
