@@ -1,0 +1,160 @@
+{
+  "baseline": "2ab7535",
+  "scope": "core, app/shared, app/androidApp only; selected coordinates, not an artifact-byte comparison.",
+  "identical_configurations": [
+    {
+      "project": ":app:androidApp",
+      "configuration": "debugAndroidTestRuntimeClasspath",
+      "selected_modules": 165,
+      "before_sha256": "2dc3a58203b840290a24a728ef062ea913d906591becaa44137b1b5ea81b2d3d",
+      "after_sha256": "2dc3a58203b840290a24a728ef062ea913d906591becaa44137b1b5ea81b2d3d",
+      "unresolved": 0
+    },
+    {
+      "project": ":app:androidApp",
+      "configuration": "debugRuntimeClasspath",
+      "selected_modules": 227,
+      "before_sha256": "207fb955c08f44d78961150312e694c9e84eac5cdd975fdf8be2e5e349979e01",
+      "after_sha256": "207fb955c08f44d78961150312e694c9e84eac5cdd975fdf8be2e5e349979e01",
+      "unresolved": 0
+    },
+    {
+      "project": ":app:androidApp",
+      "configuration": "releaseRuntimeClasspath",
+      "selected_modules": 227,
+      "before_sha256": "207fb955c08f44d78961150312e694c9e84eac5cdd975fdf8be2e5e349979e01",
+      "after_sha256": "207fb955c08f44d78961150312e694c9e84eac5cdd975fdf8be2e5e349979e01",
+      "unresolved": 0
+    },
+    {
+      "project": ":app:shared",
+      "configuration": "androidDeviceTestRuntimeClasspath",
+      "selected_modules": 193,
+      "before_sha256": "f4113170d6c3b98b87036c02069fd174809d061f0ee9d8c7a1e2b5fcf0997abc",
+      "after_sha256": "f4113170d6c3b98b87036c02069fd174809d061f0ee9d8c7a1e2b5fcf0997abc",
+      "unresolved": 0
+    },
+    {
+      "project": ":app:shared",
+      "configuration": "androidHostTestRuntimeClasspath",
+      "selected_modules": 190,
+      "before_sha256": "993d84b34880643ace63300544b73049310844b2451ed1f2bc2d28f730ab4a4f",
+      "after_sha256": "993d84b34880643ace63300544b73049310844b2451ed1f2bc2d28f730ab4a4f",
+      "unresolved": 0
+    },
+    {
+      "project": ":app:shared",
+      "configuration": "androidRuntimeClasspath",
+      "selected_modules": 182,
+      "before_sha256": "57d8cc2f06616d37c12a020d5181a59773c523553e8a8a0c55aa0025af79a025",
+      "after_sha256": "57d8cc2f06616d37c12a020d5181a59773c523553e8a8a0c55aa0025af79a025",
+      "unresolved": 0
+    },
+    {
+      "project": ":app:shared",
+      "configuration": "iosArm64CompileKlibraries",
+      "selected_modules": 122,
+      "before_sha256": "1a28a27567504bd2d60309b288680cc7ebd1efc1641fe952fe9759e509066af5",
+      "after_sha256": "1a28a27567504bd2d60309b288680cc7ebd1efc1641fe952fe9759e509066af5",
+      "unresolved": 0
+    },
+    {
+      "project": ":app:shared",
+      "configuration": "iosSimulatorArm64CompileKlibraries",
+      "selected_modules": 122,
+      "before_sha256": "845c0f5ebd74a5eec1c6ec32011eaebeeb251ff9e3172ec6d47ca27cd68d7d93",
+      "after_sha256": "845c0f5ebd74a5eec1c6ec32011eaebeeb251ff9e3172ec6d47ca27cd68d7d93",
+      "unresolved": 0
+    },
+    {
+      "project": ":core",
+      "configuration": "androidHostTestRuntimeClasspath",
+      "selected_modules": 52,
+      "before_sha256": "48087fb2971f0b8debfe74c132014249e41a6251bf86b5d40b1091ebad341f3f",
+      "after_sha256": "48087fb2971f0b8debfe74c132014249e41a6251bf86b5d40b1091ebad341f3f",
+      "unresolved": 0
+    },
+    {
+      "project": ":core",
+      "configuration": "androidRuntimeClasspath",
+      "selected_modules": 44,
+      "before_sha256": "747bf883862ba3dd9577a7bff82fe78bc32d371c1dc444b949859c0f49ab43aa",
+      "after_sha256": "747bf883862ba3dd9577a7bff82fe78bc32d371c1dc444b949859c0f49ab43aa",
+      "unresolved": 0
+    },
+    {
+      "project": ":core",
+      "configuration": "iosArm64CompileKlibraries",
+      "selected_modules": 41,
+      "before_sha256": "f64babb69beb40c7f5fe949c0e902dc6ba2e980268bef501c40f6ea2e76109b1",
+      "after_sha256": "f64babb69beb40c7f5fe949c0e902dc6ba2e980268bef501c40f6ea2e76109b1",
+      "unresolved": 0
+    },
+    {
+      "project": ":core",
+      "configuration": "iosSimulatorArm64CompileKlibraries",
+      "selected_modules": 41,
+      "before_sha256": "5a6b9005e232e5643cd46857cae90a4b0abf00cdee04037dd3469d7fc5c5ff7e",
+      "after_sha256": "5a6b9005e232e5643cd46857cae90a4b0abf00cdee04037dd3469d7fc5c5ff7e",
+      "unresolved": 0
+    },
+    {
+      "project": ":core",
+      "configuration": "jvmRuntimeClasspath",
+      "selected_modules": 44,
+      "before_sha256": "747bf883862ba3dd9577a7bff82fe78bc32d371c1dc444b949859c0f49ab43aa",
+      "after_sha256": "747bf883862ba3dd9577a7bff82fe78bc32d371c1dc444b949859c0f49ab43aa",
+      "unresolved": 0
+    },
+    {
+      "project": ":core",
+      "configuration": "jvmTestRuntimeClasspath",
+      "selected_modules": 52,
+      "before_sha256": "48087fb2971f0b8debfe74c132014249e41a6251bf86b5d40b1091ebad341f3f",
+      "after_sha256": "48087fb2971f0b8debfe74c132014249e41a6251bf86b5d40b1091ebad341f3f",
+      "unresolved": 0
+    }
+  ],
+  "retained_catalog_entries_with_identical_requested_coordinates": [
+    "libraries:ktor-client-core",
+    "libraries:ktor-client-darwin",
+    "libraries:ktor-client-cio",
+    "libraries:ktor-client-mock",
+    "libraries:kotlinx-json",
+    "libraries:kotlinx-datetime",
+    "libraries:kotlinx-coroutines",
+    "libraries:kotlinx-coroutines-test",
+    "libraries:kotlin-test",
+    "libraries:kotlin-testJunit",
+    "libraries:androidx-testExt-junit",
+    "libraries:androidx-appcompat",
+    "libraries:androidx-activity-compose",
+    "libraries:androidx-lifecycle-viewmodelCompose",
+    "libraries:androidx-lifecycle-runtimeCompose",
+    "libraries:compose-runtime",
+    "libraries:compose-foundation",
+    "libraries:compose-materialIconsCore",
+    "libraries:compose-material3",
+    "libraries:compose-ui",
+    "libraries:compose-components-resources",
+    "libraries:logback",
+    "libraries:ktor-serverCore",
+    "libraries:ktor-serverNetty",
+    "libraries:ktor-serverTestHost",
+    "plugins:androidApplication",
+    "plugins:androidMultiplatformLibrary",
+    "plugins:composeMultiplatform",
+    "plugins:composeCompiler",
+    "plugins:kotlinJvm",
+    "plugins:kotlinMultiplatform",
+    "plugins:ktor"
+  ],
+  "removed_unused_catalog_aliases": [
+    "androidx-core-ktx",
+    "androidx-espresso-core",
+    "junit",
+    "ktor-client-android"
+  ],
+  "lockfile_changes": [],
+  "module_version_changes": []
+}

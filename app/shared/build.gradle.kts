@@ -42,11 +42,11 @@ kotlin {
     sourceSets {
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
-            implementation("androidx.biometric:biometric:1.1.0")
-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+            implementation(libs.androidx.biometric)
+            implementation(libs.kotlinx.coroutines.android)
         }
         getByName("androidDeviceTest").dependencies {
-            implementation("androidx.test:runner:1.7.0")
+            implementation(libs.androidx.test.runner)
         }
         commonMain.dependencies {
             api(project(":core"))

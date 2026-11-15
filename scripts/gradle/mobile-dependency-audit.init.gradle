@@ -1,0 +1,31 @@
+// Opt-in mobile-only dependency inventory; pass --no-configuration-cache and -PauditOutput=<directory>.
+import groovy.json.JsonOutput
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.result.UnresolvedDependencyResult
+
+gradle.afterProject { p ->
+ if (p.path in [':core', ':app:shared', ':app:androidApp']) {
+  p.tasks.register('exportMobileDependencyAudit') {
+   notCompatibleWithConfigurationCache('Dependency inventory resolves configurations at execution time')
+   doLast {
+    def wanted = p.configurations.findAll { c -> c.canBeResolved && (
+      c.name in ['debugRuntimeClasspath','releaseRuntimeClasspath','debugAndroidTestRuntimeClasspath',
+       'jvmRuntimeClasspath','jvmTestRuntimeClasspath','androidRuntimeClasspath','androidHostTestRuntimeClasspath','androidDeviceTestRuntimeClasspath',
+       'iosArm64CompileKlibraries','iosSimulatorArm64CompileKlibraries'] ) }
+    if (wanted.empty) throw new GradleException("No mobile configurations found for ${p.path}")
+    def result = wanted.collect { c ->
+     def graph = c.incoming.resolutionResult
+     def modules = graph.allComponents.findAll { it.id instanceof ModuleComponentIdentifier }.collect {
+      [group:it.id.group, name:it.id.module, version:it.id.version]
+     }.sort { a,b -> (a.group+':'+a.name) <=> (b.group+':'+b.name) }
+     def unresolved = graph.allDependencies.findAll { it instanceof UnresolvedDependencyResult }.collect { it.attempted.displayName }
+     if (!unresolved.empty) throw new GradleException("Unresolved mobile dependencies in ${p.path}:${c.name}: ${unresolved}")
+     [configuration:c.name, modules:modules, unresolved:unresolved]
+    }
+    def output = new File(p.providers.gradleProperty('auditOutput').get(), p.path.replace(':','_')+'.json')
+    output.parentFile.mkdirs();output.text=JsonOutput.prettyPrint(JsonOutput.toJson([project:p.path,configurations:result]))+'\n'
+    println "Exported ${p.path}: ${result.collect { it.configuration }}"
+   }
+  }
+ }
+}

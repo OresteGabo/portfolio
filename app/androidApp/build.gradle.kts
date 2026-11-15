@@ -4,7 +4,7 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeCompiler)
-    id("com.google.gms.google-services") version "4.5.0" apply false
+    alias(libs.plugins.googleServices) apply false
 }
 
 if (file("google-services.json").exists()) apply(plugin = "com.google.gms.google-services")
@@ -39,23 +39,23 @@ kotlin {
     }
 }
 dependencies {
-    implementation(platform("com.google.firebase:firebase-bom:35.1.0"))
-    implementation("com.google.firebase:firebase-messaging")
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
     implementation(project(":app:shared"))
 
     implementation(libs.androidx.activity.compose)
-    implementation("androidx.fragment:fragment:1.8.9")
+    implementation(libs.androidx.fragment)
     implementation(libs.androidx.appcompat)
     implementation(libs.compose.runtime)
     androidTestImplementation(libs.androidx.testExt.junit)
     androidTestImplementation(libs.ktor.client.mock)
-    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.compose.foundation)
     androidTestImplementation(libs.compose.material3)
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    coreLibraryDesugaring(libs.android.desugar.jdk)
 
     // Capture-only exclusion is needed in both APK variants; unsupported devices use FLAG_SECURE.
-    implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
+    implementation(libs.hidden.api.bypass)
 }
 
 android {
