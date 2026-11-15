@@ -77,20 +77,12 @@ internal class GuestMigration(
             val history=remote.status(account);authorized()
             check(history.text("accountId")==account.id)
             val snapshot=repository.load();authorized()
-            val records=snapshot.portfolio
-            rows=records.purchases.map { MigrationRow(it.text("id"),"bond",it.text("bondName"),it) } +
-                records.holdings.map { MigrationRow(it.text("id"),"equity",it.text("securityName"),it) } +
-                snapshot.receipts.map { receipt ->
-                    val bondName=records.purchases.firstOrNull { it.text("id")==receipt.text("purchaseId") }?.text("bondName").orEmpty()
-                    MigrationRow(receipt.text("id"),"receipt","$bondName · ${receipt.text("dueDate")}",receipt,receipt.text("purchaseId"))
-                } +
-                records.documents.map { MigrationRow(it.text("id"),"document",it.text("fileName"),it) } +
-                snapshot.metadata.rows("cashLedger").map { MigrationRow("guest:cash:${it.text("id")}", "cash", "${it.text("kind")} · ${displayDate(it.text("date"))}", it, it.text("holdingId").ifBlank { null }) }
+            rows = migrationRows(snapshot)
             check(rows.size<=40000 && rows.all { it.id.matches(Regex("guest:(bond|share|receipt|document|cash):[A-Za-z0-9-]{1,80}")) })
             val old=history.rows("items")
             previous=old.map { it.text("sourceId") }.toSet()
             priorBonds=old.filter { it.text("kind") in listOf("bond", "equity") }.map { it.text("sourceId") }.toSet()
-            dates=rows.filter { it.kind=="document" }.associate { row -> row.id to row.record.text("documentDate").ifBlank { old.firstOrNull { it.text("sourceId")==row.id }?.text("documentDate").orEmpty() } }
+            dates = migrationDocumentDates(rows, old)
             revision=snapshot.revision;selected=emptySet();results=emptyMap();consent=false;prepared=true
         } catch(cancelled: CancellationException) { throw cancelled }
         catch(failed: Exception) { failure=if(failed is ApiException && failed.status==404) "The account service needs the migration update before data can be transferred." else "Could not prepare the transfer. Check your signed-in account and retry. No guest data was uploaded." }

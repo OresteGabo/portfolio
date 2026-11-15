@@ -66,4 +66,18 @@ class PdfReviewPolicyTest {
             }.message)
         }
     }
+
+    @Test fun bondOnlyRejectionPrecedesStatementMismatchAndLeavesInputsUnchanged() {
+        val review = JsonRecord().put("kind", "equity").readOnlyCopy()
+        val target = JsonRecord().put("kind", "bond").readOnlyCopy()
+        val before = listOf(review.toString(), target.toString())
+
+        val failure = assertFailsWith<IllegalArgumentException> {
+            validatePurchasePdfReview(review, true, target)
+        }
+
+        assertEquals("Use a BNR bond confirmation PDF.", failure.message)
+        assertEquals(before, listOf(review.toString(), target.toString()))
+    }
+
 }

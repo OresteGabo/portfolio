@@ -2,12 +2,14 @@ package dev.orestegabo.portfolio.investments
 
 /** Account purchase admission. Financial matching/save rules remain at their existing boundaries. */
 internal fun validatePurchasePdfReview(review: JsonRecord, bondOnly: Boolean, expectedStatement: JsonRecord?) {
-    val publicIssuance = review.text("kind") == "bond-issuance"
-    val statement = review.text("kind") == "statement"
-    // A multi-transaction statement has its own review; it must not be
-    // rejected or used as confirmation for the purchase that opened the picker.
-    require(statement || !bondOnly || review.text("kind") == "bond" || publicIssuance) { "Use a BNR bond confirmation PDF." }
-    require(statement || expectedStatement == null || publicIssuance && expectedStatement.text("kind") == "bond" || statementConfirmationMatches(expectedStatement, review)) {
+    val kind = review.text("kind")
+    // Statements have their own review and do not confirm the purchase that opened the picker.
+    if (kind == "statement") return
+    val publicIssuance = kind == "bond-issuance"
+    require(!bondOnly || kind == "bond" || publicIssuance) { "Use a BNR bond confirmation PDF." }
+    val target = expectedStatement ?: return
+    if (publicIssuance && target.text("kind") == "bond") return
+    require(statementConfirmationMatches(target, review)) {
         "This PDF does not match the statement purchase. Choose its confirmation document."
     }
 }
