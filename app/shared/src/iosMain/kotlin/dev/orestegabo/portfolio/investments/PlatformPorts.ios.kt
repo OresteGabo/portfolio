@@ -133,24 +133,15 @@ private class IosActions : NativeActions {
         } finally { if (access) url.stopAccessingSecurityScopedResource() }
     }
     override suspend fun savePdf(fileName: String, bytes: ByteArray): Boolean = withContext(Dispatchers.Main) {
-        val directory = NSTemporaryDirectory() + NSUUID().UUIDString
-        NSFileManager.defaultManager.createDirectoryAtPath(directory, withIntermediateDirectories = true, attributes = null, error = null)
-        val safeName = fileName.replace(Regex("[^A-Za-z0-9._-]"), "_").ifBlank { "investment.pdf" }
-        val url = NSURL.fileURLWithPath("$directory/$safeName")
-        try {
-            withContext(Dispatchers.Default) { check(bytes.toData().writeToURL(url, atomically = true)) { "Unable to prepare the document." } }
+        withProtectedTemporaryExport(fileName, bytes) { url ->
             select(UIDocumentPickerViewController(forExportingURLs = listOf(url), asCopy = true)) != null
-        } finally { NSFileManager.defaultManager.removeItemAtPath(directory, error = null) }
+        }
     }
     override suspend fun sharePdf(fileName: String, bytes: ByteArray): Boolean = withContext(Dispatchers.Main) {
         check(sharing == null) { "A share sheet is already open." }
-        val directory = NSTemporaryDirectory() + NSUUID().UUIDString
-        NSFileManager.defaultManager.createDirectoryAtPath(directory, withIntermediateDirectories = true, attributes = null, error = null)
         val name = fileName.replace(Regex("[^A-Za-z0-9._-]"), "_").take(120).ifBlank { "investment.pdf" }
             .let { if (it.endsWith(".pdf", true)) it else "$it.pdf" }
-        val url = NSURL.fileURLWithPath("$directory/$name")
-        try {
-            withContext(Dispatchers.Default) { check(bytes.toData().writeToURL(url, atomically = true)) { "Unable to prepare the document." } }
+        withProtectedTemporaryExport(name, bytes) { url ->
             suspendCancellableCoroutine { result ->
                 val controller = UIActivityViewController(activityItems = listOf(url), applicationActivities = null)
                 sharing = controller
@@ -164,7 +155,7 @@ private class IosActions : NativeActions {
                 result.invokeOnCancellation { controller.dismissViewControllerAnimated(true, null); sharing = null }
                 presenter.presentViewController(controller, animated = true, completion = null)
             }
-        } finally { NSFileManager.defaultManager.removeItemAtPath(directory, error = null) }
+        }
     }
     override fun openUrl(url: String) {
         val destination = requireNotNull(NSURL.URLWithString(url))

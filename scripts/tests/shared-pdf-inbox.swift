@@ -10,6 +10,8 @@ import Foundation
         do { try SharedPdfInbox.validate(Data(repeating:0,count:SharedPdfInbox.maximumBytes+1));fatalError("Oversized PDF accepted") } catch SharedPdfError.tooLarge {}
         try SharedPdfInbox.stage(pdf,fileName:"../../synthetic.pdf",directory:folder,now:now)
         let first=try SharedPdfInbox.pending(directory:folder,now:now)!
+        let resources = try folder.resourceValues(forKeys: [.isExcludedFromBackupKey])
+        precondition(resources.isExcludedFromBackup == true, "Pending financial PDFs must be excluded from backup")
         precondition(first.fileName=="synthetic.pdf")
         do { try SharedPdfInbox.stage(pdf,fileName:"second.pdf",directory:folder,now:now);fatalError("Pending import overwritten") } catch SharedPdfError.waiting {}
         try SharedPdfInbox.remove(delivery:"wrong-delivery",directory:folder)
@@ -22,6 +24,6 @@ import Foundation
         let emptyAfterExpiry = try SharedPdfInbox.pending(directory:folder,now:now)
         precondition(emptyAfterExpiry==nil)
         precondition(!FileManager.default.fileExists(atPath:folder.appendingPathComponent("pending.pdf").path))
-        print("PDF share checks passed: header/size validation, safe name, no overwrite, matching delivery removal, expiry cleanup.")
+        print("PDF share checks passed: header/size validation, safe name, no overwrite, matching delivery removal, expiry cleanup, backup exclusion.")
     }
 }

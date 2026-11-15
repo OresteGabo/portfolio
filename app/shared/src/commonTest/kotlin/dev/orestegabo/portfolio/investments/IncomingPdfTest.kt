@@ -9,21 +9,21 @@ class IncomingPdfTest {
     @Test fun nativeFacadePreservesMailboxPreparationDeliveryAndErrorBehavior() {
         NativePdfInbox.dismiss(); NativePdfInbox.dismissError()
         try {
-            assertTrue(NativePdfInbox.offer(bytes, "composition-prepare", "allocation.pdf", true))
+            assertTrue(NativePdfInbox.offer(bytes.copyOf(), "composition-prepare", "allocation.pdf", true))
             val first = assertNotNull(NativePdfInbox.pending)
             assertEquals("allocation.pdf", first.fileName)
             assertTrue(NativePdfInbox.requiresPreparation)
             assertNull(NativePdfInbox.take(first.id))
             NativePdfInbox.continueImport(first.id + 1)
             assertTrue(NativePdfInbox.requiresPreparation)
-            assertFalse(NativePdfInbox.offer(bytes, "composition-blocked"))
+            assertFalse(NativePdfInbox.offer(bytes.copyOf(), "composition-blocked"))
             assertNotNull(NativePdfInbox.error)
             NativePdfInbox.dismissError(); assertNull(NativePdfInbox.error)
             NativePdfInbox.continueImport(first.id)
             assertSame(first, NativePdfInbox.take(first.id))
             assertNull(NativePdfInbox.pending)
-            assertFalse(NativePdfInbox.offer(bytes, "composition-prepare"))
-            assertTrue(NativePdfInbox.offer(bytes, "composition-defaults"))
+            assertFalse(NativePdfInbox.offer(bytes.copyOf(), "composition-prepare"))
+            assertTrue(NativePdfInbox.offer(bytes.copyOf(), "composition-defaults"))
             assertEquals("Shared PDF", NativePdfInbox.pending?.fileName)
             assertFalse(NativePdfInbox.requiresPreparation)
             NativePdfInbox.dismiss()
@@ -38,7 +38,7 @@ class IncomingPdfTest {
 
     @Test fun oneFileSurvivesUntilItIsTakenAndCannotBeOverwritten() {
         val inbox = PdfImportInbox()
-        assertTrue(inbox.offer(bytes, "first-delivery"))
+        assertTrue(inbox.offer(bytes.copyOf(), "first-delivery"))
         val first = assertNotNull(inbox.pending)
         assertNull(inbox.take(first.id + 1))
         assertFalse(inbox.offer(bytes + byteArrayOf(1), "second-delivery"))
@@ -46,8 +46,8 @@ class IncomingPdfTest {
         assertEquals("Finish the waiting PDF before sharing another one.", inbox.error)
         assertContentEquals(bytes, assertNotNull(inbox.take(first.id)).bytes)
         assertNull(inbox.pending)
-        assertFalse(inbox.offer(bytes, "first-delivery")) // Activity recreation is not a new share.
-        assertTrue(inbox.offer(bytes, "new-delivery")) // Explicitly sharing again remains possible.
+        assertFalse(inbox.offer(bytes.copyOf(), "first-delivery")) // Activity recreation is not a new share.
+        assertTrue(inbox.offer(bytes.copyOf(), "new-delivery")) // Explicitly sharing again remains possible.
         assertNull(inbox.error)
         inbox.dismiss()
         assertNull(inbox.pending)
@@ -55,7 +55,7 @@ class IncomingPdfTest {
 
     @Test fun sharedPdfWaitsForExplicitContinuationAndCancelClearsIt() {
         val inbox = PdfImportInbox()
-        assertTrue(inbox.offer(bytes, "prepare", prepareFirst = true))
+        assertTrue(inbox.offer(bytes.copyOf(), "prepare", prepareFirst = true))
         val pdf = assertNotNull(inbox.pending)
         assertTrue(inbox.requiresPreparation)
         assertNull(inbox.take(pdf.id))
@@ -63,7 +63,7 @@ class IncomingPdfTest {
         assertTrue(inbox.requiresPreparation)
         inbox.continueImport(pdf.id)
         assertContentEquals(bytes, assertNotNull(inbox.take(pdf.id)).bytes)
-        assertTrue(inbox.offer(bytes, "cancel", prepareFirst = true))
+        assertTrue(inbox.offer(bytes.copyOf(), "cancel", prepareFirst = true))
         inbox.dismiss()
         assertNull(inbox.pending)
         assertFalse(inbox.requiresPreparation)
@@ -77,6 +77,37 @@ class IncomingPdfTest {
         }
         inbox.reject("private raw platform exception")
         assertEquals(GENERAL_ERROR_MESSAGE, inbox.error)
+    }
+
+    @Test fun dismissalClearsTheTransferredBufferIncludingRetainedAliases() {
+        val input = bytes.copyOf()
+        val inbox = PdfImportInbox()
+        inbox.offer(input, "owned-buffer")
+        val pending = assertNotNull(inbox.pending)
+        assertSame(input, pending.bytes)
+        inbox.dismiss()
+        assertTrue(pending.bytes.all { it == 0.toByte() })
+        assertTrue(input.all { it == 0.toByte() })
+        assertNull(inbox.pending)
+        assertFalse(inbox.requiresPreparation)
+        assertNull(inbox.error)
+    }
+
+    @Test fun rejectedOffersAndDismissAfterTakeDoNotEraseCallerOrTransferredData() {
+        val input = bytes.copyOf()
+        val inbox = PdfImportInbox()
+        inbox.offer(input, "first-copy")
+        val pending = assertNotNull(inbox.pending)
+        val rejected = bytes + byteArrayOf(1)
+        val rejectedOriginal = rejected.copyOf()
+        assertFalse(inbox.offer(rejected, "blocked-copy"))
+        assertContentEquals(rejectedOriginal, rejected)
+        val taken = assertNotNull(inbox.take(pending.id))
+        inbox.dismiss()
+        assertContentEquals(bytes, taken.bytes)
+        assertContentEquals(bytes, input)
+        assertFalse(inbox.offer(input, "first-copy"))
+        assertContentEquals(bytes, input)
     }
 
     @Test fun everySupportedTypeUsesTheExistingParserWithoutOpeningThePickerAgain() = runTest {

@@ -30,6 +30,11 @@ enum SharedPdfInbox {
     }
     private static func coordinate<T>(_ directory: URL, _ body: (URL) throws -> T) throws -> T {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        // Pending financial evidence is local staging, not a user-requested backup/export.
+        var localDirectory = directory
+        var resources = URLResourceValues()
+        resources.isExcludedFromBackup = true
+        try localDirectory.setResourceValues(resources)
         var error: NSError?
         var result: Result<T,Error>?
         NSFileCoordinator().coordinate(writingItemAt: directory, options: .forMerging, error: &error) { folder in
