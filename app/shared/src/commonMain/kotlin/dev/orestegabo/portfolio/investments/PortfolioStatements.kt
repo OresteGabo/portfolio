@@ -4,7 +4,7 @@ import androidx.compose.runtime.*
 
 /** Statement evidence/reconciliation state; authenticated action and portfolio refresh stay with the host. */
 internal class PortfolioStatements(
-    private val currentApi: () -> PortfolioApi,
+    private val currentApi: () -> PortfolioDataApi,
     private val refreshAfterWrite: suspend (String) -> Unit,
 ) {
     private val api get() = currentApi()

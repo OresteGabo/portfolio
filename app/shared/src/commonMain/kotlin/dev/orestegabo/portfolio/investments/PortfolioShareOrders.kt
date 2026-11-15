@@ -5,7 +5,7 @@ import kotlinx.coroutines.CancellationException
 
 /** Pending account orders and their projection; never converts an order into an executed holding. */
 internal class PortfolioShareOrders(
-    private val currentApi: () -> PortfolioApi,
+    private val currentApi: () -> PortfolioDataApi,
     private val publishOrders: (List<JsonRecord>) -> Unit,
 ) {
     private val api get() = currentApi()

@@ -63,7 +63,7 @@ class PortfolioApi(
     val origin: String,
     engine: HttpClientEngine = createPlatformHttpEngine(),
     allowHttp: Boolean = allowsDevelopmentHttp,
-) {
+) : PortfolioDataApi {
     private val cookies = SessionCookies()
     private val client: HttpClient
     init {
@@ -79,14 +79,14 @@ class PortfolioApi(
             install(HttpTimeout) { connectTimeoutMillis = 15_000; requestTimeoutMillis = 45_000; socketTimeoutMillis = 40_000 }
         }
     }
-    suspend fun request(path: String, method: String = "GET", body: JsonRecord? = null): JsonRecord {
+    override suspend fun request(path: String, method: String, body: JsonRecord?): JsonRecord {
         val raw = bytes(path, method, body)
         return UnlockPerformance.measure("json_decode") {
             val text = raw.decodeToString()
             if (text.isBlank()) JsonRecord() else JsonRecord(text)
         }
     }
-    suspend fun bytes(path: String, method: String = "GET", body: JsonRecord? = null): ByteArray {
+    override suspend fun bytes(path: String, method: String, body: JsonRecord?): ByteArray {
         val decoded = path.substringBefore('?').decodeURLPart()
         require(path.startsWith("/api/bonds/") && !decoded.contains("..") && !path.contains('\\') && !path.contains('#') && !path.contains('\r') && !path.contains('\n')) { "Invalid API path." }
         val requestId = if (UnlockPerformance.enabled) Random.nextBytes(16).joinToString("") { (it.toInt() and 255).toString(16).padStart(2, '0') } else ""

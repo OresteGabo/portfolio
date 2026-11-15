@@ -5,7 +5,6 @@ import kotlinx.datetime.*
 /** Read-only views over persisted purchases. These are neither cash receipts nor investment recommendations. */
 enum class InsightIssueReason { INVALID_RECORD, INCOMPLETE_COUPON_TERMS, UNAVAILABLE_SCHEDULE, INCOMPLETE_COSTS }
 data class InsightIssue(val purchaseId: String, val name: String, val reason: InsightIssueReason)
-enum class BondCashFlowKind { COUPON, PRINCIPAL }
 data class BondCashFlow(val purchaseId: String, val name: String, val currency: String, val date: LocalDate,
     val kind: BondCashFlowKind, val amount: Double, val grossCoupon: Double = 0.0, val estimatedDate: Boolean = false)
 data class BondCashFlowMonth(val month: LocalDate, val currency: String, val grossCoupons: Double,

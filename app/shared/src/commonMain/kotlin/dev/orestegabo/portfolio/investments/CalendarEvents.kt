@@ -43,21 +43,21 @@ fun investmentCalendarEvents(issuances: List<JsonRecord>, portfolio: PortfolioSn
         milestone("settlementDate", "Settlement")
         val open = calendarDate(record.text("openBookDate"))
         val close = calendarDate(record.text("closingBookDate"))
-        if (open != null && close != null && open.daysUntil(close) in 2..31) {
-            (1 until open.daysUntil(close)).forEach { offset ->
-                val date = open.plus(DatePeriod(days = offset))
+        if (open != null && close != null) {
+            SubscriptionWindow(open, close).intermediateOpenDays().forEach { date ->
                 events += InvestmentCalendarEvent("$id:open:$date", date, "Book open", record.text("title"), CalendarCategory.ISSUANCE, record)
             }
         }
     }
     portfolio.purchases.filter { it.text("status") in setOf("active", "submitted") }.forEach { purchase ->
         purchase.terms()?.let { terms ->
-            val tracking = trackBond(terms, terms.purchaseDate)
-            tracking.schedule.filter { terms.couponRate > 0 }.forEach { date -> events += InvestmentCalendarEvent(
-                "${purchase.text("id")}:coupon:$date", date, "Expected coupon", purchase.text("bondName"),
-                CalendarCategory.COUPON, purchase, tracking.netPerPayment) }
-            events += InvestmentCalendarEvent("${purchase.text("id")}:maturity", terms.maturityDate, "Principal due",
-                purchase.text("bondName"), CalendarCategory.MATURITY, purchase, terms.faceValue)
+            scheduledBondPayments(terms).forEach { flow ->
+                val coupon = flow.kind == BondCashFlowKind.COUPON
+                events += InvestmentCalendarEvent(
+                    if (coupon) "${purchase.text("id")}:coupon:${flow.date}" else "${purchase.text("id")}:maturity",
+                    flow.date, if (coupon) "Expected coupon" else "Principal due", purchase.text("bondName"),
+                    if (coupon) CalendarCategory.COUPON else CalendarCategory.MATURITY, purchase, flow.amount)
+            }
         }
     }
     return events.sortedWith(compareBy({ it.date }, { it.category.ordinal }, { it.title }, { it.id }))
@@ -80,11 +80,8 @@ fun calendarSubscriptionRanges(issuances: List<JsonRecord>): List<CalendarSubscr
         if (start != null && end != null && end >= start) CalendarSubscriptionRange(record, start, end) else null
     }.sortedWith(compareBy({ it.start }, { it.end }, { it.id }))
 
-fun subscriptionRangesInMonth(ranges: List<CalendarSubscriptionRange>, month: LocalDate): List<CalendarSubscriptionRange> {
-    val first = LocalDate(month.year, month.month, 1)
-    val next = first.plus(DatePeriod(months = 1))
-    return ranges.filter { it.start < next && it.end >= first }
-}
+fun subscriptionRangesInMonth(ranges: List<CalendarSubscriptionRange>, month: LocalDate): List<CalendarSubscriptionRange> =
+    ranges.filter { SubscriptionWindow(it.start, it.end).overlapsMonth(month) }
 
 fun preferredSubscriptionRange(ranges: List<CalendarSubscriptionRange>, anchor: LocalDate): CalendarSubscriptionRange? =
     ranges.firstOrNull { anchor in it } ?: ranges.firstOrNull { it.start >= anchor } ?: ranges.lastOrNull()
@@ -94,17 +91,16 @@ fun calendarMonthEvents(events: List<InvestmentCalendarEvent>, month: LocalDate)
     it.date.year == month.year && it.date.month == month.month && it.label != "Book open"
 }.sortedWith(compareBy({ it.date }, { it.category.ordinal }, { it.title }, { it.id }))
 
-/** Date-based status from the published window; closing-day cutoff times are not provided. */
-enum class SubscriptionStatus(val label: String) {
-    UPCOMING("Upcoming"), OPEN("Subscriptions open"), CLOSING_TODAY("Closing today"), CLOSED("Subscriptions closed")
+/** Presentation copy is separate from the domain's date-based subscription phases. */
+val SubscriptionStatus.label: String get() = when (this) {
+    SubscriptionStatus.UPCOMING -> "Upcoming"
+    SubscriptionStatus.OPEN -> "Subscriptions open"
+    SubscriptionStatus.CLOSING_TODAY -> "Closing today"
+    SubscriptionStatus.CLOSED -> "Subscriptions closed"
 }
 
-fun CalendarSubscriptionRange.statusOn(today: LocalDate): SubscriptionStatus = when {
-    today < start -> SubscriptionStatus.UPCOMING
-    today > end -> SubscriptionStatus.CLOSED
-    today == end -> SubscriptionStatus.CLOSING_TODAY
-    else -> SubscriptionStatus.OPEN
-}
+fun CalendarSubscriptionRange.statusOn(today: LocalDate): SubscriptionStatus =
+    SubscriptionWindow(start, end).statusOn(today)
 
 /** BNR subscription dates follow the market's date, regardless of the phone's timezone. */
 internal fun bondSubscriptionDate(now: kotlin.time.Instant): LocalDate =

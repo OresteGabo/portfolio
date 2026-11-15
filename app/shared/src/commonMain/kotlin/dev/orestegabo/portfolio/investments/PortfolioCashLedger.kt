@@ -5,7 +5,7 @@ import kotlinx.coroutines.CancellationException
 
 /** Account cash activity; session guards and local guest writes remain with the model. */
 internal class PortfolioCashLedger(
-    private val currentApi: () -> PortfolioApi,
+    private val currentApi: () -> PortfolioDataApi,
     private val refreshPortfolio: suspend () -> Unit,
 ) {
     private val api get() = currentApi()
