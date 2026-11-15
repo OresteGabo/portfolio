@@ -146,6 +146,11 @@ class YearlyCouponsNavigationTest {
                 click(bondLink); await("Bond details"); await("Treasury bond 7")
                 click("Back"); scrollTo("14 of 14 coupons"); await("14 of 14 coupons")
                 scrollTo("Next year · ${year + 1}"); click("Next year · ${year + 1}"); await((year + 1).toString()); scrollTo("Load more coupons"); await("12 of 14 coupons")
+                // Year changes reset pagination; returning from a bond detail above preserves it.
+                scrollTo("Previous year"); click("Previous year"); await(year.toString())
+                scrollTo("Load more coupons"); await("12 of 14 coupons")
+                scrollTo("Next year · ${year + 1}"); click("Next year · ${year + 1}"); await((year + 1).toString())
+                scrollTo("Load more coupons"); await("12 of 14 coupons")
                 scrollTo("Next year"); click("Next year"); await("No coupons due in ${year + 2}")
                 click("This year")
                 if (futureOnly) { await("No coupons due in ${today.year}"); click("View $year coupons") }
