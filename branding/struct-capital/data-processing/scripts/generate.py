@@ -94,13 +94,13 @@ def engraved_logo(p):
 
 def chip_surface(p):
     """Peripheral silicon routing leaves a quiet, unbroken corridor for the live waymark."""
-    geometry = json.loads((ROOT.parents[1] / 'inzira/refined-10/geometry.json').read_text())
+    geometry = json.loads((ROOT.parents[1] / 'inzira/refined-initial/geometry.json').read_text())
     mask = 'inzira-chip-clearance-' + p['ink'].lstrip('#')
     out = [f'<defs><mask id="{mask}" maskUnits="userSpaceOnUse" x="190" y="90" width="260" height="155">',
            '<rect x="190" y="90" width="260" height="155" fill="white"/>',
            '<g transform="matrix(.229090909 .126 -.252 .1386 320 110.56)" fill="black" stroke="black" stroke-width="24" stroke-linejoin="round">']
     out += [f'<path d="{data}"/>' for data in geometry['paths'].values()]
-    out += ['<path d="M190 400 C190 370 164 343 183 316 C200 291 256 270 310 240 C343 222 358 206 348 185 C339 165 293 155 252 138 L174 108" fill="none" stroke-width="50"/>',
+    out += [f'<path d="{geometry["journey"]}" fill="none" stroke-width="50"/>',
             f'</g></mask></defs><g mask="url(#{mask})">']
     # A restrained wafer grid, confined to the space around the brand-shaped circuit.
     out += ['<g opacity=".19">']

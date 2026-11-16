@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate app branding from the approved angled-initial SVG geometry. No service or storage identifiers change."""
 from pathlib import Path
-import json,re,subprocess,xml.etree.ElementTree as ET
+import json,re,subprocess,sys,xml.etree.ElementTree as ET
 ROOT=Path(__file__).resolve().parents[1]
 MASTER=ROOT/'branding/inzira/refined-initial'
 WORDMARK=ROOT/'branding/inzira/refined-10'
@@ -85,4 +85,7 @@ word_w,word_h=map(float,word.attrib['viewBox'].split()[2:])
 kt+=f'    const val WORDMARK_ASPECT_RATIO = {word_w/word_h:.8f}f\n'
 kt+='}\n'
 save('app/shared/src/commonMain/kotlin/dev/orestegabo/portfolio/investments/InziraBrandGeometry.generated.kt',kt)
-print('Generated Inzira native marks, launcher masters, widget and import artwork.')
+# Illustration logos are baked into PNGs; updating only the shared mark leaves those stale.
+for script in ('generate-onboarding-motion-art.py', 'sync-onboarding-art.py'):
+ subprocess.run([sys.executable, str(ROOT / 'scripts' / script)], check=True, cwd=ROOT)
+print('Generated Inzira native marks, launcher masters, widget, import and onboarding artwork.')

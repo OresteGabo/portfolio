@@ -2,6 +2,7 @@
 """Refresh onboarding PNGs from the canonical theme-specific SVG generators.
 Reads the source generator directly; no full-pack exports are required.
 """
+import argparse
 from pathlib import Path
 import importlib.util
 import subprocess
@@ -21,7 +22,7 @@ def dimensions(data):
     return struct.unpack('>II', data[16:24])
 
 
-def main():
+def main(check=False):
     changed = []
     # Render every mapping first, preserving the existing image geometry.
     copies = []
@@ -45,12 +46,18 @@ def main():
             copies.append((dest, data))
     for dest, data in copies:
         if not dest.exists() or dest.read_bytes() != data:
-            dest.write_bytes(data)
             changed.append(dest.name)
-    print(f'Updated {len(changed)} onboarding images: '+', '.join(changed))
+            if not check:
+                dest.write_bytes(data)
+    if check and changed:
+        raise SystemExit('Stale onboarding artwork: ' + ', '.join(changed) + '; regenerate branding.')
+    if not check:
+        print(f'Updated {len(changed)} onboarding images: '+', '.join(changed))
     assert all(dest.read_bytes() == data for dest, data in copies)
     print(f'All {len(copies)} onboarding PNGs match the canonical SVG artwork.')
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--check', action='store_true', help='Fail on stale PNGs without changing them')
+    main(check=parser.parse_args().check)

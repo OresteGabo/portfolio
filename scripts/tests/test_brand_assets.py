@@ -1,5 +1,8 @@
 """Guard the shared source of truth for native brand marks."""
 import json
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 import unittest
 import xml.etree.ElementTree as ET
@@ -40,6 +43,14 @@ class BrandAssetsTests(unittest.TestCase):
             self.assertIn(path, generated)
         self.assertIn(self.master['journey'], generated)
         self.assertNotIn('UPPER_FOLD', generated)
+
+    @unittest.skipUnless(shutil.which('rsvg-convert'), 'Onboarding render verification requires librsvg')
+    def test_bundled_onboarding_images_match_current_vector_sources(self):
+        for script in ['generate-onboarding-motion-art.py', 'sync-onboarding-art.py']:
+            with self.subTest(generator=script):
+                result = subprocess.run([sys.executable, str(ROOT / 'scripts' / script), '--check'],
+                                        cwd=ROOT, capture_output=True, text=True)
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
 
 
 if __name__ == '__main__':

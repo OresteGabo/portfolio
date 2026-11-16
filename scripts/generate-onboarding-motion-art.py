@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Export independently animated layers from the existing onboarding vector masters."""
+import argparse
 from pathlib import Path
 import importlib.util
 import subprocess
@@ -8,6 +9,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 DEST = ROOT / 'app/shared/src/commonMain/composeResources/drawable'
+CHECK = False
 
 
 def source(name, relative):
@@ -24,8 +26,16 @@ def export(name, children, viewbox, width, height):
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory) / 'layer.svg'
         path.write_bytes(ET.tostring(svg))
+        output = Path(directory) / 'layer.png'
         subprocess.run(['rsvg-convert', '-w', str(width * 2), '-h', str(height * 2),
-                        '-o', str(DEST / f'{name}.png'), str(path)], check=True)
+                        '-o', str(output), str(path)], check=True)
+        destination = DEST / f'{name}.png'
+        data = output.read_bytes()
+        if CHECK:
+            if not destination.exists() or destination.read_bytes() != data:
+                raise SystemExit(f'Stale onboarding artwork: {destination.name}; regenerate branding.')
+        elif not destination.exists() or destination.read_bytes() != data:
+            destination.write_bytes(data)
 
 
 def main():
@@ -56,8 +66,11 @@ def main():
         body_lines = {'M56 %sh' % y for y in [115,127,139,151,163,175,187,199]}
         clean_front = [node for node in pages[3:] if not any(node.get('d', '').startswith(prefix) for prefix in body_lines)]
         export(f'onboarding_report_blank_{theme}', clean_front, '0 15 240 285', 320, 380)
-    print('Exported onboarding motion layers from the original vector geometry.')
+    print('Verified onboarding motion layers.' if CHECK else 'Exported onboarding motion layers from the current vector geometry.')
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--check', action='store_true', help='Fail on stale PNGs without changing them')
+    CHECK = parser.parse_args().check
     main()
