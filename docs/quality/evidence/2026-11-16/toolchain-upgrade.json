@@ -1,0 +1,259 @@
+{
+  "phase1Baseline": "54fbb5f",
+  "requestedPhase2": true,
+  "candidates": {
+    "kotlin": "2.4.21",
+    "compose": "1.12.2",
+    "agp": "9.3.1",
+    "gradle": "9.7.0",
+    "compileSdk": 37,
+    "targetSdk": 37,
+    "lifecycle": "2.11.0",
+    "ktor": "3.6.1",
+    "coroutines": "1.11.0",
+    "json": "1.13.0",
+    "datetime": "0.8.0",
+    "fragment": "1.9.1",
+    "firebaseBom": "35.2.0",
+    "googleServices": "4.6.0",
+    "hiddenApi": "6.2",
+    "logback": "1.6.7",
+    "material3": "1.12.0-alpha03"
+  },
+  "compatibility": "Kotlin official table 2.4.20-2.4.21: Gradle <=9.7.0, AGP <=9.3.1; do not suppress latest-version or compatibility warnings to claim zero",
+  "sources": [
+    "https://kotlinlang.org/docs/multiplatform/multiplatform-compatibility-guide.html",
+    "https://kotlinlang.org/docs/multiplatform/compose-compatibility-and-versioning.html",
+    "https://developer.android.com/build/releases/agp-9-3-0-release-notes",
+    "https://developer.android.com/about/versions/17/behavior-changes-17"
+  ],
+  "installed": "SDK37.0 and 16KB Google APIs ARM64 system image; Xcode26.3",
+  "constraints": [
+    "No Spring backend or website source/deployment changes",
+    "Existing Material3 alpha version retained unless compatibility requires change; stable latest is older than pinned alpha",
+    "Review screenshot deltas; never accept blindly; no changed financial formulas/API/schema",
+    "Runtime Android17 validation required for target37; full reference pixels on API36.1 unchanged device basis"
+  ],
+  "gradleDistributionSha256": "84fbba45c7f4c64abc77460e1c00f541e9f960e3c7ed2538f1ede19eacd873ae",
+  "gradleChecksumSource": "https://services.gradle.org/distributions/gradle-9.7.0-bin.zip.sha256",
+  "phase1Commit": "5083a24",
+  "wrapperJarSha256": "7a9ce74cff467ca1bf60a4fcd9f05185acceda4d0f382434d393e17864262c5d",
+  "wrapperJarChecksumSource": "https://services.gradle.org/distributions/gradle-9.7.0-wrapper.jar.sha256",
+  "materialAlignment": "Official Compose 1.12.2 release set; old alpha07 caused OutlinedTextField measurement crash",
+  "lifecycleAlignment": "shared commonMain api(lifecycle-viewmodel) matches publicly exposed PortfolioModel superclass; test compile2.10/runtime2.11 mismatch fixed",
+  "status": "PASS: all required available checks completed before upgrade commit",
+  "initialFailureLogs": [
+    "/tmp/inzira-upgrade-focused-ui.log",
+    "/tmp/inzira-upgrade-focused-crash.log"
+  ],
+  "focusedCorrectedLog": "/tmp/inzira-upgrade-aligned-focused-ui.log",
+  "currentLint": {
+    "debug": {
+      "AndroidGradlePluginVersion": 3
+    },
+    "release": {
+      "AndroidGradlePluginVersion": 3
+    }
+  },
+  "api36FullGate": "BUILD SUCCESSFUL in 13m 35s",
+  "suites": [
+    {
+      "module": "core",
+      "task": "iosSimulatorArm64Test",
+      "tests": 144,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "core",
+      "task": "jvmTest",
+      "tests": 145,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "core",
+      "task": "testAndroidHostTest",
+      "tests": 145,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "app/shared",
+      "task": "iosSimulatorArm64Test",
+      "tests": 578,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "app/shared",
+      "task": "testAndroidHostTest",
+      "tests": 552,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "server",
+      "task": "test",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "app/androidApp",
+      "task": "API36 connected",
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 4
+    },
+    {
+      "module": "app/shared",
+      "task": "API36 connected",
+      "tests": 546,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "api36CriticalUiJourneysPassed": 17,
+  "api36PixelReferencesChanged": false,
+  "api36FullGateSha256": "0968860902b26608ffc364821ea6df20b517dd055707dd495fc29bb713b96e4f",
+  "iosReleaseAppAndExtensions": "BUILD SUCCEEDED; unsigned device Release, Xcode26.3",
+  "iosPackageCheck": "iOS device Release package checks passed (distribution signing not verified).",
+  "api37SmokeTests": 8,
+  "api37Device": {
+    "sdk": 37,
+    "pageSizeBytes": 16384,
+    "fingerprint": "google/sdk_gphone16k_arm64/emu64a16k:17/CE2A.260420.051.A3/16571990:userdebug/dev-keys",
+    "name": "Inzira_Upgrade_API_37",
+    "serial": "emulator-5554"
+  },
+  "widgetVisualReview": {
+    "small": {
+      "api36AndApi37PngsByteIdentical": true,
+      "sha256": "b1465b6f33cfe5a71e05a497f7548e37bfe3c0fc709afc8d99506e17e0398b64"
+    },
+    "medium": {
+      "api36AndApi37PngsByteIdentical": true,
+      "sha256": "bcceeeac8cb17d10b3a2e84e9760209807392349b320bf2da1c150188953bca4"
+    }
+  },
+  "mergedReleaseManifest": {
+    "minSdk": 24,
+    "targetSdk": 37,
+    "firebaseMessagingMetaData": {
+      "firebase_messaging_auto_init_enabled": "false"
+    },
+    "fidModeEnabled": false
+  },
+  "environment": {
+    "launcherJdk": "Microsoft21.0.9",
+    "daemonJdkCriteria": "Java21/AzulZulu, existing gradle-daemon-jvm.properties",
+    "xcode": "26.3 (17C529)",
+    "gradle": "9.7.0",
+    "embeddedGradleKotlinDsl": "2.4.0",
+    "projectKotlinAndComposeCompiler": "2.4.21"
+  },
+  "api37Suites": [
+    {
+      "module": "app/androidApp",
+      "task": "API37 connected",
+      "tests": 53,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 4
+    },
+    {
+      "module": "app/shared",
+      "task": "API37 connected",
+      "tests": 546,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "api37SkippedTests": [
+    "dev.orestegabo.portfolio.FirebaseDeliverySetupTest.receivesARealFirebaseMessageWithoutAnAccountSession",
+    "dev.orestegabo.portfolio.investments.BondPdfRegressionTest.suppliedConfirmationReachesValidatedReviewWithoutSaving",
+    "dev.orestegabo.portfolio.investments.GuestPersistenceTest.guestInvestmentsSurviveProcessRestartAndReboot",
+    "dev.orestegabo.portfolio.investments.GuestStartupFixtureTest.prepareEmptyOfflineGuestForProcessLaunchMeasurements"
+  ],
+  "api37ApplicableCriticalJourneysPassed": 16,
+  "api37PixelMethod": "Existing @SdkSuppress(36..36) excludes only the pixel reference method at discovery; it passed on API36 and was not disabled or changed.",
+  "api37FullGate": "BUILD SUCCESSFUL in 9m 53s",
+  "staticChecks": {
+    "pythonTests": 31,
+    "nodeTests": 84,
+    "packagePaths": 454,
+    "designColors": "pass",
+    "goldenInventoryAndApi36RequiredJourneys": "pass",
+    "api37ApplicableRequiredJourneys": "pass",
+    "swiftHarnesses": "3 passed in cleanup phase; unchanged Swift sources",
+    "diffWhitespace": "pass"
+  },
+  "logs": {
+    "inzira-upgrade-configure": {
+      "localPath": "/tmp/inzira-upgrade-configure.log",
+      "sha256": "5148ab67a9800d722300f29a1188c084ab4d7d2d68c425fdc5483e041bddb693"
+    },
+    "inzira-upgrade-host-native-build": {
+      "localPath": "/tmp/inzira-upgrade-host-native-build.log",
+      "sha256": "8239d4a561c7f151585b9c0a9dc3a5d766b1901855a1df68765532064fa898a3"
+    },
+    "inzira-upgrade-focused-ui": {
+      "localPath": "/tmp/inzira-upgrade-focused-ui.log",
+      "sha256": "8be07c106daafc57baa3bf260029e6fb7950e3e991b8407a20ed975968ea7b87"
+    },
+    "inzira-upgrade-aligned-build": {
+      "localPath": "/tmp/inzira-upgrade-aligned-build.log",
+      "sha256": "32fe26d37709b939e40b59c2148a02e74e0b490fd1f155b9202b3b18d5d7492c"
+    },
+    "inzira-upgrade-aligned-focused-ui": {
+      "localPath": "/tmp/inzira-upgrade-aligned-focused-ui.log",
+      "sha256": "5654370829da9428cf7e9f910692245efb1c47c8636961f7b69619d8b1de0d1d"
+    },
+    "inzira-upgrade-api36-full-gate": {
+      "localPath": "/tmp/inzira-upgrade-api36-full-gate.log",
+      "sha256": "0968860902b26608ffc364821ea6df20b517dd055707dd495fc29bb713b96e4f"
+    },
+    "inzira-upgrade-api37-smoke": {
+      "localPath": "/tmp/inzira-upgrade-api37-smoke.log",
+      "sha256": "fc5850b98e6bf0ed26173ba27658bb3c8d935bc8deaee0fedf5204378678cba2"
+    },
+    "inzira-upgrade-api37-full-gate": {
+      "localPath": "/tmp/inzira-upgrade-api37-full-gate.log",
+      "sha256": "2beaaedaec1a211bad4b0db469215916ed3d38aabb1738ff29a0ff4f85a0c8a0"
+    },
+    "inzira-upgrade-ios-release": {
+      "localPath": "/tmp/inzira-upgrade-ios-release.log",
+      "sha256": "5ecb8ea9c02a402f7cb6cfba210d31cac2cb4480c852e36a05c86f089ff5c7cd"
+    },
+    "inzira-upgrade-ios-package": {
+      "localPath": "/tmp/inzira-upgrade-ios-package.log",
+      "sha256": "feb15820d8e365a90333749661701996df8fb9b1053866bbf7de472ce0a34af1"
+    },
+    "inzira-upgrade-python": {
+      "localPath": "/tmp/inzira-upgrade-python.log",
+      "sha256": "72f7bf514feaf4d053b0cdf2363ea2919c34dac0e932136bcdac2d73090d9a5b"
+    },
+    "inzira-upgrade-js": {
+      "localPath": "/tmp/inzira-upgrade-js.log",
+      "sha256": "f3e49eb62e1c25febf3e91381ad8f7c85fa75b1aa79cad490c0f17c0cf7c8ee9"
+    }
+  },
+  "verifiedBuildInputHashes": {
+    "gradle/libs.versions.toml": "30ef35bfdd46a2b2deeebe6e89353468365f6895cdbba9b5cb0346813595f4f8",
+    "app/shared/build.gradle.kts": "60118c02d726771fa39ee1f72da02221b29066c0ba2215eba80c930f921b9fe3",
+    "gradle/wrapper/gradle-wrapper.properties": "da66a5ffe08e2edfed40553bb83548943a0b522603a833852bce317699e6fa9c",
+    "gradle/wrapper/gradle-wrapper.jar": "7a9ce74cff467ca1bf60a4fcd9f05185acceda4d0f382434d393e17864262c5d",
+    "gradlew": "a5a5c199ba02189ae8c46a334223371a20599d9c298ef65e7540ede4a3f72d59",
+    "gradlew.bat": "d539676c48b596afda64c963ec8f7ee56c7b3fe7e3b81d1dbe2d1a1e3dd9e9f8"
+  }
+}

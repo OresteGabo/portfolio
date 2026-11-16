@@ -35,9 +35,9 @@ Release builds enable R8 code and resource shrinking. After removing assets, cle
 `:app:shared` and `:app:androidApp` first so stale generated Compose copies are not
 packaged. See the [APK size audit and package verifier](docs/APK_SIZE_AUDIT.md).
 
-The project uses Gradle **9.1.0**, Android Gradle Plugin **9.0.0**, Kotlin **2.3.21**, Compose Multiplatform **1.11.1**, Material 3 **1.11.0-alpha07**, and Lifecycle **2.10.0**. AGP is pinned to the maximum version supported by the installed Android Studio. Compose 1.12.1 requires AGP 9.1 and SDK 37, and Lifecycle 2.11.0 has the same requirements. Compose, Lifecycle, and the compile/target SDK were aligned to the compatible SDK 36 baseline. See the [AGP 9.0 compatibility requirements](https://developer.android.com/build/releases/agp-9-0-0-release-notes).
+The project uses Gradle **9.7.0**, Android Gradle Plugin **9.3.1**, Kotlin/Compose compiler **2.4.21**, Compose Multiplatform **1.12.2**, Material 3 **1.12.0-alpha03**, and Lifecycle **2.11.0**. Gradle/AGP remain within the [Kotlin compatibility matrix](https://kotlinlang.org/docs/multiplatform/multiplatform-compatibility-guide.html); newer-tool update advisories are kept visible. Material3 follows the [Compose 1.12 component release set](https://github.com/JetBrains/compose-multiplatform/releases/tag/v1.12.2).
 
-Kotlin 2.3.21 also avoids Kotlin 2.4 metadata errors in AGP 9.0’s bundled D8 compiler. Use the wrapper and configured JDK 21 toolchain. `local.properties` must point at an Android SDK with API 36 installed. The earlier command-line build passed with AGP 9.1.1, but that did not verify Android Studio compatibility. A root `build` also compiles and links iOS targets and is much heavier than building Android alone.
+Use the wrapper and configured JDK **21**. `local.properties` must point at an Android SDK with **API 37** installed; minSdk remains **24**. Android Studio must support AGP 9.3 (Quail 2 / 2026.1.2 or newer according to the [official IDE table](https://developer.android.com/build/releases/about-agp)). The locally inspected installation is Rabbit 2 / 2026.2.2. See the [upgrade verification report](docs/quality/KMP_TOOLCHAIN_UPGRADE.md) for actual CLI/native/device results and unverified IDE/manual limits. A root `build` also compiles and links iOS targets and is much heavier than building Android alone.
 
 ## Native screens
 

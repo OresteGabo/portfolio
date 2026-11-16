@@ -55,3 +55,7 @@ git diff --check
 ```
 
 Full corrected gate: **BUILD SUCCESSFUL in 10m 28s**. Core JVM/host **145/145**, shared host **552**, core/shared iOS Native **144/578**, shared Android device **546**, app instrumentation **54** (zero failures/errors, four existing operator-gated skips). All **17** critical UI journeys and twelve unchanged pixel comparisons passed. Host/build/native compilation, release bundle, both lint variants (zero errors, 35 version/target notices), **31 Python**, **84 Node**, both workflow YAML parses, three Swift harnesses, package/color checks and whitespace review passed. [Machine-readable evidence](evidence/2026-11-16/android-lint-cleanup.json) records final counts and limitations. Existing reference screenshots are unchanged: this Android native-resource cleanup does not change shared Compose presentation. No manual physical-device, API-24 launcher, iOS visual, hosted-CI, legal compliance or performance improvement claim.
+
+## Subsequent verified upgrade
+
+The 35 version/target notices above describe this independently verified first phase. The subsequent [toolchain/dependency upgrade](KMP_TOOLCHAIN_UPGRADE.md) reduces the current reports to three compatible-toolchain update notices, with separate reference/Android-17/native/release verification. No earlier failed attempt is reclassified as successful.

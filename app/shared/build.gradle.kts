@@ -56,6 +56,9 @@ kotlin {
             implementation(libs.compose.materialIconsCore)
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
+            // PortfolioModel publicly extends ViewModel. Consumers/tests must compile
+            // against the same Lifecycle API that the shared runtime supplies.
+            api(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
         }
