@@ -27,6 +27,9 @@ interface ServerSettings {
     fun writeMonthlyTarget(account: String, amount: Long) {}
     fun readImportHistory(account: String): String? = null
     fun writeImportHistory(account: String, history: String) {}
+    /** Account/origin-scoped public closing prices; contains no private investment records. */
+    fun readCachedEquityQuotes(account: String): String? = null
+    fun writeCachedEquityQuotes(account: String, quotes: String?) {}
     fun readOrigin(): String?
     fun writeOrigin(origin: String)
     fun readChartStyle(): String? = null

@@ -122,19 +122,21 @@ private fun PortfolioBalance(valuation: CurrencyValuation, stale: Boolean, price
     Column(Modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                .clickable(role = androidx.compose.ui.semantics.Role.Button,
-                    onClickLabel = localized("Valuation basis details")) { showBasis = true }
-                .semantics { contentDescription = localized("Valuation basis details") },
-                horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.Bottom) {
-                FinancialText(money(valuation.estimatedNetWorth, total.currency).removePrefix("${total.currency} "),
-                    modifier = Modifier.weight(1f, fill = false).alignByBaseline(), textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.displayMedium.copy(fontFeatureSettings = "tnum", letterSpacing = (-1).sp),
-                    color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Medium,
-                    maxLines = 1, softWrap = false,
-                    autoSize = TextAutoSize.StepBased(minFontSize = 24.sp, maxFontSize = 48.sp, stepSize = .5.sp))
-                AppText(total.currency, Modifier.padding(start = 8.dp).alignByBaseline(),
-                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            AppFadeIn(valuation.estimatedNetWorth to total.currency, Modifier.fillMaxWidth()) {
+                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    .clickable(role = androidx.compose.ui.semantics.Role.Button,
+                        onClickLabel = localized("Valuation basis details")) { showBasis = true }
+                    .semantics { contentDescription = localized("Valuation basis details") },
+                    horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.Bottom) {
+                    FinancialText(money(valuation.estimatedNetWorth, total.currency).removePrefix("${total.currency} "),
+                        modifier = Modifier.weight(1f, fill = false).alignByBaseline(), textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.displayMedium.copy(fontFeatureSettings = "tnum", letterSpacing = (-1).sp),
+                        color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Medium,
+                        maxLines = 1, softWrap = false,
+                        autoSize = TextAutoSize.StepBased(minFontSize = 24.sp, maxFontSize = 48.sp, stepSize = .5.sp))
+                    AppText(total.currency, Modifier.padding(start = 8.dp).alignByBaseline(),
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
             if (stale || valuation.unpricedShares > 0) AppText(priceLabel,
                 style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -182,9 +184,11 @@ private fun MoneyMetric(label: String, value: Double, currency: String, icon: Im
             AppIcon(icon, null, Modifier.size(20.dp), tint = accent)
             AppText(label, style = MaterialTheme.typography.labelSmall, minLines = 2,
                 color = labelColor)
-            FinancialText(amount, Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
-                autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 16.sp, stepSize = .5.sp))
+            AppFadeIn(amount, Modifier.fillMaxWidth()) {
+                FinancialText(amount, Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 16.sp, stepSize = .5.sp))
+            }
         }
         return
     }
@@ -194,15 +198,19 @@ private fun MoneyMetric(label: String, value: Double, currency: String, icon: Im
         if (columnLayout) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 AppText(label, style = MaterialTheme.typography.labelMedium, color = labelColor)
-                FinancialText(amount, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                AppFadeIn(amount) {
+                    FinancialText(amount, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                }
             }
         } else {
             AppText(label, Modifier.weight(1f), style = MaterialTheme.typography.labelMedium,
                 color = labelColor)
-            FinancialText(amount, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold, textAlign = androidx.compose.ui.text.style.TextAlign.End,
-                maxLines = 1, softWrap = false,
-                autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = 18.sp, stepSize = .5.sp))
+            AppFadeIn(amount, Modifier.weight(1f)) {
+                FinancialText(amount, Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold, textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                    maxLines = 1, softWrap = false,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = 18.sp, stepSize = .5.sp))
+            }
         }
     }
 }

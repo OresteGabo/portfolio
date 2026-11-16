@@ -383,6 +383,7 @@ class PortfolioModel(
         private set(value) { accountMonthlyInvestmentTarget = value }
     private fun targetAccount() = user?.text("id")?.takeIf { it.isNotBlank() }?.let { "$origin|$it" }
     private fun loadInvestmentTarget() {
+        marketData.attach(targetAccount())
         imports.attach(targetAccount())
         monthlyInvestmentTarget = targetAccount()?.let(settings::readMonthlyTarget)?.takeIf { validInvestmentTarget(it) }
             ?: DEFAULT_MONTHLY_INVESTMENT_TARGET
@@ -423,7 +424,7 @@ class PortfolioModel(
         pendingShareOrders.cancel(order, completed)
         message = "Pending share order cancelled."
     }
-    private val marketData = PortfolioMarketData({ api }, clock)
+    private val marketData = PortfolioMarketData({ api }, clock, settings)
     val market get() = marketData.market
     val marketLoading get() = marketData.marketLoading
     val quotes: JsonRecord?
@@ -718,7 +719,7 @@ class PortfolioModel(
         if (!deferSupplementary) {
             refreshSharedCouponTerms()
             loadStatementItems()
-            if (portfolio.investmentShares(Today).isNotEmpty()) marketData.refreshEquityQuotes()
+            if (portfolio.investmentShares(Today).isNotEmpty()) marketData.refreshEquityQuotes(refresh = force)
             fetchNotifications()
         }
         privateDataLoadedAt = clock.markNow()
@@ -978,7 +979,7 @@ class PortfolioModel(
         val response = api.request("/api/bonds/auth/account", "DELETE", JsonRecord().put("password", password))
         check(response.optBoolean("deleted")) { "Account deletion was not confirmed. Please try again." }
         var credentialRemoved = true
-        try { targetAccount()?.let { settings.forgetMonthlyTarget(it); settings.writeImportHistory(it, "") }; vault?.delete(origin) }
+        try { targetAccount()?.let { settings.forgetMonthlyTarget(it); settings.writeImportHistory(it, ""); settings.writeCachedEquityQuotes(it, null) }; vault?.delete(origin) }
         catch (_: Exception) { credentialRemoved = false }
         finally {
             secureSignInEnabled = false; locked = false

@@ -58,6 +58,11 @@ actual fun rememberServerSettings(): ServerSettings = remember { object : Server
     override fun writeLanguage(language: String) { NSUserDefaults.standardUserDefaults.setObject(language, forKey = "portfolio.language") }
     override fun readTheme() = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.theme")
     override fun writeTheme(theme: String) { NSUserDefaults.standardUserDefaults.setObject(theme, forKey = "portfolio.theme") }
+    override fun readCachedEquityQuotes(account: String) = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.equityQuotes:$account")
+    override fun writeCachedEquityQuotes(account: String, quotes: String?) {
+        if (quotes == null) NSUserDefaults.standardUserDefaults.removeObjectForKey("portfolio.equityQuotes:$account")
+        else NSUserDefaults.standardUserDefaults.setObject(quotes, forKey = "portfolio.equityQuotes:$account")
+    }
     override fun readOrigin() = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.serverOrigin")
     override fun writeOrigin(origin: String) { NSUserDefaults.standardUserDefaults.setObject(origin, forKey = "portfolio.serverOrigin") }
 } }

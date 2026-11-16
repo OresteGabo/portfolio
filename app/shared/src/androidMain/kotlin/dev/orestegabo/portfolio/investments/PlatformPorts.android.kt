@@ -52,6 +52,8 @@ actual fun rememberServerSettings(): ServerSettings {
         override fun writeTheme(theme: String) { prefs.edit().putString("theme", theme).apply() }
         override fun readImportHistory(account: String) = prefs.getString("importHistory:$account", null)
         override fun writeImportHistory(account: String, history: String) { prefs.edit().putString("importHistory:$account", history).apply() }
+        override fun readCachedEquityQuotes(account: String) = prefs.getString("equityQuotes:$account", null)
+        override fun writeCachedEquityQuotes(account: String, quotes: String?) { prefs.edit().putString("equityQuotes:$account", quotes).apply() }
         override fun readOrigin(): String? = prefs.getString("origin", null)
         override fun writeOrigin(origin: String) { prefs.edit().putString("origin", origin).apply() }
     } }

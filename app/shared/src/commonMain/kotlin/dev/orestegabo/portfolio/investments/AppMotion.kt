@@ -45,13 +45,13 @@ internal fun AppLoadingLine(visible: Boolean, reserveSpace: Boolean = false) {
 
 /** Only incoming content fades in; we never retain outgoing financial values during privacy changes. */
 @Composable
-internal fun AppFadeIn(contentKey: Any?, content: @Composable () -> Unit) {
+internal fun AppFadeIn(contentKey: Any?, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val reduced = LocalReducedMotion.current
     val alpha = remember(contentKey) { Animatable(if (reduced) 1f else 0f) }
     LaunchedEffect(alpha, reduced) {
         if (reduced) alpha.snapTo(1f) else alpha.animateTo(1f, tween(ContentMotionMillis))
     }
-    Box(Modifier.graphicsLayer { this.alpha = alpha.value }) { content() }
+    Box(modifier.graphicsLayer { this.alpha = alpha.value }) { content() }
 }
 
 @Composable
