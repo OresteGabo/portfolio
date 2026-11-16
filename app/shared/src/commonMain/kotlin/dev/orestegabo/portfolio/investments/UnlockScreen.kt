@@ -37,7 +37,7 @@ internal fun UnlockScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? 
         Column(Modifier.widthIn(max = 460.dp).fillMaxSize().verticalScroll(rememberScrollState())
             .padding(horizontal = 28.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-            UnlockLogo(Modifier.fillMaxWidth().height(if (compact) 152.dp else 204.dp), compact)
+            UnlockLogo(Modifier.fillMaxWidth().height(if (compact) 152.dp else 204.dp), compact, model.busy)
             Spacer(Modifier.height(if (compact) 18.dp else 28.dp))
             AppText(if (model.verifyingSession) "Device unlocked" else "Portfolio locked", Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
@@ -95,7 +95,7 @@ private fun UnlockHexagons(modifier: Modifier) {
 
 /** The complete brand mark sits within the upper half of a circular seal. */
 @Composable
-private fun UnlockLogo(modifier: Modifier, compact: Boolean) {
+private fun UnlockLogo(modifier: Modifier, compact: Boolean, loading: Boolean) {
     val ink = MaterialTheme.colorScheme.primary
     Box(modifier, contentAlignment = Alignment.BottomCenter) {
         Canvas(Modifier.fillMaxSize().clearAndSetSemantics {}) {
@@ -110,6 +110,7 @@ private fun UnlockLogo(modifier: Modifier, compact: Boolean) {
             drawArc(ink.copy(alpha = .24f), 180f, 180f, false, topLeft, circle, style = Stroke(1.dp.toPx()))
             drawLine(ink.copy(alpha = .12f), Offset(centre.x - radius, baseline), Offset(centre.x + radius, baseline), 1.dp.toPx())
         }
-        StructMark(Modifier.padding(bottom = 22.dp).size(if (compact) 84.dp else 108.dp))
+        InziraLoadingMark(active = loading,
+            modifier = Modifier.padding(bottom = 22.dp).size(if (compact) 84.dp else 108.dp), label = "Inzira")
     }
 }

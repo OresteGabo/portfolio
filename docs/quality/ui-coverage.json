@@ -3,6 +3,11 @@
   "note": "Evidence inventory, not code coverage. Required device gate runs on the reference API 36 emulator. Opt-in delivery/reboot/user-PDF tests remain separately documented.",
   "flows": [
     {
+      "flow": "branded authentication loader motion, accessibility and lifecycle",
+      "class": "InziraLoadingMarkTest",
+      "method": "loaderMovesInBothThemesAndStopsForIdleReducedMotionAndBackground"
+    },
+    {
       "flow": "onboarding",
       "class": "OnboardingUiTest",
       "method": "tourSupportsThemesFrenchSkipCompletionAndPersistence"

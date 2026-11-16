@@ -29,7 +29,6 @@ import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -291,11 +290,8 @@ internal fun SignInScreen(
                             shape = RoundedCornerShape(16.dp)
                         ) {
                             if (model.busy) {
-                                CircularProgressIndicator(
-                                    Modifier.size(18.dp),
-                                    strokeWidth = 2.dp,
-                                    color = LocalContentColor.current
-                                )
+                                InziraLoadingMark(active = true, modifier = Modifier.size(24.dp),
+                                    tint = LocalContentColor.current)
                                 Spacer(Modifier.width(10.dp))
                             }
                             AppText(if (model.busy) "Signing in…" else if (register) "Create account" else "Sign in")
