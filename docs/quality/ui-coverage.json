@@ -3,6 +3,11 @@
   "note": "Evidence inventory, not code coverage. Required device gate runs on the reference API 36 emulator. Opt-in delivery/reboot/user-PDF tests remain separately documented.",
   "flows": [
     {
+      "flow": "pending share order creation and accessible dashboard clock status",
+      "class": "ShareOrderScreenTest",
+      "method": "marketPriceDefaultsAndCommissionMatchesRequestedExample"
+    },
+    {
       "flow": "dashboard initial rotation within stationary hexagon and reduced motion",
       "class": "DashboardBrandMarkTest",
       "method": "initialTurnsWithinFixedFrameAndRespectsMotionAndLifecycle"

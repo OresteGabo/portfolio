@@ -175,7 +175,9 @@ class ShareOrderScreenTest {
             assertEquals(732312.0,saved!!.getDouble("estimatedTotal"),0.0)
             fun pendingCardVisible() = nodes(instrumentation.uiAutomation.rootInActiveWindow).any {
                 val text=it.text?.toString().orEmpty()
-                it.isVisibleToUser && (text=="Pending" || text.contains("Bank of Kigali") && text.contains("Pending"))
+                val description=it.contentDescription?.toString().orEmpty()
+                it.isVisibleToUser && (description=="Pending" ||
+                    text.contains("Bank of Kigali") && description.contains("Pending"))
             }
             val cardDeadline=System.currentTimeMillis()+15000
             while(!pendingCardVisible() && System.currentTimeMillis()<cardDeadline) {

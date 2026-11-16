@@ -31,7 +31,7 @@ private fun InvestmentEntry(title: String, subtitle: String, bond: Boolean, tick
                 if (pending) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     FinancialText(subtitle, Modifier.weight(1f, fill = false).alignByBaseline(),
                         style = MaterialTheme.typography.bodySmall, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
-                    PendingStatusBadge(Modifier.alignByBaseline())
+                    PendingStatusBadge()
                 } else FinancialText(subtitle, style = MaterialTheme.typography.bodySmall)
             },
             leadingContent = { InvestmentLogo(bond = bond, ticker = ticker) },
@@ -42,17 +42,20 @@ private fun InvestmentEntry(title: String, subtitle: String, bond: Boolean, tick
 }
 
 /** Neutral status stays distinct from active holdings without looking like a disabled control. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PendingStatusBadge(modifier: Modifier = Modifier) {
     val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
     val background = StructColors.PendingStatus.background.resolve(dark)
     val foreground = StructColors.PendingStatus.foreground.resolve(dark)
-    Surface(modifier = modifier, shape = RoundedCornerShape(5.dp), color = background, contentColor = foreground) {
-        Row(Modifier.padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            AppIcon(Icons.Outlined.Schedule, null, Modifier.size(12.dp))
-            AppText("Pending", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium,
-                maxLines = 1, softWrap = false)
+    TooltipBox(
+        modifier = modifier,
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+        tooltip = { PlainTooltip { AppText("Pending") } },
+        state = rememberTooltipState()
+    ) {
+        Surface(shape = RoundedCornerShape(5.dp), color = background, contentColor = foreground) {
+            AppIcon(Icons.Outlined.Schedule, "Pending", Modifier.padding(2.dp).size(16.dp))
         }
     }
 }
@@ -71,12 +74,12 @@ fun BondPurchaseTile(model: PortfolioModel, purchase: JsonRecord, manage: () -> 
                 headlineContent = { AppText(pendingBondDisplayName(purchase, model.calendar), fontWeight = FontWeight.SemiBold) },
                 supportingContent = {
                     // ListItem detects multiline supporting content from its first/last baselines.
-                    // Align the badge and amount so it keeps the same two-line layout as active bonds.
+                    // Preserve the amount's baseline with the clock centered beside it.
                     if (pending) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         FinancialText(money(purchase.optDouble("faceValue"), purchase.text("currency")),
                             Modifier.weight(1f, fill = false).alignByBaseline(), style = MaterialTheme.typography.bodySmall,
                             maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
-                        PendingStatusBadge(Modifier.alignByBaseline())
+                        PendingStatusBadge()
                     } else FinancialText("${money(purchase.optDouble("faceValue"), purchase.text("currency"))} · ${localized(purchase.text("status"))}",
                         style = MaterialTheme.typography.bodySmall)
                 },
