@@ -153,7 +153,8 @@ private fun PortfolioBalance(valuation: CurrencyValuation, stale: Boolean, price
                 BoxWithConstraints(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 56.dp, bottom = 20.dp)) {
                     val longestAmount = listOf(total.bondFaceValue, valuation.shareValue, total.netAnnualCoupon)
                         .maxOf { money(it, total.currency).removePrefix("${total.currency} ").length }
-                    val columns = maxWidth >= 300.dp && LocalDensity.current.fontScale <= 1.1f && longestAmount <= 12
+                    // Keep three columns at standard phone widths after the card's horizontal padding.
+                    val columns = maxWidth >= 280.dp && LocalDensity.current.fontScale <= 1.1f && longestAmount <= 12
                     if (columns) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         MoneyMetric("Bond principal", total.bondFaceValue, total.currency, Icons.Outlined.AccountBalance, Modifier.weight(1f), column = true)
                         MoneyMetric("RSE equity value", valuation.shareValue, total.currency, Icons.Outlined.BarChart, Modifier.weight(1f), column = true)
