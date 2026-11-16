@@ -24,13 +24,13 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 
-// Same canonical 440 x 400 folded-path geometry as the static brand mark.
+// Same canonical 440 x 400 initial-and-frame geometry as the static brand mark.
 private object IntroContours {
     private fun path(data: String) = PathParser().parsePathString(data).toPath()
-    val upper = path(InziraBrandGeometry.UPPER_FOLD)
-    val lower = path(InziraBrandGeometry.LOWER_FOLD)
-    // The open channel between the two folds is a journey, rather than a rotating badge.
-    val journey = path("M190 400 C190 370 164 343 183 316 C200 291 256 270 310 240 C343 222 358 206 348 185 C339 165 293 155 252 138 L174 108")
+    val initial = path(InziraBrandGeometry.INITIAL)
+    val frame = path(InziraBrandGeometry.FRAME)
+    // Follow the diagonal cut into the initial; keep the mark stationary.
+    val journey = path(InziraBrandGeometry.JOURNEY)
 }
 
 /** Content arrives as the signature travels into the real welcome artwork. */
@@ -68,8 +68,8 @@ internal fun BrandIntroOverlay(progress: Float, destination: Rect?) {
             translate(left, top) {
                 scale(side / 440f, side / 440f, pivot = Offset.Zero) {
                     translate(0f, 20f) {
-                        // Trace the actual edges first; the solid ribbon grows out of those edges.
-                        for (contour in listOf(IntroContours.lower, IntroContours.upper)) {
+                        // Trace the actual edges first; the solid mark grows out of those edges.
+                        for (contour in listOf(IntroContours.frame, IntroContours.initial)) {
                             val measure = PathMeasure().apply { setPath(contour, false) }
                             val drawn = Path()
                             measure.getSegment(0f, measure.length * tracing, drawn, true)

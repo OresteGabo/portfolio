@@ -235,8 +235,8 @@ internal class ReportPdf(private val title: String, private val footer: String, 
     private fun logo(x: Double, top: Double, size: Double) {
         content.append("q ${n(size/440)} 0 0 ${n(-size/440)} ${n(x)} ${n(842-top)} cm 1 0 0 1 0 20 cm\n")
         content.append("${ReportColors.logoInk} rg\n")
-        content.append("${InziraBrandGeometry.PDF_UPPER_FOLD} f\n")
-        content.append("${InziraBrandGeometry.PDF_LOWER_FOLD} f\nQ\n")
+        content.append("${InziraBrandGeometry.PDF_INITIAL} f\n")
+        content.append("${InziraBrandGeometry.PDF_FRAME} f\nQ\n")
     }
     private fun rect(x: Double, top: Double, w: Double, h: Double, color: String) {
         content.append("$color rg ${n(x)} ${n(842 - top - h)} ${n(w)} ${n(h)} re f\n")

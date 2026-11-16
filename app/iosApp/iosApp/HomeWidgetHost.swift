@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import WidgetKit
 import Shared
 
 @MainActor
@@ -11,6 +12,8 @@ enum HomeWidgetHost {
         }, pin: { _ in
             showInstructions()
         })
+        // A new app build can change widget artwork even when its saved data is unchanged.
+        WidgetCenter.shared.reloadTimelines(ofKind: NextWidgetCache.kind)
     }
     private static func showInstructions() {
         let french = AppLanguage.shared.code == "fr"

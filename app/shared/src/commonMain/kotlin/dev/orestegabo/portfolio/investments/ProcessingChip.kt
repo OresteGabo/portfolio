@@ -41,9 +41,9 @@ internal fun ProcessingChip(dark: Boolean, progress: Float, modifier: Modifier) 
         ))
         fun projected(data: String) = PathParser().parsePathString(data).toPath().apply { transform(plane) }
         listOf(
-            projected(InziraBrandGeometry.UPPER_FOLD),
-            projected(InziraBrandGeometry.LOWER_FOLD),
-            projected("M190 400 C190 370 164 343 183 316 C200 291 256 270 310 240 C343 222 358 206 348 185 C339 165 293 155 252 138 L174 108"),
+            projected(InziraBrandGeometry.INITIAL),
+            projected(InziraBrandGeometry.FRAME),
+            projected(InziraBrandGeometry.JOURNEY),
         )
     }
     Box(modifier) {
