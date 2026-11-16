@@ -64,7 +64,7 @@ internal fun PdfViewerScreen(model: PortfolioModel, preview: DocumentPreview, re
         }
         preview.bytes == null || pages == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                CircularProgressIndicator(Modifier.size(28.dp))
+                InziraLoadingMark(active = true, modifier = Modifier.size(28.dp))
                 AppText(model.reportProgress ?: "Opening PDF", style = MaterialTheme.typography.bodyMedium)
             }
         }
@@ -166,7 +166,7 @@ private fun PdfPageImage(document: PdfDocumentPages, page: Int, zoom: Float, vis
             Modifier.fillMaxWidth().height(300.dp).background(StructColors.Document.paper),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(Modifier.size(24.dp))
+            InziraLoadingMark(active = true, modifier = Modifier.size(24.dp), tint = StructColors.Document.readerCanvas)
         } else {
             val pageHeight = maxWidth * (bitmap.height.toFloat() / bitmap.width)
             val baseHeight = with(LocalDensity.current) { pageHeight.toPx() }

@@ -94,7 +94,7 @@ internal fun LegalScreen(route: String, open: (String) -> Unit) {
                 item { AppText("Original licence text", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 when {
                     failed -> item { AppText("This notice could not be opened. Please try again.") }
-                    notices == null -> item { CircularProgressIndicator() }
+                    notices == null -> item { InziraLoadingMark(active = true, modifier = Modifier.size(28.dp)) }
                     else -> items(notices.orEmpty()) { (component, text) ->
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             AppText(component, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)

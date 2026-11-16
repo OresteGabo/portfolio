@@ -107,7 +107,7 @@ internal fun DocumentDetailsScreen(model: PortfolioModel, document: JsonRecord,
     if (model.annualReportYear != null) model.reportProgress?.let { progress ->
         AlertDialog(onDismissRequest = {}, title = { AppText("Annual report") }, text = {
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                CircularProgressIndicator(Modifier.size(28.dp)); AppText(progress, Modifier.weight(1f))
+                InziraLoadingMark(active = true, modifier = Modifier.size(28.dp)); AppText(progress, Modifier.weight(1f))
             }
         }, confirmButton = {})
     }

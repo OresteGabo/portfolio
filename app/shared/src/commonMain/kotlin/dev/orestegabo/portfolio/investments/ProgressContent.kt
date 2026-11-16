@@ -1,7 +1,6 @@
 package dev.orestegabo.portfolio.investments
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,8 +17,7 @@ fun ProgressContent(label: String, modifier: Modifier = Modifier, detail: String
         progressBarRangeInfo = ProgressBarRangeInfo.Indeterminate
     }, verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(InziraSpacing.large)) {
-        CircularProgressIndicator(Modifier.size(InziraDimensions.progressIndicator).clearAndSetSemantics {},
-            strokeWidth = InziraDimensions.progressStroke)
+        InziraLoadingMark(active = true, modifier = Modifier.size(InziraDimensions.progressIndicator).clearAndSetSemantics {})
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(InziraSpacing.tight)) {
             AppText(label, style = MaterialTheme.typography.bodyMedium)
             if (!detail.isNullOrBlank()) AppText(detail, style = MaterialTheme.typography.bodySmall,

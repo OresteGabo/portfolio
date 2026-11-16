@@ -50,7 +50,7 @@ fun PortfolioPullRefresh(model: PortfolioModel, content: @Composable () -> Unit)
                 Row(Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     when (model.refreshPhase) {
-                        PortfolioRefreshPhase.LOADING -> CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+                        PortfolioRefreshPhase.LOADING -> InziraLoadingMark(active = true, modifier = Modifier.size(24.dp))
                         PortfolioRefreshPhase.SUCCESS -> AppIcon(Icons.Outlined.Check, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
                         PortfolioRefreshPhase.ERROR -> AppIcon(Icons.Outlined.ErrorOutline, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(26.dp))
                         PortfolioRefreshPhase.IDLE -> AppIcon(Icons.Outlined.ArrowDownward, null,

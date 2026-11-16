@@ -145,6 +145,6 @@ fun EmptyState(
 @Composable
 fun LoadingState() {
     Box(Modifier.fillMaxWidth().height(136.dp), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(Modifier.size(InziraDimensions.progressIndicator), strokeWidth = InziraDimensions.progressStroke)
+        InziraLoadingMark(active = true, modifier = Modifier.size(InziraDimensions.progressIndicator))
     }
 }

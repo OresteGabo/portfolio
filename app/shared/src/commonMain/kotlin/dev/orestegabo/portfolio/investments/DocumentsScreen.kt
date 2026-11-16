@@ -183,7 +183,7 @@ fun DocumentsScreen(model: PortfolioModel, initialDocumentId: String? = null,
     if (model.annualReportYear != null) model.reportProgress?.let { progress ->
         AlertDialog(onDismissRequest = {}, title = { AppText("Annual report") }, text = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                CircularProgressIndicator(Modifier.size(28.dp))
+                InziraLoadingMark(active = true, modifier = Modifier.size(28.dp))
                 AppText(progress, Modifier.weight(1f))
             }
         }, confirmButton = {})
@@ -205,7 +205,7 @@ private fun DocumentLibraryHeader(count: Int, busy: Boolean, refreshing: Boolean
                 AppText("PDF", style = MaterialTheme.typography.labelSmall, color = colours.primary)
             }
             IconButton(onClick = refresh, enabled = !busy, modifier = Modifier.align(Alignment.TopEnd).padding(2.dp)) {
-                if (refreshing) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                if (refreshing) InziraLoadingMark(active = true, modifier = Modifier.size(24.dp))
                 else AppIcon(Icons.Outlined.Refresh, "Refresh documents", Modifier.size(20.dp))
             }
         }
@@ -285,7 +285,7 @@ private fun DocumentCard(model: PortfolioModel, document: JsonRecord, expanded: 
                 FilledTonalIconButton(onClick = download, enabled = canDownload, modifier = Modifier.size(48.dp),
                     shape = RoundedCornerShape(15.dp),
                     colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = accent.copy(alpha = .09f), contentColor = accent)) {
-                    if (saving) CircularProgressIndicator(Modifier.size(20.dp).semantics { contentDescription = localized("Downloading document") }, strokeWidth = 2.dp)
+                    if (saving) InziraLoadingMark(active = true, modifier = Modifier.size(24.dp).semantics { contentDescription = localized("Downloading document") })
                     else AppIcon(Icons.Outlined.Share, "${localized("Share PDF")}: ${privateFinancialValue(title)}", Modifier.size(22.dp))
                 }
             }

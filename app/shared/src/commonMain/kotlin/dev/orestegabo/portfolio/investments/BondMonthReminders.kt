@@ -7,7 +7,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.NotificationAdd
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -41,7 +40,7 @@ internal fun BondMonthReminderButton(model: PortfolioModel, selected: LocalDate,
         },
         label = { AppText(if(active) "Reminder set" else "Set reminder", style = MaterialTheme.typography.labelMedium) },
         leadingIcon = {
-            if(busy) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+            if(busy) InziraLoadingMark(active = true, modifier = Modifier.size(24.dp))
             else AppIcon(
                 if (active) Icons.Default.Check else Icons.Outlined.NotificationAdd,
                 null,

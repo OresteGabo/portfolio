@@ -114,8 +114,8 @@ internal fun DetailDocumentRows(model: PortfolioModel, record: JsonRecord) {
                     try { if (shareInvestmentDocument(model, actions, doc)) model.message = "PDF ready to share." }
                     finally { downloading = null }
                 } }, modifier = Modifier.size(48.dp)) {
-                    if (downloading == doc.text("id")) CircularProgressIndicator(Modifier.size(20.dp)
-                        .semantics { contentDescription = localized("Downloading document") }, strokeWidth = 2.dp)
+                    if (downloading == doc.text("id")) InziraLoadingMark(active = true, modifier = Modifier.size(24.dp)
+                        .semantics { contentDescription = localized("Downloading document") })
                     else AppIcon(Icons.Outlined.Download, "Download ${privateFinancialValue(doc.text("label"))}")
                 }
             }

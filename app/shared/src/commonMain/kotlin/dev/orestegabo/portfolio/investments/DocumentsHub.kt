@@ -209,7 +209,7 @@ private fun ImportConversation(model: PortfolioModel, engine: InvestmentEngine, 
                                 val live = entry.id == active
                                 val inProgress = entry.state in listOf(ImportState.READING, ImportState.SAVING) && live
                                 if (entry.state !in listOf(ImportState.SAVED, ImportState.EXISTS)) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    if (inProgress) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                                    if (inProgress) InziraLoadingMark(active = true, modifier = Modifier.size(24.dp))
                                     else AppIcon(when (entry.state) {
                                         ImportState.SAVED -> Icons.Outlined.CheckCircle
                                         ImportState.FAILED -> Icons.Outlined.ErrorOutline

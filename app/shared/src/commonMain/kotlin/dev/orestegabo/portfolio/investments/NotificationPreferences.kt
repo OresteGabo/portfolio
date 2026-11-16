@@ -39,8 +39,8 @@ fun NotificationPreferencesDialog(model: PortfolioModel,close: () -> Unit) {
 @Composable
 private fun NotificationPreferenceSwitch(model: PortfolioModel, category: String?, label: String) {
     val saving = model.notificationPreferenceSaving(category)
-    Box(Modifier.size(16.dp), contentAlignment = Alignment.Center) {
-        if (saving) CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5.dp)
+    Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+        if (saving) InziraLoadingMark(active = true, modifier = Modifier.size(24.dp))
     }
     Switch(checked = model.notificationPreferenceEnabled(category),
         enabled = model.notificationSettingsAvailable && !saving,

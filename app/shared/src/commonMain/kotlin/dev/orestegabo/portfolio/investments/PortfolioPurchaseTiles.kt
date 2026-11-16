@@ -134,7 +134,7 @@ fun BondPurchaseTile(model: PortfolioModel, purchase: JsonRecord, manage: () -> 
                                         if (shareInvestmentDocument(model, actions, document)) model.message = "PDF ready to share."
                                     } finally { downloading = null }
                                 } }, modifier = Modifier.size(48.dp), shape = RoundedCornerShape(14.dp)) {
-                                    if (downloading == document.text("id")) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                                    if (downloading == document.text("id")) InziraLoadingMark(active = true, modifier = Modifier.size(24.dp))
                                     else AppIcon(Icons.Outlined.Download, "Download ${privateFinancialValue(title)}", Modifier.size(21.dp))
                                 }
                             }
