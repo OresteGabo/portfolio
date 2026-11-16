@@ -69,7 +69,7 @@ internal fun PortfolioHero(showNotifications: Boolean, subtitle: String, totals:
             verticalArrangement = Arrangement.spacedBy(28.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    StructMark(Modifier.size(44.dp), onDark = dark)
+                    DashboardBrandMark(Modifier.size(44.dp))
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         InziraWordmark(Modifier.height(26.dp), onDark = dark)
                         AppText(subtitle, style = MaterialTheme.typography.bodySmall,
