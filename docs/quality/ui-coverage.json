@@ -3,7 +3,7 @@
   "note": "Evidence inventory, not code coverage. Required device gate runs on the reference API 36 emulator. Opt-in delivery/reboot/user-PDF tests remain separately documented.",
   "flows": [
     {
-      "flow": "pending share order creation and accessible dashboard clock status",
+      "flow": "pending share order market defaults, on-demand price editor, keyboard Done, reset, cancel/edit persistence and accessible dashboard clock status",
       "class": "ShareOrderScreenTest",
       "method": "marketPriceDefaultsAndCommissionMatchesRequestedExample"
     },

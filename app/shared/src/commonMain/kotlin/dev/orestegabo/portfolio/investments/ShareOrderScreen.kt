@@ -7,6 +7,7 @@ import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.UploadFile
@@ -18,10 +19,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import dev.orestegabo.portfolio.design.InziraDimensions
@@ -51,7 +59,9 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
     val sameSecurity = savedOrder && ticker == existing.text("ticker")
     val name = quote?.text("name")?.ifBlank { ticker } ?: if (sameSecurity) existing.text("securityName") else ""
     val cachedQuotes = model.quoteRefreshFailed || model.quotes?.optJSONObject("source")?.optBoolean("stale") == true
-    val price = if (sameSecurity) existing.optDouble("pricePerShare") else quote?.optDouble("closing") ?: 0.0
+    val defaultPrice = if (sameSecurity) existing.optDouble("pricePerShare") else quote?.optDouble("closing") ?: 0.0
+    var priceInput by rememberSaveable(id, ticker) { mutableStateOf<String?>(null) }
+    val price = priceInput?.toInputNumberOrNull() ?: if (priceInput == null) defaultPrice else 0.0
     val estimate = runCatching { shareOrderEstimate(quantity.toInputNumberOrNull() ?: 0.0, price) }.getOrNull()
     val changed = savedOrder && (ticker != existing.text("ticker") || quantity.toInputNumberOrNull() != existing.optDouble("shares") || price != existing.optDouble("pricePerShare"))
     val draftChanged = if (savedOrder) editMode && changed else ticker.isNotBlank() || quantity.toInputNumberOrNull()?.let { it > 0 } == true
@@ -71,40 +81,50 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
     FormContent { formModifier ->
         LazyColumn(formModifier, contentPadding = PaddingValues(InziraSpacing.screen), verticalArrangement = Arrangement.spacedBy(InziraSpacing.screen)) {
             item {
-                ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { if (editMode && !model.busy && companies.isNotEmpty()) expanded=it }) {
-                    Surface(modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled=editMode && !model.busy),
-                        shape = RoundedCornerShape(24.dp), color = colors.surface,
-                        border = BorderStroke(1.dp, colors.primary.copy(alpha=.18f))) {
-                        Column(Modifier.padding(20.dp),verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
-                                AppText("Security name",style=MaterialTheme.typography.labelMedium,color=colors.onSurfaceVariant)
-                                if (savedOrder && !editMode) TextButton(enabled=!model.busy,onClick={editMode=true}) {
-                                    AppIcon(Icons.Outlined.Edit,null,Modifier.size(16.dp))
-                                    Spacer(Modifier.width(6.dp))
-                                    AppText("Edit")
+                Surface(shape = RoundedCornerShape(24.dp), color = colors.surface,
+                    border = BorderStroke(1.dp, colors.primary.copy(alpha=.18f))) {
+                    Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = {
+                            if (editMode && !model.busy && companies.isNotEmpty()) expanded = it
+                        }) {
+                            Column(Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                                enabled = editMode && !model.busy), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween) {
+                                    AppText("Security name", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
+                                    if (savedOrder && !editMode) TextButton(enabled = !model.busy, onClick = { editMode = true }) {
+                                        AppIcon(Icons.Outlined.Edit, null, Modifier.size(16.dp))
+                                        Spacer(Modifier.width(6.dp))
+                                        AppText("Edit")
+                                    }
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                                    if (ticker.isNotBlank()) InvestmentLogo(ticker = ticker, modifier = Modifier.size(52.dp))
+                                    else Surface(shape = RoundedCornerShape(14.dp), color = colors.primary.copy(alpha=.07f)) {
+                                        StructMark(Modifier.padding(10.dp).size(32.dp))
+                                    }
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        AppText(name.ifBlank { localized("Select a company") }, style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        if (ticker.isNotBlank()) AppText(ticker, style = MaterialTheme.typography.labelMedium, color = colors.primary)
+                                    }
+                                    if (editMode) ExposedDropdownMenuDefaults.TrailingIcon(expanded)
                                 }
                             }
-                            Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
-                                if (ticker.isNotBlank()) InvestmentLogo(ticker=ticker,modifier=Modifier.size(52.dp))
-                                else Surface(shape=RoundedCornerShape(14.dp),color=colors.primary.copy(alpha=.07f)) { StructMark(Modifier.padding(10.dp).size(32.dp)) }
-                                Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                                    AppText(name.ifBlank { localized("Select a company") },style=MaterialTheme.typography.titleMedium,
-                                        fontWeight=FontWeight.SemiBold,maxLines=2,overflow=TextOverflow.Ellipsis)
-                                    if (ticker.isNotBlank()) AppText(ticker,style=MaterialTheme.typography.labelMedium,color=colors.primary)
-                                }
-                                if (editMode) ExposedDropdownMenuDefaults.TrailingIcon(expanded)
-                            }
-                            HorizontalDivider(color=colors.outlineVariant.copy(alpha=.45f))
-                            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-                                AppText(if (sameSecurity) "Order price" else if (cachedQuotes) "Cached closing price" else "Latest closing price",style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
-                                FinancialText(if (price>0) money(price) else "—",style=MaterialTheme.typography.titleSmall,fontWeight=FontWeight.SemiBold,color=colors.primary)
+                            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                                companies.forEach { company -> DropdownMenuItem(
+                                    text = { AppText("${company.text("name").ifBlank { company.text("ticker") }} (${company.text("ticker")})") },
+                                    leadingIcon = { InvestmentLogo(ticker = company.text("ticker"), modifier = Modifier.size(28.dp)) },
+                                    onClick = { ticker = company.text("ticker"); expanded = false }) }
                             }
                         }
-                    }
-                    ExposedDropdownMenu(expanded = expanded,onDismissRequest = { expanded=false }) {
-                        companies.forEach { company -> DropdownMenuItem(text = { AppText("${company.text("name").ifBlank { company.text("ticker") }} (${company.text("ticker")})") },
-                            leadingIcon = { InvestmentLogo(ticker=company.text("ticker"),modifier=Modifier.size(28.dp)) },
-                            onClick = { ticker=company.text("ticker"); expanded=false }) }
+                        HorizontalDivider(color = colors.outlineVariant.copy(alpha=.45f))
+                        key(id, ticker, editMode) {
+                            ShareOrderPrice(priceInput ?: defaultPrice.takeIf { it > 0 }?.toString().orEmpty(), price,
+                                closingPrice = quote?.optDouble("closing"), cached = cachedQuotes,
+                                editable = editMode, enabled = !model.busy && ticker.isNotBlank(),
+                                change = { priceInput = it })
+                        }
                     }
                 }
             }
@@ -134,7 +154,7 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
                     .put("brokerConfirmed",existing.optBoolean("brokerConfirmed")).put("notes",existing.text("notes")),back)
             }) { AppText(if(model.busy) "Saving…" else if(savedOrder) "Save changes" else "Save pending order") } }
             if (savedOrder && editMode) item { TextButton(enabled=!model.busy,modifier=Modifier.fillMaxWidth(),onClick={
-                ticker=existing.text("ticker"); quantity=existing.text("shares"); expanded=false; editMode=false
+                ticker=existing.text("ticker"); quantity=existing.text("shares"); priceInput=null; expanded=false; editMode=false
             }) { AppText("Cancel") } }
             if (!savedOrder || !editMode) item { OutlinedButton(enabled = !model.busy,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), shape = InziraShapes.action,
@@ -149,6 +169,58 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
             if (savedOrder && editMode) {
                 item { TextButton(enabled = !model.busy && model.shareOrdersAvailable,modifier = Modifier.fillMaxWidth(),onClick = {cancelDialog=true}) { AppText("Cancel pending order",color = MaterialTheme.colorScheme.error) } }
             }
+        }
+    }
+}
+
+@Composable
+private fun ShareOrderPrice(value: String, price: Double, closingPrice: Double?, cached: Boolean,
+    editable: Boolean, enabled: Boolean, change: (String) -> Unit) {
+    var editing by rememberSaveable { mutableStateOf(false) }
+    val focus = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    val requester = remember { FocusRequester() }
+    val valid = runCatching { shareOrderEstimate(1.0, price) }.isSuccess
+    val finish = {
+        if (valid) {
+            focus.clearFocus()
+            keyboard?.hide()
+            editing = false
+        }
+    }
+    if (editable && editing) {
+        Column(Modifier.focusRequester(requester), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Field("Expected price per share (RWF)", value, change, keyboard = KeyboardType.Decimal,
+                enabled = enabled, onDone = finish,
+                helper = if (!valid) "Enter a valid price with up to two decimal places." else null,
+                trailingIcon = {
+                    IconButton(enabled = enabled && valid, onClick = finish) {
+                        AppIcon(Icons.Outlined.Check, "Done", Modifier.size(20.dp))
+                    }
+                })
+            if (closingPrice != null) TextButton(enabled = enabled, onClick = {
+                change(closingPrice.toString())
+                focus.clearFocus()
+                keyboard?.hide()
+                editing = false
+            }) { AppText("Use closing price") }
+        }
+        LaunchedEffect(Unit) {
+            requester.requestFocus()
+            keyboard?.show()
+        }
+    } else {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            val label = if (!editable || value.isNotBlank() && price != closingPrice) "Order price"
+                else if (cached) "Cached closing price" else "Latest closing price"
+            AppText(label, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (editable) TextButton(enabled = enabled, onClick = { editing = true },
+                modifier = Modifier.semantics { contentDescription = localized("Edit price") }) {
+                FinancialText(if (price > 0) money(price) else "—", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.width(6.dp))
+                AppIcon(Icons.Outlined.Edit, null, Modifier.size(16.dp))
+            } else FinancialText(if (price > 0) money(price) else "—", style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
         }
     }
 }

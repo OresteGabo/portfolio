@@ -50,6 +50,28 @@ class ShareOrderScreenTest {
             error("Expected UI text: $text")
         }
         fun click(text: String, lastMatch: Boolean = false) { var node=await(text);if(lastMatch)node=nodes(instrumentation.uiAutomation.rootInActiveWindow).last {it.isVisibleToUser && (it.text?.toString()==text || it.contentDescription?.toString()==text)};while(!node.isClickable && node.parent!=null)node=node.parent;assertTrue(node.performAction(AccessibilityNodeInfo.ACTION_CLICK));instrumentation.waitForIdleSync() }
+        fun setPrice(value: String) {
+            val deadline=System.currentTimeMillis()+5000
+            while(nodes(instrumentation.uiAutomation.rootInActiveWindow).none { it.contentDescription?.toString()=="Edit price" && it.isVisibleToUser } && System.currentTimeMillis()<deadline) {
+                nodes(instrumentation.uiAutomation.rootInActiveWindow).firstOrNull { it.isScrollable }?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)
+                instrumentation.waitForIdleSync();Thread.sleep(80)
+            }
+            click("Edit price")
+            val fieldDeadline=System.currentTimeMillis()+5000
+            while(nodes(instrumentation.uiAutomation.rootInActiveWindow).none { it.isEditable } && System.currentTimeMillis()<fieldDeadline) Thread.sleep(80)
+            val field=nodes(instrumentation.uiAutomation.rootInActiveWindow).single { it.isEditable }
+            assertTrue(field.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, android.os.Bundle().apply {
+                putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,value)
+            }))
+            instrumentation.waitForIdleSync()
+            assertFalse("Editing price never opens the company dropdown",nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.text?.toString()=="SYNTHETIC Bralirwa (BLR)"})
+            if (value == "125") {
+                assertTrue("Keyboard Done completes price editing",field.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.id))
+            } else click("Done")
+            val closedDeadline=System.currentTimeMillis()+5000
+            while(nodes(instrumentation.uiAutomation.rootInActiveWindow).any { it.isEditable } && System.currentTimeMillis()<closedDeadline) Thread.sleep(80)
+            assertFalse("The price field is hidden after Done",nodes(instrumentation.uiAutomation.rootInActiveWindow).any { it.isEditable })
+        }
         fun reveal(text: String) {
             val deadline=System.currentTimeMillis()+5000
             while(nodes(instrumentation.uiAutomation.rootInActiveWindow).none {it.text?.toString()==text && it.isVisibleToUser} && System.currentTimeMillis()<deadline) {
@@ -71,7 +93,7 @@ class ShareOrderScreenTest {
                         path.endsWith("/share-orders") -> JsonRecord().put("orders",JsonList(saved?.let {listOf(it)} ?: emptyList<JsonRecord>())).toString()
                         path.contains("/share-orders/") && request.method==HttpMethod.Put -> {
                             val data=JsonRecord((request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString())
-                            assertEquals(720.0,data.getDouble("pricePerShare"),0.0); assertEquals(if(writes.get()==0) 1000.0 else 1100.0,data.getDouble("shares"),0.0)
+                            assertEquals(if(writes.get()==0) 720.0 else 725.0,data.getDouble("pricePerShare"),0.0); assertEquals(if(writes.get()==0) 1000.0 else 1100.0,data.getDouble("shares"),0.0)
                             val budget=shareOrderEstimate(data.getDouble("shares"),data.getDouble("pricePerShare"))
                             saved=data.put("id",path.substringAfterLast('/')).put("version",writes.get()+1).put("status","pending").put("currency","RWF").put("estimatedTotal",budget.total)
                             writes.incrementAndGet();JsonRecord().put("order",saved!!).toString()
@@ -151,7 +173,8 @@ class ShareOrderScreenTest {
             await("Security name"); click("Security name")
             await("SYNTHETIC Bralirwa (BLR)")
             click("SYNTHETIC BK Group (BOK)")
-            assertFalse(nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.text?.toString() in listOf("Ticker","Broker","Notes","Expected price per share (RWF)","Request date · YYYY-MM-DD")})
+            await("Edit price")
+            assertFalse(nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.text?.toString() in listOf("Ticker","Broker","Notes","Request date · YYYY-MM-DD")})
             await("Market commission · 1.71%")
             repeat(10) { click("Increase shares") }
             await("RWF 732,312")
@@ -161,7 +184,11 @@ class ShareOrderScreenTest {
             await("RWF 732,312")
             val counter=await("1,000")
             assertFalse("Share count is read-only",counter.isEditable)
-            assertFalse("Only the stepper can change the quantity",nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.isEditable})
+            assertFalse("The price field is hidden until requested",nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.isEditable})
+            setPrice("125")
+            await("RWF 127,137.5")
+            click("Edit price");click("Use closing price")
+            await("RWF 732,312")
             counter.performAction(AccessibilityNodeInfo.ACTION_CLICK)
             assertFalse(nodes(instrumentation.uiAutomation.rootInActiveWindow).any {it.text?.toString()=="Done"})
             val screenshot=instrumentation.uiAutomation.takeScreenshot()
@@ -207,8 +234,9 @@ class ShareOrderScreenTest {
             java.io.File(instrumentation.targetContext.cacheDir,"synthetic-pending-share-view.png").outputStream().use {viewScreenshot.compress(Bitmap.CompressFormat.PNG,100,it)}
             viewScreenshot.recycle()
             click("Edit")
+            setPrice("725")
             click("Increase shares")
-            await("RWF 805,543.2")
+            await("RWF 811,137.25")
             val cancelDeadline=System.currentTimeMillis()+5000
             while(nodes(instrumentation.uiAutomation.rootInActiveWindow).none {it.text?.toString()=="Cancel" && it.isVisibleToUser} && System.currentTimeMillis()<cancelDeadline) {
                 nodes(instrumentation.uiAutomation.rootInActiveWindow).firstOrNull {it.isScrollable}?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
@@ -229,7 +257,7 @@ class ShareOrderScreenTest {
                 nodes(instrumentation.uiAutomation.rootInActiveWindow).firstOrNull {it.isScrollable}?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)
                 instrumentation.waitForIdleSync()
             }
-            click("Edit");click("Increase shares");await("RWF 805,543.2")
+            click("Edit");setPrice("725");click("Increase shares");await("RWF 811,137.25")
             val saveDeadline=System.currentTimeMillis()+5000
             while(nodes(instrumentation.uiAutomation.rootInActiveWindow).none {it.text?.toString()=="Save changes" && it.isVisibleToUser} && System.currentTimeMillis()<saveDeadline) {
                 nodes(instrumentation.uiAutomation.rootInActiveWindow).firstOrNull {it.isScrollable}?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
@@ -243,6 +271,8 @@ class ShareOrderScreenTest {
             val savedDeadline=System.currentTimeMillis()+5000
             while(writes.get()<2 && System.currentTimeMillis()<savedDeadline)Thread.sleep(50)
             assertEquals(2,writes.get());assertEquals(1100.0,saved!!.optDouble("shares"),0.0)
+            assertEquals(725.0,saved!!.optDouble("pricePerShare"),0.0)
+            assertEquals(811137.25,saved!!.optDouble("estimatedTotal"),0.0)
             assertEquals(0,equityWrites.get())
         } } finally { AppLanguage.select(priorLanguage) }
     }

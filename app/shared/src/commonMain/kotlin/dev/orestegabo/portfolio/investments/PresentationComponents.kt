@@ -64,7 +64,7 @@ fun Fact(label: String, value: String) {
 
 @Composable
 fun Field(label: String, value: String, change: (String) -> Unit, keyboard: KeyboardType = KeyboardType.Text, helper: String? = null, autofill: ContentType? = null, enabled: Boolean = true,
-    numbersHidden: Boolean? = null, trailingIcon: (@Composable () -> Unit)? = null) {
+    numbersHidden: Boolean? = null, trailingIcon: (@Composable () -> Unit)? = null, onDone: (() -> Unit)? = null) {
     val hidden = numbersHidden ?: LocalNumbersHidden.current
     if (keyboard in listOf(KeyboardType.Number, KeyboardType.Decimal) && LocalCaptureBackdropRegistry.current != null) {
         CaptureRedactionRegion(Modifier.fillMaxWidth(), masked = {
@@ -77,18 +77,18 @@ fun Field(label: String, value: String, change: (String) -> Unit, keyboard: Keyb
                 }
                 helper?.let { AppText(it, Modifier.padding(start = 16.dp, top = 4.dp), style = MaterialTheme.typography.bodySmall) }
             }
-        }) { FieldContent(label, value, change, keyboard, helper, autofill, enabled, hidden, trailingIcon) }
-    } else FieldContent(label, value, change, keyboard, helper, autofill, enabled, hidden, trailingIcon)
+        }) { FieldContent(label, value, change, keyboard, helper, autofill, enabled, hidden, trailingIcon, onDone) }
+    } else FieldContent(label, value, change, keyboard, helper, autofill, enabled, hidden, trailingIcon, onDone)
 }
 
 @Composable
 private fun FieldContent(label: String, value: String, change: (String) -> Unit, keyboard: KeyboardType, helper: String?, autofill: ContentType?, enabled: Boolean,
-    numbersHidden: Boolean, trailingIcon: (@Composable () -> Unit)?) {
+    numbersHidden: Boolean, trailingIcon: (@Composable () -> Unit)?, onDone: (() -> Unit)?) {
     val focus = LocalFocusManager.current
     OutlinedTextField(value, change, Modifier.fillMaxWidth().then(if (autofill != null) Modifier.semantics { contentType = autofill } else Modifier), label = { AppText(label) }, singleLine = true, enabled = enabled,
         visualTransformation = if (numbersHidden && keyboard in listOf(KeyboardType.Number, KeyboardType.Decimal)) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
         trailingIcon = trailingIcon,
-        keyboardActions = KeyboardActions(onDone = { focus.clearFocus() }, onNext = { focus.moveFocus(FocusDirection.Next) }),
+        keyboardActions = KeyboardActions(onDone = { focus.clearFocus(); onDone?.invoke() }, onNext = { focus.moveFocus(FocusDirection.Next) }),
         keyboardOptions = KeyboardOptions(keyboardType = keyboard, imeAction = if (autofill == ContentType.Username) ImeAction.Next else ImeAction.Done, platformImeOptions = if (autofill == ContentType.Username) credentialImeOptions(CredentialInput.USERNAME) else null), supportingText = helper?.let { { AppText(it) } })
 }
 
