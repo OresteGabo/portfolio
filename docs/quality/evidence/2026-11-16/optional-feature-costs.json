@@ -1,0 +1,548 @@
+{
+  "commit": "c0101373fbde1ff8bd59463221b4de60030e8422",
+  "scope": "KMP client and Android/iOS hosts; read-only production audit",
+  "units": "bytes; MiB = 1048576 bytes; KiB = 1024 bytes",
+  "artifacts": [
+    {
+      "apk": "app/androidApp/build/outputs/apk/debug/androidApp-debug.apk",
+      "bytes": 45657459,
+      "compressed_groups": {
+        "DEX code": 19143381,
+        "OCR English model": 11478308,
+        "OCR cores": 5083453,
+        "PDF import runtime": 2987680,
+        "Photography": 2012637,
+        "Android resources and metadata": 1244430,
+        "Shared UI and data assets": 1061037,
+        "Native libraries": 60292
+      },
+      "largest_entries": [
+        {
+          "path": "assets/engine/bond-import/eng.traineddata",
+          "compressed": 11478308,
+          "uncompressed": 23466654
+        },
+        {
+          "path": "classes.dex",
+          "compressed": 7104501,
+          "uncompressed": 19063324
+        },
+        {
+          "path": "classes15.dex",
+          "compressed": 4867288,
+          "uncompressed": 12146652
+        },
+        {
+          "path": "classes16.dex",
+          "compressed": 3625226,
+          "uncompressed": 9537744
+        },
+        {
+          "path": "classes3.dex",
+          "compressed": 2409000,
+          "uncompressed": 6206620
+        },
+        {
+          "path": "assets/composeResources/portfolio.app.shared.generated.resources/drawable/kigali_assets_36653828.jpg",
+          "compressed": 2012637,
+          "uncompressed": 2012637
+        },
+        {
+          "path": "assets/engine/bond-import/tesseract/tesseract-core-relaxedsimd-lstm.wasm.js",
+          "compressed": 1696332,
+          "uncompressed": 3905767
+        },
+        {
+          "path": "assets/engine/bond-import/tesseract/tesseract-core-simd-lstm.wasm.js",
+          "compressed": 1694051,
+          "uncompressed": 3899472
+        },
+        {
+          "path": "assets/engine/bond-import/tesseract/tesseract-core-lstm.wasm.js",
+          "compressed": 1693070,
+          "uncompressed": 3896484
+        },
+        {
+          "path": "resources.arsc",
+          "compressed": 938780,
+          "uncompressed": 938780
+        },
+        {
+          "path": "classes14.dex",
+          "compressed": 856545,
+          "uncompressed": 1720396
+        },
+        {
+          "path": "assets/engine/bond-import/pdf.worker.legacy.min.mjs",
+          "compressed": 461928,
+          "uncompressed": 1321307
+        },
+        {
+          "path": "assets/engine/pdf.mjs",
+          "compressed": 282527,
+          "uncompressed": 1069549
+        },
+        {
+          "path": "assets/engine/bond-import/wasm/quickjs-eval.wasm",
+          "compressed": 241872,
+          "uncompressed": 469105
+        },
+        {
+          "path": "assets/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_calendar_base_dark.png",
+          "compressed": 171727,
+          "uncompressed": 171727
+        },
+        {
+          "path": "assets/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_calendar_base_light.png",
+          "compressed": 170617,
+          "uncompressed": 170617
+        },
+        {
+          "path": "assets/engine/bond-import/wasm/openjpeg_nowasm_fallback.js",
+          "compressed": 140902,
+          "uncompressed": 445781
+        },
+        {
+          "path": "assets/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_processor_blank_light.png",
+          "compressed": 118234,
+          "uncompressed": 118234
+        },
+        {
+          "path": "assets/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_processor_blank_dark.png",
+          "compressed": 117569,
+          "uncompressed": 117569
+        },
+        {
+          "path": "assets/engine/bond-import/standard_fonts/LiberationSans-Italic.ttf",
+          "compressed": 103643,
+          "uncompressed": 162036
+        }
+      ],
+      "sha256": "104e1c33eab402b6ce5e572d25bb1f928663092b81654c1239115ae34f49aa3f"
+    },
+    {
+      "apk": "app/androidApp/build/outputs/apk/release/androidApp-release-unsigned.apk",
+      "bytes": 25180647,
+      "compressed_groups": {
+        "OCR English model": 10904766,
+        "OCR cores": 4394317,
+        "DEX code": 3040048,
+        "PDF import runtime": 2737819,
+        "Photography": 2012637,
+        "Shared UI and data assets": 1051033,
+        "Android resources and metadata": 803129,
+        "Native libraries": 60292
+      },
+      "largest_entries": [
+        {
+          "path": "assets/engine/bond-import/eng.traineddata",
+          "compressed": 10904766,
+          "uncompressed": 23466654
+        },
+        {
+          "path": "classes.dex",
+          "compressed": 2927380,
+          "uncompressed": 5784852
+        },
+        {
+          "path": "assets/composeResources/portfolio.app.shared.generated.resources/drawable/kigali_assets_36653828.jpg",
+          "compressed": 2012637,
+          "uncompressed": 2012637
+        },
+        {
+          "path": "assets/engine/bond-import/tesseract/tesseract-core-relaxedsimd-lstm.wasm.js",
+          "compressed": 1465943,
+          "uncompressed": 3905767
+        },
+        {
+          "path": "assets/engine/bond-import/tesseract/tesseract-core-simd-lstm.wasm.js",
+          "compressed": 1464511,
+          "uncompressed": 3899472
+        },
+        {
+          "path": "assets/engine/bond-import/tesseract/tesseract-core-lstm.wasm.js",
+          "compressed": 1463863,
+          "uncompressed": 3896484
+        },
+        {
+          "path": "resources.arsc",
+          "compressed": 535976,
+          "uncompressed": 535976
+        },
+        {
+          "path": "assets/engine/bond-import/pdf.worker.legacy.min.mjs",
+          "compressed": 392256,
+          "uncompressed": 1321307
+        },
+        {
+          "path": "assets/engine/pdf.mjs",
+          "compressed": 219672,
+          "uncompressed": 1069549
+        },
+        {
+          "path": "assets/engine/bond-import/wasm/quickjs-eval.wasm",
+          "compressed": 217592,
+          "uncompressed": 469105
+        },
+        {
+          "path": "assets/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_calendar_base_dark.png",
+          "compressed": 171727,
+          "uncompressed": 171727
+        },
+        {
+          "path": "assets/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_calendar_base_light.png",
+          "compressed": 170617,
+          "uncompressed": 170617
+        },
+        {
+          "path": "assets/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_processor_blank_light.png",
+          "compressed": 118234,
+          "uncompressed": 118234
+        },
+        {
+          "path": "assets/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_processor_blank_dark.png",
+          "compressed": 117569,
+          "uncompressed": 117569
+        },
+        {
+          "path": "assets/engine/bond-import/wasm/openjpeg_nowasm_fallback.js",
+          "compressed": 115600,
+          "uncompressed": 445781
+        },
+        {
+          "path": "classes2.dex",
+          "compressed": 112668,
+          "uncompressed": 260468
+        },
+        {
+          "path": "assets/engine/bond-import/standard_fonts/LiberationSans-Italic.ttf",
+          "compressed": 98238,
+          "uncompressed": 162036
+        },
+        {
+          "path": "assets/engine/bond-import/standard_fonts/LiberationSans-Regular.ttf",
+          "compressed": 89739,
+          "uncompressed": 139512
+        },
+        {
+          "path": "assets/engine/bond-import/standard_fonts/LiberationSans-Bold.ttf",
+          "compressed": 84782,
+          "uncompressed": 137052
+        },
+        {
+          "path": "assets/engine/bond-import/standard_fonts/LiberationSans-BoldItalic.ttf",
+          "compressed": 83085,
+          "uncompressed": 135124
+        }
+      ],
+      "sha256": "c3f291cce62e96f365dc4e2ca5070339ad95f52a3dd17bfaf4f61ca085e055cf"
+    }
+  ],
+  "debug_dex_feature_samples": {
+    "dashboard_3d": {
+      "defined_code_bytes": 18750,
+      "class_count": 18,
+      "class_name_filter": "DashboardBrandMark|InziraInitialMesh|InziraInitialRenderer|InziraMetalFrame|BrandVector|BrandMeshCorner|BrandMeshFace|\\.MetalFrame(?:\\$|$)"
+    },
+    "logo_loader": {
+      "defined_code_bytes": 6741,
+      "class_count": 8,
+      "class_name_filter": "InziraLoadingMark|LoadingContours"
+    },
+    "onboarding": {
+      "defined_code_bytes": 77674,
+      "class_count": 84,
+      "class_name_filter": "Onboarding|BrandIntro|IntroContours|ImportFlowDiagram|ProcessingChip|CalendarReminderArtwork|ReportAssemblyArtwork"
+    },
+    "document_previews": {
+      "defined_code_bytes": 14552,
+      "class_count": 16,
+      "class_name_filter": "DocumentThumbnail"
+    },
+    "charts": {
+      "defined_code_bytes": 36526,
+      "class_count": 31,
+      "class_name_filter": "InvestmentChart|CompanyPriceChart|ChartGeometry|FinancialChart"
+    },
+    "education_simulator": {
+      "defined_code_bytes": 8065,
+      "class_count": 11,
+      "class_name_filter": "Education|Simulator"
+    },
+    "reports": {
+      "defined_code_bytes": 66543,
+      "class_count": 37,
+      "class_name_filter": "AnnualReport|PortfolioReport|ReportPdf"
+    },
+    "android_widgets": {
+      "defined_code_bytes": 10996,
+      "class_count": 14,
+      "class_name_filter": "NextWidget|WhatsNextWidget|HomeWidget"
+    },
+    "firebase_namespace_only": {
+      "defined_code_bytes": 206240,
+      "class_count": 459,
+      "class_name_filter": "^com.google.firebase\\."
+    }
+  },
+  "debug_dex_caveat": "apkanalyzer defined class code bytes: uncompressed, pre-release shrink; not compressed APK savings or full feature dependency attribution.",
+  "release_resource_groups": {
+    "onboarding_art": {
+      "compressed_bytes": 755149,
+      "uncompressed_bytes": 755149,
+      "entries": 20
+    },
+    "signin_photo": {
+      "compressed_bytes": 2012637,
+      "uncompressed_bytes": 2012637,
+      "entries": 1
+    },
+    "issuer_logos": {
+      "compressed_bytes": 219202,
+      "uncompressed_bytes": 219202,
+      "entries": 8
+    },
+    "pdf_cmaps": {
+      "compressed_bytes": 976758,
+      "uncompressed_bytes": 1167747,
+      "entries": 169
+    },
+    "pdf_fonts": {
+      "compressed_bytes": 544537,
+      "uncompressed_bytes": 798046,
+      "entries": 16
+    },
+    "pdf_codecs": {
+      "compressed_bytes": 547847,
+      "uncompressed_bytes": 1543489,
+      "entries": 13
+    },
+    "ocr_cores": {
+      "compressed_bytes": 4394317,
+      "uncompressed_bytes": 11701723,
+      "entries": 3
+    },
+    "education": {
+      "compressed_bytes": 15260,
+      "uncompressed_bytes": 51442,
+      "entries": 1
+    }
+  },
+  "photo": {
+    "width": 3024,
+    "height": 4032,
+    "full_rgba8_decode_bytes": 48771072,
+    "memory_caveat": "Theoretical full bitmap allocation, not measured resident memory or proof of decoder behavior."
+  },
+  "onboarding_pngs": [
+    {
+      "name": "onboarding_calendar_base_dark.png",
+      "width": 1520,
+      "height": 1120,
+      "full_rgba8_decode_bytes": 6809600
+    },
+    {
+      "name": "onboarding_calendar_base_light.png",
+      "width": 1520,
+      "height": 1120,
+      "full_rgba8_decode_bytes": 6809600
+    },
+    {
+      "name": "onboarding_calendar_notice_lower_dark.png",
+      "width": 1520,
+      "height": 1120,
+      "full_rgba8_decode_bytes": 6809600
+    },
+    {
+      "name": "onboarding_calendar_notice_lower_light.png",
+      "width": 1520,
+      "height": 1120,
+      "full_rgba8_decode_bytes": 6809600
+    },
+    {
+      "name": "onboarding_calendar_notice_upper_dark.png",
+      "width": 1520,
+      "height": 1120,
+      "full_rgba8_decode_bytes": 6809600
+    },
+    {
+      "name": "onboarding_calendar_notice_upper_light.png",
+      "width": 1520,
+      "height": 1120,
+      "full_rgba8_decode_bytes": 6809600
+    },
+    {
+      "name": "onboarding_calendar_phone_dark.png",
+      "width": 1520,
+      "height": 1120,
+      "full_rgba8_decode_bytes": 6809600
+    },
+    {
+      "name": "onboarding_calendar_phone_light.png",
+      "width": 1520,
+      "height": 1120,
+      "full_rgba8_decode_bytes": 6809600
+    },
+    {
+      "name": "onboarding_processor_blank_dark.png",
+      "width": 960,
+      "height": 720,
+      "full_rgba8_decode_bytes": 2764800
+    },
+    {
+      "name": "onboarding_processor_blank_light.png",
+      "width": 960,
+      "height": 720,
+      "full_rgba8_decode_bytes": 2764800
+    },
+    {
+      "name": "onboarding_report_blank_dark.png",
+      "width": 640,
+      "height": 760,
+      "full_rgba8_decode_bytes": 1945600
+    },
+    {
+      "name": "onboarding_report_blank_light.png",
+      "width": 640,
+      "height": 760,
+      "full_rgba8_decode_bytes": 1945600
+    },
+    {
+      "name": "onboarding_report_sheet_0_dark.png",
+      "width": 640,
+      "height": 760,
+      "full_rgba8_decode_bytes": 1945600
+    },
+    {
+      "name": "onboarding_report_sheet_0_light.png",
+      "width": 640,
+      "height": 760,
+      "full_rgba8_decode_bytes": 1945600
+    },
+    {
+      "name": "onboarding_report_sheet_1_dark.png",
+      "width": 640,
+      "height": 760,
+      "full_rgba8_decode_bytes": 1945600
+    },
+    {
+      "name": "onboarding_report_sheet_1_light.png",
+      "width": 640,
+      "height": 760,
+      "full_rgba8_decode_bytes": 1945600
+    },
+    {
+      "name": "onboarding_report_sheet_2_dark.png",
+      "width": 640,
+      "height": 760,
+      "full_rgba8_decode_bytes": 1945600
+    },
+    {
+      "name": "onboarding_report_sheet_2_light.png",
+      "width": 640,
+      "height": 760,
+      "full_rgba8_decode_bytes": 1945600
+    },
+    {
+      "name": "onboarding_reports_dark.png",
+      "width": 640,
+      "height": 760,
+      "full_rgba8_decode_bytes": 1945600
+    },
+    {
+      "name": "onboarding_reports_light.png",
+      "width": 640,
+      "height": 760,
+      "full_rgba8_decode_bytes": 1945600
+    }
+  ],
+  "source_reference_scan": {
+    "unreferenced_common_drawable_candidates": [],
+    "caveat": "Name/reference heuristic, not proof that every resource is needed on every flow."
+  },
+  "runtime_measurement": "No new CPU/GPU/frame-time/battery/peak-memory benchmark was run. Runtime rankings use source evidence.",
+  "ios_bundles": {
+    "debug": {
+      "bundle_bytes": 98996895,
+      "largest_files": [
+        {
+          "path": "Portfolio.debug.dylib",
+          "bytes": 94206768
+        },
+        {
+          "path": "compose-resources/composeResources/portfolio.app.shared.generated.resources/drawable/kigali_assets_36653828.jpg",
+          "bytes": 2012637
+        },
+        {
+          "path": "PlugIns/NextWidget.appex/NextWidget.debug.dylib",
+          "bytes": 615056
+        },
+        {
+          "path": "PlugIns/ShareImport.appex/ShareImport.debug.dylib",
+          "bytes": 349280
+        },
+        {
+          "path": "compose-resources/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_calendar_base_dark.png",
+          "bytes": 171727
+        },
+        {
+          "path": "compose-resources/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_calendar_base_light.png",
+          "bytes": 170617
+        },
+        {
+          "path": "compose-resources/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_processor_blank_light.png",
+          "bytes": 118234
+        },
+        {
+          "path": "compose-resources/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_processor_blank_dark.png",
+          "bytes": 117569
+        }
+      ],
+      "extensions": {
+        "NextWidget": 780952,
+        "ShareImport": 522937
+      }
+    },
+    "release_unsigned": {
+      "bundle_bytes": 66375761,
+      "largest_files": [
+        {
+          "path": "Portfolio",
+          "bytes": 62342936
+        },
+        {
+          "path": "compose-resources/composeResources/portfolio.app.shared.generated.resources/drawable/kigali_assets_36653828.jpg",
+          "bytes": 2012637
+        },
+        {
+          "path": "PlugIns/NextWidget.appex/NextWidget",
+          "bytes": 413928
+        },
+        {
+          "path": "PlugIns/ShareImport.appex/ShareImport",
+          "bytes": 208400
+        },
+        {
+          "path": "compose-resources/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_calendar_base_dark.png",
+          "bytes": 171727
+        },
+        {
+          "path": "compose-resources/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_calendar_base_light.png",
+          "bytes": 170617
+        },
+        {
+          "path": "compose-resources/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_processor_blank_light.png",
+          "bytes": 118234
+        },
+        {
+          "path": "compose-resources/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_processor_blank_dark.png",
+          "bytes": 117569
+        }
+      ],
+      "extensions": {
+        "NextWidget": 437158,
+        "ShareImport": 241054
+      }
+    }
+  }
+}
