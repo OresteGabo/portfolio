@@ -94,9 +94,14 @@ internal fun detailDate(date: LocalDate) = "${date.day} ${date.monthLabel().take
 
 @Composable
 internal fun DetailDocumentRows(model: PortfolioModel, record: JsonRecord) {
+    DetailDocumentRows(model, listOf(record))
+}
+
+@Composable
+internal fun DetailDocumentRows(model: PortfolioModel, records: List<JsonRecord>) {
     val actions = LocalNativeActions.current
     var downloading by remember { mutableStateOf<String?>(null) }
-    val files = investmentEvidence(record, model.documents)
+    val files = investmentEvidence(records, model.documents)
     if (files.isEmpty()) DetailNote("No linked document")
     files.forEach { evidence ->
         val doc = evidence.document

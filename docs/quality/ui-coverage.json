@@ -43,7 +43,7 @@
       "method": "sharedScreensAndConfirmedDeletionWorkWithoutAnyAccountOrNetwork"
     },
     {
-      "flow": "bond/share details",
+      "flow": "bond/share details and company/purchase contract PDF preview and download",
       "class": "InvestmentDetailLayoutTest",
       "method": "investmentOverviewsRenderInBothThemes"
     },

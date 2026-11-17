@@ -34,4 +34,19 @@ class InvestmentEvidenceTest {
         val same = JsonRecord().put("confirmationDocumentId", "same").put("issuanceDocumentId", "same")
         assertEquals(1, investmentEvidence(same, emptyList()).size)
     }
+
+    @Test fun shareDocumentsIncludeEveryLinkedPurchaseOnceWithinTheSelectedCompanyAndCurrency() {
+        fun lot(ticker: String, currency: String, document: String) = JsonRecord()
+            .put("ticker", ticker).put("currency", currency).put("contractDocumentId", document)
+        val selected = JsonRecord().put("ticker", "IMR").put("currency", "RWF")
+        val lots = listOf(lot("IMR", "RWF", "contract-a"), lot("IMR", "RWF", "contract-b"),
+            lot("IMR", "RWF", "contract-a"), lot("IMR", "USD", "foreign-currency"), lot("BLR", "RWF", "other-company"))
+        val documents = listOf(JsonRecord().put("id", "contract-a").put("label", "First contract"),
+            JsonRecord().put("id", "unrelated").put("ticker", "IMR"))
+        val files = investmentEvidence(shareDetailLots(lots, selected), documents)
+        assertEquals(listOf("contract-a", "contract-b"), files.map { it.document.text("id") })
+        assertEquals("First contract", files.first().document.text("label"))
+        assertEquals("/api/bonds/documents/contract-b", files.last().document.text("downloadUrl"))
+        assertTrue(investmentEvidence(emptyList<JsonRecord>(), documents).isEmpty())
+    }
 }

@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -35,6 +36,7 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, openPurchase
         .sumOf { it.optDouble("shares", 0.0) }
     var requestedQuotes by remember(ticker, currency) { mutableStateOf(false) }
     var allLots by rememberSaveable(ticker, currency) { mutableStateOf(false) }
+    var showDocuments by rememberSaveable(ticker, currency) { mutableStateOf(false) }
     LaunchedEffect(ticker, currency, model.historyComplete, model.busy) {
         if (!model.busy && model.error == null) {
             if (!model.historyComplete) model.loadInvestmentHistory()
@@ -55,6 +57,10 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, openPurchase
                             style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                     }
                     ShareValuesInfoButton(quote, model.quoteRefreshFailed, pending = pendingQuantity > 0)
+                    IconButton(enabled = model.historyComplete, onClick = { showDocuments = !showDocuments },
+                        modifier = Modifier.semantics { stateDescription = localized(if (showDocuments) "Expanded" else "Collapsed") }) {
+                        AppIcon(Icons.Outlined.Description, "Documents")
+                    }
                 }
                 FinancialText(name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Medium,
                     modifier = Modifier.semantics { heading() })
@@ -65,6 +71,9 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, openPurchase
                 }, valuation?.estimatedValue ?: quote.price, currency)
                 valuation?.let { ShareReturnSummary(it) }
             }
+        }
+        if (showDocuments && model.historyComplete) item(key = "source-documents") {
+            DetailDocumentRows(model, lots)
         }
         item(key = "quote") { ShareClosingQuote(model, quote, currency) }
         if (valuation != null) item(key = "position") {

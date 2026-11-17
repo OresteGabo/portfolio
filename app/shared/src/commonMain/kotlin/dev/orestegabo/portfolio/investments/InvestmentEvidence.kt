@@ -5,6 +5,10 @@ import dev.orestegabo.portfolio.network.PortfolioDataApi
 
 internal data class InvestmentEvidence(val label: String, val document: JsonRecord)
 
+/** A company can have several purchase lots backed by the same or different PDFs. */
+internal fun investmentEvidence(records: List<JsonRecord>, documents: List<JsonRecord>): List<InvestmentEvidence> =
+    records.flatMap { investmentEvidence(it, documents) }.distinctBy { it.document.text("id") }
+
 /** Follow explicit persisted provenance only; a similar ticker/date is not proof of a link. */
 internal fun investmentEvidence(record: JsonRecord, documents: List<JsonRecord>): List<InvestmentEvidence> =
     (documents.filter { it.text("id").startsWith("guest:document:") && record.hasDocument(it.text("id")) }.map { InvestmentEvidence(if (it.text("kind") == "bond") "View allocation confirmation" else "View share contract", it) } +
