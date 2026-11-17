@@ -17,7 +17,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import org.jetbrains.compose.resources.painterResource
 import portfolio.app.shared.generated.resources.*
 import kotlin.math.PI
 import kotlin.math.sin
@@ -29,9 +28,9 @@ internal fun CalendarReminderArtwork(dark: Boolean, active: Boolean) {
     BoxWithConstraints(Modifier.fillMaxSize().padding(10.dp), contentAlignment = Alignment.Center) {
         val width = minOf(maxWidth, maxHeight * (760f / 560f))
         Box(Modifier.size(width, width * (560f / 760f))) {
-            Image(painterResource(if (dark) Res.drawable.onboarding_calendar_base_dark else Res.drawable.onboarding_calendar_base_light),
+            Image(onboardingPainter(if (dark) Res.drawable.onboarding_calendar_base_dark else Res.drawable.onboarding_calendar_base_light),
                 null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-            Image(painterResource(if (dark) Res.drawable.onboarding_calendar_phone_dark else Res.drawable.onboarding_calendar_phone_light),
+            Image(onboardingPainter(if (dark) Res.drawable.onboarding_calendar_phone_dark else Res.drawable.onboarding_calendar_phone_light),
                 null, Modifier.fillMaxSize().graphicsLayer {
                     val first = onboardingPhase(progress, .35f, .57f)
                     val second = onboardingPhase(progress, .71f, .93f)
@@ -74,7 +73,7 @@ internal fun CalendarReminderArtwork(dark: Boolean, active: Boolean) {
                 reminder(Offset(366f, 222f), Offset(450f, 180f), Offset(477f, 300f), Offset(548f, 302f), .12f, .40f)
                 reminder(Offset(404f, 361f), Offset(474f, 330f), Offset(504f, 391f), Offset(581f, 391f), .48f, .74f)
             }
-            Image(painterResource(if (dark) Res.drawable.onboarding_calendar_notice_upper_dark else Res.drawable.onboarding_calendar_notice_upper_light),
+            Image(onboardingPainter(if (dark) Res.drawable.onboarding_calendar_notice_upper_dark else Res.drawable.onboarding_calendar_notice_upper_light),
                 null, Modifier.fillMaxSize().graphicsLayer {
                     val arrival = onboardingPhase(progress, .36f, .55f)
                     alpha = arrival
@@ -83,7 +82,7 @@ internal fun CalendarReminderArtwork(dark: Boolean, active: Boolean) {
                     scaleX = .86f + .14f * arrival + .08f * sin(PI * arrival).toFloat()
                     scaleY = scaleX
                 }, contentScale = ContentScale.Fit)
-            Image(painterResource(if (dark) Res.drawable.onboarding_calendar_notice_lower_dark else Res.drawable.onboarding_calendar_notice_lower_light),
+            Image(onboardingPainter(if (dark) Res.drawable.onboarding_calendar_notice_lower_dark else Res.drawable.onboarding_calendar_notice_lower_light),
                 null, Modifier.fillMaxSize().graphicsLayer {
                     val arrival = onboardingPhase(progress, .70f, .89f)
                     alpha = arrival
@@ -108,7 +107,7 @@ internal fun ReportAssemblyArtwork(dark: Boolean, active: Boolean) {
             else listOf(Res.drawable.onboarding_report_sheet_0_light,
                 Res.drawable.onboarding_report_sheet_1_light, Res.drawable.onboarding_report_sheet_2_light)
             sheets.forEachIndexed { index, art ->
-                Image(painterResource(art), null, Modifier.fillMaxSize().graphicsLayer {
+                Image(onboardingPainter(art), null, Modifier.fillMaxSize().graphicsLayer {
                     val settle = onboardingPhase(progress, .02f + index * .07f, .24f + index * .07f)
                     translationX = (-18f + index * 18f).dp.toPx() * (1f - settle)
                     translationY = (-18f - index * 5f).dp.toPx() * (1f - settle)
@@ -116,7 +115,7 @@ internal fun ReportAssemblyArtwork(dark: Boolean, active: Boolean) {
                     alpha = settle
                 }, contentScale = ContentScale.Fit)
             }
-            Image(painterResource(if (dark) Res.drawable.onboarding_report_blank_dark else Res.drawable.onboarding_report_blank_light),
+            Image(onboardingPainter(if (dark) Res.drawable.onboarding_report_blank_dark else Res.drawable.onboarding_report_blank_light),
                 null, Modifier.fillMaxSize().graphicsLayer {
                     val settle = onboardingPhase(progress, .24f, .46f)
                     translationX = 10.dp.toPx() * (1f - settle)

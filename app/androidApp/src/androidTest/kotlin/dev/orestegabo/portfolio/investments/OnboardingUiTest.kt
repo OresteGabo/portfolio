@@ -107,9 +107,11 @@ class OnboardingUiTest {
             instrumentation.waitForIdleSync()
             Thread.sleep(200)
         }
+        // Opt-in comparison captures wait for asynchronous bitmap decoding, not just text semantics.
+        val settledArtworkSnapshots = InstrumentationRegistry.getArguments().getString("settledArtworkSnapshots") == "true"
         fun screenshot(name: String) {
             instrumentation.waitForIdleSync()
-            Thread.sleep(150)
+            Thread.sleep(if (settledArtworkSnapshots) 1_500 else 150)
             val image = requireNotNull(instrumentation.uiAutomation.takeScreenshot())
             File(instrumentation.targetContext.cacheDir, name).outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
             image.recycle()

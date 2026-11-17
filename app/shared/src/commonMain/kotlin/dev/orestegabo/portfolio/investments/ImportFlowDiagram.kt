@@ -35,7 +35,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
-import org.jetbrains.compose.resources.painterResource
 import portfolio.app.shared.generated.resources.*
 
 internal const val IMPORT_FLOW_DESCRIPTION = "A broker PDF is extracted and reviewed. Bond records, share records and purchase costs feed your portfolio mix, estimated value and coupon dates. Review the details before saving."
@@ -115,7 +114,7 @@ private fun WideImportFlow(dark: Boolean, progress: Float) {
             route(202f, 168f, 145f, 168f, 156f, 232f, 120f, 232f, start = .38f, end = .53f)
             route(211f, 178f, 151f, 178f, 163f, 267f, 120f, 267f, start = .42f, end = .57f)
         }
-        Image(painterResource(documentArt(dark)), null, at(12f, 4f, 94f, 84f), contentScale = ContentScale.Fit)
+        Image(onboardingPainter(documentArt(dark)), null, at(12f, 4f, 94f, 84f), contentScale = ContentScale.Fit)
         Canvas(at(12f, 4f, 94f, 84f)) {
             val scan = onboardingPhase(progress, .01f, .25f)
             val intensity = sin(PI * scan).toFloat().coerceAtLeast(0f)

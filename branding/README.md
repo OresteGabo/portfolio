@@ -17,6 +17,10 @@ python3 scripts/sync-onboarding-art.py --check
 
 `generate-inzira-brand.py` also regenerates the calendar, chip and document layers, so changing the master cannot leave old logos embedded in onboarding PNGs.
 
+Onboarding exports trim only fully transparent padding (with a four-pixel filtering gutter). The scripts also generate `OnboardingMotionBounds.generated.kt` and `OnboardingDocumentBounds.generated.kt`; `onboardingPainter` preserves the original canvas, placement and animation pivots. Keep these generated bounds with the cropped PNGs. No illustration pixels are resized or quantized.
+
+The sign-in JPEG uses lossless progressive/entropy optimization (`jpegtran -copy all -optimize -progressive`). Its original resolution and decoded pixels are retained. The optional `djpeg` script test checks the approved pre-optimization pixel hash; both tools are from libjpeg, with no app runtime dependency.
+
 Artwork generation requires `rsvg-convert`; launcher PNG generation uses macOS AppKit. These tools are needed to change artwork, not to build the app from the checked-in runtime resources. Theme colors live in the shared design package; see [the color guide](../docs/design/COLORS.md).
 
 The light identity uses olive on ivory. The dark identity uses cream on near-black. Android themed launcher colors follow the launcher configuration. Historical resource names, bundle IDs, backend addresses, preference keys and storage identifiers stay compatible with existing installations.

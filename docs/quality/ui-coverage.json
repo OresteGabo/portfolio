@@ -18,7 +18,7 @@
       "method": "loaderMovesInBothThemesAndStopsForIdleReducedMotionAndBackground"
     },
     {
-      "flow": "onboarding",
+      "flow": "onboarding (opt-in settled artwork snapshots for visual comparisons)",
       "class": "OnboardingUiTest",
       "method": "tourSupportsThemesFrenchSkipCompletionAndPersistence"
     },

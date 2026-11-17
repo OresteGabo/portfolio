@@ -1,0 +1,661 @@
+{
+  "method": "Lossless JPEG coefficient-preserving recompression and transparent RGBA PNG trimming with original-canvas painter",
+  "photo": {
+    "before_bytes": 2012637,
+    "after_bytes": 1937453,
+    "dimensions": [
+      3024,
+      4032
+    ],
+    "decoded_ppm_sha256_before_and_after": "4908fc3ecbe4587b466daca5caa33f38bd5040cd2c3164cccd3a83564fc04541",
+    "jpeg_command": "jpegtran -copy all -optimize -progressive",
+    "memory_change": "None claimed; resolution retained"
+  },
+  "onboarding_layers": [
+    {
+      "asset": "onboarding_reports_dark",
+      "before_bytes": 17929,
+      "after_bytes": 16545,
+      "canvas": [
+        640,
+        760
+      ],
+      "crop": [
+        28,
+        60,
+        518,
+        642
+      ],
+      "before_rgba_bytes": 1945600,
+      "after_rgba_bytes": 1330224,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "82cd2a53261b41357b4159e551b08841b3d13268ff3c98f317c00493bee16154",
+      "after_sha256": "7fd0c6f7260eb53d0dc5605e47055e53823314b1672288b6e1ae5e1cd7f1f110"
+    },
+    {
+      "asset": "onboarding_reports_light",
+      "before_bytes": 17940,
+      "after_bytes": 16588,
+      "canvas": [
+        640,
+        760
+      ],
+      "crop": [
+        28,
+        60,
+        518,
+        642
+      ],
+      "before_rgba_bytes": 1945600,
+      "after_rgba_bytes": 1330224,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "c7197d8e95c7588726d7dd43ce2d348254df4594fb4cd9a7356b7792fbbc415d",
+      "after_sha256": "c19b75f912bd3b972bd4bc80185b1e6a76080c1c3a1633c352bc41aac0401487"
+    },
+    {
+      "asset": "onboarding_calendar_base_dark",
+      "before_bytes": 171727,
+      "after_bytes": 173427,
+      "canvas": [
+        1520,
+        1120
+      ],
+      "crop": [
+        104,
+        65,
+        1042,
+        914
+      ],
+      "before_rgba_bytes": 6809600,
+      "after_rgba_bytes": 3809552,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "05099a4a9b710a0a63fd4f73ffcd4976fd90d764bf7a70dba4396e6cbc84850a",
+      "after_sha256": "84b4451fb88a58f5577a0af927309f2b32ea0c7a4863100ec918998d2bcf8f4d"
+    },
+    {
+      "asset": "onboarding_calendar_base_light",
+      "before_bytes": 170617,
+      "after_bytes": 172106,
+      "canvas": [
+        1520,
+        1120
+      ],
+      "crop": [
+        104,
+        65,
+        1042,
+        914
+      ],
+      "before_rgba_bytes": 6809600,
+      "after_rgba_bytes": 3809552,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "c980844ac9e9f8addd7d488496805f162f0246fb06e8f05ba69fa326dec02c9c",
+      "after_sha256": "eb0e90e5afd75314b134730291182b55355a5a2cc0e640e2150134537fa612de"
+    },
+    {
+      "asset": "onboarding_calendar_notice_lower_dark",
+      "before_bytes": 10732,
+      "after_bytes": 3526,
+      "canvas": [
+        1520,
+        1120
+      ],
+      "crop": [
+        1115,
+        727,
+        328,
+        128
+      ],
+      "before_rgba_bytes": 6809600,
+      "after_rgba_bytes": 167936,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "6060701a3b612cef20d166f64d9e4f4667cfef2e3e2ccc874605f529a1755ddc",
+      "after_sha256": "5558fd596183110aeea91322a8dbffd4beed615e90bb31e7605174c62ac78049"
+    },
+    {
+      "asset": "onboarding_calendar_notice_lower_light",
+      "before_bytes": 10799,
+      "after_bytes": 3508,
+      "canvas": [
+        1520,
+        1120
+      ],
+      "crop": [
+        1115,
+        727,
+        328,
+        128
+      ],
+      "before_rgba_bytes": 6809600,
+      "after_rgba_bytes": 167936,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "0a69c7ad762f1c6923650fca319e8f3ccf35e8964660010be87f3511b38c34e1",
+      "after_sha256": "a9eabd91a4af4bd0b69f2e308aa29300743b30b80039bac2f8f54796a783a898"
+    },
+    {
+      "asset": "onboarding_calendar_notice_upper_dark",
+      "before_bytes": 12029,
+      "after_bytes": 4770,
+      "canvas": [
+        1520,
+        1120
+      ],
+      "crop": [
+        1029,
+        551,
+        414,
+        130
+      ],
+      "before_rgba_bytes": 6809600,
+      "after_rgba_bytes": 215280,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "74800ab995bff8b1ec6109d9b506f97f542d97028800e3fee7ef3d7b54ac9362",
+      "after_sha256": "9f6bd74d8857a5f58c89438c61226b151f009793401be7d3a892a3486f8d2688"
+    },
+    {
+      "asset": "onboarding_calendar_notice_upper_light",
+      "before_bytes": 12024,
+      "after_bytes": 4641,
+      "canvas": [
+        1520,
+        1120
+      ],
+      "crop": [
+        1029,
+        551,
+        414,
+        130
+      ],
+      "before_rgba_bytes": 6809600,
+      "after_rgba_bytes": 215280,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "32ad5c31de26cd1a007d596e517fff4999f34d352fa2780c32500a1949548038",
+      "after_sha256": "b6116b6a1fa78d5fd3583edcc00db1dd9dca5ecb4fe0207bea8614c928b3ace4"
+    },
+    {
+      "asset": "onboarding_calendar_phone_dark",
+      "before_bytes": 19723,
+      "after_bytes": 10973,
+      "canvas": [
+        1520,
+        1120
+      ],
+      "crop": [
+        987,
+        455,
+        288,
+        544
+      ],
+      "before_rgba_bytes": 6809600,
+      "after_rgba_bytes": 626688,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "c75d78c544e2a5d7694809983061ae7ca0523b4feb80b32819d228d5b89375ac",
+      "after_sha256": "19b27bea1cc0b96ae3872f22df3615addd5099a0c6c05e176f94973bfe6ad62b"
+    },
+    {
+      "asset": "onboarding_calendar_phone_light",
+      "before_bytes": 19852,
+      "after_bytes": 10913,
+      "canvas": [
+        1520,
+        1120
+      ],
+      "crop": [
+        987,
+        455,
+        288,
+        544
+      ],
+      "before_rgba_bytes": 6809600,
+      "after_rgba_bytes": 626688,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "869e9ee7b4d8c4da360bb3e32e6e8f050030e8d2bc64662b4693172c66e925cc",
+      "after_sha256": "64ddd8940fbb7288fc086b983f54c815d9f425e2ff63aa441c482cad995beadc"
+    },
+    {
+      "asset": "onboarding_processor_blank_dark",
+      "before_bytes": 117569,
+      "after_bytes": 65526,
+      "canvas": [
+        960,
+        720
+      ],
+      "crop": [
+        112,
+        82,
+        736,
+        501
+      ],
+      "before_rgba_bytes": 2764800,
+      "after_rgba_bytes": 1474944,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "c7486502462c7fb0541c01a59515b4b301b468aa5547d83af36067fbe93d4b02",
+      "after_sha256": "c0b702b33eb31cc6b077e708271c5db5824ce4ed36434ec3f994c893fa97a691"
+    },
+    {
+      "asset": "onboarding_processor_blank_light",
+      "before_bytes": 118234,
+      "after_bytes": 65159,
+      "canvas": [
+        960,
+        720
+      ],
+      "crop": [
+        112,
+        82,
+        736,
+        501
+      ],
+      "before_rgba_bytes": 2764800,
+      "after_rgba_bytes": 1474944,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "32e1ca9804fd6ecc5ce1fe3a0b67c9dace6a4f90bf0e5771c91b082ddfee072b",
+      "after_sha256": "951a5d852ec4ef9c913ec72ed2e98233f1defd302eba2400e5603afb5cb63b56"
+    },
+    {
+      "asset": "onboarding_report_blank_dark",
+      "before_bytes": 12555,
+      "after_bytes": 9936,
+      "canvas": [
+        640,
+        760
+      ],
+      "crop": [
+        92,
+        60,
+        454,
+        579
+      ],
+      "before_rgba_bytes": 1945600,
+      "after_rgba_bytes": 1051464,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "998b8b82ee19a6976dd20031081d609bc30ac937d8b7f682e25675419e71ffff",
+      "after_sha256": "31c15d28d67b2e8b6d8c5f8b5ff1b233906992b1482c167aa9b2ba4244870791"
+    },
+    {
+      "asset": "onboarding_report_blank_light",
+      "before_bytes": 12775,
+      "after_bytes": 10019,
+      "canvas": [
+        640,
+        760
+      ],
+      "crop": [
+        92,
+        60,
+        454,
+        579
+      ],
+      "before_rgba_bytes": 1945600,
+      "after_rgba_bytes": 1051464,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "b5c4a17b714d2b0374bba478c95ea6341c66e3769320ca71e162c60e0b0d2b55",
+      "after_sha256": "640b9eb0ca43237215d72faa018f860e55dfffa4755b98e4d03200111ffc7b68"
+    },
+    {
+      "asset": "onboarding_report_sheet_0_dark",
+      "before_bytes": 5111,
+      "after_bytes": 3332,
+      "canvas": [
+        640,
+        760
+      ],
+      "crop": [
+        28,
+        124,
+        453,
+        578
+      ],
+      "before_rgba_bytes": 1945600,
+      "after_rgba_bytes": 1047336,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "b230322b2b3cdd1ae1c4e3c54b662e9710dba34d1d5ea40c5473b195d1c571ed",
+      "after_sha256": "4e888bdeee60721688c40306042f9261e0b35316f4879925f3585d0f613c9100"
+    },
+    {
+      "asset": "onboarding_report_sheet_0_light",
+      "before_bytes": 5132,
+      "after_bytes": 3332,
+      "canvas": [
+        640,
+        760
+      ],
+      "crop": [
+        28,
+        124,
+        453,
+        578
+      ],
+      "before_rgba_bytes": 1945600,
+      "after_rgba_bytes": 1047336,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "98ee57af61225143f612d45dfaf1b70c3c7a52ecce420dd4f075f684622b3455",
+      "after_sha256": "35d31ca7fc13b22df6a89ce125b850e3b5ff35fbc65461847a310b25b027f1f8"
+    },
+    {
+      "asset": "onboarding_report_sheet_1_dark",
+      "before_bytes": 5109,
+      "after_bytes": 3327,
+      "canvas": [
+        640,
+        760
+      ],
+      "crop": [
+        50,
+        103,
+        452,
+        578
+      ],
+      "before_rgba_bytes": 1945600,
+      "after_rgba_bytes": 1045024,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "0a1c329f92b6ff897ff888850452a2a8f8940d1c8371ed91e42992592a2a44df",
+      "after_sha256": "b14e42a46095755753f234bf991ea5cb83483148db82b5cdc31bc436ecf7913c"
+    },
+    {
+      "asset": "onboarding_report_sheet_1_light",
+      "before_bytes": 5107,
+      "after_bytes": 3319,
+      "canvas": [
+        640,
+        760
+      ],
+      "crop": [
+        50,
+        103,
+        452,
+        578
+      ],
+      "before_rgba_bytes": 1945600,
+      "after_rgba_bytes": 1045024,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "e30cd1ee220de41b6bb9e272084e5aeebf3f1b0a83b2c1608f0707e125186d7c",
+      "after_sha256": "13dd0d030e329eda4d11ee75332add1a2123b804ec66163c826e688a100ee86b"
+    },
+    {
+      "asset": "onboarding_report_sheet_2_dark",
+      "before_bytes": 5094,
+      "after_bytes": 3305,
+      "canvas": [
+        640,
+        760
+      ],
+      "crop": [
+        71,
+        82,
+        453,
+        578
+      ],
+      "before_rgba_bytes": 1945600,
+      "after_rgba_bytes": 1047336,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "6ce98f02ceaa17273b3dced2a10790a9841f8412743892b66a0fc65b07db3999",
+      "after_sha256": "b918fa4f84d9548da377b1ce975f2118471fbf38b6ec64a00247ba6a9b7f6762"
+    },
+    {
+      "asset": "onboarding_report_sheet_2_light",
+      "before_bytes": 5091,
+      "after_bytes": 3310,
+      "canvas": [
+        640,
+        760
+      ],
+      "crop": [
+        71,
+        82,
+        453,
+        578
+      ],
+      "before_rgba_bytes": 1945600,
+      "after_rgba_bytes": 1047336,
+      "cropped_rgba_exact": true,
+      "discarded_alpha_zero": true,
+      "color_metadata_preserved": true,
+      "before_sha256": "4dc40efd954fbd2aeaecbd295927c348c3ae14b1eee262bfbe84d1beb4620856",
+      "after_sha256": "a1def4fe31e84efa534796c649c67be91e220710c0445ed797706c5353653219"
+    }
+  ],
+  "totals": {
+    "before_bytes": 755149,
+    "after_bytes": 587562,
+    "before_rgba_bytes": 79462400,
+    "after_rgba_bytes": 23631568
+  },
+  "settled_android_screenshots": [
+    {
+      "changedPixels": 0,
+      "maxChannelDifference": 0,
+      "meanAbsoluteChannelDifference": 0,
+      "pixels": 2419200,
+      "pixelsDifferenceOver8": 0,
+      "screen": "onboarding-light-en-1.png"
+    },
+    {
+      "changedPixels": 9365,
+      "maxChannelDifference": 15,
+      "meanAbsoluteChannelDifference": 0.0059124228395061726,
+      "pixels": 2419200,
+      "pixelsDifferenceOver8": 483,
+      "screen": "onboarding-light-en-2.png"
+    },
+    {
+      "changedPixels": 35077,
+      "maxChannelDifference": 18,
+      "meanAbsoluteChannelDifference": 0.02771315586419753,
+      "pixels": 2419200,
+      "pixelsDifferenceOver8": 1498,
+      "screen": "onboarding-light-en-3.png"
+    },
+    {
+      "changedPixels": 17901,
+      "maxChannelDifference": 10,
+      "meanAbsoluteChannelDifference": 0.008275325176366843,
+      "pixels": 2419200,
+      "pixelsDifferenceOver8": 1,
+      "screen": "onboarding-light-en-4.png"
+    },
+    {
+      "changedPixels": 0,
+      "maxChannelDifference": 0,
+      "meanAbsoluteChannelDifference": 0,
+      "pixels": 2419200,
+      "pixelsDifferenceOver8": 0,
+      "screen": "onboarding-dark-en-1.png"
+    },
+    {
+      "changedPixels": 9437,
+      "maxChannelDifference": 13,
+      "meanAbsoluteChannelDifference": 0.005945491622574956,
+      "pixels": 2419200,
+      "pixelsDifferenceOver8": 471,
+      "screen": "onboarding-dark-en-2.png"
+    },
+    {
+      "changedPixels": 34449,
+      "maxChannelDifference": 14,
+      "meanAbsoluteChannelDifference": 0.02562389770723104,
+      "pixels": 2419200,
+      "pixelsDifferenceOver8": 792,
+      "screen": "onboarding-dark-en-3.png"
+    },
+    {
+      "changedPixels": 17912,
+      "maxChannelDifference": 8,
+      "meanAbsoluteChannelDifference": 0.00802524250440917,
+      "pixels": 2419200,
+      "pixelsDifferenceOver8": 0,
+      "screen": "onboarding-dark-en-4.png"
+    }
+  ],
+  "screenshot_caveat": "Same disposable emulator with Reduce Motion, fully decoded images. System clock/top 100 pixels and bottom 60 system-navigation pixels excluded; all app artwork/content retained. Source pixels are exact; rendered GPU filtering need not be bit-identical.",
+  "release_apk": [
+    {
+      "apk": "app/androidApp/build/outputs/apk/release/androidApp-release-unsigned.apk",
+      "bytes": 24937871,
+      "compressed_groups": {
+        "OCR English model": 10904766,
+        "OCR cores": 4394317,
+        "DEX code": 3041796,
+        "PDF import runtime": 2737819,
+        "Photography": 1937453,
+        "Shared UI and data assets": 883446,
+        "Android resources and metadata": 803126,
+        "Native libraries": 60292
+      },
+      "largest_entries": [
+        {
+          "path": "assets/engine/bond-import/eng.traineddata",
+          "compressed": 10904766,
+          "uncompressed": 23466654
+        },
+        {
+          "path": "classes.dex",
+          "compressed": 2929129,
+          "uncompressed": 5789164
+        },
+        {
+          "path": "assets/composeResources/portfolio.app.shared.generated.resources/drawable/kigali_assets_36653828.jpg",
+          "compressed": 1937453,
+          "uncompressed": 1937453
+        },
+        {
+          "path": "assets/engine/bond-import/tesseract/tesseract-core-relaxedsimd-lstm.wasm.js",
+          "compressed": 1465943,
+          "uncompressed": 3905767
+        },
+        {
+          "path": "assets/engine/bond-import/tesseract/tesseract-core-simd-lstm.wasm.js",
+          "compressed": 1464511,
+          "uncompressed": 3899472
+        },
+        {
+          "path": "assets/engine/bond-import/tesseract/tesseract-core-lstm.wasm.js",
+          "compressed": 1463863,
+          "uncompressed": 3896484
+        },
+        {
+          "path": "resources.arsc",
+          "compressed": 535976,
+          "uncompressed": 535976
+        },
+        {
+          "path": "assets/engine/bond-import/pdf.worker.legacy.min.mjs",
+          "compressed": 392256,
+          "uncompressed": 1321307
+        },
+        {
+          "path": "assets/engine/pdf.mjs",
+          "compressed": 219672,
+          "uncompressed": 1069549
+        },
+        {
+          "path": "assets/engine/bond-import/wasm/quickjs-eval.wasm",
+          "compressed": 217592,
+          "uncompressed": 469105
+        },
+        {
+          "path": "assets/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_calendar_base_dark.png",
+          "compressed": 173427,
+          "uncompressed": 173427
+        },
+        {
+          "path": "assets/composeResources/portfolio.app.shared.generated.resources/drawable/onboarding_calendar_base_light.png",
+          "compressed": 172106,
+          "uncompressed": 172106
+        },
+        {
+          "path": "assets/engine/bond-import/wasm/openjpeg_nowasm_fallback.js",
+          "compressed": 115600,
+          "uncompressed": 445781
+        },
+        {
+          "path": "classes2.dex",
+          "compressed": 112667,
+          "uncompressed": 260468
+        },
+        {
+          "path": "assets/engine/bond-import/standard_fonts/LiberationSans-Italic.ttf",
+          "compressed": 98238,
+          "uncompressed": 162036
+        },
+        {
+          "path": "assets/engine/bond-import/standard_fonts/LiberationSans-Regular.ttf",
+          "compressed": 89739,
+          "uncompressed": 139512
+        },
+        {
+          "path": "assets/engine/bond-import/standard_fonts/LiberationSans-Bold.ttf",
+          "compressed": 84782,
+          "uncompressed": 137052
+        },
+        {
+          "path": "assets/engine/bond-import/standard_fonts/LiberationSans-BoldItalic.ttf",
+          "compressed": 83085,
+          "uncompressed": 135124
+        },
+        {
+          "path": "assets/engine/bond-import/wasm/openjpeg.wasm",
+          "compressed": 81843,
+          "uncompressed": 251131
+        },
+        {
+          "path": "assets/composeResources/portfolio.app.shared.generated.resources/drawable/logo_bnr.png",
+          "compressed": 78112,
+          "uncompressed": 78112
+        }
+      ]
+    }
+  ],
+  "packaged_asset_identity": {
+    "android_debug_and_ios_signed_debug": "All 21 optimized resources byte-identical to current source"
+  },
+  "verification": {
+    "python_tests": 41,
+    "shared_host_tests": 561,
+    "final_isolated_device_tests": 2,
+    "native_targets": [
+      "iosArm64",
+      "iosSimulatorArm64"
+    ],
+    "production_3d_code_changed": false,
+    "known_validation_issue": "Resolved test-only stale Surface capture race with frame-commit synchronization; exact motion assertions retained."
+  }
+}

@@ -3,11 +3,11 @@
 Reads the source generator directly; no full-pack exports are required.
 """
 import argparse
+from onboarding_png import trim, write_bounds
 from pathlib import Path
 import importlib.util
 import subprocess
 import tempfile
-import struct
 
 ROOT = Path(__file__).resolve().parents[1]
 DEST = ROOT / 'app/shared/src/commonMain/composeResources/drawable'
@@ -17,13 +17,9 @@ PACKS = ROOT / 'branding/struct-capital'
 SOURCES = {'reports': ('data-processing', 'document-stack')}
 
 
-def dimensions(data):
-    assert data[:8] == b'\x89PNG\r\n\x1a\n', 'Expected a PNG file'
-    return struct.unpack('>II', data[16:24])
-
-
 def main(check=False):
     changed = []
+    bounds = {}
     # Render every mapping first, preserving the existing image geometry.
     copies = []
     for target, (pack, source) in SOURCES.items():
@@ -40,10 +36,9 @@ def main(check=False):
                 _, width, height, _, _ = module.ASSETS[source]
                 subprocess.run(['rsvg-convert', '-w', str(width * 2), '-h', str(height * 2),
                                 str(art), '-o', str(output)], check=True)
-                data = output.read_bytes()
-            if dest.exists():
-                assert dimensions(data) == dimensions(dest.read_bytes()), f'Unexpected size change: {dest}'
+                data, bounds[f'onboarding_{target}_{theme}'] = trim(output.read_bytes())
             copies.append((dest, data))
+    write_bounds('Document', bounds, check=check)
     for dest, data in copies:
         if not dest.exists() or dest.read_bytes() != data:
             changed.append(dest.name)

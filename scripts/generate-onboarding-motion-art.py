@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Export independently animated layers from the existing onboarding vector masters."""
 import argparse
+from onboarding_png import trim, write_bounds
 from pathlib import Path
 import importlib.util
 import subprocess
@@ -10,6 +11,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 DEST = ROOT / 'app/shared/src/commonMain/composeResources/drawable'
 CHECK = False
+BOUNDS = {}
 
 
 def source(name, relative):
@@ -30,7 +32,8 @@ def export(name, children, viewbox, width, height):
         subprocess.run(['rsvg-convert', '-w', str(width * 2), '-h', str(height * 2),
                         '-o', str(output), str(path)], check=True)
         destination = DEST / f'{name}.png'
-        data = output.read_bytes()
+        data, bounds = trim(output.read_bytes())
+        BOUNDS[name] = bounds
         if CHECK:
             if not destination.exists() or destination.read_bytes() != data:
                 raise SystemExit(f'Stale onboarding artwork: {destination.name}; regenerate branding.')
@@ -66,6 +69,7 @@ def main():
         body_lines = {'M56 %sh' % y for y in [115,127,139,151,163,175,187,199]}
         clean_front = [node for node in pages[3:] if not any(node.get('d', '').startswith(prefix) for prefix in body_lines)]
         export(f'onboarding_report_blank_{theme}', clean_front, '0 15 240 285', 320, 380)
+    write_bounds('Motion', BOUNDS, check=CHECK)
     print('Verified onboarding motion layers.' if CHECK else 'Exported onboarding motion layers from the current vector geometry.')
 
 

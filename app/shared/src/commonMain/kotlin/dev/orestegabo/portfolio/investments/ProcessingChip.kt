@@ -19,7 +19,6 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.layout.ContentScale
-import org.jetbrains.compose.resources.painterResource
 import portfolio.app.shared.generated.resources.*
 import kotlin.math.PI
 import kotlin.math.sin
@@ -53,7 +52,7 @@ internal fun ProcessingChip(dark: Boolean, progress: Float, modifier: Modifier) 
             drawCircle(Brush.radialGradient(listOf(ink.copy(alpha = .22f * charge), ink.copy(alpha = 0f)),
                 center = center, radius = radius), radius, center)
         }
-        Image(painterResource(if (dark) Res.drawable.onboarding_processor_blank_dark else Res.drawable.onboarding_processor_blank_light),
+        Image(onboardingPainter(if (dark) Res.drawable.onboarding_processor_blank_dark else Res.drawable.onboarding_processor_blank_light),
             null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
         Canvas(Modifier.fillMaxSize()) {
             // Match ContentScale.Fit exactly, so the paths are flush with the bitmap's metal face.
