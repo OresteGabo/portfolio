@@ -13,7 +13,8 @@ For Android, open this folder in Android Studio, sync Gradle, select `app.androi
 
 The iPhone build phase also supports Android Studio’s `iosApp` configuration. It
 recreates `Shared.framework` automatically after a clean, even when the IDE marks
-Kotlin as prebuilt. Existing IDE-built frameworks only need Compose resource sync.
+Kotlin as prebuilt. Every build checks shared source updates through Gradle’s
+incremental framework task so an existing framework cannot hide UI changes.
 
 For everyday iPhone UI checks, select the **iosApp Fast Run** scheme. It builds the same Debug app and launches without attaching LLDB, avoiding debugger launch overhead. Use **iosApp** when you need breakpoints or debugger inspection. Compare startup by force-quitting and opening the installed app from the home screen; Xcode build, install and debugger attachment time are separate from app startup.
 

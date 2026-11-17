@@ -37,9 +37,9 @@ class IosFrameworkBuildTests(unittest.TestCase):
         self.assertEqual(self.run_build(override=True).returncode, 0)
         self.assertEqual(self.log.read_text().strip(), 'unset|:app:shared:embedAndSignAppleFrameworkForXcode')
 
-    def test_ide_prebuilt_framework_only_syncs_resources(self):
+    def test_ide_prebuilt_framework_checks_for_source_updates(self):
         self.assertEqual(self.run_build(existing=True, override=True).returncode, 0)
-        self.assertEqual(self.log.read_text().strip(), 'YES|:app:shared:syncComposeResourcesForIos')
+        self.assertEqual(self.log.read_text().strip(), 'unset|:app:shared:embedAndSignAppleFrameworkForXcode')
 
     def test_xcode_build_always_checks_framework_for_source_updates(self):
         self.assertEqual(self.run_build(existing=True).returncode, 0)
