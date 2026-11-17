@@ -8,7 +8,7 @@
       "method": "marketPriceDefaultsAndCommissionMatchesRequestedExample"
     },
     {
-      "flow": "dashboard initial rotation within stationary hexagon and reduced motion",
+      "flow": "dashboard initial rotation within stationary hexagon and reduced motion (committed-frame capture)",
       "class": "DashboardBrandMarkTest",
       "method": "initialTurnsWithinFixedFrameAndRespectsMotionAndLifecycle"
     },

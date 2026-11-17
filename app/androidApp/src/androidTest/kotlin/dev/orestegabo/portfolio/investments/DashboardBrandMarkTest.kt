@@ -2,6 +2,7 @@ package dev.orestegabo.portfolio.investments
 
 import android.graphics.Bitmap
 import android.graphics.Rect
+import android.os.Build
 import android.view.Window
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +25,8 @@ import org.junit.Assert.*
 import org.junit.Test
 import java.io.File
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /** Real rendered frames, synthetic status only; no account, credentials or network. */
 class DashboardBrandMarkTest {
@@ -44,6 +48,8 @@ class DashboardBrandMarkTest {
                                         val r = it.boundsInWindow()
                                         bounds.set(Rect(r.left.toInt(), r.top.toInt(), r.right.toInt(), r.bottom.toInt()))
                                     }, reducedMotion = reduced.value)
+                                    Text(if (reduced.value) "Motion reduced" else "Motion active",
+                                        Modifier.align(Alignment.BottomCenter))
                                 }
                             }
                         }
@@ -52,6 +58,20 @@ class DashboardBrandMarkTest {
                 ui.waitUntil("brand mark has bounds") { bounds.get() != null }
                 ui.await("Inzira")
                 fun capture() = captureUiGolden(window.get(), bounds.get())
+                fun awaitRenderedFrame() {
+                    val committed = CountDownLatch(1)
+                    scene.onActivity { host ->
+                        val root = host.window.decorView
+                        if (Build.VERSION.SDK_INT >= 29) {
+                            root.viewTreeObserver.registerFrameCommitCallback { committed.countDown() }
+                            root.invalidate()
+                        } else {
+                            root.postOnAnimation { root.postOnAnimation { root.post { committed.countDown() } } }
+                        }
+                    }
+                    assertTrue("The updated scene must render before checking pixel stability",
+                        committed.await(5, TimeUnit.SECONDS))
+                }
                 fun changed(first: Bitmap, second: Bitmap): Int = try { goldenChangedPixels(first, second) }
                     finally { first.recycle(); second.recycle() }
                 val first = capture()
@@ -73,8 +93,11 @@ class DashboardBrandMarkTest {
                 assertTrue("The inner initial must visibly turn", changed(first, next) > 200)
 
                 scene.onActivity { reduced.value = true }
-                ui.await("Inzira")
+                ui.await("Motion reduced")
                 ui.instrumentation.waitForIdleSync()
+                // Semantics/idle do not fence the Surface buffer used by PixelCopy.
+                // Wait for a committed frame, then retain the strict no-motion assertion.
+                awaitRenderedFrame()
                 val accessible = capture()
                 Thread.sleep(340)
                 assertEquals("Reduce Motion must retain the complete stationary mark", 0, changed(accessible, capture()))
