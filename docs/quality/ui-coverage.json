@@ -3,6 +3,21 @@
   "note": "Evidence inventory, not code coverage. Required device gate runs on the reference API 36 emulator. Opt-in delivery/reboot/user-PDF tests remain separately documented.",
   "flows": [
     {
+      "flow": "locked access, legal/guest entry, cancelled biometrics and verification escape",
+      "class": "UnlockUiQualityTest",
+      "method": "lockedActionsRemainPrivateAndRecoverFromCancelledUnlockAndSlowVerification"
+    },
+    {
+      "flow": "locked screen themes, French and large text with reachable actions",
+      "class": "UnlockUiQualityTest",
+      "method": "lockedLayoutSupportsBothThemesFrenchAndLargeTextInAShortViewport"
+    },
+    {
+      "flow": "repeating locked brand motion, user pause/play, reduced motion and background pause",
+      "class": "UnlockUiQualityTest",
+      "method": "decorativeTurnRepeatsAndRespectsPauseReducedMotionAndBackgrounding"
+    },
+    {
       "flow": "pending share order market defaults, on-demand price editor, keyboard Done, reset, cancel/edit persistence and accessible dashboard clock status",
       "class": "ShareOrderScreenTest",
       "method": "marketPriceDefaultsAndCommissionMatchesRequestedExample"

@@ -1,116 +1,134 @@
 package dev.orestegabo.portfolio.investments
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Face
 import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import kotlin.math.*
+import dev.orestegabo.portfolio.design.InziraDimensions
+import dev.orestegabo.portfolio.design.InziraShapes
+import dev.orestegabo.portfolio.design.InziraSpacing
 
+/** Public brand artwork only. Authentication, cancellation and session ownership stay with the model. */
 @Composable
 internal fun UnlockScreen(model: PortfolioModel, continueAsGuest: (() -> Unit)? = null, openLegal: () -> Unit) {
     val colours = MaterialTheme.colorScheme
-    BoxWithConstraints(Modifier.fillMaxSize().background(colours.background).clipToBounds(), contentAlignment = Alignment.TopCenter) {
-        val compact = maxHeight < 600.dp
-        UnlockHexagons(Modifier.fillMaxSize())
-        Column(Modifier.widthIn(max = 460.dp).fillMaxSize().verticalScroll(rememberScrollState())
-            .padding(horizontal = 28.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-            UnlockLogo(Modifier.fillMaxWidth().height(if (compact) 152.dp else 204.dp), compact, model.busy)
-            Spacer(Modifier.height(if (compact) 18.dp else 28.dp))
-            AppText(if (model.verifyingSession) "Device unlocked" else "Portfolio locked", Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(12.dp))
-            AppText(if (model.verifyingSession) "Checking your server session. Your investments stay protected." else "Your saved sign-in is protected on this device.", Modifier.widthIn(max = 300.dp),
-                style = MaterialTheme.typography.bodyMedium, color = colours.onSurfaceVariant, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(if (compact) 24.dp else 32.dp))
-            Button(onClick = model::unlock, enabled = !model.busy,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), shape = RoundedCornerShape(18.dp)) {
-                AppIcon(when (model.unlockLabel) {
-                    "Face ID" -> Icons.Outlined.Face
-                    "Touch ID", "Fingerprint" -> Icons.Outlined.Fingerprint
-                    else -> Icons.Outlined.Lock
-                }, null)
-                Spacer(Modifier.width(8.dp))
-                AppText(if (model.busy) "Unlocking…" else "Unlock with ${localized(model.unlockLabel)}", textAlign = TextAlign.Center)
-            }
-            Spacer(Modifier.height(8.dp))
-            continueAsGuest?.let { TextButton(onClick = it) { AppText("Continue as Guest") } }
-            TextButton(onClick = model::usePassword, enabled = !model.busy || model.verifyingSession, modifier = Modifier.heightIn(min = 48.dp)) { AppText("Use password instead") }
-            TextButton(onClick = openLegal, modifier = Modifier.heightIn(min = 48.dp)) { AppText("Legal & privacy") }
+    val fontScale = LocalDensity.current.fontScale
+    BoxWithConstraints(Modifier.fillMaxSize().background(colours.background), contentAlignment = Alignment.Center) {
+        val compact = maxHeight < 680.dp || fontScale > 1.3f
+        val artworkHeight = when {
+            maxHeight < 460.dp -> 110.dp
+            compact -> 164.dp
+            else -> 230.dp
         }
-    }
-}
-
-/** Quiet honeycomb outlines become progressively lighter toward the top of the screen. */
-@Composable
-private fun UnlockHexagons(modifier: Modifier) {
-    val ink = MaterialTheme.colorScheme.primary
-    Canvas(modifier.clearAndSetSemantics {}) {
-        if (size.width <= 0f || size.height <= 0f) return@Canvas
-        val radius = 36.dp.toPx()
-        val stepX = sqrt(3f) * radius
-        val stepY = radius * 1.5f
-        val columns = ceil(size.width / stepX).toInt() + 2
-        val rows = ceil(size.height / stepY).toInt() + 2
-        for (row in 0..rows) for (column in -1..columns) {
-            val cx = column * stepX + if (row % 2 == 0) 0f else stepX / 2
-            val cy = row * stepY
-            val fade = ((cy / size.height - .08f) / .92f).coerceIn(0f, 1f).pow(1.8f)
-            val path = Path().apply {
-                for (corner in 0..5) {
-                    val angle = (corner * 60 - 90) * PI.toFloat() / 180
-                    val x = cx + cos(angle) * (radius - 2.dp.toPx())
-                    val y = cy + sin(angle) * (radius - 2.dp.toPx())
-                    if (corner == 0) moveTo(x, y) else lineTo(x, y)
+        UnlockBackdrop(Modifier.fillMaxSize())
+        Column(
+            Modifier.widthIn(max = 480.dp).fillMaxSize().verticalScroll(rememberScrollState())
+                .padding(horizontal = InziraSpacing.section, vertical = InziraSpacing.screen),
+            verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Surface(shape = CircleShape, color = colours.primary.copy(alpha = .07f),
+                contentColor = colours.primary, border = BorderStroke(1.dp, colours.primary.copy(alpha = .12f))) {
+                Row(Modifier.padding(horizontal = InziraSpacing.large, vertical = InziraSpacing.small),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(InziraSpacing.small)) {
+                    AppIcon(Icons.Outlined.Lock, null, Modifier.size(14.dp))
+                    AppText("SECURE ACCESS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
                 }
-                close()
             }
-            if ((row * 3 + column) % 9 == 0) drawPath(path, ink.copy(alpha = .018f * fade))
-            drawPath(path, ink.copy(alpha = .105f * fade), style = Stroke(.7.dp.toPx()))
+            UnlockBrandArtwork(Modifier.fillMaxWidth().height(artworkHeight))
+            Column(Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
+                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(InziraSpacing.medium)) {
+                AppText(if (model.verifyingSession) "Device unlocked" else "Portfolio locked",
+                    Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                AppText(if (model.verifyingSession) "Checking your server session. Your investments stay protected."
+                    else "Your saved sign-in is protected on this device.",
+                    Modifier.widthIn(max = 320.dp), style = MaterialTheme.typography.bodyMedium,
+                    color = colours.onSurfaceVariant, textAlign = TextAlign.Center)
+            }
+            Spacer(Modifier.height(if (compact) InziraSpacing.section else InziraSpacing.spacious))
+            UnlockActions(model, continueAsGuest, openLegal)
+            Spacer(Modifier.height(if (compact) InziraSpacing.section else InziraSpacing.spacious))
+            UnlockBrandNote()
         }
     }
 }
 
-/** The complete brand mark sits within the upper half of a circular seal. */
 @Composable
-private fun UnlockLogo(modifier: Modifier, compact: Boolean, loading: Boolean) {
-    val ink = MaterialTheme.colorScheme.primary
-    Box(modifier, contentAlignment = Alignment.BottomCenter) {
-        Canvas(Modifier.fillMaxSize().clearAndSetSemantics {}) {
-            if (size.width <= 20.dp.toPx() || size.height <= 16.dp.toPx()) return@Canvas
-            val radius = min(size.width / 2 - 10.dp.toPx(), size.height - 16.dp.toPx())
-            val baseline = size.height - 10.dp.toPx()
-            val centre = Offset(size.width / 2, baseline)
-            val topLeft = Offset(centre.x - radius, baseline - radius)
-            val circle = Size(radius * 2, radius * 2)
-            drawArc(Brush.radialGradient(listOf(ink.copy(alpha = .08f), ink.copy(alpha = .025f)), centre, radius),
-                180f, 180f, true, topLeft, circle)
-            drawArc(ink.copy(alpha = .24f), 180f, 180f, false, topLeft, circle, style = Stroke(1.dp.toPx()))
-            drawLine(ink.copy(alpha = .12f), Offset(centre.x - radius, baseline), Offset(centre.x + radius, baseline), 1.dp.toPx())
+private fun UnlockActions(model: PortfolioModel, continueAsGuest: (() -> Unit)?, openLegal: () -> Unit) {
+    val colours = MaterialTheme.colorScheme
+    Button(onClick = model::unlock, enabled = !model.busy,
+        modifier = Modifier.fillMaxWidth().heightIn(min = InziraDimensions.primaryActionMinHeight),
+        contentPadding = PaddingValues(horizontal = InziraSpacing.large, vertical = InziraSpacing.large), shape = InziraShapes.action) {
+        if (model.busy) InziraLoadingMark(active = true, modifier = Modifier.size(24.dp), tint = LocalContentColor.current)
+        else AppIcon(when (model.unlockLabel) {
+            "Face ID" -> Icons.Outlined.Face
+            "Touch ID", "Fingerprint" -> Icons.Outlined.Fingerprint
+            else -> Icons.Outlined.Lock
+        }, null)
+        Spacer(Modifier.width(InziraSpacing.small))
+        AppText(if (model.busy) "Unlocking…" else localized("Unlock with {0}").replace("{0}", localized(model.unlockLabel)),
+            Modifier.weight(1f, fill = false), textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold)
+    }
+    Spacer(Modifier.height(InziraSpacing.medium))
+    OutlinedButton(onClick = model::usePassword, enabled = !model.busy || model.verifyingSession,
+        modifier = Modifier.fillMaxWidth().heightIn(min = InziraDimensions.primaryActionMinHeight),
+        contentPadding = PaddingValues(horizontal = InziraSpacing.large, vertical = InziraSpacing.large),
+        shape = InziraShapes.action, border = BorderStroke(1.dp, colours.outline)) {
+        AppText("Use password instead", textAlign = TextAlign.Center)
+    }
+    Spacer(Modifier.height(InziraSpacing.small))
+    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.spacedBy(InziraSpacing.tight), maxItemsInEachRow = 2) {
+        continueAsGuest?.let { enter ->
+            TextButton(onClick = enter, modifier = Modifier.heightIn(min = 48.dp),
+                contentPadding = PaddingValues(horizontal = InziraSpacing.medium, vertical = InziraSpacing.medium)) {
+                AppIcon(Icons.Outlined.Person, null, Modifier.size(18.dp))
+                Spacer(Modifier.width(InziraSpacing.small))
+                AppText("Continue as Guest", style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
+            }
         }
-        InziraLoadingMark(active = loading,
-            modifier = Modifier.padding(bottom = 22.dp).size(if (compact) 84.dp else 108.dp), label = "Inzira")
+        TextButton(onClick = openLegal, modifier = Modifier.heightIn(min = 48.dp),
+            contentPadding = PaddingValues(horizontal = InziraSpacing.medium, vertical = InziraSpacing.medium)) {
+            AppIcon(Icons.Outlined.PrivacyTip, null, Modifier.size(18.dp))
+            Spacer(Modifier.width(InziraSpacing.small))
+            AppText("Legal & privacy", style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
+        }
+    }
+}
+
+/** Static, bundled brand content: no account data, network requests, investment promises or ad targeting. */
+@Composable
+private fun UnlockBrandNote() {
+    val colours = MaterialTheme.colorScheme
+    Surface(Modifier.fillMaxWidth(), shape = InziraShapes.card, color = colours.surfaceContainerLow,
+        border = BorderStroke(1.dp, colours.outlineVariant.copy(alpha = .6f))) {
+        Column(Modifier.background(Brush.horizontalGradient(listOf(colours.primary.copy(alpha = .035f), colours.surfaceContainerLow)))
+            .padding(InziraSpacing.screen).semantics(mergeDescendants = true) {},
+            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(InziraSpacing.small)) {
+            AppText("Your way forward", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
+            AppText("Bonds · Shares · Documents", style = MaterialTheme.typography.bodySmall,
+                color = colours.onSurfaceVariant, textAlign = TextAlign.Center)
+        }
     }
 }

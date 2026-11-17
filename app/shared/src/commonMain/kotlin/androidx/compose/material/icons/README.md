@@ -1,6 +1,6 @@
 # Required extended Material icons
 
-These 75 vector definitions are copied unchanged from the official
+These 76 vector definitions are copied unchanged from the official
 `org.jetbrains.compose.material:material-icons-extended:1.7.3` sources JAR.
 Each Kotlin file preserves its Android Open Source Project copyright and
 Apache 2.0 license notice. Their package names, geometry, and auto-mirroring

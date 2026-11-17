@@ -308,7 +308,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     },
                     navigationIcon = {
                         if (nested || importChat) IconButton(enabled = !model.isGuest || !model.busy, onClick = back) { AppIcon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
-                        else StructMark(Modifier.padding(start = 16.dp, end = 4.dp).size(40.dp))
+                        else if (!model.locked) StructMark(Modifier.padding(start = 16.dp, end = 4.dp).size(40.dp))
                     },
                     actions = {
                         if (model.documentPreview?.source?.text("category") == "Statement" && !model.locked) IconButton(enabled = !model.busy, onClick = {
