@@ -96,8 +96,9 @@ fun PortfolioScreen(
     editShareOrder: (JsonRecord) -> Unit = {},
     addTemporaryBond: () -> Unit = {}
 ) {
+    val subtitle = if (model.sampleGuest) "Fictional sample · Not your investments" else if (model.isGuest) "Guest · On this device" else "Your way forward"
     if (!model.portfolioReady) {
-        if (model.portfolioLoading) PortfolioLoadingSkeleton(openNotifications, unreadNotifications)
+        if (model.portfolioLoading) PortfolioLoadingSkeleton(openNotifications, unreadNotifications, !model.isGuest, subtitle)
         else {
             Column(
                 Modifier.fillMaxSize().statusBarsPadding().padding(24.dp),
@@ -149,7 +150,7 @@ fun PortfolioScreen(
             item {
                 PortfolioHero(
                     !model.isGuest,
-                    if (model.sampleGuest) "Fictional sample · Not your investments" else if (model.isGuest) "Guest · On this device" else "Your way forward",
+                    subtitle,
                     valuation,
                     topInset,
                     openNotifications,

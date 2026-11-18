@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -56,39 +57,50 @@ import dev.orestegabo.portfolio.design.StructColors
 
 @Composable
 internal fun PortfolioHero(showNotifications: Boolean, subtitle: String, totals: List<CurrencyValuation>, topInset: Dp, openNotifications: () -> Unit, unreadNotifications: Int, stale: Boolean, priceDate: String, notice: @Composable () -> Unit) {
+    PortfolioHeroFrame(topInset, header = {
+        PortfolioHeroHeader(showNotifications, subtitle, openNotifications, unreadNotifications)
+    }, notice = notice) {
+        if (totals.isEmpty()) Spacer(Modifier.height(46.dp))
+        else totals.forEach { total -> PortfolioBalance(total, stale, priceDate) }
+    }
+}
+
+/** Shared geometry keeps initial loading aligned with the populated dashboard. */
+@Composable
+internal fun PortfolioHeroFrame(topInset: Dp, header: @Composable () -> Unit,
+    notice: @Composable () -> Unit = { Spacer(Modifier.height(0.dp)) }, content: @Composable () -> Unit) {
     val dark = MaterialTheme.colorScheme.background.luminance() < .5f
     val glow = StructColors.Dashboard.balanceGlow.resolve(dark)
     Box(Modifier.fillMaxWidth()) {
         Canvas(Modifier.matchParentSize()) {
             drawRect(Brush.radialGradient(
                 colors = listOf(glow.copy(alpha = if (dark) .10f else .09f), Color.Transparent),
-                center = Offset(size.width * .85f, size.height * .32f),
-                radius = size.width * .85f))
+                center = Offset(size.width * .85f, size.height * .32f), radius = size.width * .85f))
         }
         Column(Modifier.fillMaxWidth().smoothContentSize().padding(start = 20.dp, end = 20.dp, top = 16.dp + topInset),
             verticalArrangement = Arrangement.spacedBy(28.dp)) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    DashboardBrandMark(Modifier.size(44.dp))
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        InziraWordmark(Modifier.height(26.dp), onDark = dark)
-                        AppText(subtitle, style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    if (showNotifications) NotificationBell(unreadNotifications, openNotifications,
-                        tint = MaterialTheme.colorScheme.onBackground)
-                }
-                notice()
-            }
-            if (totals.isEmpty()) Spacer(Modifier.height(46.dp))
-            else totals.forEach { total -> PortfolioBalance(total, stale, priceDate) }
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { header(); notice() }
+            content()
         }
     }
 }
 
 @Composable
-private fun PortfolioBalance(valuation: CurrencyValuation, stale: Boolean, priceDate: String) {
+internal fun PortfolioHeroHeader(showNotifications: Boolean, subtitle: String,
+    openNotifications: () -> Unit, unreadNotifications: Int) {
     val dark = MaterialTheme.colorScheme.background.luminance() < .5f
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        DashboardBrandMark(Modifier.size(44.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            InziraWordmark(Modifier.height(26.dp), onDark = dark)
+            AppText(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (showNotifications) NotificationBell(unreadNotifications, openNotifications, tint = MaterialTheme.colorScheme.onBackground)
+    }
+}
+
+@Composable
+private fun PortfolioBalance(valuation: CurrencyValuation, stale: Boolean, priceDate: String) {
     val total = valuation.cost
     val priceLabel = when {
         valuation.unpricedShares > 0 && valuation.pricedShares == 0 -> "Shares at purchase cost"
@@ -141,37 +153,46 @@ private fun PortfolioBalance(valuation: CurrencyValuation, stale: Boolean, price
             if (stale || valuation.unpricedShares > 0) AppText(priceLabel,
                 style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Surface(shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp), color = Color.Transparent,
-            contentColor = StructColors.Dashboard.worthText.resolve(dark)) {
-            Box(Modifier.fillMaxWidth()) {
-                // Mask only the artwork layer so the metrics retain full contrast.
-                Canvas(Modifier.matchParentSize().graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)) {
-                    drawRect(Brush.linearGradient(StructColors.Dashboard.worthGradient.resolve(dark)))
-                    drawRect(Brush.verticalGradient(listOf(Color.Transparent, StructColors.Fixed.black), endY = 40.dp.toPx()),
-                        blendMode = BlendMode.DstIn)
-                }
-                BoxWithConstraints(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 56.dp, bottom = 20.dp)) {
-                    val longestAmount = listOf(total.bondFaceValue, valuation.shareValue, total.netAnnualCoupon)
-                        .maxOf { money(it, total.currency).removePrefix("${total.currency} ").length }
-                    // Keep three columns at standard phone widths after the card's horizontal padding.
-                    val columns = maxWidth >= 280.dp && LocalDensity.current.fontScale <= 1.1f && longestAmount <= 12
-                    if (columns) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        MoneyMetric("Bond principal", total.bondFaceValue, total.currency, Icons.Outlined.AccountBalance, Modifier.weight(1f), column = true)
-                        MoneyMetric("RSE equity value", valuation.shareValue, total.currency, Icons.Outlined.BarChart, Modifier.weight(1f), column = true)
-                        MoneyMetric("Annual net coupon", total.netAnnualCoupon, total.currency, Icons.Outlined.Percent,
-                            Modifier.weight(1f), estimated = total.estimatedPendingCouponCount > 0, column = true)
-                    } else Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        val stacked = LocalDensity.current.fontScale > 1.3f
-                        MoneyMetric("Bond principal", total.bondFaceValue, total.currency, Icons.Outlined.AccountBalance, Modifier.fillMaxWidth(), stacked = stacked)
-                        MoneyMetric("RSE equity value", valuation.shareValue, total.currency, Icons.Outlined.BarChart, Modifier.fillMaxWidth(), stacked = stacked)
-                        MoneyMetric("Annual net coupon", total.netAnnualCoupon, total.currency, Icons.Outlined.Percent,
-                            Modifier.fillMaxWidth(), estimated = total.estimatedPendingCouponCount > 0, stacked = stacked)
-                    }
-                }
+        PortfolioBalanceSurface {
+            val longestAmount = listOf(total.bondFaceValue, valuation.shareValue, total.netAnnualCoupon)
+                .maxOf { money(it, total.currency).removePrefix("${total.currency} ").length }
+            // Keep three columns at standard phone widths after the card's horizontal padding.
+            val columns = portfolioMetricsUseColumns(maxWidth, LocalDensity.current.fontScale, longestAmount)
+            if (columns) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                MoneyMetric("Bond principal", total.bondFaceValue, total.currency, Icons.Outlined.AccountBalance, Modifier.weight(1f), column = true)
+                MoneyMetric("RSE equity value", valuation.shareValue, total.currency, Icons.Outlined.BarChart, Modifier.weight(1f), column = true)
+                MoneyMetric("Annual net coupon", total.netAnnualCoupon, total.currency, Icons.Outlined.Percent,
+                    Modifier.weight(1f), estimated = total.estimatedPendingCouponCount > 0, column = true)
+            } else Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                val stacked = LocalDensity.current.fontScale > 1.3f
+                MoneyMetric("Bond principal", total.bondFaceValue, total.currency, Icons.Outlined.AccountBalance, Modifier.fillMaxWidth(), stacked = stacked)
+                MoneyMetric("RSE equity value", valuation.shareValue, total.currency, Icons.Outlined.BarChart, Modifier.fillMaxWidth(), stacked = stacked)
+                MoneyMetric("Annual net coupon", total.netAnnualCoupon, total.currency, Icons.Outlined.Percent,
+                    Modifier.fillMaxWidth(), estimated = total.estimatedPendingCouponCount > 0, stacked = stacked)
             }
         }
     }
 }
+
+/** The balance stays outside a panel whose upper edge fades into the page. */
+@Composable
+internal fun PortfolioBalanceSurface(content: @Composable BoxWithConstraintsScope.() -> Unit) {
+    val dark = MaterialTheme.colorScheme.background.luminance() < .5f
+    Surface(shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp), color = Color.Transparent,
+        contentColor = StructColors.Dashboard.worthText.resolve(dark)) {
+        Box(Modifier.fillMaxWidth()) {
+            Canvas(Modifier.matchParentSize().graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)) {
+                drawRect(Brush.linearGradient(StructColors.Dashboard.worthGradient.resolve(dark)))
+                drawRect(Brush.verticalGradient(listOf(Color.Transparent, StructColors.Fixed.black), endY = 40.dp.toPx()),
+                    blendMode = BlendMode.DstIn)
+            }
+            BoxWithConstraints(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 56.dp, bottom = 20.dp), content = content)
+        }
+    }
+}
+
+internal fun portfolioMetricsUseColumns(width: Dp, fontScale: Float, longestAmount: Int = 0) =
+    width >= 280.dp && fontScale <= 1.1f && longestAmount <= 12
 
 @Composable
 private fun MoneyMetric(label: String, value: Double, currency: String, icon: ImageVector, modifier: Modifier,

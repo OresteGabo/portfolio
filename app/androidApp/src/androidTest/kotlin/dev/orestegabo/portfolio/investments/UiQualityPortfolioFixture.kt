@@ -6,7 +6,8 @@ import io.ktor.http.*
 
 /** Fixed past dates and synthetic records; no real account, clock-dependent coupons or HTTP server. */
 internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: List<JsonRecord>? = null,
-    private val documentRecords: List<JsonRecord> = emptyList(), pendingRecords: List<JsonRecord> = emptyList()) : AutoCloseable {
+    private val documentRecords: List<JsonRecord> = emptyList(), pendingRecords: List<JsonRecord> = emptyList(),
+    initialSnapshotGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null) : AutoCloseable {
     val settings = object : ServerSettings {
         override fun readOrigin() = "https://ui-quality.example.test"
         override fun writeOrigin(origin: String) = Unit
@@ -21,6 +22,7 @@ internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: Lis
         .put("tradeDate", "2000-01-01").put("settlementDate", "2000-01-01") }
     val requestedDocuments = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val engine = MockEngine { request ->
+        if (request.url.encodedPath.endsWith("/mobile-overview")) initialSnapshotGate?.await()
         if (documentRecords.any { request.url.encodedPath == "/api/bonds/documents/${it.text("id")}" }) {
             requestedDocuments.add(request.url.encodedPath.substringAfterLast('/'))
             return@MockEngine respond(readerFixturePdf(pageCount = 1), headers = headersOf(HttpHeaders.ContentType, "application/pdf"))
