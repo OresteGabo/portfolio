@@ -420,6 +420,13 @@ class PortfolioModel(
         pendingShareOrders.save(id, order, completed)
         message = "Pending share order saved."
     }
+    internal fun linkExistingSharePurchase(order: JsonRecord, purchase: JsonRecord, completed: () -> Unit) = action {
+        require(user != null && !isGuest) { "Sign in to link a pending share purchase." }
+        linkImportedSharePurchase(api, order, purchase)
+        completed()
+        refreshAfterWrite("Pending purchase linked to the imported contract. Counted once.")
+    }
+
     fun cancelShareOrder(order: JsonRecord, completed: () -> Unit) = action {
         pendingShareOrders.cancel(order, completed)
         message = "Pending share order cancelled."

@@ -22,6 +22,7 @@ internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: Lis
         .put("grossConsideration", 9000).put("netAmountPayable", 9000).put("totalCharges", 0)
         .put("tradeDate", "2000-01-01").put("settlementDate", "2000-01-01") }
     val confirmedOrders = java.util.concurrent.CopyOnWriteArrayList<String>()
+    val uploadedContracts = java.util.concurrent.atomic.AtomicInteger()
     val createdSharePurchases = java.util.concurrent.atomic.AtomicInteger()
     val requestedDocuments = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val engine = MockEngine { request ->
@@ -42,13 +43,18 @@ internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: Lis
                 check(payload.optBoolean("confirmed"))
                 val order = orders.single { it.text("id") == orderId }
                 check(payload.optInt("version") == order.optInt("version"))
-                val purchase = payload.getJSONObject("purchase").put("id", "confirmed-$orderId")
-                check(purchase.text("contractDocumentId") == "import-doc")
-                publishExecutedOrder(orderId, purchase)
+                val incoming = payload.getJSONObject("purchase")
+                check(incoming.text("contractDocumentId") == "import-doc" || documentRecords.any { it.text("id") == incoming.text("contractDocumentId") })
+                val existing = lots.singleOrNull { it.text("id") == incoming.text("id") }
+                val purchase = existing ?: incoming.put("id", "confirmed-$orderId")
+                if (existing == null) publishExecutedOrder(orderId, purchase) else orders = orders.filterNot { it.text("id") == orderId }
                 confirmedOrders.add(orderId)
                 JsonRecord().put("holding", purchase).toString()
             }
-            request.url.encodedPath.endsWith("/documents") && request.method == HttpMethod.Post -> """{"documentId":"import-doc"}"""
+            request.url.encodedPath.endsWith("/documents") && request.method == HttpMethod.Post -> {
+                uploadedContracts.incrementAndGet()
+                """{"documentId":"import-doc"}"""
+            }
             request.url.encodedPath.endsWith("/equities") && request.method == HttpMethod.Post -> {
                 createdSharePurchases.incrementAndGet()
                 val purchase = JsonRecord((request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString()).put("id", "separate")

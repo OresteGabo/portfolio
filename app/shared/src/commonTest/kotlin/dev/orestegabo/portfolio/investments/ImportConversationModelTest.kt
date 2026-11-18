@@ -120,6 +120,25 @@ class ImportConversationModelTest {
         } finally { f.store.clear(); Dispatchers.resetMain() }
     }
 
+    @Test fun alreadyImportedSharePurchaseCanClosePendingOrderWithoutUploadingOrCreatingAnotherHolding() = runTest {
+        val f = shareFixture().apply {
+            savedShare = importedPurchaseInput(review).put("id", "share-id").put("contractDocumentId", "doc-id")
+                .put("settlementDate", review.getJSONObject("fields").text("tradeDate"))
+        }
+        val m = model(f)
+        try {
+            advanceUntilIdle()
+            assertEquals(1, m.holdings.size); assertEquals(1, m.shareOrders.size)
+            val before = m.holdings.single().toString()
+            m.linkExistingSharePurchase(f.pendingOrder!!, m.holdings.single()) {}; advanceUntilIdle()
+            assertNull(m.error)
+            assertEquals(0, f.uploads); assertEquals(0, f.equityPosts); assertEquals(1, f.confirmations)
+            assertTrue(m.shareOrders.isEmpty()); assertEquals(1, m.holdings.size)
+            assertEquals(before, m.holdings.single().toString())
+            assertEquals(733329.1, m.portfolio.summary(Today).single().shareCashCost)
+        } finally { f.store.clear(); Dispatchers.resetMain() }
+    }
+
     @Test fun fullHistoryKeepsPendingOrdersAndTheirProjectedCosts() = runTest {
         val f = shareFixture()
         val m = model(f)

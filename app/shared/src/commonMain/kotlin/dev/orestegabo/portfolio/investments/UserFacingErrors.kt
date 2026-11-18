@@ -11,6 +11,12 @@ internal const val CONNECTION_ERROR_MESSAGE = "Could not connect. Check your con
 private val approvedErrorMessages = setOf(
     ApiResponseException.MESSAGE,
     ApiTimeoutException.MESSAGE,
+    "This order is no longer pending. Refresh your portfolio.",
+    "This purchase no longer matches the pending order. Refresh before continuing.",
+    "This purchase changed. Review its contract again before linking.",
+    "More than one purchase uses this contract. Review the duplicates before linking.",
+    "Sign in to link a pending share purchase.",
+    "Pending purchase linked to the imported contract. Counted once. Could not refresh the portfolio. Pull down on Home to update; do not submit it again.",
     "Bids are unavailable for this form or the subscription window has closed.",
     "This subscription window is closed or its issuance month has not started.",
     "The application form details could not be verified. Open the form or contact the owner.",

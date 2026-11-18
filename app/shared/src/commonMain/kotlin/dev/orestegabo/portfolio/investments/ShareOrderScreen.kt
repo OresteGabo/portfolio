@@ -45,6 +45,7 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
     var expanded by remember { mutableStateOf(false) }
     var cancelDialog by remember { mutableStateOf(false) }
     var executionDialog by remember { mutableStateOf(false) }
+    var linkImported by remember { mutableStateOf(false) }
     val savedOrder = existing.text("id").isNotBlank()
     var editMode by rememberSaveable(id) { mutableStateOf(!savedOrder) }
     val colors = MaterialTheme.colorScheme
@@ -78,6 +79,8 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
                 .put("shares",existing.getDouble("shares")).put("pricePerShare",existing.getDouble("pricePerShare"))
                 .put("broker",existing.text("broker")).put("pendingOrderId",id).put("pendingOrderVersion",existing.optInt("version")))
         }) { AppText("Review executed purchase") } }, dismissButton = { TextButton(onClick = { executionDialog=false }) { AppText("Not yet") } })
+    if (linkImported) ImportedSharePurchaseDialog(model, existing, dismiss = { linkImported = false },
+        completed = { linkImported = false; back() })
     FormContent { formModifier ->
         LazyColumn(formModifier, contentPadding = PaddingValues(InziraSpacing.screen), verticalArrangement = Arrangement.spacedBy(InziraSpacing.screen)) {
             item {
@@ -164,6 +167,9 @@ fun ShareOrderScreen(model: PortfolioModel, existing: JsonRecord, back: () -> Un
                 AppText("Upload contract")
             } }
             if (savedOrder && !editMode) {
+                item { OutlinedButton(enabled = !model.busy && model.shareOrdersAvailable,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = InziraDimensions.primaryActionMinHeight),
+                    shape = InziraShapes.action, onClick = { linkImported = true }) { AppText("Use imported purchase") } }
                 item { OutlinedButton(enabled = !model.busy && model.shareOrdersAvailable,modifier = Modifier.fillMaxWidth(),onClick = { executionDialog=true }) { AppText("Record executed purchase") } }
             }
             if (savedOrder && editMode) {

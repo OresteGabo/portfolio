@@ -3,6 +3,11 @@
   "note": "Evidence inventory, not code coverage. Required device gate runs on the reference API 36 emulator. Opt-in delivery/reboot/user-PDF tests remain separately documented.",
   "flows": [
     {
+      "flow": "link a saved contract purchase to its pending record without new holdings or PDF uploads, light/dark and large text",
+      "class": "ExistingSharePurchaseLinkUiTest",
+      "method": "linkingAnImportedPurchaseKeepsOneHoldingAndItsPdfInBothThemesAndLargeText"
+    },
+    {
       "flow": "general share contract upload asks before confirming a matching pending purchase and preserves a separate-purchase choice",
       "class": "PendingShareImportUiTest",
       "method": "generalUploadAsksBeforeReplacingAPendingPurchase"
