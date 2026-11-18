@@ -27,16 +27,15 @@ jobs:
           python3 -m unittest discover -s scripts/tests -p 'test_kmp_ui.py'
       - name: Compile UI tests, unit regressions, lint and compiler diagnostics
         run: ./gradlew --no-daemon -PcomposeReports=true :core:jvmTest :core:testAndroidHostTest :app:shared:testAndroidHostTest :app:androidApp:assembleDebugAndroidTest :app:androidApp:lintDebug
+      - name: Archive compiler and test evidence
+        if: always()
+        run: python3 scripts/archive-ui-evidence.py --output "$RUNNER_TEMP/kmp-ui-evidence.tar.gz"
       - name: Preserve compiler and test evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: kmp-ui-host-${{ github.sha }}
           retention-days: 7
-          path: |
-            app/shared/build/reports/compose*/
-            app/shared/build/reports/tests/
-            core/build/reports/tests/
-            app/androidApp/build/reports/lint-results-debug.*
+          path: ${{ runner.temp }}/kmp-ui-evidence.tar.gz
 # Device pixels need the documented API 36 ARM reference image. This host job does
 # not claim to execute device UI tests; run the documented device gate separately.
