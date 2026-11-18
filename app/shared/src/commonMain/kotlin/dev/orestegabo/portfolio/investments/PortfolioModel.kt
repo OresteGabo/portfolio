@@ -850,6 +850,8 @@ class PortfolioModel(
 
     fun saveImportedPurchase(review: JsonRecord, purchase: JsonRecord, id: String?, completed: () -> Unit) =
         imports.saveImportedPurchase(review, purchase, id, completed)
+    internal fun confirmImportedShareOrder(review: JsonRecord, orderId: String, completed: () -> Unit) =
+        imports.saveImportedPurchase(review, importedPurchaseInput(review), null, completed, selectedPendingOrderId = orderId)
     internal fun saveImportedStatement(review: JsonRecord, completed: () -> Unit) = imports.saveImportedStatement(review, completed)
 
     fun confirmPendingPurchase(purchase: JsonRecord,completed: () -> Unit = {}) = action {

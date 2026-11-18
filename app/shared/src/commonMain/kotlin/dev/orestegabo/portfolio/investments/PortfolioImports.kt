@@ -245,8 +245,15 @@ internal class PortfolioImports(
         }
     }
 
-    fun saveImportedPurchase(review: JsonRecord, purchase: JsonRecord, id: String?, completed: () -> Unit) = host.action {
+    fun saveImportedPurchase(review: JsonRecord, purchase: JsonRecord, id: String?, completed: () -> Unit,
+        selectedPendingOrderId: String? = null) = host.action {
         require(importedReview === review && importedPdf != null) { "Choose the PDF again before confirming." }
+        if (selectedPendingOrderId != null) {
+            val order = matchingPendingShareOrders(review, shareOrders).singleOrNull { it.text("id") == selectedPendingOrderId }
+                ?: error("This pending purchase has changed. Review it again before confirming.")
+            pendingShareContractInput(review, order)
+            review.put("pendingOrderId", order.text("id")).put("pendingOrderVersion", order.optInt("version"))
+        }
         startSavingImport()
         val pendingOrderId = review.text("pendingOrderId")
         if (pendingOrderId.isNotBlank()) {

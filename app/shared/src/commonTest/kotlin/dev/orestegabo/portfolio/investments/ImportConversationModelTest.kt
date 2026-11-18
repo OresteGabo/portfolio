@@ -77,6 +77,49 @@ class ImportConversationModelTest {
         } finally { f.store.clear(); Dispatchers.resetMain() }
     }
 
+    @Test fun generalShareImportOffersAMatchWithoutConfirmingUntilTheUserChooses() = runTest {
+        val f = shareFixture().apply { pendingOrder!!.put("pricePerShare", 721) }
+        val m = model(f)
+        try {
+            advanceUntilIdle()
+            m.importPurchasePdf(f.actions(), f.engine) {}; advanceUntilIdle()
+            assertEquals("", f.review.text("pendingOrderId"))
+            assertEquals(listOf("order-id"), matchingPendingShareOrders(f.review, m.shareOrders).map { it.text("id") })
+            assertEquals(0, f.confirmations); assertEquals(0, f.equityPosts)
+            m.confirmImportedShareOrder(f.review, "order-id") {}; advanceUntilIdle()
+            assertNull(m.error)
+            assertEquals(1, f.confirmations); assertEquals(0, f.equityPosts); assertEquals(1, f.uploads)
+            assertTrue(m.shareOrders.isEmpty()); assertEquals(1, m.holdings.size)
+            assertEquals(733329.1, m.portfolio.summary(Today).single().shareCashCost)
+        } finally { f.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun generalShareImportCanStillBeSavedAsASeparatePurchase() = runTest {
+        val f = shareFixture().apply { pendingOrder!!.put("pricePerShare", 721) }
+        val m = model(f)
+        try {
+            advanceUntilIdle()
+            m.importPurchasePdf(f.actions(), f.engine) {}; advanceUntilIdle()
+            m.saveImportedPurchase(f.review, importedPurchaseInput(f.review), null) {}; advanceUntilIdle()
+            assertNull(m.error)
+            assertEquals(0, f.confirmations); assertEquals(1, f.equityPosts)
+            assertEquals(1, m.shareOrders.size)
+        } finally { f.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun changedOrMissingPendingMatchCannotBeConfirmedFromGeneralImport() = runTest {
+        val f = shareFixture().apply { pendingOrder!!.put("pricePerShare", 721) }
+        val m = model(f)
+        try {
+            advanceUntilIdle()
+            m.importPurchasePdf(f.actions(), f.engine) {}; advanceUntilIdle()
+            m.confirmImportedShareOrder(f.review, "missing-order") {}; advanceUntilIdle()
+            assertNotNull(m.error)
+            assertEquals(0, f.uploads); assertEquals(0, f.confirmations); assertEquals(0, f.equityPosts)
+            assertEquals("", f.review.text("pendingOrderId"))
+        } finally { f.store.clear(); Dispatchers.resetMain() }
+    }
+
     @Test fun fullHistoryKeepsPendingOrdersAndTheirProjectedCosts() = runTest {
         val f = shareFixture()
         val m = model(f)

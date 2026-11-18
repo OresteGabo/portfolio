@@ -55,6 +55,8 @@ private fun PurchaseConversationReview(model: PortfolioModel, review: JsonRecord
             onClick = { model.saveImportedPurchase(review, body, null, done) }) { AppText("Save PDF and confirm purchase") }
         return
     }
+    var pendingSelection by rememberSaveable(entry.id) { mutableStateOf<String?>(null) }
+    val pendingMatches = if (target == null) matchingPendingShareOrders(review, model.shareOrders) else emptyList()
     var selection by rememberSaveable(entry.id) { mutableStateOf(target?.text("id")) }
     val state = PurchaseReviewState(review, model.documents, model.purchases, model.historyComplete, target, selection, model.sharedCouponTerms)
     LaunchedEffect(entry.id, model.busy, model.historyComplete) {
@@ -64,6 +66,23 @@ private fun PurchaseConversationReview(model: PortfolioModel, review: JsonRecord
     if (body == null) {
         AppText(userErrorMessage(state.parsed.exceptionOrNull(), "Could not read this PDF."), color = MaterialTheme.colorScheme.error)
         return
+    }
+    if (pendingMatches.isNotEmpty()) {
+        AppText("Is this your pending purchase?", fontWeight = FontWeight.SemiBold)
+        AppText("Same company, quantity, price and month. Choose one to replace its estimate with this contract.",
+            style = MaterialTheme.typography.bodySmall)
+        pendingMatches.forEach { order ->
+            PendingShareImportChoice(pendingSelection == order.text("id"), !model.busy,
+                { pendingSelection = order.text("id") }) {
+                FinancialText("${order.text("ticker")} · ${formatNumber(order.optDouble("shares"))} ${localized("shares")}",
+                    style = MaterialTheme.typography.bodyMedium)
+                FinancialText("${money(order.optDouble("pricePerShare"), order.text("currency"))} · ${displayDate(order.text("requestDate"))}",
+                    style = MaterialTheme.typography.labelMedium)
+            }
+        }
+        PendingShareImportChoice(pendingSelection == "", !model.busy, { pendingSelection = "" }) {
+            AppText("This is a separate purchase", style = MaterialTheme.typography.bodyMedium)
+        }
     }
     if (state.wrongTarget) AppText("This PDF does not match the pending bond or applied amount.", color = MaterialTheme.colorScheme.error)
     if (state.bond && !model.historyComplete) TextButton(enabled = !model.busy, onClick = { model.error = null; model.loadInvestmentHistory() }) { AppText("Retry loading pending purchases") }
@@ -96,10 +115,12 @@ private fun PurchaseConversationReview(model: PortfolioModel, review: JsonRecord
     if (state.effectiveReview.text("termsSource")=="shared-coupon-terms") AppText("Missing coupon details supplied from shared public security terms.", style = MaterialTheme.typography.labelSmall)
     if (state.effectiveReview.has("termsSourceDocumentId")) AppText("Coupon details from the shared BNR issuance report", style = MaterialTheme.typography.labelSmall)
     if (review.optBoolean("usedOcr")) AppText("Text recognition used. Check the figures against your PDF.", style = MaterialTheme.typography.bodySmall)
-    Button(enabled = state.ready && !model.busy, modifier = Modifier.fillMaxWidth(), onClick = {
-        state.confirmed?.let { model.saveImportedPurchase(review, if (state.bond) it else body, state.selected?.text("id"), done) }
+    Button(enabled = state.ready && !model.busy && (pendingMatches.isEmpty() || pendingSelection != null), modifier = Modifier.fillMaxWidth(), onClick = {
+        val orderId = pendingSelection?.takeIf(String::isNotBlank)
+        if (orderId != null) model.confirmImportedShareOrder(review, orderId, done)
+        else state.confirmed?.let { model.saveImportedPurchase(review, if (state.bond) it else body, state.selected?.text("id"), done) }
     }) {
-        AppText(if (state.legacyEvidenceTarget != null) "Attach PDF to existing purchase" else if (entry.documentId.isNotBlank()) "Confirm using saved PDF" else if (entry.state == ImportState.FAILED) "Retry save" else if (state.selected != null) "Save PDF and confirm purchase" else "Save purchase and PDF")
+        AppText(if (!pendingSelection.isNullOrBlank()) "Save PDF and confirm purchase" else if (state.legacyEvidenceTarget != null) "Attach PDF to existing purchase" else if (entry.documentId.isNotBlank()) "Confirm using saved PDF" else if (entry.state == ImportState.FAILED) "Retry save" else if (state.selected != null) "Save PDF and confirm purchase" else "Save purchase and PDF")
     }
 }
 
@@ -144,4 +165,15 @@ internal fun pendingShareContractInput(review: JsonRecord, order: JsonRecord): J
         "This contract does not match the pending security or number of shares. Edit the order first if the quantity changed."
     }
     return body
+}
+
+/** Whole-row selection keeps the confirmation choice readable at large text sizes. */
+@Composable
+private fun PendingShareImportChoice(selected: Boolean, enabled: Boolean, choose: () -> Unit, content: @Composable () -> Unit) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).selectable(selected, enabled = enabled,
+        role = Role.RadioButton, onClick = choose).padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        RadioButton(selected, null, Modifier.clearAndSetSemantics {})
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) { content() }
+    }
 }

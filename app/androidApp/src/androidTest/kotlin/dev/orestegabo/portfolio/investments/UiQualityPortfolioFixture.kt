@@ -3,6 +3,7 @@ package dev.orestegabo.portfolio.investments
 import dev.orestegabo.portfolio.network.PortfolioApi
 import io.ktor.client.engine.mock.*
 import io.ktor.http.*
+import io.ktor.http.content.OutgoingContent
 
 /** Fixed past dates and synthetic records; no real account, clock-dependent coupons or HTTP server. */
 internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: List<JsonRecord>? = null,
@@ -20,6 +21,8 @@ internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: Lis
         .put("currency", "RWF").put("status", "active").put("shares", 100).put("pricePerShare", 90)
         .put("grossConsideration", 9000).put("netAmountPayable", 9000).put("totalCharges", 0)
         .put("tradeDate", "2000-01-01").put("settlementDate", "2000-01-01") }
+    val confirmedOrders = java.util.concurrent.CopyOnWriteArrayList<String>()
+    val createdSharePurchases = java.util.concurrent.atomic.AtomicInteger()
     val requestedDocuments = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val engine = MockEngine { request ->
         if (request.url.encodedPath.endsWith("/mobile-overview")) initialSnapshotGate?.await()
@@ -31,8 +34,27 @@ internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: Lis
             request.url.encodedPath.endsWith("/auth/login") -> """{"user":{"id":"ui-quality","email":"ui@example.test","isOwner":false}}"""
             request.url.encodedPath.endsWith("/auth/session") -> """{"authenticated":true,"user":{"id":"ui-quality","email":"ui@example.test","isOwner":false}}"""
             request.url.encodedPath.endsWith("/mobile-overview") -> JsonRecord().put("version", 1).put("purchases", JsonList()).put("holdings", JsonList(lots)).toString()
-            request.url.encodedPath.endsWith("/documents") -> JsonRecord().put("documents", JsonList(documentRecords)).toString()
+            request.url.encodedPath.endsWith("/documents") && request.method == HttpMethod.Get -> JsonRecord().put("documents", JsonList(documentRecords)).toString()
             request.url.encodedPath.endsWith("/share-orders") -> JsonRecord().put("orders", JsonList(orders)).toString()
+            request.url.encodedPath.endsWith("/confirm") && request.url.encodedPath.contains("/share-orders/") -> {
+                val orderId = request.url.encodedPath.substringAfter("/share-orders/").substringBefore('/')
+                val payload = JsonRecord((request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString())
+                check(payload.optBoolean("confirmed"))
+                val order = orders.single { it.text("id") == orderId }
+                check(payload.optInt("version") == order.optInt("version"))
+                val purchase = payload.getJSONObject("purchase").put("id", "confirmed-$orderId")
+                check(purchase.text("contractDocumentId") == "import-doc")
+                publishExecutedOrder(orderId, purchase)
+                confirmedOrders.add(orderId)
+                JsonRecord().put("holding", purchase).toString()
+            }
+            request.url.encodedPath.endsWith("/documents") && request.method == HttpMethod.Post -> """{"documentId":"import-doc"}"""
+            request.url.encodedPath.endsWith("/equities") && request.method == HttpMethod.Post -> {
+                createdSharePurchases.incrementAndGet()
+                val purchase = JsonRecord((request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString()).put("id", "separate")
+                lots = lots + purchase
+                JsonRecord().put("holding", purchase).toString()
+            }
             request.url.encodedPath.endsWith("/equities") -> JsonRecord().put("holdings", JsonList(lots)).toString()
             request.url.encodedPath.endsWith("/rse/quotes") -> """{"source":{"publishedAt":"2000-01-02","stale":true},"quotes":[{"ticker":"TEST","name":"Synthetic UI company","closing":100}]}"""
             else -> "{}"

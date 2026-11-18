@@ -3,6 +3,11 @@
   "note": "Evidence inventory, not code coverage. Required device gate runs on the reference API 36 emulator. Opt-in delivery/reboot/user-PDF tests remain separately documented.",
   "flows": [
     {
+      "flow": "general share contract upload asks before confirming a matching pending purchase and preserves a separate-purchase choice",
+      "class": "PendingShareImportUiTest",
+      "method": "generalUploadAsksBeforeReplacingAPendingPurchase"
+    },
+    {
       "flow": "dashboard initial skeleton header alignment, accessible notifications and loading-to-snapshot transition in both themes and large text",
       "class": "DashboardLoadingLayoutTest",
       "method": "loadingMatchesTheDashboardHeaderAndRevealsValuesOnlyAfterTheSnapshotArrives"
