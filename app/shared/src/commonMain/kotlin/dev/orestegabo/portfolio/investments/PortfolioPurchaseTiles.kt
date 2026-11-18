@@ -44,7 +44,7 @@ private fun InvestmentEntry(title: String, subtitle: String, bond: Boolean, tick
 /** Neutral status stays distinct from active holdings without looking like a disabled control. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PendingStatusBadge(modifier: Modifier = Modifier) {
+internal fun PendingStatusBadge(modifier: Modifier = Modifier) {
     val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
     val background = StructColors.PendingStatus.background.resolve(dark)
     val foreground = StructColors.PendingStatus.foreground.resolve(dark)

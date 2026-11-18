@@ -90,6 +90,33 @@ class ImportConversationModelTest {
         } finally { f.store.clear(); Dispatchers.resetMain() }
     }
 
+    @Test fun shareContractUsesItsActualTradeDateRatherThanThePendingRequestDate() = runTest {
+        val f = shareFixture().apply {
+            pendingOrder!!.put("requestDate", "2000-01-05")
+            review.put("fields", review.getJSONObject("fields").put("tradeDate", "2000-01-08"))
+        }
+        val m = model(f)
+        try {
+            advanceUntilIdle()
+            m.importPurchasePdf(f.actions(), f.engine, targetPurchaseId = "share-order:order-id") {}
+            advanceUntilIdle()
+            assertNull(m.error)
+            val actual = pendingShareContractInput(f.review, f.pendingOrder!!)
+            assertEquals("2000-01-08", actual.text("tradeDate"))
+            m.saveImportedPurchase(f.review, actual, null) {}
+            advanceUntilIdle()
+            assertNull(m.error)
+            assertEquals("2000-01-08", f.savedShare?.text("tradeDate"))
+            assertTrue(m.shareOrders.isEmpty()); assertEquals(1, m.holdings.size)
+            assertEquals(733329.1, m.portfolio.summary(Today).single().shareCashCost)
+            val entries = shareHistoryEntries(m.holdings, m.portfolio.shareOrders,
+                JsonRecord().put("ticker", "BOK").put("currency", "RWF"))
+            assertIs<ShareHistoryEntry.Purchase>(entries.single())
+            assertEquals("2000-01-08", entries.single().date.toString())
+            assertEquals(1, f.confirmations); assertEquals(0, f.equityPosts)
+        } finally { f.store.clear(); Dispatchers.resetMain() }
+    }
+
     @Test fun mismatchedShareContractCannotUploadOrCompleteAnOrder() = runTest {
         val f = shareFixture().apply { review.put("fields", review.getJSONObject("fields").put("shares", 500)) }
         val m = model(f)

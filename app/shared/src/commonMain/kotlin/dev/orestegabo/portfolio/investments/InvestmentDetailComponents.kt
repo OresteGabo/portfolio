@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.*
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.LocalDate
@@ -93,26 +94,27 @@ internal fun DetailDisclosure(title: String, expanded: Boolean, toggle: () -> Un
 internal fun detailDate(date: LocalDate) = "${date.day} ${date.monthLabel().take(3)} ${date.year}"
 
 @Composable
-internal fun DetailDocumentRows(model: PortfolioModel, record: JsonRecord) {
-    DetailDocumentRows(model, listOf(record))
+internal fun DetailDocumentRows(model: PortfolioModel, record: JsonRecord, compact: Boolean = false) {
+    DetailDocumentRows(model, listOf(record), compact)
 }
 
 @Composable
-internal fun DetailDocumentRows(model: PortfolioModel, records: List<JsonRecord>) {
-    val actions = LocalNativeActions.current
+internal fun DetailDocumentRows(model: PortfolioModel, records: List<JsonRecord>, compact: Boolean = false) {
     var downloading by remember { mutableStateOf<String?>(null) }
     val files = investmentEvidence(records, model.documents)
     if (files.isEmpty()) DetailNote("No linked document")
     files.forEach { evidence ->
+        val actions = LocalNativeActions.current
         val doc = evidence.document
         Column {
             Row(Modifier.fillMaxWidth().clickable(enabled = !model.busy, onClickLabel = localized("Open PDF")) {
                 model.openDocumentPreview(doc)
-            }.padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                AppIcon(Icons.Outlined.Description, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+            }.padding(vertical = if (compact) 0.dp else 10.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                AppIcon(Icons.Outlined.Description, null, Modifier.size(if (compact) 18.dp else 24.dp), tint = MaterialTheme.colorScheme.primary)
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    FinancialText(doc.text("label"), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                    DetailNote(listOf("PDF", calendarDate(doc.text("documentDate"))?.let(::detailDate).orEmpty()).filter { it.isNotBlank() }.joinToString(" · "))
+                    FinancialText(doc.text("label"), style = if (compact) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium,
+                        maxLines = if (compact) 1 else Int.MAX_VALUE, overflow = TextOverflow.Ellipsis)
+                    if (!compact) DetailNote(listOf("PDF", calendarDate(doc.text("documentDate"))?.let(::detailDate).orEmpty()).filter { it.isNotBlank() }.joinToString(" · "))
                 }
                 IconButton(enabled = !model.busy, onClick = { model.documentAction {
                     downloading = doc.text("id")
@@ -124,7 +126,7 @@ internal fun DetailDocumentRows(model: PortfolioModel, records: List<JsonRecord>
                     else AppIcon(Icons.Outlined.Download, "Download ${privateFinancialValue(doc.text("label"))}")
                 }
             }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
+            if (!compact) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
         }
     }
 }

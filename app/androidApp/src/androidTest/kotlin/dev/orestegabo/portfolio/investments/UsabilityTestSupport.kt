@@ -24,8 +24,13 @@ internal class UsabilityTestDriver {
         error("Synthetic UX condition missing: $description")
     }
     fun await(label: String): AccessibilityNodeInfo {
-        waitUntil(label) { nodes().any { matches(it, label) } }
-        return nodes().first { matches(it, label) }
+        var found: AccessibilityNodeInfo? = null
+        waitUntil(label) {
+            found = nodes().firstOrNull { matches(it, label) }
+            found != null
+        }
+        // Return the matching snapshot instead of racing a second read during scroll/layout.
+        return requireNotNull(found)
     }
     fun click(label: String, last: Boolean = false) {
         waitUntil("clickable $label") {

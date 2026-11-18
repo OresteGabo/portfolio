@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "sdk": 36,
-  "sourceRevision": "c3f5df9",
+  "sourceRevision": "e59013c585dfe18f42d4fc37cd628da110aee93a",
   "screen": "ShareDetailsScreen",
   "fixture": "Synthetic TEST, 100 shares at RWF 90, cached RWF 100 close dated 2000-01-02",
   "profiles": [
@@ -53,27 +53,27 @@
     },
     {
       "file": "phone-light.png",
-      "sha256": "c88ab2d8a6089ebfa83a46a909bfabfdbe9053e56dbfe0940ae890a135f0a7c3"
+      "sha256": "dfef541c682f84e81ed9ec5db1640982b814d5cacccf1d94c28b179c3ab6adb5"
     },
     {
       "file": "phone-dark.png",
-      "sha256": "e29df8d7ceedf1839606e2c03a205cb930db4870a0fbe8a95378ac1a04d2cb63"
+      "sha256": "d827c1703c06676713aa3bcc6f05bb751ff3deadd413b8bd2c51767654e643b9"
     },
     {
       "file": "large-phone-light.png",
-      "sha256": "90a46f18043d682cc5f701a2e46f3ccdaadec7c4f1e87b64ab8bdd1417303342"
+      "sha256": "2d6a987a745344f9ab176d03794232afe15148f02cda3ff7d65ec3a8fc0f6390"
     },
     {
       "file": "large-phone-dark.png",
-      "sha256": "53ac4a23ca87b880bfb403f2dfe203970eb24df87a00d1b592e955a67d45dedf"
+      "sha256": "ed8301caa26f1aa4b33f8de841f391f1df61562a47d349e3afb33c52b5e4379f"
     },
     {
       "file": "tablet-light.png",
-      "sha256": "dabe8a9d44908dea6f6611f974deaa9ec0c0aee3cae0b53b49d8b60af7ae862c"
+      "sha256": "854c19ef16931bec502db6543358aab3f2f27d82b50619f4a632ddf469bb2c0f"
     },
     {
       "file": "tablet-dark.png",
-      "sha256": "01439ffdcc1db1af021e8e6f77d5e2a7396fafb1b83bff048c2a673d46ce50d6"
+      "sha256": "54fbbe7db906ba23c4f25b4f32ac0bce5a9c5682e80151ea333688300b614b0b"
     },
     {
       "file": "landscape-light.png",
@@ -100,6 +100,7 @@
     "composeMultiplatform": "1.11.1",
     "note": "Parent revision plus the explicitly identified reviewed source variant; source digest pins rendered Kotlin. Native modal asserted separately."
   },
-  "sourceVariant": "reviewed data/UI/accessibility plus financial presentation",
-  "sharedSourceSha256": "1bf96d6a2fecc75aad1436d9239a5f0087652ae0a60f3215a89e7074984e18b1"
+  "sourceVariant": "reviewed confirmed-purchase timeline with pending request/history extension; pending variant has separate behavior and diagnostic captures",
+  "sharedSourceSha256": "cfcfd93df2eb7447b8c1038fccb426765002d90b6e7352883b1b0b7aff8418a4",
+  "sourceDigestMethod": "Sorted commonMain/kotlin relative POSIX paths, NUL, file bytes, NUL; SHA-256"
 }

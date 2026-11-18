@@ -202,6 +202,8 @@ fun InvestmentApp(model: PortfolioModel) {
             if (purchase.text("status") == "submitted") uploadPendingPurchase(purchase) else detail = purchase
         }
     }
+    fun uploadShareOrderContract(order: JsonRecord) = model.importPurchasePdf(actions, engine,
+        targetPurchaseId = order.text("id").takeIf { it.isNotBlank() }?.let { "share-order:$it" }, completed = ::imported)
     fun uploadMissing(item: JsonRecord) = model.importPurchasePdf(actions, engine, bondOnly = item.text("kind") == "bond", expectedStatement = item) { review ->
         confirmationTarget = null
         imported(review)
@@ -239,6 +241,8 @@ fun InvestmentApp(model: PortfolioModel) {
                 legalRoute = legalHistory.lastOrNull()
                 legalHistory = legalHistory.dropLast(1)
             } else if (equityEditor != null && sharePurchaseDetail != null) { equityEditor = null
+            } else if ((shareOrderEditor != null || equityEditor != null) && shareDetail != null) {
+                shareOrderEditor = null; equityEditor = null
             } else if (sharePurchaseDetail != null) { sharePurchaseDetail = null
             } else if (couponList && detail == null && shareDetail == null && editor == null && equityEditor == null && shareOrderEditor == null && model.documentPreview == null) { couponList = false
             } else if (documentDetail != null && detail == null && shareDetail == null && editor == null && equityEditor == null && shareOrderEditor == null) { documentDetail = null
@@ -462,9 +466,7 @@ fun InvestmentApp(model: PortfolioModel) {
                         chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
                         openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { brandIntroRequested = true; replayIntroduction = true; introductionRequested = true }, openInvestmentTools = { investmentTools = true }, openSignInActivity = { securityNotificationId = null; notificationPanel = "security" }, openGuest = { showGuestChoice = true }, openIssueReport = { issueReportSource = "Settings" })
                     editor != null -> PurchaseEditor(model, editor!!, { editor = null })
-                    shareOrderEditor != null -> ShareOrderScreen(model, shareOrderEditor!!, { shareOrderEditor = null }, recordExecution = { equityEditor = it; shareOrderEditor = null }, uploadContract = { order ->
-                        model.importPurchasePdf(actions, engine, targetPurchaseId = order.text("id").takeIf { it.isNotBlank() }?.let { "share-order:$it" }, completed = ::imported)
-                    })
+                    shareOrderEditor != null -> ShareOrderScreen(model, shareOrderEditor!!, { shareOrderEditor = null }, recordExecution = { equityEditor = it; shareOrderEditor = null }, uploadContract = ::uploadShareOrderContract)
                     equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null; shareOrderEditor = null }, pendingOrder = if (model.user != null) ({ shareOrderEditor = JsonRecord(); equityEditor = null }) else null)
                     investmentTools -> InvestmentToolsScreen(model, openCalendar = { date -> investmentTools = false; openCalendarAt(date) },
                         openHistory = { investmentTools = false; investmentHistory = true })
@@ -477,7 +479,10 @@ fun InvestmentApp(model: PortfolioModel) {
                     }
                     sharePurchaseDetail != null -> SharePurchaseDetailsScreen(model, sharePurchaseDetail!!, edit = { equityEditor = it }, back = { sharePurchaseDetail = null })
                     shareDetail != null -> shareUi.SaveableStateProvider("shares:${model.origin}|${model.user?.text("id")}|${model.guestPath}|${model.guestViewRevision}|${shareDetail!!.text("ticker")}|${shareDetail!!.text("currency")}") {
-                        ShareDetailsScreen(model, shareDetail!!, openPurchase = { sharePurchaseDetail = it })
+                        ShareDetailsScreen(model, shareDetail!!,
+                            managePending = if (model.user != null && !model.isGuest) ({ shareOrderEditor = it }) else null,
+                            uploadPendingContract = if (model.user != null && !model.isGuest) ::uploadShareOrderContract else null,
+                            openPurchase = { sharePurchaseDetail = it })
                     }
                     documentDetail != null -> DocumentDetailsScreen(model, documentDetail!!, openBond = { detail = it }, openShare = { shareDetail = it })
                     couponList -> calendarUi.SaveableStateProvider(couponsStateKey) { YearlyCouponsScreen(model, openBond = { detail = it }) }

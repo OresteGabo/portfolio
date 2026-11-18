@@ -4,8 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -15,15 +14,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, openPurchase: (JsonRecord) -> Unit = {}) {
+fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord,
+    managePending: ((JsonRecord) -> Unit)? = null, uploadPendingContract: ((JsonRecord) -> Unit)? = null,
+    openPurchase: (JsonRecord) -> Unit = {}) {
     val ticker = selected.text("ticker")
     val currency = selected.text("currency")
     val lots = shareDetailLots(model.holdings, selected)
+    val history = shareHistoryEntries(model.holdings, model.portfolio.shareOrders, selected)
     val valuation = model.portfolio.valuedShares(Today, model.quotes).firstOrNull {
         it.position.ticker == ticker && it.position.currency == currency
     }
@@ -36,7 +37,6 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, openPurchase
         .sumOf { it.optDouble("shares", 0.0) }
     var requestedQuotes by remember(ticker, currency) { mutableStateOf(false) }
     var allLots by rememberSaveable(ticker, currency) { mutableStateOf(false) }
-    var showDocuments by rememberSaveable(ticker, currency) { mutableStateOf(false) }
     LaunchedEffect(ticker, currency, model.historyComplete, model.busy) {
         if (!model.busy && model.error == null) {
             if (!model.historyComplete) model.loadInvestmentHistory()
@@ -57,10 +57,6 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, openPurchase
                             style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                     }
                     ShareValuesInfoButton(quote, model.quoteRefreshFailed, pending = pendingQuantity > 0)
-                    IconButton(enabled = model.historyComplete, onClick = { showDocuments = !showDocuments },
-                        modifier = Modifier.semantics { stateDescription = localized(if (showDocuments) "Expanded" else "Collapsed") }) {
-                        AppIcon(Icons.Outlined.Description, "Documents")
-                    }
                 }
                 FinancialText(name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Medium,
                     modifier = Modifier.semantics { heading() })
@@ -72,9 +68,6 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, openPurchase
                 valuation?.let { ShareReturnSummary(it) }
             }
         }
-        if (showDocuments && model.historyComplete) item(key = "source-documents") {
-            DetailDocumentRows(model, lots)
-        }
         item(key = "quote") { ShareClosingQuote(model, quote, currency) }
         if (valuation != null) item(key = "position") {
             Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -85,7 +78,16 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, openPurchase
                 HorizontalDivider()
             }
         }
-        item(key = "history-title") { DetailHeading("Purchase history") }
+        item(key = "history-title") {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) { DetailHeading("Purchase history") }
+                if (managePending != null && model.user != null && !model.isGuest && currency == "RWF") IconButton(
+                    enabled = !model.busy && model.shareOrdersAvailable,
+                    onClick = { managePending(JsonRecord().put("ticker", ticker).put("currency", currency).put("shares", 100)) }) {
+                    AppIcon(Icons.Outlined.Add, "Add pending purchase")
+                }
+            }
+        }
         if (!model.historyComplete) item(key = "history-state") {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (model.busy) {
@@ -96,12 +98,23 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord, openPurchase
                     TextButton(onClick = { model.loadInvestmentHistory(force = true) }) { AppText("Try again") }
                 }
             }
-        } else if (lots.isEmpty()) item(key = "no-purchases") {
+        } else if (history.isEmpty()) item(key = "no-purchases") {
             EmptyState("No purchases recorded for this share", EmptyArtwork.SHARES, compact = true)
-        } else items(if (allLots) lots else lots.take(3), key = { "lot:${it.text("id")}" }) { lot -> SharePurchaseHistoryCard(lot, valuedSharePurchase(lot, Today, model.quotes)) { openPurchase(lot) } }
-        if (model.historyComplete && lots.size > 3) item(key = "all-purchases") {
+        } else {
+            val visibleEntries = if (allLots) history else history.take(3)
+            itemsIndexed(visibleEntries, key = { _, entry -> entry.key }) { index, entry ->
+                val pending = entry is ShareHistoryEntry.PendingOrder
+                SharePurchaseTimelineTile(model, entry,
+                    valuation = if (pending) null else valuedSharePurchase(entry.record, Today, model.quotes),
+                    last = index == visibleEntries.lastIndex, canOpen = !pending || managePending != null,
+                    uploadContract = uploadPendingContract?.let { upload -> { upload(entry.record) } }) {
+                    if (pending) managePending?.invoke(entry.record) else openPurchase(entry.record)
+                }
+            }
+        }
+        if (model.historyComplete && history.size > 3) item(key = "all-purchases") {
             TextButton(onClick = { allLots = !allLots }, modifier = Modifier.fillMaxWidth()) {
-                AppText(if (allLots) "Show fewer purchases" else "Show all ${lots.size} purchases")
+                AppText(if (allLots) "Show fewer purchases" else "Show all ${history.size} purchases")
             }
         }
         item(key = "share-activity") {
@@ -159,7 +172,7 @@ private fun ShareValuesInfoButton(quote: DetailQuote, refreshFailed: Boolean,
 }
 
 @Composable
-private fun ShareReturnSummary(valuation: ValuedSharePosition, compact: Boolean = false) {
+private fun ShareReturnSummary(valuation: ValuedSharePosition) {
     valuation.gainLoss?.let { gain ->
         val color = when {
             gain < 0 -> MaterialTheme.colorScheme.error
@@ -172,29 +185,8 @@ private fun ShareReturnSummary(valuation: ValuedSharePosition, compact: Boolean 
             AppText("Unrealized gain / loss", style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             FinancialText(listOfNotNull(change, rate).joinToString("  ·  "),
-                style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium,
                 color = color, fontWeight = FontWeight.Medium)
-        }
-    }
-}
-
-@Composable
-private fun SharePurchaseHistoryCard(lot: JsonRecord, valuation: ValuedSharePosition?, open: () -> Unit) {
-    Surface(onClick = open, shape = RoundedCornerShape(20.dp), tonalElevation = 1.dp) {
-        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    AppText(calendarDate(lot.text("tradeDate"))?.let(::detailDate) ?: localized("Unavailable"),
-                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    FinancialText("${formatNumber(lot.optDouble("shares"))} ${localized("Shares").lowercase()} · ${money(lot.optDouble("pricePerShare"), lot.text("currency"))}",
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                AppIcon(Icons.Outlined.ChevronRight, "View purchase", Modifier.size(22.dp))
-            }
-            DetailValueRow("Total cash cost", if (lot.has("netAmountPayable")) money(lot.optDouble("netAmountPayable"), lot.text("currency")) else "—")
-            if (valuation?.gainLoss != null) ShareReturnSummary(valuation, compact = true)
-            else DetailNote(if (lot.optDouble("remainingShares", lot.optDouble("shares")) <= 0) "No shares remaining" else "Return unavailable")
-            if (lot.optDouble("soldShares", 0.0) > 0) DetailValueRow("Shares remaining", formatNumber(lot.optDouble("remainingShares")))
         }
     }
 }
