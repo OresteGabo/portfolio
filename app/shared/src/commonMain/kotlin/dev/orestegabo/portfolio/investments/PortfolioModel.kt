@@ -801,7 +801,7 @@ class PortfolioModel(
         action {
             val purchases = api.request("/api/bonds/purchases").rows("purchases")
             val holdings = api.request("/api/bonds/equities").rows("holdings")
-            portfolio = PortfolioSnapshot(purchases, holdings, portfolio.documents)
+            portfolio = portfolio.copy(purchases = purchases, holdings = holdings)
             privateDataAvailable = true
             historyComplete = true
             reconcileImportHistory()

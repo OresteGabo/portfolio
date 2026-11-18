@@ -77,6 +77,19 @@ class ImportConversationModelTest {
         } finally { f.store.clear(); Dispatchers.resetMain() }
     }
 
+    @Test fun fullHistoryKeepsPendingOrdersAndTheirProjectedCosts() = runTest {
+        val f = shareFixture()
+        val m = model(f)
+        try {
+            advanceUntilIdle()
+            assertEquals(1, m.portfolio.shareOrders.size)
+            m.loadInvestmentHistory(force = true)
+            advanceUntilIdle()
+            assertEquals(1, m.portfolio.shareOrders.size)
+            assertEquals(732312.0, m.portfolio.summary(Today).single().shareCashCost)
+        } finally { f.store.clear(); Dispatchers.resetMain() }
+    }
+
     @Test fun mismatchedShareContractCannotUploadOrCompleteAnOrder() = runTest {
         val f = shareFixture().apply { review.put("fields", review.getJSONObject("fields").put("shares", 500)) }
         val m = model(f)
