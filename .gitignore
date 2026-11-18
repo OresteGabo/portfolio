@@ -81,8 +81,9 @@ htmlcov/
 
 # Keep scripts, tests and their synthetic fixtures regardless of extension.
 # Do not ignore *.js, *.mjs, *.png or *.txt globally.
-# Keep bundled PDF/OCR runtime assets (bcmap, fonts, wasm, traineddata and licenses).
-# They are app dependencies, not local build outputs; fresh checkouts need them.
+# Keep archived PDF/OCR assets under tests/reference-engine (bcmap, fonts, wasm,
+# traineddata and licenses). They are test fixtures, not local build outputs;
+# fresh checkouts need them for the retained reference tests. Mobile runtime is Kotlin.
 
 # Local native push-provider configuration
 /app/androidApp/google-services.json

@@ -63,7 +63,6 @@ interface InvestmentEngine {
 @Composable expect fun rememberServerSettings(): ServerSettings
 @Composable expect fun rememberNativeActions(): NativeActions
 @Composable expect fun rememberInvestmentEngine(): InvestmentEngine
-@Composable expect fun InvestmentEngineHost(engine: InvestmentEngine)
 @Composable expect fun PlatformBackHandler(enabled: Boolean, back: () -> Unit)
 val LocalImportEngine = staticCompositionLocalOf<InvestmentEngine?> { null }
 

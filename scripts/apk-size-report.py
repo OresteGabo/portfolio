@@ -33,11 +33,9 @@ def inspect(path, verify=False):
             groups[category(entry.filename)] += entry.compress_size
         if verify:
             names = set(archive.namelist())
-            prefix = 'assets/engine/bond-import/tesseract/'
-            expected = {prefix + 'tesseract-core' + variant + '-lstm.wasm.js'
-                        for variant in ['', '-simd', '-relaxedsimd']}
-            assert {n for n in names if n.startswith(prefix)} == expected, 'Unexpected OCR core payload'
-            assert 'assets/engine/bond-import/eng.traineddata' in names, 'Offline English OCR model missing'
+            assert not any(n.endswith(('.js', '.mjs', '.wasm')) for n in names), 'JavaScript/WebAssembly runtime assets packaged'
+            assert not any('/engine/' in n for n in names), 'Retired processing engine packaged'
+            assert any(n.startswith('assets/mlkit-google-ocr-models/') for n in names), 'Bundled offline OCR model missing'
             photos = {n.rsplit('/', 1)[-1] for n in names if '/drawable/kigali_' in n}
             assert photos == {'kigali_assets_36653828.jpg'}, 'Unused photos packaged or active photos missing'
             for name in names:

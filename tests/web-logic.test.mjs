@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { DEFAULT_ASSUMPTIONS, calculateProjection, summarizeProjection } from '../app/shared/src/commonMain/composeResources/files/engine/calculations.js';
-import { parsePurchasePdfText } from '../app/shared/src/commonMain/composeResources/files/engine/equity-pdf-parser.js';
-import { validateBondPdfEnvelope } from '../app/shared/src/commonMain/composeResources/files/engine/pdf-import-errors.js';
+import { DEFAULT_ASSUMPTIONS, calculateProjection, summarizeProjection } from './reference-engine/common/calculations.js';
+import { parsePurchasePdfText } from './reference-engine/common/equity-pdf-parser.js';
+import { validateBondPdfEnvelope } from './reference-engine/common/pdf-import-errors.js';
 
 test('one year without allocation preserves all contributions in cash', () => {
   const assumptions = {...DEFAULT_ASSUMPTIONS, horizonYears:1, auctionFillRate:0, contributionPeriods:[]};
@@ -42,7 +42,7 @@ test('PDF envelope rejects trailing executable content', () => {
 test('portable JavaScriptCore bundle matches the shared ESM calculation module', async () => {
   const vm = await import('node:vm');
   const context = vm.createContext({});
-  vm.runInContext(fs.readFileSync(new URL('../app/shared/src/commonMain/composeResources/files/engine/logic.js', import.meta.url), 'utf8'), context);
+  vm.runInContext(fs.readFileSync(new URL('./reference-engine/common/logic.js', import.meta.url), 'utf8'), context);
   const assumptions = {...DEFAULT_ASSUMPTIONS, horizonYears:2, contributionPeriods:[]};
   const rows = calculateProjection(assumptions);
   const expected = {rows, summary:summarizeProjection(rows, assumptions)};
@@ -52,7 +52,7 @@ test('portable JavaScriptCore bundle matches the shared ESM calculation module',
 test('portable JavaScriptCore bundle preserves the purchase parser results', async () => {
   const vm = await import('node:vm');
   const context = vm.createContext({});
-  vm.runInContext(fs.readFileSync(new URL('../app/shared/src/commonMain/composeResources/files/engine/logic.js', import.meta.url), 'utf8'), context);
+  vm.runInContext(fs.readFileSync(new URL('./reference-engine/common/logic.js', import.meta.url), 'utf8'), context);
   const text = fs.readFileSync(new URL('./fixtures/equity-purchase.txt',import.meta.url),'utf8');
   assert.deepEqual(JSON.parse(JSON.stringify(context.PortfolioLogic.parse(text,false))), parsePurchasePdfText(text));
 });

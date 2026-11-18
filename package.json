@@ -1,0 +1,16 @@
+{
+  "name": "inzira-mobile-tooling",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "generate:reference": "node scripts/bundle-shared-logic.mjs",
+    "check:reference": "node scripts/bundle-shared-logic.mjs --check"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}

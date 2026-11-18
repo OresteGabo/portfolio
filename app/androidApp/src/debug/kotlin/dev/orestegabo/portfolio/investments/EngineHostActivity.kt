@@ -8,8 +8,7 @@ class EngineHostActivity : Activity() {
     lateinit var engine: LocalInvestmentEngine
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        engine = LocalInvestmentEngine(this, privateDocuments = intent.getBooleanExtra("privateDocuments", false))
-        setContentView(engine.view)
+        engine = LocalInvestmentEngine(this)
     }
     override fun onDestroy() {
         engine.destroy()

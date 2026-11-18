@@ -41,6 +41,9 @@ kotlin {
     
     sourceSets {
         androidMain.dependencies {
+            implementation(libs.pdfbox.android)
+            // Bundled Latin model: OCR works offline, without Play-services model downloads.
+            implementation(libs.mlkit.text)
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.biometric)
             implementation(libs.kotlinx.coroutines.android)

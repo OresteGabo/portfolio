@@ -1,0 +1,55 @@
+%PDF-1.7
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [5 0 R 6 0 R] /SigFlags 3 >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 1000 1200] /Resources << /Font << /F1 7 0 R >> >> /Contents 4 0 R /Annots [5 0 R 6 0 R] >>
+endobj
+4 0 obj
+<< /Length 777 >>
+stream
+BT /F1 9 Tf 12 1100 Td (BK CAPITAL) Tj 0 -14 Td
+(EQUITY PURCHASE CONTRACT NOTE : TEST-2026#01) Tj 0 -14 Td
+(Trade Date : 24-Sep-2026 Security Name : BANK OF KIGALI) Tj 0 -14 Td
+(Settlement Date : 28-Sep-2026 ISIN Code : RW000A1JCYA) Tj 0 -14 Td
+(Pin No. : No. of Shares : 500) Tj 0 -14 Td
+(Exchange : RSE Price : 670.00) Tj 0 -14 Td
+(Trade Report ID : 1234567890123456789) Tj 0 -14 Td
+(Gross Consideration 500 @ 670.00 335,000.00) Tj 0 -14 Td
+(Brokerage Commission 1.5000% 5,025.00) Tj 0 -14 Td
+(RSE Transaction Fee 0.1400% 469.00) Tj 0 -14 Td
+(CSD Transaction Levy 0.0500% 167.50) Tj 0 -14 Td
+(CMA Transaction Fee 0.0200% 67.00) Tj 0 -14 Td
+(Total Charges 5,728.50) Tj 0 -14 Td
+(NET AMOUNT PAYABLE 340,728.50) Tj 0 -14 Td
+(All figures are in RWF) Tj 0 -14 Td
+() Tj 0 -14 Td ET
+endstream
+endobj
+5 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Sig /T (Signature1) /P 3 0 R /Rect [0 0 20 20] /F 132  >>
+endobj
+6 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Sig /T (Signature2) /P 3 0 R /Rect [20 0 40 20] /F 132 >>
+endobj
+7 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000108 00000 n 
+0000000165 00000 n 
+0000000315 00000 n 
+0000001143 00000 n 
+0000001254 00000 n 
+0000001365 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+1435
+%%EOF

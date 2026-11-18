@@ -79,7 +79,7 @@ private val approvedErrorMessages = setOf(
     "Could not recognize this PDF. Use a BNR bond result, share purchase contract or BK Capital statement.",
     "Could not remove saved sign-in.",
     "Could not securely save your sign-in.",
-    "Coupon assumptions must be between 10.65% and 13.5%, as in the web model.",
+    "Coupon assumptions must be between 10.65% and 13.5%.",
     "Device authentication is already open.",
     "Device authentication is unavailable.",
     "Email or password is incorrect.",

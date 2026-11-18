@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {purchaseToStartingLot,calculateProjection,DEFAULT_ASSUMPTIONS} from '../app/shared/src/commonMain/composeResources/files/engine/calculations.js';
-import {parseEquityPurchase} from '../app/shared/src/commonMain/composeResources/files/engine/equity-validation.js';
+import {purchaseToStartingLot,calculateProjection,DEFAULT_ASSUMPTIONS} from './reference-engine/common/calculations.js';
+import {parseEquityPurchase} from './reference-engine/common/equity-validation.js';
 const reference=JSON.parse(fs.readFileSync(new URL('fixtures/investment-reference.json',import.meta.url),'utf8'));
 const assumptions={...DEFAULT_ASSUMPTIONS,startYear:2027,startMonth:1,horizonYears:1,contributionPeriods:[],monthlyContribution:0,auctionFillRate:0,reinvestmentRate:1};
 const record=b=>({id:b.id,status:'active',faceValue:b.principal,couponRate:b.couponRate,withholdingTaxRate:b.taxRate,couponFrequency:b.frequency,

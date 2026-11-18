@@ -7,6 +7,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
 def check(app, version_file=ROOT / 'Version.xcconfig'):
+    assert not any(p.suffix in ('.js', '.mjs', '.wasm') for p in app.rglob('*') if p.is_file()), 'JavaScript/WebAssembly runtime assets packaged'
     version = dict(line.split('=', 1) for line in version_file.read_text().splitlines() if '=' in line)
     version = {key.strip(): value.strip() for key, value in version.items()}
     with (app / 'Info.plist').open('rb') as source:

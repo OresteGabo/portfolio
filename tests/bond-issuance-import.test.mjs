@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import { parsePurchasePdfText } from '../app/shared/src/commonMain/composeResources/files/engine/equity-pdf-parser.js';
+import { parsePurchasePdfText } from './reference-engine/common/equity-pdf-parser.js';
 const report = fs.readFileSync(new URL('./fixtures/bnr-market-results-2026.txt', import.meta.url), 'utf8');
 
 test('reads the supplied BNR report without turning auction totals into a purchase', () => {
@@ -29,7 +29,7 @@ test('reads the supplied BNR report without turning auction totals into a purcha
 
 test('bundled engine used by both native platforms returns the same issuance', () => {
   const context = vm.createContext({});
-  vm.runInContext(fs.readFileSync(new URL('../app/shared/src/commonMain/composeResources/files/engine/logic.js', import.meta.url), 'utf8'), context);
+  vm.runInContext(fs.readFileSync(new URL('./reference-engine/common/logic.js', import.meta.url), 'utf8'), context);
   assert.deepEqual(JSON.parse(JSON.stringify(context.PortfolioLogic.parse(report, false))), parsePurchasePdfText(report));
 });
 

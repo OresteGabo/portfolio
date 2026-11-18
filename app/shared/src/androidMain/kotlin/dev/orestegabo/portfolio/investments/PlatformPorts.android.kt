@@ -12,11 +12,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -171,12 +167,6 @@ actual fun rememberNativeActions(): NativeActions {
 actual fun rememberInvestmentEngine(): InvestmentEngine {
     val context = LocalContext.current
     return remember(context) { UnlockPerformance.measureSync("local_engine_initialization") { LocalInvestmentEngine(context) } }
-}
-@Composable
-actual fun InvestmentEngineHost(engine: InvestmentEngine) {
-    if (engine is LocalInvestmentEngine && engine.hostRequested) key(engine,engine.rendererGeneration) {
-        AndroidView(factory = { engine.view }, modifier = Modifier.size(1.dp))
-    }
 }
 @Composable
 actual fun PlatformBackHandler(enabled: Boolean, back: () -> Unit) { BackHandler(enabled, back) }

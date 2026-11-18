@@ -1,0 +1,65 @@
+%PDF-1.7
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [5 0 R 6 0 R] /SigFlags 3 >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 1000 1200] /Resources << /Font << /F1 7 0 R >> >> /Contents 4 0 R /Annots [5 0 R 6 0 R] >>
+endobj
+4 0 obj
+<< /Length 1828 >>
+stream
+BT /F1 9 Tf 1 0 0 1 12 1100 Tm (BK CAPITAL) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 1086 Tm (CLIENT STATEMENT) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 1072 Tm (Client Code : SYNTHETIC-WRAPPED) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 1058 Tm (From Date : 01-Jul-2026) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 1044 Tm (To Date : 30-Sep-2026) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 1030 Tm (Account Summary Balance \(RWF\)) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 1016 Tm (Opening Balance As On 01-07-2026 0.00 0.00) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 1002 Tm (14-Jul-2026 Receipt RCT-DEMO TRANSFER 0.00 1,511,000.00) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 988 Tm (Synthetic funding) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 974 Tm (ACCOUNT) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 960 Tm (17-Jul-2026 Journal 1 1,500,000.00 0.00) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 946 Tm (July Bond Cost) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 932 Tm (17-Jul-2026 Journal 1 Bond Fee 5,000.00 0.00) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 918 Tm (17-Jul-2026 Journal 1 Bank charges 5,900.00 0.00) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 904 Tm (22-Jul-2026 Purchase 10000000001#) Tj ET
+BT /F1 9 Tf 1 0 0 1 240 906.5 Tm (Purchase of IMR 200 @ 90.00 on 22-07-2026 by) Tj ET
+BT /F1 9 Tf 1 0 0 1 700 904 Tm (200 90.00 18,400.00 0.00) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 890 Tm (01 BR9 - 12SYNTHETIC; Ref. No : DEMO;) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 876 Tm (17-Aug-2026 Journal 1 August Bond Cost 2,000,000.00 0.00) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 862 Tm (24-Sep-2026 Purchase 10000000002#) Tj ET
+BT /F1 9 Tf 1 0 0 1 240 864.5 Tm (Purchase of BOK 300 @ 600.00 on 24-09-2026) Tj ET
+BT /F1 9 Tf 1 0 0 1 700 862 Tm (300 600.00 184,000.00 0.00) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 848 Tm (01 by BR9 - 12SYNTHETIC; Ref. No : DEMO;) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 834 Tm (Closing Balance As On 30-Sep-2026 : 100.00 Cr) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 820 Tm (*** End Of Report ***) Tj ET
+BT /F1 9 Tf 1 0 0 1 12 806 Tm () Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Sig /T (Signature1) /P 3 0 R /Rect [0 0 20 20] /F 132  >>
+endobj
+6 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Sig /T (Signature2) /P 3 0 R /Rect [20 0 40 20] /F 132 >>
+endobj
+7 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000108 00000 n 
+0000000165 00000 n 
+0000000315 00000 n 
+0000002195 00000 n 
+0000002306 00000 n 
+0000002417 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+2487
+%%EOF

@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-const common = new URL('../app/shared/src/commonMain/composeResources/files/engine/', import.meta.url);
-const android = new URL('../app/shared/src/androidMain/assets/engine/', import.meta.url);
+const common = new URL('./reference-engine/common/', import.meta.url);
+const android = new URL('./reference-engine/android/', import.meta.url);
 vm.runInThisContext(fs.readFileSync(new URL('logic.js', common), 'utf8'));
 // Run the shipped reader, changing only browser asset URLs to local Node URLs.
 const source = fs.readFileSync(new URL('pdf-import.js', android), 'utf8')

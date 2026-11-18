@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {parsePurchasePdfText, parseEquityPdfText} from '../app/shared/src/commonMain/composeResources/files/engine/equity-pdf-parser.js';
-import {parseBondPdfText} from '../app/shared/src/commonMain/composeResources/files/engine/pdf-import-parser.js';
-import {parseBkStatement} from '../app/shared/src/commonMain/composeResources/files/engine/bk-statement-parser.js';
+import {parsePurchasePdfText, parseEquityPdfText} from './reference-engine/common/equity-pdf-parser.js';
+import {parseBondPdfText} from './reference-engine/common/pdf-import-parser.js';
+import {parseBkStatement} from './reference-engine/common/bk-statement-parser.js';
 const fixture = name => fs.readFileSync(new URL(`fixtures/${name}.txt`, import.meta.url), 'utf8');
 const equity = fixture('equity-purchase'), statement = fixture('bk-statement');
 const bond = fixture('bnr-investor-results-synthetic'), issuance = fixture('bnr-market-results-2026');
 const context = vm.createContext({});
-vm.runInContext(fs.readFileSync(new URL('../app/shared/src/commonMain/composeResources/files/engine/logic.js', import.meta.url), 'utf8'), context);
+vm.runInContext(fs.readFileSync(new URL('./reference-engine/common/logic.js', import.meta.url), 'utf8'), context);
 const blocked = text => {
   try {
     const result = parsePurchasePdfText(text);

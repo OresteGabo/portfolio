@@ -29,6 +29,11 @@ class ReleasePackageTests(unittest.TestCase):
     def test_packaged_release(self):
         release_check.check(self.app, self.version)
 
+    def test_runtime_javascript_is_rejected(self):
+        (self.app / 'logic.js').write_text('should never ship')
+        with self.assertRaises(AssertionError):
+            release_check.check(self.app, self.version)
+
     def test_missing_packaged_manifest(self):
         (self.app / 'PrivacyInfo.xcprivacy').unlink()
         with self.assertRaises(FileNotFoundError):

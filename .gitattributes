@@ -1,0 +1,6 @@
+# Preserve PDF cross-reference offsets and encoded character maps byte for byte.
+*.pdf binary
+*.bcmap binary
+
+# Vendor notices are copied verbatim from the SDK, including its whitespace.
+app/shared/src/commonMain/composeResources/files/legal/licenses/MLKit-third-party.txt -text -whitespace

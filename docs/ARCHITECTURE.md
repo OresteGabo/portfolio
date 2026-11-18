@@ -18,8 +18,8 @@ flowchart TD
     Presentation --> Ports[NativeActions and InvestmentEngine interfaces]
     Core --> AndroidHTTP[Android Ktor engine]
     Core --> DarwinHTTP[Darwin Ktor engine]
-    Ports --> AndroidNative[Android document picker, sharing and WebView]
-    Ports --> AppleNative[iOS document picker, sharing, PDFKit, Vision and JavaScriptCore]
+    Ports --> AndroidNative[Android document picker, sharing, PDFBox and local OCR]
+    Ports --> AppleNative[iOS document picker, sharing, PDFKit and Vision]
 ```
 
 | Location | Responsibility |
@@ -27,9 +27,9 @@ flowchart TD
 | `core/src/commonMain` | Lossless API records, request/error contracts, origin validation, redirect policy, bounded streaming responses, in-memory cookie sessions, origin-bound expiry-preserving snapshots, dates, coupon calculations, portfolio aggregation/valuation, monthly goals and the document-parser port. No Compose or OS dependencies in commonMain. |
 | `core/src/androidMain`, `iosMain`, `jvmMain` | Ktor transport creation and build-specific development-HTTP policy. iOS disables native cookie persistence and HTTP caching. |
 | `app/shared/src/commonMain` | All Compose screens and navigation, shared lifecycle ViewModel, validation, formatting, import review, download workflow, calendar and lessons. |
-| `app/shared/src/commonMain/composeResources/files` | One calendar and education snapshot, portable numerical/purchase-parsing modules, and a generated DOM-free investment engine bundle. |
-| `app/shared/src/androidMain` | Android preferences, file picker/export, URL/share intents, hardware Back, and the sandboxed browser adapter for PDF.js/Tesseract. The heavy browser/OCR assets are Android-only. |
-| `app/shared/src/iosMain` | NSUserDefaults origin preference, native document import/export and share sheets, PDFKit extraction, Vision OCR, and JavaScriptCore execution of the shared investment rules. No hidden browser is needed. |
+| `app/shared/src/commonMain/composeResources/files` | Bundled calendar, education, artwork and license notices; no JavaScript runtime assets. |
+| `app/shared/src/androidMain` | Android preferences, file picker/export, URL/share intents, hardware Back, and native PDFBox extraction, structural validation and bundled ML Kit OCR. |
+| `app/shared/src/iosMain` | NSUserDefaults origin preference, native document import/export and share sheets, PDFKit extraction, Vision OCR, forwarding text to shared Kotlin investment rules. |
 | `app/androidApp` | Manifest, launcher resources, build-variant flag and one activity calling shared `App()`. Device integration tests live here. |
 | `app/iosApp` | SwiftUI lifecycle and a Compose UIViewController host. Xcode's existing embed task builds the shared framework and copies its resources. |
 | `server` | Existing optional Ktor starter. Mobile clients still use the existing deployed investment API. |
@@ -62,7 +62,7 @@ Feature responsibilities are separated behind the existing screen-facing model A
 
 Imports, notifications and application forms receive narrow host interfaces rather than the whole model. Data features depend on `PortfolioDataApi`, which exposes request/download capabilities without session restoration, cookie clearing or client shutdown. The model retains its coroutine scope and action guard, so extracting these features does not create independent session lifetimes or parallel write paths. Clearing private state detaches import history, drops PDF references and advances the notification revision before a new account can publish feature data. Feature state remains observable Compose state; screens keep their existing model entry points.
 
-The calculation and purchase-text parsing rules have one TypeScript source snapshot in `web-logic/source`. `scripts/bundle-shared-logic.mjs` generates one portable bundle used on both platforms. Android's extraction adapter obtains text with PDF.js/Tesseract; iOS obtains text with PDFKit/Vision. Both feed the same purchase parser and shared review form. Scanned documents are marked for review. Neither adapter executes PDF JavaScript or submits extracted records automatically.
+Calculation and purchase-text parsing rules now live in shared Kotlin (`InvestmentProjection` and `InvestmentDocumentRules`). Android extracts with PDFBox/bundled ML Kit; iPhone uses PDFKit/Vision. Both feed the same Kotlin parser and Compose review form. `KotlinInvestmentEngine` owns cancellation, serialization and teardown. Scans remain review-required. No JavaScript interpreter or browser processes app logic. The retired engine is a test-only reference under `tests/reference-engine`; see [migration](KOTLIN_ENGINE_MIGRATION.md).
 
 ## Resources and entry points
 

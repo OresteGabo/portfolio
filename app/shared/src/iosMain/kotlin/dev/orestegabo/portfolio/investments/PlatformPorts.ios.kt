@@ -191,8 +191,6 @@ private class IosActions : NativeActions {
 }
 @Composable actual fun rememberNativeActions(): NativeActions = remember { IosActions() }
 @Composable actual fun rememberInvestmentEngine(): InvestmentEngine = remember { IosInvestmentEngine() }
-// JavaScriptCore has no visual view and needs no hidden browser on iOS.
-@Composable actual fun InvestmentEngineHost(engine: InvestmentEngine) = Unit
 // iOS uses the visible shared Back / Cancel controls; there is no Android-style hardware back event.
 @Composable actual fun PlatformBackHandler(enabled: Boolean, back: () -> Unit) = Unit
 

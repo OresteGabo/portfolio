@@ -23,7 +23,9 @@ For everyday iPhone UI checks, select the **iosApp Fast Run** scheme. It builds 
 ./gradlew :core:jvmTest :core:iosSimulatorArm64Test
 ./gradlew :app:shared:testAndroidHostTest :app:shared:iosSimulatorArm64Test
 ./gradlew :app:androidApp:lintDebug :app:androidApp:connectedDebugAndroidTest
-node --test tests/*.test.mjs
+npm ci --ignore-scripts
+npm run check:reference
+npm test
 ```
 
 Boot an iPhone simulator before running shared iOS tests; they use native Vision services. Select a specific booted device with `-PiosTestDevice=<UDID>`.
@@ -49,15 +51,15 @@ Use the wrapper and configured JDK **21**. `local.properties` must point at an A
 - **PDF sharing:** Android accepts PDF Share/Open with intents; iPhone accepts PDF Open In handoffs with the current free-team signing setup. Files wait through onboarding/sign-in and use the existing type-specific import flow. Document downloads and generated reports open the native share sheet. See [PDF sharing and iPhone limitations](docs/PDF_SHARING.md).
 - **Documents:** Import provides a native conversation with per-file progress, inline review, errors, retries and account-scoped history on this device. Library provides search/category filters, a native PDF reader, separate metadata details and PDF sharing. Uploading stays in Chat. See [PDF viewing](docs/PDF_VIEWING.md). Completed imports link to actual documents and bond purchases. Owner-only visibility follows the existing API. See [document import conversation](docs/DOCUMENT_IMPORT_CONVERSATION.md).
 - **Stocks:** a chart-first screen with stock selection, month/year/all ranges, automatic saved-price history loading, a compact ten-company watchlist, source freshness, holding valuations and bond prices. Charts only use actual saved observations.
-- **Simulator:** original web calculation engine, contribution periods, one-time cash injections, allowed tenors, tenor coupon assumptions, fill and reinvestment rates, purchase charges, optional active RWF holdings, milestones, chart, and monthly results.
-- **Learn:** original web education text rendered into native reading blocks with search.
+- **Simulator:** shared Kotlin calculation engine, contribution periods, one-time cash injections, allowed tenors, tenor coupon assumptions, fill and reinvestment rates, purchase charges, optional active RWF holdings, milestones, chart, and monthly results.
+- **Learn:** bundled mobile education content with native reading blocks and search.
 - **Report a problem:** an in-app form for bugs, incorrect data and other issues, available from Settings, screen menus and sign-in. Review a report, optionally include basic app details, then open an email draft to support or copy its text. No automatic report upload. See [issue reporting](docs/ISSUE_REPORTING.md).
 - **About:** a native page with the theme-aware Inzira mark, GABO attribution, a short app overview, feature summaries, website and contact links, and legal/software credits. Available from Settings and the legal hub, including before sign-in.
 - **Account tab:** grouped settings for Appearance, Security, Privacy, Tools, Links, Administration (owner only), and Session. Includes secure saved sign-in, device unlock, a theme selector, native simulator/education, relocated bond search, explicit browser links, account summaries and invitation management. Sign-in and invitation-token registration are shown before entering the app. Password setup and the full website remain accessible through explicit browser links; the browser has a separate session.
 
 All product screens, navigation, ViewModel state, API rules, JSON records, date/coupon calculations, formatting, and content are shared. Android's activity and iOS's SwiftUI wrapper only host `App()`. Native file pickers, PDF export, URL opening, sharing, preferences and HTTP engines are implemented behind platform interfaces. See [the architecture map](docs/ARCHITECTURE.md) for the exact boundaries.
 
-The original calculation and purchase-parsing rules are bundled once for both platforms. Android uses a restricted local WebView with PDF.js/Tesseract; iOS uses JavaScriptCore with native PDFKit extraction and Vision OCR. The visible import review and simulator are the same shared Compose screens. The large Android OCR runtime is excluded from the iPhone app.
+Calculation and document-parsing rules are shared Kotlin in `core`. Android extracts PDF text with PDFBox Android and recognizes scans with bundled, on-device ML Kit; iPhone uses system PDFKit/Vision. Both use `KotlinInvestmentEngine` and the same Compose review/simulator screens. Neither app loads JavaScript, a hidden WebView, JavaScriptCore or WebAssembly for these features. See [the Kotlin migration and verification](docs/KOTLIN_ENGINE_MIGRATION.md).
 
 ## API and privacy
 
@@ -75,20 +77,25 @@ The app connects to the configured production API automatically, without exposin
 
 BNR issuance imports also require the updated separate Spring backend; see [issuance import setup](docs/BOND_ISSUANCE_IMPORT.md). Private web files and credentials were not copied into the app.
 
-## Refresh copied public logic
+## Independent Kotlin mobile engine
 
-The source snapshot is in `web-logic/source`. To refresh from the original web repository (with its TypeScript/PDF dependencies installed):
+The mobile app owns its sources and content. Shared Kotlin `InvestmentDocumentRules` recognizes BNR personal confirmations/public issuance results, BK share purchase contracts and BK statements. `InvestmentProjection` implements the monthly simulator. Native adapters only extract PDF text/OCR and forward it to those rules. Normal Android/Xcode builds need no website checkout or Node installation.
+
+Learn blocks are maintained in `app/shared/src/commonMain/composeResources/files/education.json`. The signed-in app calls the separately deployed Spring service directly; keep that backend and its database available. Optional website links and website password association are external conveniences.
+
+The retired TypeScript/JavaScript engine and PDF/OCR libraries remain **only under `tests/reference-engine`**, outside mobile source sets. This preserves the original test suite and an independent comparison reference. The app does not package these files. Optional reference checks use Node 22+ and the compiler pinned in this repository:
 
 ```sh
-node scripts/sync-web-logic.mjs /path/to/gabo
-node scripts/copy-education.mjs /path/to/gabo
+npm ci --ignore-scripts
+npm run check:reference
+npm test
 ```
 
-The first script regenerates the shared JavaScript modules/bundle and the Android-only PDF/OCR assets. `node scripts/bundle-shared-logic.mjs /path/to/gabo` can rebuild the portable bundle from the checked-in source snapshot without refreshing that snapshot. The second renders the original education JSX and regenerates the native `education.json` text snapshot. Third-party PDF/OCR licenses are bundled beside those assets. These Android assets add size to the APK so OCR works without downloading models. iOS uses the system Vision framework instead.
+Do not edit the archived reference or frozen expected outputs to hide a Kotlin regression. New financial/parser behavior requires deliberate native tests. See [Kotlin migration](docs/KOTLIN_ENGINE_MIGRATION.md) and [website independence](docs/WEBSITE_INDEPENDENCE.md).
 
 ## Verification limits
 
-Shared tests run on JVM, Android, and iOS and cover API origin/cookie behavior, server errors, coupon boundaries, response limits, session expiry, account isolation and duplicate-action prevention. Native adapter tests cover Android browser extraction and iOS PDFKit/Vision plus JavaScriptCore. JavaScript parity tests compare the portable native bundle with the original modules. Emulator tests use synthetic records, never production account credentials. Secure sign-in tests include process/device restart, system authentication, session renewal, cancellation, corrupt saved data, and local logout cleanup using synthetic accounts. Physical biometric hardware and real account credentials were not used. Real account login, private document downloads, broker-specific PDF scans, and production changes still require account-specific confirmation.
+Shared tests run on JVM, Android, and iOS and cover API origin/cookie behavior, server errors, coupon boundaries, response limits, session expiry, account isolation and duplicate-action prevention. Native adapter tests cover Android PDFBox/local OCR and iOS PDFKit/Vision feeding shared Kotlin. Kotlin migration tests compare 357 parser cases and every monthly field/summary of 17 simulator scenarios with frozen original-engine outputs. The archived JavaScript tests run separately as a reference. Emulator tests use synthetic records, never production account credentials. Secure sign-in tests include process/device restart, system authentication, session renewal, cancellation, corrupt saved data, and local logout cleanup using synthetic accounts. Physical biometric hardware and real account credentials were not used. Real account login, private document downloads, broker-specific PDF scans, and production changes still require account-specific confirmation.
 
 The Android APK and Xcode iPhone application are built from the same shared source. Current checks and runtime previews are recorded in [verification notes](docs/VERIFICATION.md).
 

@@ -1,4 +1,4 @@
-/** Native ESM adaptation only; financial/parser source remains the shared TypeScript. */
+/** Retired ESM adaptation for reference tests only; production rules are shared Kotlin. */
 export function nativeModuleSource(source) {
   return source.replaceAll('"pdfjs-dist/legacy/build/pdf.mjs"', '"./pdf.mjs"')
     .replaceAll('"tesseract.js"', '"./native-tesseract.mjs"')

@@ -46,7 +46,7 @@ fun SimulatorScreen(model: PortfolioModel, engine: InvestmentEngine, back: () ->
     var resultsOnly by rememberSaveable { mutableStateOf(false) }
     val names = mapOf("monthlyContribution" to "Monthly contribution (RWF)", "horizonYears" to "Horizon in years", "startMonth" to "Start month (1–12)", "startYear" to "Start year", "couponPaymentsPerYear" to "Coupon payments per year", "reinvestmentRate" to "Coupon reinvestment (%)", "auctionFillRate" to "Auction fill rate (%)", "purchaseMinimum" to "Purchase minimum (RWF)", "purchaseCharge" to "Purchase charge (RWF)")
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { TextButton(onClick = back) { AppText("← Home") }; PageTitle("Plan the long term", "Investment simulator", "Explore monthly contributions, cash injections, coupon reinvestment, auction allocation, and maturity proceeds using the same model as your web app.") }
+        item { TextButton(onClick = back) { AppText("← Home") }; PageTitle("Plan the long term", "Investment simulator", "Explore monthly contributions, cash injections, coupon reinvestment, auction allocation, and maturity proceeds.") }
         item { ChoiceRow(listOf("assumptions", "results"), if (resultsOnly) "results" else "assumptions") { resultsOnly = it == "results" } }
         if (!resultsOnly) {
             item { Panel { AppText("Planning assumptions", fontWeight = FontWeight.Bold); AppText("Illustrative estimates. The model repeats the issuance tenor cycle and uses your configured rates; future auctions and returns are uncertain.", style = MaterialTheme.typography.bodySmall) } }
@@ -95,7 +95,7 @@ fun SimulatorScreen(model: PortfolioModel, engine: InvestmentEngine, back: () ->
                     require(assumptions.getDouble("reinvestmentRate") <= 1 && assumptions.getDouble("auctionFillRate") <= 1) { "Reinvestment and fill rates must be 0–100%." }
                     require(tenors.isNotEmpty()) { "Select at least one tenor." }
                     val rateJson = JsonRecord()
-                    rates.forEach { (key, text) -> rateJson.put(key, (text.toInputNumberOrNull()?.takeIf { it in 10.65..13.5 } ?: error("Coupon assumptions must be between 10.65% and 13.5%, as in the web model.")) / 100) }
+                    rates.forEach { (key, text) -> rateJson.put(key, (text.toInputNumberOrNull()?.takeIf { it in 10.65..13.5 } ?: error("Coupon assumptions must be between 10.65% and 13.5%.")) / 100) }
                     assumptions.put("tenorCouponRates", rateJson).put("allowedTenors", JsonList(tenors)).put("contributionPeriods", JsonList(periods.mapIndexed { index, period ->
                         val amount = period["amount"]?.toInputNumberOrNull()?.takeIf { it.isFinite() && it >= 0 } ?: error("Invalid contribution amount.")
                         val start = period["startMonth"]?.toIntOrNull() ?: error("Invalid start month.")
@@ -151,7 +151,7 @@ fun EducationScreen(model: PortfolioModel, back: () -> Unit) {
     val blocks = model.education
     var search by rememberSaveable { mutableStateOf("") }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { TextButton(onClick = back) { AppText("← Home") }; PageTitle("Learning library", "Bond education", "The educational content from your web app, adapted for reading on a phone.") }
+        item { TextButton(onClick = back) { AppText("← Home") }; PageTitle("Learning library", "Bond education", "Learn about bonds and investment planning.") }
         if (blocks.isNotEmpty()) item { Field("Search lessons", search, { search = it }) }
         val filtered = blocks.filter { localized(it.text("text")).contains(search, true) }
         if (filtered.isEmpty()) item {

@@ -1,5 +1,6 @@
 # Struct Capital codebase assessment
 
+> 18 November 2026: runtime investment calculation/parsing migrated to shared Kotlin; Android extraction uses PDFBox/bundled local OCR and iPhone retains PDFKit/Vision. Older JavaScript engine descriptions are historical. [Migration and verification](../KOTLIN_ENGINE_MIGRATION.md).
 Audit: 30 October 2026. Start here for the current system; see [target architecture](TARGET_ARCHITECTURE.md), [decisions](DECISIONS.md), [risks and deferred work](RISKS_AND_DEFERRED.md), and [source inventory](SOURCE_INVENTORY.md).
 
 ## Scope and confidence

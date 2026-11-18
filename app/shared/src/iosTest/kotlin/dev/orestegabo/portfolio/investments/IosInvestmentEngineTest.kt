@@ -118,7 +118,7 @@ class IosInvestmentEngineTest {
         }
     }
 
-    @Test fun originalProjectionRunsInJavaScriptCore() = runTest {
+    @Test fun originalProjectionRunsInSharedKotlin() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val engine = IosInvestmentEngine()
         try {

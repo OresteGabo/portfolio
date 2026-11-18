@@ -116,6 +116,26 @@
       "flow": "incomplete financial projection presentation",
       "class": "FinancialTransparencyUiTest",
       "method": "incompleteProjectionExplainsUnknownValuesAndKeepsActualZeroDistinct"
+    },
+    {
+      "flow": "native Kotlin PDF reader retains passive signatures, bond/share/issuance parsing and wrapped statement rows without JavaScript",
+      "class": "NativePdfPolicyTest",
+      "method": "nativeReaderPreservesSignedDocumentsAndWrappedStatementRows"
+    },
+    {
+      "flow": "native Kotlin PDF reader rejects active content and non-signature fields, then accepts a valid retry",
+      "class": "NativePdfPolicyTest",
+      "method": "nativeReaderRejectsActionsAndNonSignatureFieldsAndThenRecovers"
+    },
+    {
+      "flow": "native import failure recovery and destroyed-engine lifecycle",
+      "class": "LocalEngineResilienceTest",
+      "method": "failedNativeExtractionCanBeRetriedAndDestroyedEnginesRejectFurtherWork"
+    },
+    {
+      "flow": "offline native bond/share/statement import, protected guest retention, duplicate detection and exact scanned share quantities/prices/payable",
+      "class": "GuestPdfNativeTest",
+      "method": "privateEngineSelectReviewSavePreviewAndDuplicateWorkWithoutNetwork"
     }
   ]
 }

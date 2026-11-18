@@ -1,5 +1,6 @@
 # Existing investment calculations: audit and policy
 
+> 18 November 2026: the monthly simulator is shared Kotlin (`InvestmentProjection`), compared against the original engine across 17 full monthly-output scenarios. The migration preserves the hypothetical model's floating-point arithmetic and rounding/order; the recorded-transaction decimal policy below is unchanged. See [migration](KOTLIN_ENGINE_MIGRATION.md).
 Reviewed 30 October 2026. This follows the codebase and parser audits; it does not introduce another investment engine or change dashboard layout. Scenarios are synthetic regression fixtures, never account records.
 
 ## Reference results
@@ -37,7 +38,7 @@ The backend remains authoritative. KMP calculations are independently testable p
 
 Rates are fractions (`0.115`, not `11.5`). Gross coupon is principal × annual coupon rate ÷ frequency. Net coupon applies the configured withholding rate to the **unrounded** gross amount, then rounds once to two places HALF_UP. Scheduled cumulative amounts sum rounded payments. Annual contractual estimates are not cash receipts and may differ from the sum of payment rounding by a small fraction; they never increase portfolio principal automatically.
 
-Bond acquisition cost is face value × price-percent ÷ 100 + recorded accrued interest paid + recorded fees, rounded once at the transaction boundary. Equity cost basis is recorded net payable, which already contains buying fees. Valuation does not add those fees a second time. Quote value minus buying cash cost is **unrealized** gain/loss; future selling fees are excluded. Portfolio money sums and monthly contribution thresholds use decimal arithmetic. Percentages, progress ratios, wire/UI compatibility values and hypothetical JS simulation still use floating-point types; this is not a wholesale arbitrary-precision wire migration.
+Bond acquisition cost is face value × price-percent ÷ 100 + recorded accrued interest paid + recorded fees, rounded once at the transaction boundary. Equity cost basis is recorded net payable, which already contains buying fees. Valuation does not add those fees a second time. Quote value minus buying cash cost is **unrealized** gain/loss; future selling fees are excluded. Portfolio money sums and monthly contribution thresholds use decimal arithmetic. Percentages, progress ratios, wire/UI compatibility values and hypothetical simulation still use floating-point types; this is not a wholesale arbitrary-precision wire migration.
 
 The two-decimal policy preserves the existing database amount scale and broker charges even for RWF. It is an application recording policy, not a claim about cash denomination or a broker's settlement rounding. The default 5% withholding and existing RWF 11,000 pending-purchase commission are software defaults, not tax/legal advice or a guarantee for every instrument/investor/date. Applicable rates must be entered/verified. Projection purchase charges remain modeled separately; they are not evidence of a settled cash debit.
 

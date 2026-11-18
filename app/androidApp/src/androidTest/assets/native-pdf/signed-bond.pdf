@@ -1,0 +1,53 @@
+%PDF-1.7
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [5 0 R 6 0 R] /SigFlags 3 >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 1000 1200] /Resources << /Font << /F1 7 0 R >> >> /Contents 4 0 R /Annots [5 0 R 6 0 R] >>
+endobj
+4 0 obj
+<< /Length 1061 >>
+stream
+BT /F1 9 Tf 12 1100 Td (NATIONAL BANK OF RWANDA) Tj 0 -14 Td
+(ISSUANCE NUMBER FXD1/2026/20YR) Tj 0 -14 Td
+(BOND CODE RWTEST000001/MN) Tj 0 -14 Td
+(AMOUNT RWF 10 billion) Tj 0 -14 Td
+(TENOR 20 Years) Tj 0 -14 Td
+(PRICE 98.5) Tj 0 -14 Td
+(Coupon Interest rate 12.00%) Tj 0 -14 Td
+(COUPON PAYMENT DATES 1-Feb-2027 1-Aug-2027 1-Feb-2028 1-Aug-2028 1-Feb-2029 1-Aug-2029 1-Feb-2030 1-Aug-2030 1-Feb-2031 1-Aug-2031 1-Feb-2032 1-Aug-2032 1-Feb-2033 1-Aug-2033 1-Feb-2034 1-Aug-2034 1-Feb-2035 1-Aug-2035 1-Feb-2036 1-Aug-2036 1-Feb-2037 1-Aug-2037 1-Feb-2038 1-Aug-2038 1-Feb-2039 1-Aug-2039 1-Feb-2040 1-Aug-2040 1-Feb-2041 1-Aug-2041 1-Feb-2042 1-Aug-2042 1-Feb-2043 1-Aug-2043 1-Feb-2044 1-Aug-2044 1-Feb-2045 1-Aug-2045 1-Feb-2046 1-Aug-2046) Tj 0 -14 Td
+(SETTLEMENT DATE 14/08/2026) Tj 0 -14 Td
+(REDEMPTION DATE 01/08/2046) Tj 0 -14 Td
+(1. INVESTOR RESULTS) Tj 0 -14 Td
+(Investor's name Bank Applied Amount \(FRW\) Allocation Settlement Amount Coupon Amount) Tj 0 -14 Td
+(TEST INVESTOR BK CAPITAL 2,000,000 1,000,000 985,000 60,000) Tj 0 -14 Td
+() Tj 0 -14 Td ET
+endstream
+endobj
+5 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Sig /T (Signature1) /P 3 0 R /Rect [0 0 20 20] /F 132  >>
+endobj
+6 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Sig /T (Signature2) /P 3 0 R /Rect [20 0 40 20] /F 132 >>
+endobj
+7 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000108 00000 n 
+0000000165 00000 n 
+0000000315 00000 n 
+0000001428 00000 n 
+0000001539 00000 n 
+0000001650 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+1720
+%%EOF

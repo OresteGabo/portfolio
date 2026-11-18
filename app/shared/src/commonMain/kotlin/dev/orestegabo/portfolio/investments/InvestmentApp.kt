@@ -395,7 +395,6 @@ fun InvestmentApp(model: PortfolioModel) {
             }
         ) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).imePadding().portfolioStatusBarFade(portfolioHome)) {
-                if (!model.locked && (!model.isGuest || model.guestPath == GuestPath.PERSONAL)) InvestmentEngineHost(engine)
                 if (!portfolioHome) {
                     AppLoadingLine(model.busy)
                     if (model.documentPreview == null || model.documentPreview?.bytes != null) model.error?.let { Notice(it, true) { model.error = null } }

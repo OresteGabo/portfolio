@@ -1,18 +1,25 @@
-/** Build one DOM-free engine for Android's WebView and iOS JavaScriptCore. */
+/** Rebuild the retired JavaScript reference engine for migration tests only. Never packaged in the app. */
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRequire } from 'node:module';
+import ts from 'typescript';
+import { nativeModuleSource, nativePdfModuleOutput } from './native-pdf-module.mjs';
 const root = path.resolve(import.meta.dirname, '..');
-const web = process.argv[2] || '/Users/muhirwagabooreste/WebstormProjects/gabo';
-const require = createRequire(path.join(web, 'package.json'));
-const ts = require('typescript');
+const args = process.argv.slice(2);
+if (args.some(arg => arg !== '--check')) throw new Error('Usage: node scripts/bundle-shared-logic.mjs [--check]. Sources and tooling belong to this repository.');
+const check = args.includes('--check');
+const common = 'tests/reference-engine/common';
+const android = 'tests/reference-engine/android';
+const outputs = new Map();
+// Generate every local source module, including the Android extraction adapter.
+for (const file of fs.readdirSync(path.join(root, 'tests/reference-engine/source')).filter(name => name.endsWith('.ts')).sort()) {
+  const name = file.slice(0, -3);
+  const source = fs.readFileSync(path.join(root, 'tests/reference-engine/source', file), 'utf8');
+  const esm = ts.transpileModule(nativeModuleSource(source), {compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText;
+  outputs.set(`${name === 'pdf-import' ? android : common}/${name}.js`, name === 'pdf-import' ? nativePdfModuleOutput(esm) : esm);
+}
 const names = ['calculations', 'pdf-import-parser', 'equity-pdf-parser', 'equity-validation', 'pdf-import-errors', 'bk-statement-parser', 'document-parser-support'];
 const modules = names.map(name => {
-  const source = fs.readFileSync(path.join(root, 'web-logic/source', name + '.ts'), 'utf8');
-  {
-    const esm = ts.transpileModule(source.replace(/(from\s+)("|')(\.\/[^"']+)\2/g, (_, lead, quote, target) => `${lead}${quote}${target}.js${quote}`), {compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText;
-    fs.writeFileSync(path.join(root,'app/shared/src/commonMain/composeResources/files/engine/'+name+'.js'),esm);
-  }
+  const source = fs.readFileSync(path.join(root, 'tests/reference-engine/source', name + '.ts'), 'utf8');
   const code = ts.transpileModule(source, {compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.CommonJS}}).outputText;
   return `${JSON.stringify('./'+name)}: function(require,module,exports) {\n${code}\n}`;
 }).join(',\n');
@@ -26,5 +33,18 @@ project:function(input){var assumptions=Object.assign({},calc.DEFAULT_ASSUMPTION
 parse:function(text,usedOcr){return pdf.parsePurchasePdfText(text,usedOcr);}
 };
 })(globalThis);\n`;
-fs.writeFileSync(path.join(root,'app/shared/src/commonMain/composeResources/files/engine/logic.js'),bundle);
-console.log('Bundled shared calculation and purchase parsing rules.');
+outputs.set(`${common}/logic.js`, bundle);
+const stale = [];
+for (const [relative, content] of outputs) {
+  const destination = path.join(root, relative);
+  if (check) {
+    if (!fs.existsSync(destination) || fs.readFileSync(destination, 'utf8') !== content) stale.push(relative);
+  } else {
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    fs.writeFileSync(destination, content);
+  }
+}
+if (stale.length) {
+  console.error(`Generated engine files are stale. Run npm run generate:reference:\n${stale.join('\n')}`);
+  process.exitCode = 1;
+} else console.log(check ? 'Test-only reference engine matches its archived TypeScript sources.' : 'Generated the test-only reference engine; mobile runtime is Kotlin.');

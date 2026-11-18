@@ -1,0 +1,38 @@
+{
+  "kind": "equity",
+  "parser": {
+    "institution": "BK Capital",
+    "documentType": "equity-purchase",
+    "format": "rse-purchase-contract-note",
+    "version": 1
+  },
+  "fields": {
+    "instrumentType": "equity",
+    "exchange": "RSE",
+    "securityName": "BANK OF KIGALI",
+    "ticker": "BOK",
+    "isin": "RW000A1JCYA",
+    "tradeDate": "2026-09-24",
+    "settlementDate": "2026-09-28",
+    "shares": 500,
+    "pricePerShare": 670,
+    "grossConsideration": 335000,
+    "brokerageCommission": 5025,
+    "rseTransactionFee": 469,
+    "csdTransactionLevy": 167.5,
+    "cmaTransactionFee": 67,
+    "totalCharges": 5728.5,
+    "netAmountPayable": 340728.5,
+    "broker": "BK Capital",
+    "contractNote": "TEST-2026#01",
+    "cdsAccountNo": "",
+    "cdsReference": "",
+    "tradeReportId": "1234567890123456789",
+    "currency": "RWF",
+    "status": "active",
+    "notes": ""
+  },
+  "missingFields": [],
+  "warnings": [],
+  "usedOcr": false
+}

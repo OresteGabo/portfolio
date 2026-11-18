@@ -26,23 +26,10 @@ internal data class SoftwareNoticeGroup(val id: String, val title: LegalText, va
 internal val legalNoticeGroups = listOf(
     SoftwareNoticeGroup("pdf", LegalText("PDF reading", "Lecture des PDF"),
         LegalText("Opening and displaying documents", "Ouverture et affichage des documents"), listOf(
-            SoftwareNotice("PDF.js", "pdfjs-LICENSE"),
-            SoftwareNotice("Character maps", "bond-import/cmaps/LICENSE"))),
+            SoftwareNotice("PDFBox Android — Apache 2.0", "Apache-2.0.txt"))),
     SoftwareNoticeGroup("text", LegalText("Text recognition", "Reconnaissance de texte"),
         LegalText("Reading text from scanned pages", "Lecture du texte des pages numérisées"), listOf(
-            SoftwareNotice("Tesseract core", "tesseract-core-LICENSE"))),
-    SoftwareNoticeGroup("fonts", LegalText("Document fonts", "Polices des documents"),
-        LegalText("Displaying text inside PDFs", "Affichage du texte des PDF"), listOf(
-            SoftwareNotice("Foxit fonts", "bond-import/standard_fonts/LICENSE_FOXIT"),
-            SoftwareNotice("Liberation fonts", "bond-import/standard_fonts/LICENSE_LIBERATION"))),
-    SoftwareNoticeGroup("images", LegalText("Document images", "Images des documents"),
-        LegalText("Displaying scanned images and their colours", "Affichage des images numérisées et de leurs couleurs"), listOf(
-            SoftwareNotice("PDF.js QCMS", "bond-import/wasm/LICENSE_PDFJS_QCMS"),
-            SoftwareNotice("PDF.js OpenJPEG", "bond-import/wasm/LICENSE_PDFJS_OPENJPEG"),
-            SoftwareNotice("OpenJPEG", "bond-import/wasm/LICENSE_OPENJPEG"),
-            SoftwareNotice("PDF.js JBIG2", "bond-import/wasm/LICENSE_PDFJS_JBIG2"),
-            SoftwareNotice("QCMS", "bond-import/wasm/LICENSE_QCMS"),
-            SoftwareNotice("JBIG2", "bond-import/wasm/LICENSE_JBIG2")))
+            SoftwareNotice("ML Kit — third-party notices", "MLKit-third-party.txt")))
 )
 
 /** Remove source-file comment wrappers for reading; bundled originals stay untouched. */

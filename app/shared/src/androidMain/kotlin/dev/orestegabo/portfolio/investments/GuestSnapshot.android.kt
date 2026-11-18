@@ -85,7 +85,7 @@ class AndroidGuestDocumentStorage(private val context: Context) : GuestDocumentS
 }
 @Composable actual fun rememberGuestInvestmentEngine(): InvestmentEngine {
     val context = LocalContext.current
-    return remember(context) { LocalInvestmentEngine(context, privateDocuments = true) }
+    return remember(context) { LocalInvestmentEngine(context) }
 }
 
 @Composable actual fun rememberGuestMarketData(): GuestMarketData {

@@ -33,11 +33,14 @@ jobs:
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - name: Install the mobile repository's pinned JavaScript tooling
+        run: npm ci --ignore-scripts
       - name: Parser and release-package regression tests
         run: |
           python3 scripts/sync-design-colors.py --check
           python3 scripts/check-kmp-packages.py
           node --version
+          npm run check:reference
           node --test tests/*.test.mjs
           python3 -m unittest discover -s scripts/tests -p 'test_*.py'
       - name: Tests, full release lint, unsigned release bundle

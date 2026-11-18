@@ -22,7 +22,7 @@ class GuestPdfNativeTest {
         val workflow=GuestPdfImport(repository)
         val scenario=ActivityScenario.launch<EngineHostActivity>(Intent(context,EngineHostActivity::class.java).putExtra("privateDocuments",true))
         lateinit var engine:LocalInvestmentEngine
-        scenario.onActivity { engine=it.engine; assertTrue(engine.view.settings.blockNetworkLoads) }
+        scenario.onActivity { engine=it.engine }
         fun pdf(asset:String, scanned:Boolean=false):ByteArray {
             val text=i.context.assets.open(asset).bufferedReader().use { it.readText() }
             val document=PdfDocument()
@@ -89,6 +89,10 @@ class GuestPdfNativeTest {
             val scanned = pdf("equity-purchase.txt", scanned=true)
             workflow.select(actions(scanned),parser)
             assertNull(workflow.failure); assertEquals("equity",workflow.review?.text("kind")); assertTrue(requireNotNull(workflow.review).optBoolean("usedOcr"))
+            val recognized = requireNotNull(workflow.review).getJSONObject("fields")
+            assertEquals(500, recognized.optInt("shares"))
+            assertEquals(670.0, recognized.optDouble("pricePerShare"), .001)
+            assertEquals(340728.5, recognized.optDouble("netAmountPayable"), .001)
             assertEquals(beforeScan,repository.load().portfolio.documents.size); workflow.clear()
             workflow.select(actions("%PDF-1.7 damaged\n%%EOF".toByteArray()),parser)
             assertNotNull(workflow.failure); assertNull(workflow.review)

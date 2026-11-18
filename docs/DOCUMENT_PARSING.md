@@ -1,5 +1,6 @@
 # Financial document parsing
 
+> Current implementation (18 November 2026): parsing and simulation now run entirely in shared Kotlin. Android extraction is PDFBox plus bundled local ML Kit OCR; iPhone retains PDFKit/Vision. JavaScript/PDF.js/Tesseract descriptions below record the previous implementation and reference fixtures; they no longer describe mobile runtime. See [Kotlin migration](KOTLIN_ENGINE_MIGRATION.md).
 Updated: 31 October 2026. This documents the existing ingestion path and the targeted hardening of its supported layouts. [CURRENT_STATE.md](CURRENT_STATE.md) owns the wider feature inventory; [TECHNICAL_DEBT.md](TECHNICAL_DEBT.md) owns remaining production gaps.
 
 ## Inspected components and reused boundaries
@@ -80,7 +81,7 @@ For future broker-account identity, integration scope, durable provenance and au
 4. **Identify/version the adapter.** Add its institution/documentType/format/version metadata beside the existing identities. Version recognition/mapping changes deliberately; distinguish a new layout from a fix to version 1. Add an explicit branch to the existing dispatcher and ambiguity guard. Only introduce a registry if actual adapter growth makes this dispatch hard to maintain.
 5. **Test extraction and arithmetic separately.** Add anonymized extracted text and expected normalized values, malformed/ambiguous examples, invalid/leap/year-boundary dates, grouping/precision/rounding cases, optional-field cases and missing fees. Add genuine PDF reader/native OCR tests for layout-dependent changes, not only text pasted directly into a parser. Require equivalent ESM/portable results and native extraction fixtures on both platforms.
 6. **Validate the persistence contract.** Test existing review confirmation, target matching, upload metadata, account isolation, duplicates, response-loss retry and no writes on rejection against disposable PostgreSQL. Do not disguise a new category as a supported category just to bypass validation. Coordinate mobile, Spring and website compatibility.
-7. **Generate and release deliberately.** Edit `web-logic/source`, then run `node scripts/bundle-shared-logic.mjs [toolchain-directory]` to regenerate the checked-in common ESM and portable `logic.js`. This script currently resolves TypeScript from the existing sibling website installation by default. Do not run `sync-web-logic.mjs` casually: it copies sibling sources over local parser work. Pin/self-contain that toolchain before depending on regeneration in CI. Re-run Node tests, parser type checks, shared import tests and native extraction tests appropriate to the changed layer.
+7. **Change native rules deliberately.** Edit shared Kotlin `InvestmentDocumentRules` / `InvestmentProjection` in `core`. Run the reference comparisons, shared tests and platform PDF/OCR tests appropriate to the changed layer. The old JavaScript suite is test-only; never regenerate expected Kotlin results from Kotlin itself or reintroduce its files into app resources. See [Kotlin migration](KOTLIN_ENGINE_MIGRATION.md).
 
 ## Documented future work only
 

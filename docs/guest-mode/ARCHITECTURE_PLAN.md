@@ -1,5 +1,6 @@
 # Persistent private Guest Mode — Phase 1 architecture audit
 
+> 18 November 2026 update: the implemented mobile engine now uses shared Kotlin calculations/parsers, Android PDFBox with bundled native OCR, and iPhone PDFKit/Vision. Older WebView/JavaScriptCore and TypeScript descriptions below are historical planning context. No JavaScript processing runtime remains in the mobile package; see [migration](../KOTLIN_ENGINE_MIGRATION.md).
 Audited 2 November 2026. **Planning only: no Guest Mode, storage, schema, dependency or application-behavior change.** Future interfaces below are proposals, not existing APIs or permission to implement later phases.
 
 ## Git scope and evidence
@@ -54,7 +55,7 @@ Companion backend uses Spring Boot 4.1.2/Kotlin 2.3.21/Java 21, WebMVC, Security
 
 - Android `LocalInvestmentEngine.android.kt` executes the bundled engine inside a sandboxed WebView. Requests are limited to `appassets.androidplatform.net` local assets; arbitrary network navigation is blocked. Bundled `pdf-import.js` uses PDF.js text extraction and local Tesseract worker/WASM/English assets for limited scanned-page OCR.
 - iOS `LocalInvestmentEngine.ios.kt` extracts PDFKit text, reconstructs recognized statement layout when needed, uses Vision for scanned-page OCR, and executes the shared field rules in JavaScriptCore. It does not need a cloud OCR service or hidden browser.
-- Rules live in `web-logic/source/pdf-import-parser.ts`, `equity-pdf-parser.ts`, `bk-statement-parser.ts`, `document-parser-support.ts` and associated validation/error modules. `scripts/bundle-shared-logic.mjs` builds portable `logic.js`/resources; it currently depends on TypeScript tooling from the separate website checkout by default. Do not hand-edit generated bundles or assume a self-contained Node toolchain.
+- Current rules live in shared Kotlin `InvestmentDocumentRules` and `InvestmentProjection` in `core`. Archived TypeScript/JavaScript lives only under `tests/reference-engine`; optional `npm run check:reference` checks that test reference. Normal mobile builds and local processing need no website checkout or JavaScript runtime. See [Kotlin migration](../KOTLIN_ENGINE_MIGRATION.md).
 - BNR personal allocation/public issuance, BK Capital equity contracts and client statements already have adapters/regressions. PDF envelope, page/OCR/resource limits remain governed by `PdfPolicy.kt`, engine checks and `web-logic/source/pdf-file.ts`. Preserve ambiguity/review behavior and active-content rejection.
 - After local parse, PortfolioModel queries server documents, may download candidates to establish SHA-256 equality, and saves original PDF chunks plus normalized financial records through authenticated APIs. Statement imports use backend matching/decisions; they cannot simply be declared saved locally without equivalent validation/provenance.
 - Backend DocumentService validates uploads, hashes/deduplicates/stores bytes/metadata and validates supplied structured issuance facts. That is not a replacement PDF extraction engine. Private originals are owner-scoped; explicitly shared issuance documents and projected public facts have different publication paths.
