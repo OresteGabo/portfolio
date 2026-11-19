@@ -861,6 +861,13 @@ class PortfolioModel(
         imports.saveImportedPurchase(review, importedPurchaseInput(review), null, completed, selectedPendingOrderId = orderId)
     internal fun saveImportedStatement(review: JsonRecord, completed: () -> Unit) = imports.saveImportedStatement(review, completed)
 
+    internal fun linkExistingBondPurchase(pending: JsonRecord, purchase: JsonRecord, completed: () -> Unit) = action {
+        require(user != null && !isGuest) { "Sign in to link a pending bond purchase." }
+        linkImportedBondPurchase(api, pending, purchase)
+        completed()
+        refreshAfterWrite("Pending bond linked to the imported confirmation. Counted once.")
+    }
+
     fun confirmPendingPurchase(purchase: JsonRecord,completed: () -> Unit = {}) = action {
         require(purchase.optBoolean("canConfirmWithoutPdf")) { "Use your personal PDF to confirm the final allocation and price." }
         api.request("/api/bonds/purchases/${purchase.text("id")}/confirm","POST",JsonRecord().put("confirmed",true).put("issuanceDocumentId",purchase.text("issuanceDocumentId")))

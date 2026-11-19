@@ -8,6 +8,11 @@
       "method": "hiddenValuesAndWidgetEntryExplainHowToShowNumbersWithoutRevealingThem"
     },
     {
+      "flow": "link a saved personal bond confirmation to its pending application, retaining one principal/commission/PDF in both themes",
+      "class": "ExistingBondPurchaseLinkUiTest",
+      "method": "linkingImportedConfirmationKeepsItsOriginalPrincipalCommissionAndPdf"
+    },
+    {
       "flow": "link a saved contract purchase to its pending record without new holdings or PDF uploads, light/dark and large text",
       "class": "ExistingSharePurchaseLinkUiTest",
       "method": "linkingAnImportedPurchaseKeepsOneHoldingAndItsPdfInBothThemesAndLargeText"

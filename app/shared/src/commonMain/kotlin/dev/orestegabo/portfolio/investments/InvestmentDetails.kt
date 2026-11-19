@@ -30,6 +30,7 @@ fun BondDetailsScreen(model: PortfolioModel, purchase: JsonRecord, engine: Inves
     val next = nextDetailCoupon(purchase, model.couponReceipts, today)
     val active = purchase.text("status") == "active"
     val pending = purchase.text("status") == "submitted"
+    var linkImported by remember(purchase.text("id")) { mutableStateOf(false) }
     var confirmDelete by remember(purchase.text("id")) { mutableStateOf(false) }
     var showDocuments by rememberSaveable(purchase.text("id")) { mutableStateOf(false) }
     var showTerms by rememberSaveable(purchase.text("id")) { mutableStateOf(false) }
@@ -45,6 +46,8 @@ fun BondDetailsScreen(model: PortfolioModel, purchase: JsonRecord, engine: Inves
             model.deletePurchase(purchase.text("id"), back); confirmDelete = false
         }) { AppText("Delete", color = MaterialTheme.colorScheme.error) } },
         dismissButton = { TextButton(onClick = { confirmDelete = false }) { AppText("Keep purchase") } })
+    if (linkImported) ImportedBondPurchaseDialog(model, purchase, dismiss = { linkImported = false },
+        completed = { linkImported = false; back() })
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)) {
         item(key = "identity") {
@@ -103,6 +106,8 @@ fun BondDetailsScreen(model: PortfolioModel, purchase: JsonRecord, engine: Inves
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 PendingConfirmationAction(purchase, !model.busy) { model.confirmPendingPurchase(purchase) }
                 PdfImportButton(model, engine, imported, bondOnly = true, targetPurchaseId = purchase.text("id"))
+                if (pending) OutlinedButton(enabled = !model.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                    onClick = { linkImported = true }) { AppText("Use imported purchase") }
             }
         }
         if (!pending && terms != null && tracking != null) item(key = "maturity") {

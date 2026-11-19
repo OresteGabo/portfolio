@@ -8,13 +8,16 @@ import io.ktor.http.content.OutgoingContent
 /** Fixed past dates and synthetic records; no real account, clock-dependent coupons or HTTP server. */
 internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: List<JsonRecord>? = null,
     private val documentRecords: List<JsonRecord> = emptyList(), pendingRecords: List<JsonRecord> = emptyList(),
-    initialSnapshotGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null) : AutoCloseable {
+    initialSnapshotGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null, bondRecords: List<JsonRecord> = emptyList()) : AutoCloseable {
     val settings = object : ServerSettings {
         override fun readOrigin() = "https://ui-quality.example.test"
         override fun writeOrigin(origin: String) = Unit
         override fun readLanguage() = "en"
         override fun readScreenCaptureAllowed() = true
     }
+    private var bonds = bondRecords
+    val linkedBonds = java.util.concurrent.CopyOnWriteArrayList<String>()
+    val createdBondPurchases = java.util.concurrent.atomic.AtomicInteger()
     private var orders = pendingRecords
     private var lots = purchaseRecords ?: (0 until lotCount).map { index -> JsonRecord()
         .put("id", "ui-lot-$index").put("ticker", "TEST").put("securityName", "Synthetic UI company")
@@ -34,7 +37,23 @@ internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: Lis
         val body = when {
             request.url.encodedPath.endsWith("/auth/login") -> """{"user":{"id":"ui-quality","email":"ui@example.test","isOwner":false}}"""
             request.url.encodedPath.endsWith("/auth/session") -> """{"authenticated":true,"user":{"id":"ui-quality","email":"ui@example.test","isOwner":false}}"""
-            request.url.encodedPath.endsWith("/mobile-overview") -> JsonRecord().put("version", 1).put("purchases", JsonList()).put("holdings", JsonList(lots)).toString()
+            request.url.encodedPath.endsWith("/mobile-overview") -> JsonRecord().put("version", 1).put("purchases", JsonList(bonds)).put("holdings", JsonList(lots)).toString()
+            request.url.encodedPath.endsWith("/purchases") && request.method == HttpMethod.Get -> JsonRecord().put("purchases", JsonList(bonds)).toString()
+            request.url.encodedPath.endsWith("/purchases") && request.method == HttpMethod.Post -> {
+                createdBondPurchases.incrementAndGet(); error("No new bond should be created in this fixture")
+            }
+            request.url.encodedPath.endsWith("/link-imported") -> {
+                val pendingId = request.url.encodedPath.substringAfter("/purchases/").substringBefore('/')
+                val payload = JsonRecord((request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString())
+                check(payload.optBoolean("confirmed"))
+                val pending = bonds.single { it.text("id") == pendingId && it.text("status") == "submitted" }
+                val purchase = bonds.single { it.text("id") == payload.text("purchaseId") && it.text("status") == "active" }
+                check(payload.getJSONObject("pending").toString() == pending.toString())
+                check(payload.getJSONObject("purchase").toString() == purchase.toString())
+                bonds = bonds.filterNot { it.text("id") == pendingId }
+                linkedBonds.add(pendingId)
+                JsonRecord().put("purchase", purchase).toString()
+            }
             request.url.encodedPath.endsWith("/documents") && request.method == HttpMethod.Get -> JsonRecord().put("documents", JsonList(documentRecords)).toString()
             request.url.encodedPath.endsWith("/share-orders") -> JsonRecord().put("orders", JsonList(orders)).toString()
             request.url.encodedPath.endsWith("/confirm") && request.url.encodedPath.contains("/share-orders/") -> {
