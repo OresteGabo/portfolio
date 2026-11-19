@@ -102,7 +102,7 @@ internal fun BrandIntroOverlay(progress: Float, destination: Rect?) {
         }
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val startingSide = minOf(244.dp, maxWidth * .64f, maxHeight * .40f)
-            InziraWordmark(Modifier.height(22.dp).align(Alignment.TopCenter)
+            InziraWordmark(Modifier.height(26.dp).align(Alignment.TopCenter)
                 .offset(y = (maxHeight + startingSide) / 2f - 12.dp)
                 .graphicsLayer {
                     alpha = wordmark

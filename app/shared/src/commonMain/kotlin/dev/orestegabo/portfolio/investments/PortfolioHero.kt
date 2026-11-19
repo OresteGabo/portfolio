@@ -92,7 +92,7 @@ internal fun PortfolioHeroHeader(showNotifications: Boolean, subtitle: String,
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         DashboardBrandMark(Modifier.size(44.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            InziraWordmark(Modifier.height(26.dp), onDark = dark)
+            InziraWordmark(Modifier.height(32.dp), onDark = dark, sculpted = true)
             AppText(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (showNotifications) NotificationBell(unreadNotifications, openNotifications, tint = MaterialTheme.colorScheme.onBackground)

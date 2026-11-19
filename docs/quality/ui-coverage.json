@@ -23,7 +23,7 @@
       "method": "generalUploadAsksBeforeReplacingAPendingPurchase"
     },
     {
-      "flow": "dashboard initial skeleton header alignment, accessible notifications and loading-to-snapshot transition in both themes and large text",
+      "flow": "dashboard metallic path wordmark, initial skeleton header alignment, accessible notifications and loading-to-snapshot transition in both themes and large text",
       "class": "DashboardLoadingLayoutTest",
       "method": "loadingMatchesTheDashboardHeaderAndRevealsValuesOnlyAfterTheSnapshotArrives"
     },
