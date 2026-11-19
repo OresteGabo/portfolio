@@ -1,6 +1,7 @@
 package dev.orestegabo.portfolio.investments
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -9,6 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -22,6 +25,11 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 
 val LocalNumbersHidden = staticCompositionLocalOf { false }
+internal val LocalHiddenNumbersHint = staticCompositionLocalOf<(() -> Unit)?> { null }
+
+/** Tapping a masked value explains it; surrounding card actions remain available. */
+private fun Modifier.hiddenNumbersHint(show: (() -> Unit)?): Modifier = if (show == null) this else
+    pointerInput(show) { detectTapGestures { show() } }
 private val privacyNumbers = Regex("""\b\d{4}-\d{2}-\d{2}\b|[+−-]?\d+(?:[,.]\d+)*(?:[\s\u00a0\u202f]\d{3})*(?:[,.]\d+)?(?:%|[kKmMbB])?""")
 private val financialValueOnly = Regex("""^(?:[A-Z]{3} )?[+−-]?[\d\s\u00a0\u202f,.%]+$""")
 private val privacyDate = Regex("""\d{4}-\d{2}-\d{2}""")
@@ -46,7 +54,12 @@ fun FinancialText(
     val hidden = LocalNumbersHidden.current
     val translated = localized(displayDateValue(text))
     val displayed = if (hidden) maskFinancialNumbers(translated) else translated
-    val privacyModifier = if (hidden && displayed != translated) Modifier.clearAndSetSemantics { contentDescription = localized("Financial numbers hidden") } else Modifier
+    val showHint = LocalHiddenNumbersHint.current.takeIf { hidden && displayed != translated }
+    val hintLabel = localized("Why are numbers hidden?")
+    val privacyModifier = if (hidden && displayed != translated) Modifier.hiddenNumbersHint(showHint).clearAndSetSemantics {
+        contentDescription = localized("Financial numbers hidden")
+        if (showHint != null) onClick(hintLabel) { showHint(); true }
+    } else Modifier
     val softMask = if (hidden && displayed != translated && financialValueOnly.matches(translated)) Modifier.blur(1.5.dp) else Modifier
     val captured = maskFinancialNumbers(translated)
     if (!hidden && captured != translated && LocalCaptureBackdropRegistry.current != null) {
@@ -74,8 +87,13 @@ fun FinancialText(
 
 @Composable
 fun HiddenFinancialChart(modifier: Modifier = Modifier) {
-    Surface(modifier, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .035f)) {
-        Column(Modifier.fillMaxSize().clearAndSetSemantics { contentDescription = localized("Financial chart hidden") },
+    val showHint = LocalHiddenNumbersHint.current
+    val hintLabel = localized("Why are numbers hidden?")
+    Surface(modifier.hiddenNumbersHint(showHint), shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .035f)) {
+        Column(Modifier.fillMaxSize().clearAndSetSemantics {
+            contentDescription = localized("Financial chart hidden")
+            if (showHint != null) onClick(hintLabel) { showHint(); true }
+        },
             verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             AppIcon(Icons.Outlined.VisibilityOff, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))

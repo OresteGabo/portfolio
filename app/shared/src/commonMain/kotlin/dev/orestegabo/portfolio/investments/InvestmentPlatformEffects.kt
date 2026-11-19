@@ -15,11 +15,13 @@ internal fun PublishHomeWidget(model: PortfolioModel) {
 }
 
 @Composable
-internal fun HomeWidgetRouteEffects(model: PortfolioModel, openCalendarAt: (kotlinx.datetime.LocalDate?) -> Unit) {
+internal fun HomeWidgetRouteEffects(model: PortfolioModel, openCalendarAt: (kotlinx.datetime.LocalDate?) -> Unit,
+    showPrivacyHint: () -> Unit = {}) {
     LaunchedEffect(HomeWidgetBridge.routeRevision, model.user, model.locked) {
         if (model.user != null && !model.locked) {
             HomeWidgetBridge.consumeCalendarRequest(HomeWidgetBridge.routeRevision)?.let { date ->
                 openCalendarAt(calendarDate(date))
+                showPrivacyHint()
             }
         }
     }

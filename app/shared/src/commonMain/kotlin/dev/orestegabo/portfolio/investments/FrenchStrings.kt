@@ -2,6 +2,9 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Numbers are hidden" to "Les montants sont masqués",
+    "To show numbers, turn off Hide numbers in Settings." to "Pour afficher les montants, désactivez Masquer les montants dans les paramètres.",
+    "Why are numbers hidden?" to "Pourquoi les montants sont-ils masqués ?",
     "Estimated market value" to "Valeur de marché estimée",
     "Illustrative projection, not a guaranteed return. Review your assumptions." to "Projection indicative, sans rendement garanti. Vérifiez vos hypothèses.",
     "Projection chart unavailable: some values are missing." to "Graphique de projection indisponible : certaines valeurs sont manquantes.",

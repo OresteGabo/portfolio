@@ -37,6 +37,17 @@ private val destinations = listOf(
 @Composable
 fun InvestmentApp(model: PortfolioModel) {
     val formBackDispatcher = remember { FormBackDispatcher() }
+    var privacyHintVisible by remember { mutableStateOf(false) }
+    val privacyHintText = localized("To show numbers, turn off Hide numbers in Settings.")
+    val showPrivacyHint: () -> Unit = remember(model, privacyHintText, model.numbersHidden) {
+        fun() {
+            if (model.numbersHidden && !model.locked) privacyHintVisible = true
+        }
+    }
+    RefreshCapturedUi(privacyHintVisible)
+    LaunchedEffect(model.numbersHidden, model.locked) {
+        if (!model.numbersHidden || model.locked) privacyHintVisible = false
+    }
     PublishHomeWidget(model)
     val selectionFeedback = LocalSelectionFeedback.current
     var notificationPurchase by remember { mutableStateOf<JsonRecord?>(null) }
@@ -89,7 +100,7 @@ fun InvestmentApp(model: PortfolioModel) {
         calendarUi.removeState(calendarStateKey)
         calendarFocus = date?.toString(); tab = "Calendar"
     }
-    HomeWidgetRouteEffects(model, ::openCalendarAt)
+    HomeWidgetRouteEffects(model, ::openCalendarAt, showPrivacyHint)
     val preferences = rememberServerSettings()
     var showImportHint by rememberSaveable { mutableStateOf(!preferences.readImportHintDismissed()) }
     var introductionRequested by rememberSaveable { mutableStateOf(!preferences.readOnboardingCompleted() && !model.locked && !model.isGuest) }
@@ -209,7 +220,9 @@ fun InvestmentApp(model: PortfolioModel) {
         imported(review)
     }
     val colors = structCapitalColorScheme(dark)
-    CompositionLocalProvider(LocalFormBackDispatcher provides formBackDispatcher, LocalChartStyle provides chartStyle, LocalNumbersHidden provides model.numbersConcealed) {
+    CompositionLocalProvider(LocalFormBackDispatcher provides formBackDispatcher, LocalChartStyle provides chartStyle,
+        LocalNumbersHidden provides model.numbersConcealed,
+        LocalHiddenNumbersHint provides showPrivacyHint.takeIf { model.numbersHidden }) {
     MaterialTheme(colorScheme = colors, typography = Typography()) {
         if (incomingPdf != null && NativePdfInbox.requiresPreparation) {
             PlatformSystemBarAppearance(dark)
@@ -513,6 +526,13 @@ fun InvestmentApp(model: PortfolioModel) {
             IssueReportScreen(source, close = { issueReportSource = null })
         }
         }
+        if (privacyHintVisible && model.numbersHidden && !model.locked) AlertDialog(
+            onDismissRequest = { privacyHintVisible = false },
+            icon = { AppIcon(Icons.Outlined.VisibilityOff, null) },
+            title = { AppText("Numbers are hidden") },
+            text = { AppText(privacyHintText) },
+            confirmButton = { TextButton(onClick = { privacyHintVisible = false }) { AppText("Got it") } }
+        )
     }
     }
 }
