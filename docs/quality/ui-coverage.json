@@ -3,6 +3,11 @@
   "note": "Evidence inventory, not code coverage. Required device gate runs on the reference API 36 emulator. Opt-in delivery/reboot/user-PDF tests remain separately documented.",
   "flows": [
     {
+      "flow": "owner account estimated net worth, expandable principal/share breakdown, legacy unavailable state and number privacy",
+      "class": "OwnerAccountValuationTest",
+      "method": "ownerAccountsShowSeparateTotalsExpandableBreakdownsAndRespectNumberHiding"
+    },
+    {
       "flow": "hidden-value touch and accessibility hints, and native widget entry with numbers hidden or visible, without revealing or changing privacy state",
       "class": "HiddenNumbersHintTest",
       "method": "hiddenValuesAndWidgetEntryExplainHowToShowNumbersWithoutRevealingThem"

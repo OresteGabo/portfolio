@@ -8,7 +8,8 @@ import io.ktor.http.content.OutgoingContent
 /** Fixed past dates and synthetic records; no real account, clock-dependent coupons or HTTP server. */
 internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: List<JsonRecord>? = null,
     private val documentRecords: List<JsonRecord> = emptyList(), pendingRecords: List<JsonRecord> = emptyList(),
-    initialSnapshotGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null, bondRecords: List<JsonRecord> = emptyList()) : AutoCloseable {
+    initialSnapshotGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null, bondRecords: List<JsonRecord> = emptyList(),
+    owner: Boolean = false, accountRecords: List<JsonRecord> = emptyList()) : AutoCloseable {
     val settings = object : ServerSettings {
         override fun readOrigin() = "https://ui-quality.example.test"
         override fun writeOrigin(origin: String) = Unit
@@ -28,6 +29,7 @@ internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: Lis
     val uploadedContracts = java.util.concurrent.atomic.AtomicInteger()
     val createdSharePurchases = java.util.concurrent.atomic.AtomicInteger()
     val requestedDocuments = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private val testUser = JsonRecord().put("id", "ui-quality").put("email", "ui@example.test").put("isOwner", owner)
     private val engine = MockEngine { request ->
         if (request.url.encodedPath.endsWith("/mobile-overview")) initialSnapshotGate?.await()
         if (documentRecords.any { request.url.encodedPath == "/api/bonds/documents/${it.text("id")}" }) {
@@ -35,8 +37,9 @@ internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: Lis
             return@MockEngine respond(readerFixturePdf(pageCount = 1), headers = headersOf(HttpHeaders.ContentType, "application/pdf"))
         }
         val body = when {
-            request.url.encodedPath.endsWith("/auth/login") -> """{"user":{"id":"ui-quality","email":"ui@example.test","isOwner":false}}"""
-            request.url.encodedPath.endsWith("/auth/session") -> """{"authenticated":true,"user":{"id":"ui-quality","email":"ui@example.test","isOwner":false}}"""
+            request.url.encodedPath.endsWith("/auth/accounts") -> JsonRecord().put("accounts", JsonList(accountRecords)).toString()
+            request.url.encodedPath.endsWith("/auth/login") -> JsonRecord().put("user", testUser).toString()
+            request.url.encodedPath.endsWith("/auth/session") -> JsonRecord().put("authenticated", true).put("user", testUser).toString()
             request.url.encodedPath.endsWith("/mobile-overview") -> JsonRecord().put("version", 1).put("purchases", JsonList(bonds)).put("holdings", JsonList(lots)).toString()
             request.url.encodedPath.endsWith("/purchases") && request.method == HttpMethod.Get -> JsonRecord().put("purchases", JsonList(bonds)).toString()
             request.url.encodedPath.endsWith("/purchases") && request.method == HttpMethod.Post -> {

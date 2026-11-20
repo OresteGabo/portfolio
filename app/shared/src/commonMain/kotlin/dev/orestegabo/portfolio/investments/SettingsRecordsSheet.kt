@@ -61,20 +61,8 @@ internal fun SettingsRecordsSheet(
             } else if (ownerSection == "accounts") {
                 val rows = accounts?.rows("accounts")
                 if (rows != null && rows.isEmpty() && !model.busy) item { EmptyState("No accounts yet", EmptyArtwork.ACCOUNTS, compact = true) }
-                rows?.forEach { account -> item {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        AppText(account.text("email"), fontWeight = FontWeight.SemiBold)
-                        Fact("Account", "${account.text("kind")} · ${account.text("status")}")
-                        account.optJSONObject("portfolio")?.let { Fact("Bond purchases", it.text("purchaseCount")) }
-                        if (account.has("canPublishPublicData")) {
-                            AppText(if (account.optBoolean("canPublishPublicData")) "Can publish shared data" else "Personal account only", style = MaterialTheme.typography.bodySmall)
-                            if (account.text("id") != "owner" && account.text("status") == "active") TextButton(
-                                enabled = !model.busy, onClick = { changePublisher(account) }) {
-                                AppText(if (account.optBoolean("canPublishPublicData")) "Remove publication permission" else "Allow shared-data publication")
-                            }
-                        }
-                        HorizontalDivider()
-                    }
+                rows?.forEach { account -> item(key = account.text("id")) {
+                    OwnerAccountRow(account, model.busy, changePublisher)
                 } }
             } else registration?.let { settings ->
                 item { AppText(if (settings.optBoolean("available")) "Invitations are available" else "Invitations are unavailable", style = MaterialTheme.typography.bodyMedium) }

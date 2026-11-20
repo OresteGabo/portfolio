@@ -2,6 +2,11 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Includes pending investments." to "Comprend les investissements en attente.",
+    "Unpriced shares use recorded cost." to "Les actions sans cours disponible sont valorisées à leur coût enregistré.",
+    "Shares value" to "Valeur des actions",
+    "Collapse account" to "Réduire le compte",
+    "Expand account" to "Développer le compte",
     "Numbers are hidden" to "Les montants sont masqués",
     "To show numbers, turn off Hide numbers in Settings." to "Pour afficher les montants, désactivez Masquer les montants dans les paramètres.",
     "Why are numbers hidden?" to "Pourquoi les montants sont-ils masqués ?",
