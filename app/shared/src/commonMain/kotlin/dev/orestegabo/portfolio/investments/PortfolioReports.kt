@@ -21,7 +21,7 @@ internal class PortfolioReports(
     var progress by mutableStateOf<String?>(null); private set
     var annualReportYear by mutableStateOf<Int?>(null); private set
 
-    suspend fun portfolioPdf(email: String, target: Long, date: LocalDate, language: String): ByteArray {
+    suspend fun portfolioPdf(email: String, target: Long, date: LocalDate, language: String, goal: InvestmentGoal = InvestmentGoal(monthlyAmount = target)): ByteArray {
         progress = "Loading all investment years…"
         // Export requires complete, fresh records. Do not inflate the dashboard's compact cache.
         val bonds = api.request("/api/bonds/purchases").rows("purchases")
@@ -43,19 +43,20 @@ internal class PortfolioReports(
         progress = "Building your report…"
         return withContext(Dispatchers.Default) {
             generatePortfolioReport(PortfolioReportData(PortfolioSnapshot(bonds, shares, files, shareOrders = apiOrders, couponReferences = reportCouponTerms), latestQuotes,
-                missing, email, target, date, language, receipts, ledgerEntries))
+                missing, email, target, date, language, receipts, ledgerEntries, investmentGoal = goal))
         }
     }
 
-    suspend fun annualPdf(year: Int, email: String, monthlyTarget: () -> Long, date: LocalDate, language: String): ByteArray {
+    suspend fun annualPdf(year: Int, email: String, monthlyTarget: () -> Long, date: LocalDate, language: String, investmentGoal: () -> InvestmentGoal = { InvestmentGoal(monthlyAmount = monthlyTarget()) }): ByteArray {
         annualReportYear = year
         try {
             progress = "Loading annual investment records…"
             val bonds = api.request("/api/bonds/purchases").rows("purchases")
             val shares = api.request("/api/bonds/equities").rows("holdings")
             val ledgerEntries = loadLedger()
-            val data = PortfolioReportData(PortfolioSnapshot(bonds, shares), null, emptyList(), email,
-                monthlyTarget(), date, language, ledgerEntries = ledgerEntries)
+            val orders = api.request("/api/bonds/share-orders").rows("orders")
+            val data = PortfolioReportData(PortfolioSnapshot(bonds, shares, shareOrders = orders), null, emptyList(), email,
+                monthlyTarget(), date, language, ledgerEntries = ledgerEntries, investmentGoal = investmentGoal())
             val scope = annualReportScope(data, year)
             val histories = mutableMapOf<String, JsonRecord>()
             scope.closingShares.filter { it.text("currency") == "RWF" }.map { it.text("ticker") }.distinct().forEach { ticker ->

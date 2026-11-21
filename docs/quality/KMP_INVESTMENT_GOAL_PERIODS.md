@@ -1,0 +1,44 @@
+# Monthly and yearly investment goals
+
+Implemented 2026-11-21.
+
+## Behavior and compatibility
+
+Settings now offers Investment goal with a Monthly / Yearly selector. Both positive whole-RWF amounts are retained, and only the selected calendar period is active. Existing users retain their monthly goal; an initial yearly suggestion is twelve times the legacy monthly amount, capped at the existing maximum target. Switching modes does not divide, replace or reset either saved amount. The editor preserves drafts when switching choices; Save persists valid amounts, Cancel leaves the saved goal unchanged.
+
+The dashboard uses the active amount and current Rwanda calendar month/year. It shows invested, remaining and percentage. Confirmed contributions fill the bar in the primary color; pending contributions use a lighter fill and remain identified in text. Market gains never count toward a contribution goal. Pending-inclusive completion is labeled explicitly. Monthly detail keeps recent-month progress; yearly detail lists monthly contributions rather than inventing independent monthly obligations. The existing insight-arrow item count was corrected so the goal card is reachable.
+
+Legacy `monthlyTarget` storage/API fields remain valid. A separate account/origin-scoped goal record stores both amounts and period on Android/iOS. Guest goals stay in the protected guest snapshot and survive backup/restore. Account deletion clears both goal records. Notification preference reads and writes share their existing mutex; revision checks stop an old read/save replacing a later choice. Notification category toggles remain independent. An older backend can still support Monthly; yearly reminder acknowledgement requires the new backend, with an explicit local-save/sync-failure message rather than claiming server success.
+
+Backend migration V21 adds `goal_period` and `yearly_target`, preserving existing monthly targets and notification choices with Monthly selected. Old clients updating only monthlyTarget preserve the active period/yearly amount. Goal milestones use the active calendar period and the same confirmed/pending contribution basis. Monthly events retain their existing deduplication identity; yearly events are deduplicated per calendar year. Old inbox entries retain their original monthly label. This adapts existing goal-achievement reminders, not a new deadline-notification service.
+
+Portfolio PDF exports include the selected period, annual reference and separate confirmed/pending contributions. Yearly mode lists monthly contributions without presenting monthly amounts as mandatory goals. Annual PDFs now include the selected goal/reference and confirmed/pending year contributions. The embedded portfolio-report archive keeps the old monthly target field and adds period/yearly/active fields. All reports disclose that the current goal is a reference, not a stored historical goal schedule. Historical valuation and investment formulas are unchanged.
+
+## Verification
+
+- `JAVA_HOME=/Users/muhirwagabooreste/Library/Java/JavaVirtualMachines/ms-21.0.9/Contents/Home ./gradlew :core:testAndroidHostTest :app:shared:testAndroidHostTest :app:androidApp:assembleDebug :app:androidApp:assembleDebugAndroidTest :app:androidApp:lintDebug :app:shared:compileKotlinIosArm64 :app:shared:compileKotlinIosSimulatorArm64 --console=plain` — passed. 148 core tests and 591 shared tests, zero failures/errors/skips. Existing dependency/toolchain and compiler notices remain. Final log: `/tmp/inzira-goals-client-checks.log`.
+- Backend `test bootJar --console=plain` against the existing explicitly fenced disposable loopback PostgreSQL configuration — passed, 122 tests, zero failures/errors/skips. Includes V21 old-data preservation and bounded backfill, old-client preference compatibility, invalid settings, pending-inclusive yearly milestones, deduplication, month/year contribution selection and January reset.
+- Core/shared tests additionally cover incomplete compact snapshots, complete sparse monthly aggregates, foreign/future purchases, exact pending inclusion, guest snapshot/backup round trips, account/origin isolation, overlapping goal saves and preference switches, report archive fields and both monthly/yearly report rendering.
+- `adb -s emulator-5590 shell am instrument -w -e class dev.orestegabo.portfolio.investments.InvestmentGoalPeriodUiTest,dev.orestegabo.portfolio.investments.NotificationTargetEditorTest,dev.orestegabo.portfolio.investments.SettingsTargetEditorTest dev.orestegabo.portfolio.test/androidx.test.runner.AndroidJUnitRunner` — passed, three tests in 80.329 seconds, using synthetic data on the explicitly targeted disposable emulator. Covers Settings and notification entry, save/cancel, keyboard editing, retained amounts, both themes, API acknowledgement, dashboard annual progress and unchanged holdings. The existing editor viewport checks remain intact.
+- Visually reviewed `/tmp/inzira-yearly-goal-light.png` and `/tmp/inzira-yearly-goal-dark.png`. Native screen-reader operation and full yearly-mode large-font behavior were not manually verified.
+- The actual shared PDF renderer generated sanitized English/French monthly and yearly fixtures through ReportPreviewTest. Used bundled pypdf plus pdftoppm to inspect all twelve changed yearly-report page images: portfolio yearly pages 4–7 in both languages and annual yearly pages 1–2 in both languages, under `/tmp/inzira-goals-pdf-review`. No clipping or overlapping goal labels/tables was seen. These are synthetic verification outputs, not real user financial documents.
+- Signed iOS Debug `xcodebuild -project app/iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug -destination 'generic/platform=iOS' -derivedDataPath /tmp/inzira-share-timeline-ios -allowProvisioningUpdates build` — passed. Installed and launched successfully on the reconnected iPhone. Physical iPhone interaction remains for the user's review.
+- `python3 scripts/check-kmp-packages.py`, `python3 scripts/check-kmp-ui.py`, `python3 scripts/sync-design-colors.py --check`, `git diff --check` — passed.
+
+An initial compilation correctly rejected direct use of a core-internal money helper from the report module; the report now reuses the public year-progress domain function. A test-only attempt to access an internal reduced-motion local was removed; UI tests instead wait for real scroll completion. No production visibility was broadened and no assertions were disabled.
+
+## Live activation
+
+The iPhone preview is installed. The backend migration/reminder activation was requested separately because it changes the shared production service. It is not implied by local verification. No commit or push has occurred.
+
+### Approved activation — 2026-11-21
+
+The user explicitly approved live activation. The unchanged tested JAR (SHA-256 `216664645058d3f20fe0c5b9321588a72f6553d5fd90a3fe5f0e69e1d19154a4`) was packaged in the existing non-root Java 21 runtime, linux/amd64, user 10001. The container's JAR hash was checked before rollout. Image digest: `sha256:277a5de797228c6db4f72e909bdcab9c11bc3d540cefdc403fcd629c37bae2cb`.
+
+Revision `gabo-portfolio-api-goals-216664645058` was deployed first with no traffic. Runtime settings, environment/secret references, service identity, template annotations and existing traffic were compared and preserved. Flyway logs confirm one migration applied successfully, now V21, after validating all 21 migrations. Candidate health returned UP; anonymous preference access with the allowed native origin returned 401. Production then switched to the new revision at 100%; public health returned UP. The temporary candidate tag was removed and existing tags retained. Previous revision: `gabo-portfolio-api-gh-44671327532-1`, source `c2399b0`. Deployment labels mark this as an uncommitted build on that base.
+
+Docker was initially stopped; starting it restored the packaging environment. No code or test assertions changed during activation. No real user's goal amount or period was set as a rollout test, and no real investment records were queried or changed by verification. Existing monthly choices remain selected through the migration; the user can choose a different period in Settings and Save to synchronize it. Private temporary service snapshots were deleted after comparison. No commit or push occurred.
+
+## Commit verification — 2026-11-21
+
+Re-ran the full core/shared/Android/iOS Gradle verification command and the package, UI inventory and design-color scripts: passed. Unchanged test and compilation outputs were reused by Gradle. The preceding three UI tests, rendered PDF inspection and iPhone installation remain the device/visual evidence; no fresh device execution is claimed during commit preparation. Only goal-related production code, regression tests and this report are staged. No navigation-bar redesign or unrelated cleanup is included.

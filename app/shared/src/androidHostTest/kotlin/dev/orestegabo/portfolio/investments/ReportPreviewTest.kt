@@ -17,6 +17,11 @@ class ReportPreviewTest {
             File(folder, "annual-2025-$language.pdf").writeBytes(generateAnnualReport(reportFixture(language), 2025))
             File(folder, "annual-2026-$language.pdf").writeBytes(generateAnnualReport(reportFixture(language), 2026))
         }
+        listOf("en", "fr").forEach { language ->
+            val yearly = reportFixture(language).copy(investmentGoal = InvestmentGoal(300000, 5000000, InvestmentGoalPeriod.YEARLY))
+            File(folder, "portfolio-yearly-$language.pdf").writeBytes(generatePortfolioReport(yearly))
+            File(folder, "annual-yearly-$language.pdf").writeBytes(generateAnnualReport(yearly, 2026))
+        }
         val stress = reportFixture("fr", lots = 2).let { data ->
             data.snapshot.purchases.forEach { it.put("faceValue", 300_000_000_000L).put("bondName", "Obligation à long terme / ".repeat(15)) }
             data.snapshot.holdings.forEach { it.put("netAmountPayable", 300_000_000_000L).put("securityName", "Société de développement et d'investissement / ".repeat(10)) }

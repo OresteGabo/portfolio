@@ -176,7 +176,7 @@ private fun GeneralNotificationCard(model: PortfolioModel,item: JsonRecord,open:
         }
         "pending" -> if(item.text("stage")=="issuance") "Bond terms are now available" else "Purchase awaiting confirmation"
         "documents" -> if(item.text("stage")=="issuance") "Issuance results linked" else "Missing purchase document"
-        "targets" -> "Monthly target reached"
+        "targets" -> if (item.text("goalPeriod") == "yearly") "Yearly goal reached" else "Monthly target reached"
         "reports" -> "Portfolio report saved."
         "security" -> "New device signed in"
         else -> "Notifications"
@@ -205,7 +205,10 @@ private fun GeneralNotificationCard(model: PortfolioModel,item: JsonRecord,open:
             if(item.text("title").isNotBlank())AppText(displayRecordValue(item.text("title")),style=MaterialTheme.typography.bodyMedium)
             if(item.text("dueDate").isNotBlank())AppText(item.text("dueDate"),style=MaterialTheme.typography.bodyMedium)
             if(item.has("amount"))FinancialText(money(item.optDouble("amount"),item.text("currency").ifBlank { "RWF" }),style=MaterialTheme.typography.titleMedium)
-            if(kind=="targets")AppText(item.text("month"),style=MaterialTheme.typography.bodySmall)
+            if(kind=="targets") {
+                AppText(item.text("month"),style=MaterialTheme.typography.bodySmall)
+                if(item.optDouble("pending", 0.0) > 0) AppText("Includes pending investments.",style=MaterialTheme.typography.bodySmall)
+            }
             if(kind=="security") {
                 AppText(securityDeviceTitle(item),style=MaterialTheme.typography.bodyMedium)
                 securityDeviceSoftware(item).takeIf { it.isNotBlank() }?.let { AppText(it,style=MaterialTheme.typography.bodySmall) }

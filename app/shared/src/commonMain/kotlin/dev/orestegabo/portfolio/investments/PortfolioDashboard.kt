@@ -207,7 +207,7 @@ fun PortfolioScreen(
                         IconButton(enabled = insights.canScrollForward, onClick = {
                             scope.launch {
                                 val index =
-                                    (insights.firstVisibleItemIndex + 1).coerceAtMost(summary.size - 1)
+                                    (insights.firstVisibleItemIndex + 1).coerceAtMost((insights.layoutInfo.totalItemsCount - 1).coerceAtLeast(0))
                                 if (reducedMotion) insights.scrollToItem(index) else insights.animateScrollToItem(
                                     index
                                 )
@@ -244,7 +244,7 @@ fun PortfolioScreen(
                                 }
                             }
                             item(key = "monthly-target") {
-                                MonthlyTargetCard(
+                                InvestmentGoalCard(
                                     model,
                                     Modifier.width(cardWidth)
                                 )

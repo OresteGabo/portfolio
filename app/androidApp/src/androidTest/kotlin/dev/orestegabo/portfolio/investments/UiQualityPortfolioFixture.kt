@@ -29,6 +29,8 @@ internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: Lis
     val uploadedContracts = java.util.concurrent.atomic.AtomicInteger()
     val createdSharePurchases = java.util.concurrent.atomic.AtomicInteger()
     val requestedDocuments = java.util.concurrent.CopyOnWriteArrayList<String>()
+    var savedGoal = InvestmentGoal()
+        private set
     private val testUser = JsonRecord().put("id", "ui-quality").put("email", "ui@example.test").put("isOwner", owner)
     private val engine = MockEngine { request ->
         if (request.url.encodedPath.endsWith("/mobile-overview")) initialSnapshotGate?.await()
@@ -37,6 +39,12 @@ internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: Lis
             return@MockEngine respond(readerFixturePdf(pageCount = 1), headers = headersOf(HttpHeaders.ContentType, "application/pdf"))
         }
         val body = when {
+            request.url.encodedPath.endsWith("/notifications/preferences") -> {
+                if (request.method == HttpMethod.Put) savedGoal = investmentGoalFromRecord(JsonRecord((request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString()), savedGoal)
+                savedGoal.toRecord().put("configured", true).put("autoCoupon", false).put("categories", JsonRecord().apply {
+                    listOf("prices","coupons","maturities","subscriptions","pending","documents","targets","reports","security").forEach { put(it, true) }
+                }).toString()
+            }
             request.url.encodedPath.endsWith("/auth/accounts") -> JsonRecord().put("accounts", JsonList(accountRecords)).toString()
             request.url.encodedPath.endsWith("/auth/login") -> JsonRecord().put("user", testUser).toString()
             request.url.encodedPath.endsWith("/auth/session") -> JsonRecord().put("authenticated", true).put("user", testUser).toString()

@@ -2,7 +2,7 @@ package dev.orestegabo.portfolio.investments
 
 internal enum class NotificationDestination(val label: String) {
     CALENDAR("View calendar"), PURCHASE("Upload confirmation"), DOCUMENT("Review missing document"),
-    ISSUANCE("View issuance results"), SECURITY("Review sign-in activity"), TARGET("Edit monthly target"), REPORT("View report options")
+    ISSUANCE("View issuance results"), SECURITY("Review sign-in activity"), TARGET("Edit investment goal"), REPORT("View report options")
 }
 
 /** Older stored events use action=settings; kind still identifies their specific destination. */

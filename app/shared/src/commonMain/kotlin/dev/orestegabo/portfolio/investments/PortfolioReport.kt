@@ -15,7 +15,10 @@ internal data class PortfolioReportData(
     val language: String,
     val couponReceipts: List<JsonRecord>? = null,
     val ledgerEntries: List<JsonRecord> = emptyList(),
-)
+    val investmentGoal: InvestmentGoal? = null,
+) {
+    val goal get() = investmentGoal ?: InvestmentGoal(monthlyAmount = monthlyTarget)
+}
 
 /** Uses the same valuation and contribution rules as the dashboard; never a truncated preview. */
 internal fun generatePortfolioReport(data: PortfolioReportData): ByteArray {
@@ -107,23 +110,32 @@ internal fun generatePortfolioReport(data: PortfolioReportData): ByteArray {
     }
     pdf.newPage()
     pdf.heading(t("Investment targets", "Objectifs d'investissement"), large = true)
-    pdf.paragraph(t("Reference monthly target: ${cash(data.monthlyTarget.toDouble())}. Annual reference: ${cash(data.monthlyTarget * 12.0)}. The current device setting is used for every year; historical target changes are not stored. Progress includes confirmed purchases and pending requests in RWF, including recorded fees. Pending amounts are shown separately as part of the total.",
-        "Objectif mensuel de référence : ${cash(data.monthlyTarget.toDouble())}. Référence annuelle : ${cash(data.monthlyTarget * 12.0)}. Le réglage actuel de cet appareil est appliqué à chaque année ; les anciens objectifs ne sont pas conservés. La progression inclut les achats confirmés et les demandes en attente en RWF, frais compris. Les montants en attente sont détaillés séparément et inclus dans le total."))
+    val yearlyGoal = data.goal.period == InvestmentGoalPeriod.YEARLY
+    pdf.paragraph(if (yearlyGoal) t("Reference yearly goal: ${cash(data.goal.yearlyAmount.toDouble())}. Calendar year: January-December.",
+        "Objectif annuel de reference : ${cash(data.goal.yearlyAmount.toDouble())}. Annee civile : janvier-decembre.")
+        else t("Reference monthly target: ${cash(data.monthlyTarget.toDouble())}. Annual reference: ${cash(data.goal.annualReference)}.",
+            "Objectif mensuel de reference : ${cash(data.monthlyTarget.toDouble())}. Reference annuelle : ${cash(data.goal.annualReference)}."))
+    pdf.paragraph(t("The current goal setting is used for every year; historical goal changes are not stored. Progress includes confirmed purchases and pending requests in RWF, including recorded fees. Pending amounts are shown separately as part of the total.",
+        "Le reglage actuel est applique a chaque annee ; les anciens objectifs ne sont pas conserves. La progression inclut les achats confirmes et les demandes en attente en RWF, frais compris. Les montants en attente sont detailles separement."))
     val years = reportYears(data)
     val annualTotals = years.associateWith { year -> (1..12).map { month ->
         requireNotNull(monthlyInvestmentProgress(snapshot.copy(monthlyInvestmentTotals = null), LocalDate(year, month, 1), data.monthlyTarget, data.today))
     } }
     annualTotals.forEach { (year, rows) ->
         val total = rows.sumOf { it.invested }
-        pdf.bar(year.toString(), total, maxOf(data.monthlyTarget * 12.0, total), "${cash(total)} / ${cash(data.monthlyTarget * 12.0)}")
+        pdf.bar(year.toString(), total, maxOf(data.goal.annualReference, total), "${cash(total)} / ${cash(data.goal.annualReference)}")
     }
     val months = if (french) listOf("Jan", "Fév", "Mars", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc")
         else listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
     annualTotals.forEach { (year, rows) ->
         pdf.ensure(485.0)
         pdf.heading(year.toString())
-        pdf.metric(t("Invested / annual reference", "Investi / référence annuelle"), "${cash(rows.sumOf { it.invested })} / ${cash(data.monthlyTarget * 12.0)}")
-        pdf.table(listOf(t("Month", "Mois"), t("Confirmed RWF", "Confirmé RWF"), t("Pending RWF", "En attente RWF"), t("Target RWF", "Objectif RWF"), t("Progress", "Progression")), rows.mapIndexed { index, row ->
+        pdf.metric(t("Invested / annual reference", "Investi / référence annuelle"), "${cash(rows.sumOf { it.invested })} / ${cash(data.goal.annualReference)}")
+        if (yearlyGoal) pdf.table(listOf(t("Month", "Mois"), t("Confirmed RWF", "Confirme RWF"), t("Pending RWF", "En attente RWF")), rows.mapIndexed { index, row ->
+            val future = LocalDate(year, index + 1, 1) > data.today
+            listOf(months[index], if (future) "-" else number(row.confirmed), if (future) "-" else number(row.pending))
+        }, listOf(100.0, 220.0, 203.0))
+        else pdf.table(listOf(t("Month", "Mois"), t("Confirmed RWF", "Confirmé RWF"), t("Pending RWF", "En attente RWF"), t("Target RWF", "Objectif RWF"), t("Progress", "Progression")), rows.mapIndexed { index, row ->
             val future = LocalDate(year, index + 1, 1) > data.today
             listOf(months[index], if (future) "-" else number(row.confirmed), if (future) "-" else number(row.pending), number(row.target.toDouble()), if (future) "-" else rate(row.invested / row.target))
         }, listOf(64.0, 124.0, 124.0, 124.0, 87.0))
@@ -179,7 +191,7 @@ internal fun generatePortfolioReport(data: PortfolioReportData): ByteArray {
         pdf.record(row.currency, listOf(t("Recorded cash", "Tresorerie enregistree") to cash(row.balance, row.currency), t("Dividends received", "Dividendes recus") to cash(row.dividends,row.currency), t("Realized gain / loss", "Gain / perte realise(e)") to cash(row.realizedGain,row.currency)))
     }
     val archive = JsonRecord().put("format", "gabo-portfolio-report-v1").put("generatedOn", data.today.toString())
-        .put("cashLedger", JsonList(data.ledgerEntries)).put("couponReceipts", data.couponReceipts?.let(::JsonList)).put("email", data.email).put("monthlyTargetRwf", data.monthlyTarget).put("targetBasis", "current-setting-not-historical")
+        .put("cashLedger", JsonList(data.ledgerEntries)).put("couponReceipts", data.couponReceipts?.let(::JsonList)).put("email", data.email).put("monthlyTargetRwf", data.monthlyTarget).put("targetBasis", "current-setting-not-historical").put("goalPeriod", data.goal.period.key).put("yearlyTargetRwf", data.goal.yearlyAmount).put("activeTargetRwf", data.goal.amount)
         .put("purchases", JsonList(snapshot.purchases)).put("holdings", JsonList(snapshot.holdings)).put("shareOrders", JsonList(snapshot.shareOrders)).put("couponReferences", JsonList(snapshot.couponReferences))
         .put("documents", JsonList(snapshot.documents)).put("missingStatementItems", JsonList(data.statementItems))
     return pdf.finish(archive.toString())

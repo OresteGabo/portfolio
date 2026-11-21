@@ -196,13 +196,13 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                     SettingsDivider()
                 }
                 Column(if (LocalReducedMotion.current) Modifier else Modifier.animateContentSize()) {
-                    SettingsRow(Icons.Outlined.Flag, "Monthly investment target", privateFinancialValue(money(model.monthlyInvestmentTarget.toDouble(), "RWF")),
+                    SettingsRow(Icons.Outlined.Flag, "Investment goal", privateFinancialValue("${localized(if (model.investmentGoal.period == InvestmentGoalPeriod.YEARLY) "Yearly" else "Monthly")} · ${money(model.investmentGoal.amount.toDouble(), "RWF")}"),
                         onClick = { targetExpanded = !targetExpanded },
                         modifier = Modifier.semantics { stateDescription = localized(if (targetExpanded) "Expanded" else "Collapsed") },
                         trailing = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 IconButton(enabled = model.canEditInvestments, onClick = { dialog = "investmentTarget" }) {
-                                    AppIcon(Icons.Outlined.Edit, "Edit monthly target", Modifier.size(20.dp))
+                                    AppIcon(Icons.Outlined.Edit, "Edit investment goal", Modifier.size(20.dp))
                                 }
                                 AppIcon(if (targetExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
                                     null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -34,6 +34,11 @@ class LocalGuestPortfolioRepository(
         cleanPending(root)
         view(root)
     }
+    override suspend fun setInvestmentGoal(goal: InvestmentGoal): GuestPortfolio = update { root ->
+        val metadata = JsonRecord(root.getJSONObject("metadata").toString())
+        metadata.put("monthlyTarget", goal.monthlyAmount).put("yearlyTarget", goal.yearlyAmount).put("goalPeriod", goal.period.key)
+        root.put("metadata", metadata)
+    }
     override suspend fun setMonthlyTarget(amount: Long): GuestPortfolio = update { root ->
         require(validInvestmentTarget(amount))
         root.put("metadata", JsonRecord(root.getJSONObject("metadata").toString()).put("monthlyTarget", amount))

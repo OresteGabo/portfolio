@@ -37,6 +37,9 @@ actual fun rememberServerSettings(): ServerSettings {
         override fun writeShakeToHideEnabled(enabled: Boolean) { prefs.edit().putBoolean("shakeToHideEnabled", enabled).apply() }
         override fun readNumbersHidden() = prefs.getBoolean("numbersHidden", false)
         override fun writeNumbersHidden(hidden: Boolean) { prefs.edit().putBoolean("numbersHidden", hidden).apply() }
+        override fun readInvestmentGoal(account: String) = prefs.getString("investmentGoal:$account", null)
+        override fun writeInvestmentGoal(account: String, goal: String) { prefs.edit().putString("investmentGoal:$account", goal).apply() }
+        override fun forgetInvestmentGoal(account: String) { forgetMonthlyTarget(account); prefs.edit().remove("investmentGoal:$account").apply() }
         override fun forgetMonthlyTarget(account: String) { prefs.edit().remove("monthlyTarget:$account").apply() }
         override fun readMonthlyTarget(account: String): Long? = if (prefs.contains("monthlyTarget:$account")) prefs.getLong("monthlyTarget:$account", 100_000L) else null
         override fun writeMonthlyTarget(account: String, amount: Long) { prefs.edit().putLong("monthlyTarget:$account", amount).apply() }

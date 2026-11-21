@@ -115,17 +115,17 @@ class NotificationTargetEditorTest {
                         NativePrivacyCover(false)
                     }
                 }
-                await("Home"); click("Notifications"); click("Edit monthly target")
-                await("Monthly target"); click("500k"); click("Save")
+                await("Home"); click("Notifications"); click("Edit investment goal")
+                await("Investment goal"); click("500k"); click("Save")
                 scenario.onActivity { assertEquals(500_000L, model.monthlyInvestmentTarget) }
                 assertEquals(500_000L, storedTarget.get())
                 val deadline = System.currentTimeMillis() + 5000
                 while (serverTarget.get() != 500_000L && System.currentTimeMillis() < deadline) Thread.sleep(50)
                 assertEquals("Target sync reaches the existing preferences API", 500_000L, serverTarget.get())
-                click("Edit monthly target"); await("Monthly target"); click("300k"); click("Cancel")
+                click("Edit investment goal"); await("Investment goal"); click("300k"); click("Cancel")
                 scenario.onActivity { assertEquals(500_000L, model.monthlyInvestmentTarget) }
                 assertEquals(500_000L, storedTarget.get())
-                await("Edit monthly target")
+                await("Edit investment goal")
             }
         } finally {
             server.close(); worker.shutdownNow()

@@ -127,7 +127,7 @@ class SettingsTargetEditorTest {
                 }
                 assertTrue("Synthetic account must finish loading", ready)
                 for (attempt in 0 until 12) {
-                    if (named("Monthly investment target") != null) break
+                    if (named("Investment goal") != null) break
                     val metrics = instrumentation.targetContext.resources.displayMetrics
                     val x = metrics.widthPixels * .5f
                     val startY = metrics.heightPixels * .72f
@@ -149,16 +149,16 @@ class SettingsTargetEditorTest {
                     Thread.sleep(300)
                 }
                 assertNull("Progress starts folded", named("Recent months"))
-                click("Edit monthly target")
-                val editor = awaitNamed("Monthly target")
+                click("Edit investment goal")
+                val editor = awaitNamed("Investment goal")
                 val bounds = Rect().also(editor::getBoundsInScreen)
                 assertTrue("Editor must be inside the visible viewport", bounds.top >= 0 && bounds.bottom <= instrumentation.targetContext.resources.displayMetrics.heightPixels)
                 click("300k")
                 click("Save")
                 scenario.onActivity { assertEquals(300_000L, model.monthlyInvestmentTarget) }
                 assertEquals(300_000L, storedTarget)
-                click("Edit monthly target")
-                awaitNamed("Monthly target")
+                click("Edit investment goal")
+                awaitNamed("Investment goal")
                 val input = checkNotNull(visibleNode { it.isEditable })
                 assertTrue(input.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,
                     Bundle().apply { putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "450000") }))
@@ -167,7 +167,7 @@ class SettingsTargetEditorTest {
                 click("Save")
                 scenario.onActivity { assertEquals(450_000L, model.monthlyInvestmentTarget) }
                 assertEquals(450_000L, storedTarget)
-                click("Edit monthly target")
+                click("Edit investment goal")
                 click("500k")
                 click("Cancel")
                 scenario.onActivity { assertEquals(450_000L, model.monthlyInvestmentTarget) }

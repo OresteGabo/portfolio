@@ -22,6 +22,9 @@ interface ServerSettings {
     fun writeShakeToHideEnabled(enabled: Boolean) {}
     fun readNumbersHidden(): Boolean = false
     fun writeNumbersHidden(hidden: Boolean) {}
+    fun forgetInvestmentGoal(account: String) { forgetMonthlyTarget(account) }
+    fun readInvestmentGoal(account: String): String? = null
+    fun writeInvestmentGoal(account: String, goal: String) {}
     fun forgetMonthlyTarget(account: String) {}
     fun readMonthlyTarget(account: String): Long? = null
     fun writeMonthlyTarget(account: String, amount: Long) {}

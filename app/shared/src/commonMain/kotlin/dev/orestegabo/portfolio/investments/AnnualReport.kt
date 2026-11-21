@@ -75,6 +75,15 @@ internal fun generateAnnualReport(data: PortfolioReportData, year: Int, historie
         "ANNEE EN COURS - L'activite et la valorisation s'arretent au ${scope.cutoff} ; le reste de l'annee est exclu."))
     pdf.paragraph(t("Only purchases dated within this period appear as annual transactions. Positions carried forward from earlier years are included only in the closing portfolio estimate. Currencies are kept separate.",
         "Seuls les achats dates dans cette periode figurent dans les operations annuelles. Les positions des annees precedentes figurent uniquement dans l'estimation du portefeuille de cloture. Les devises restent separees."))
+    val goalProgress = requireNotNull(yearlyInvestmentProgress(data.snapshot.copy(monthlyInvestmentTotals = null), year, data.goal.amount, scope.cutoff))
+    val confirmedGoal = goalProgress.confirmed
+    val pendingGoal = goalProgress.pending
+    pdf.heading(t("Investment goal", "Objectif d'investissement"))
+    pdf.paragraph(t("Current ${data.goal.period.key} goal applied as a reference; historical goal changes are not stored. Pending requests and recorded fees are included, not market gains.",
+        "L'objectif actuel (${if (data.goal.period == InvestmentGoalPeriod.YEARLY) "annuel" else "mensuel"}) sert de reference ; les anciens objectifs ne sont pas conserves. Demandes en attente et frais inclus, pas les gains de marche."))
+    pdf.metric(t("Annual reference RWF", "Reference annuelle RWF"), cash(data.goal.annualReference, "RWF"))
+    pdf.metric(t("Confirmed contributions", "Versements confirmes"), cash(confirmedGoal, "RWF"))
+    pdf.metric(t("Pending contributions", "Versements en attente"), cash(pendingGoal, "RWF"))
     pdf.heading(t("Portfolio at period end", "Portefeuille en fin de periode"))
     pdf.paragraph(t("Valuation date: ${scope.cutoff}. Reconstructed from saved records, not a frozen historical statement. Current saved statuses and quantities may not reproduce later edits or earlier confirmations. Bonds use outstanding principal, not market prices; cash, dividends, liabilities and realized gains are excluded.",
         "Date de valorisation : ${scope.cutoff}. Reconstitution des donnees enregistrees, pas un releve historique fige. Statuts et quantites actuels peuvent ne pas refleter les modifications ulterieures ou confirmations anterieures. Les obligations utilisent le capital restant, pas un cours de marche ; liquidites, dividendes, dettes et gains realises sont exclus."))

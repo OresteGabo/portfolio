@@ -9,6 +9,7 @@ internal const val CONNECTION_ERROR_MESSAGE = "Could not connect. Check your con
 
 /** Exact, app-authored messages only. Never trust free-form exception or server response text. */
 private val approvedErrorMessages = setOf(
+    "Goal saved on this device. Reminder sync failed. Try saving again.",
     ApiResponseException.MESSAGE,
     ApiTimeoutException.MESSAGE,
     "Sign in to link a pending bond purchase.",

@@ -2,6 +2,20 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Goal saved on this device. Reminder sync failed. Try saving again." to "Objectif enregistré sur cet appareil. Synchronisation des rappels impossible. Réessayez l’enregistrement.",
+    "Goal reached, including pending" to "Objectif atteint, demandes en attente comprises",
+    "This year’s goal reached" to "Objectif de cette année atteint",
+    "Monthly contributions" to "Versements mensuels",
+    "Saved for this account." to "Enregistré pour ce compte.",
+    "Confirmed and pending purchases, including fees." to "Achats confirmés et en attente, frais compris.",
+    "Each calendar month" to "Chaque mois civil",
+    "January–December" to "Janvier–décembre",
+    "Yearly goal reached" to "Objectif annuel atteint",
+    "Yearly goal" to "Objectif annuel",
+    "Yearly" to "Annuel",
+    "Monthly" to "Mensuel",
+    "Edit investment goal" to "Modifier l’objectif d’investissement",
+    "Investment goal" to "Objectif d’investissement",
     "Includes pending investments." to "Comprend les investissements en attente.",
     "Unpriced shares use recorded cost." to "Les actions sans cours disponible sont valorisées à leur coût enregistré.",
     "Shares value" to "Valeur des actions",

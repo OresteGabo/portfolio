@@ -20,6 +20,10 @@ class PortfolioModelTest {
         override fun readNumbersHidden() = hiddenNumbers
         override fun writeNumbersHidden(hidden: Boolean) { hiddenNumbers = hidden }
         val targets = mutableMapOf<String, Long>()
+        val goals = mutableMapOf<String, String>()
+        override fun readInvestmentGoal(account: String) = goals[account]
+        override fun writeInvestmentGoal(account: String, goal: String) { goals[account] = goal }
+        override fun forgetInvestmentGoal(account: String) { goals.remove(account); forgetMonthlyTarget(account) }
         override fun forgetMonthlyTarget(account: String) { targets.remove(account) }
         override fun readMonthlyTarget(account: String) = targets[account]
         override fun writeMonthlyTarget(account: String, amount: Long) { targets[account] = amount }
@@ -425,6 +429,21 @@ class PortfolioModelTest {
             reopened.connect("https://second.example.test"); advanceUntilIdle()
             assertNull(reopened.user)
             assertEquals(100_000L, reopened.monthlyInvestmentTarget)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun yearlyGoalsPersistAcrossRecreationAndStayIsolatedByAccountOriginEvenIfSyncFails() = runTest {
+        val scenario = Scenario(); val first = model(scenario)
+        try {
+            advanceUntilIdle()
+            val goal = InvestmentGoal(300000, 5000000, InvestmentGoalPeriod.YEARLY)
+            first.updateInvestmentGoal(goal); advanceUntilIdle()
+            assertEquals(goal, first.investmentGoal)
+            scenario.store.clear()
+            val reopened = model(scenario); advanceUntilIdle()
+            assertEquals(goal, reopened.investmentGoal)
+            reopened.connect("https://second.example.test"); advanceUntilIdle()
+            assertEquals(InvestmentGoal(), reopened.investmentGoal)
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
 

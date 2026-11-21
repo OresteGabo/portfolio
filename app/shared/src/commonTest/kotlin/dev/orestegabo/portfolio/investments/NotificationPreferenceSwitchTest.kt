@@ -19,12 +19,15 @@ class NotificationPreferenceSwitchTest {
             "subscriptions" to true, "pending" to false, "documents" to true, "targets" to false, "reports" to true, "security" to true)
         var auto = false
         var target = 200000L
+        var yearly = 2400000L
+        var period = "monthly"
         var failAuto = false
         var partial = false
         var slowRead = false
         var signedIn = true
         val writes = mutableListOf<JsonRecord>()
         fun preferences() = JsonRecord().put("configured", true).put("autoCoupon", auto).put("monthlyTarget", target)
+            .put("yearlyTarget", yearly).put("goalPeriod", period)
             .put("categories", JsonRecord().apply { categories.forEach { (key, value) -> put(key, value) } })
     }
     private fun TestScope.model(f: Fixture): PortfolioModel {
@@ -53,6 +56,8 @@ class NotificationPreferenceSwitchTest {
                                 f.categories[key] = rows.optBoolean(key)
                             } }
                             change.text("monthlyTarget").toLongOrNull()?.let { f.target = it }
+                            change.text("yearlyTarget").toLongOrNull()?.let { f.yearly = it }
+                            if (change.has("goalPeriod")) f.period = change.text("goalPeriod")
                             val saved = if (!f.partial) f.preferences() else JsonRecord().apply {
                                 if (change.has("autoCoupon")) put("autoCoupon", f.auto)
                                 if (change.has("categories")) put("categories", f.preferences().optJSONObject("categories"))
@@ -195,4 +200,20 @@ class NotificationPreferenceSwitchTest {
             assertTrue(m.notificationPreferenceEnabled()); assertCategories(m, initial)
         } finally { f.store.clear(); Dispatchers.resetMain() }
     }
+    @Test fun yearlyGoalWritesAreSerializedWithSwitchesAndTheLatestChoiceWins() = runTest {
+        val f = Fixture(); val m = model(f)
+        try {
+            advanceUntilIdle()
+            m.updateInvestmentGoal(InvestmentGoal(300000, 3600000, InvestmentGoalPeriod.YEARLY))
+            m.updateInvestmentGoal(InvestmentGoal(300000, 5000000, InvestmentGoalPeriod.YEARLY))
+            m.updateNotificationPreference("targets", false)
+            advanceUntilIdle()
+            assertEquals(5000000L, m.investmentGoal.yearlyAmount)
+            assertEquals(300000L, m.monthlyInvestmentTarget)
+            assertEquals("yearly", f.period); assertFalse(f.categories.getValue("targets"))
+            m.updateInvestmentGoal(m.investmentGoal.copy(period = InvestmentGoalPeriod.MONTHLY)); advanceUntilIdle()
+            assertEquals(300000L, m.investmentGoal.amount); assertEquals(5000000L, m.investmentGoal.yearlyAmount)
+        } finally { f.store.clear(); Dispatchers.resetMain() }
+    }
+
 }

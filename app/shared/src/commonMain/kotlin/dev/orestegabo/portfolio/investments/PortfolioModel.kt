@@ -296,6 +296,8 @@ class PortfolioModel(
         override val locked get() = this@PortfolioModel.locked
         override val isGuest get() = this@PortfolioModel.isGuest
         override val monthlyInvestmentTarget get() = this@PortfolioModel.monthlyInvestmentTarget
+        override val investmentGoal get() = this@PortfolioModel.investmentGoal
+        override fun applyInvestmentGoal(goal: InvestmentGoal) { applyInvestmentGoalLocally(goal) }
         override var error: String?
             get() = this@PortfolioModel.error
             set(value) { this@PortfolioModel.error = value }
@@ -377,37 +379,39 @@ class PortfolioModel(
     internal suspend fun readPurchase(id: String): JsonRecord = snapshotReader.purchase(id)
     internal suspend fun readStatementItem(id: String): JsonRecord? = snapshotReader.statementItem(id)
     internal suspend fun readSignInActivity(notificationId: String?): JsonRecord = notificationCenter.signInActivity(notificationId)
-    private var accountMonthlyInvestmentTarget by mutableStateOf<Long>(DEFAULT_MONTHLY_INVESTMENT_TARGET)
+    private var accountInvestmentGoal by mutableStateOf(InvestmentGoal())
+    val investmentGoal: InvestmentGoal get() = if (isGuest) investmentGoalFromRecord(guestPortfolio?.metadata) else accountInvestmentGoal
     var monthlyInvestmentTarget: Long
-        get() = if (isGuest) guestPortfolio?.metadata?.text("monthlyTarget")?.toLongOrNull() ?: DEFAULT_MONTHLY_INVESTMENT_TARGET else accountMonthlyInvestmentTarget
-        private set(value) { accountMonthlyInvestmentTarget = value }
+        get() = investmentGoal.monthlyAmount
+        private set(value) { accountInvestmentGoal = accountInvestmentGoal.copy(monthlyAmount = value) }
     private fun targetAccount() = user?.text("id")?.takeIf { it.isNotBlank() }?.let { "$origin|$it" }
     private fun loadInvestmentTarget() {
         marketData.attach(targetAccount())
         imports.attach(targetAccount())
-        monthlyInvestmentTarget = targetAccount()?.let(settings::readMonthlyTarget)?.takeIf { validInvestmentTarget(it) }
-            ?: DEFAULT_MONTHLY_INVESTMENT_TARGET
+        val account = targetAccount()
+        val legacy = account?.let(settings::readMonthlyTarget)?.takeIf(::validInvestmentTarget) ?: DEFAULT_MONTHLY_INVESTMENT_TARGET
+        val saved = account?.let(settings::readInvestmentGoal)?.let { runCatching { JsonRecord(it) }.getOrNull() }
+        accountInvestmentGoal = investmentGoalFromRecord(saved, InvestmentGoal(monthlyAmount = legacy))
     }
-    fun updateMonthlyInvestmentTarget(amount: Long) {
-        require(validInvestmentTarget(amount)) { "Enter a positive whole RWF amount." }
-        if (isGuest) { guestWrite({ requireNotNull(guestRepository).setMonthlyTarget(amount) }); return }
-        val account = requireNotNull(targetAccount())
-        settings.writeMonthlyTarget(account, amount)
-        monthlyInvestmentTarget = amount
-        val revision=notificationGeneration
-        viewModelScope.launch {
-            try {
-                val saved=api.request("/api/bonds/notifications/preferences","PUT",JsonRecord().put("monthlyTarget",amount))
-                if(revision==notificationGeneration) saved.text("monthlyTarget").toLongOrNull()?.let { target ->
-                    notificationPreferences=JsonRecord(notificationPreferences.toString()).put("monthlyTarget",target)
-                }
-            }
-            catch(cancelled: CancellationException) { throw cancelled }
-            catch(_: Exception) { if(revision==notificationGeneration)error="Target saved on this device. Server sync failed." }
+    private fun applyInvestmentGoalLocally(goal: InvestmentGoal) {
+        accountInvestmentGoal = goal
+        targetAccount()?.let { account ->
+            settings.writeMonthlyTarget(account, goal.monthlyAmount)
+            settings.writeInvestmentGoal(account, goal.toRecord().toString())
         }
     }
+    fun updateInvestmentGoal(goal: InvestmentGoal) {
+        if (isGuest) { guestWrite({ requireNotNull(guestRepository).setInvestmentGoal(goal) }); return }
+        requireNotNull(targetAccount())
+        applyInvestmentGoalLocally(goal)
+        notificationCenter.updateInvestmentGoal(goal)
+    }
+    fun updateMonthlyInvestmentTarget(amount: Long) = updateInvestmentGoal(investmentGoal.copy(monthlyAmount = amount))
     fun monthlyTargetProgress(month: LocalDate = Today): MonthlyInvestmentProgress? =
         if (portfolioReady) monthlyInvestmentProgress(portfolio, month, monthlyInvestmentTarget, Today) else null
+    fun investmentGoalProgress(): MonthlyInvestmentProgress? = if (!portfolioReady) null else
+        if (investmentGoal.period == InvestmentGoalPeriod.YEARLY) yearlyInvestmentProgress(portfolio, Today.year, investmentGoal.yearlyAmount, Today)
+        else monthlyTargetProgress()
     val documents get() = if (isGuest) guestViewDocuments(portfolio) else portfolio.documents
     private val pendingShareOrders = PortfolioShareOrders({ api }) { orders ->
         accountPortfolio = accountPortfolio.copy(shareOrders = orders)
@@ -939,7 +943,7 @@ class PortfolioModel(
         val target = monthlyInvestmentTarget
         val date = Today
         try {
-            val bytes = reports.portfolioPdf(account.text("email"), target, date, language)
+            val bytes = reports.portfolioPdf(account.text("email"), target, date, language, investmentGoal)
             reports.sharing()
             if (actions.sharePdf("Inzira-$date.pdf", bytes)) {
                 message = "Portfolio report ready to share."
@@ -957,7 +961,7 @@ class PortfolioModel(
         val account = requireNotNull(user)
         val date = bondSubscriptionDate(kotlin.time.Clock.System.now())
         val language = AppLanguage.code
-        return reports.annualPdf(year, account.text("email"), { monthlyInvestmentTarget }, date, language)
+        return reports.annualPdf(year, account.text("email"), { monthlyInvestmentTarget }, date, language, investmentGoal = { investmentGoal })
     }
     fun exportAnnualReport(year: Int, actions: NativeActions) = action {
         val bytes = annualReportPdf(year)
@@ -995,7 +999,7 @@ class PortfolioModel(
         val response = api.request("/api/bonds/auth/account", "DELETE", JsonRecord().put("password", password))
         check(response.optBoolean("deleted")) { "Account deletion was not confirmed. Please try again." }
         var credentialRemoved = true
-        try { targetAccount()?.let { settings.forgetMonthlyTarget(it); settings.writeImportHistory(it, ""); settings.writeCachedEquityQuotes(it, null) }; vault?.delete(origin) }
+        try { targetAccount()?.let { settings.forgetInvestmentGoal(it); settings.writeImportHistory(it, ""); settings.writeCachedEquityQuotes(it, null) }; vault?.delete(origin) }
         catch (_: Exception) { credentialRemoved = false }
         finally {
             secureSignInEnabled = false; locked = false
@@ -1045,7 +1049,7 @@ class PortfolioModel(
         documentViewer.clear()
         imports.clear()
         refreshPhase = PortfolioRefreshPhase.IDLE
-        monthlyInvestmentTarget = DEFAULT_MONTHLY_INVESTMENT_TARGET
+        accountInvestmentGoal = InvestmentGoal()
         user = null
         cashLedgerRequested = false; backupRequested = false; ledgerHoldingId = null
         cashLedger.clear()

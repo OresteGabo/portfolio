@@ -49,6 +49,9 @@ actual fun rememberServerSettings(): ServerSettings = remember { object : Server
     override fun writeShakeToHideEnabled(enabled: Boolean) { NSUserDefaults.standardUserDefaults.setBool(enabled, forKey = "portfolio.shakeToHideEnabled") }
     override fun readNumbersHidden() = NSUserDefaults.standardUserDefaults.boolForKey("portfolio.numbersHidden")
     override fun writeNumbersHidden(hidden: Boolean) { NSUserDefaults.standardUserDefaults.setBool(hidden, forKey = "portfolio.numbersHidden") }
+    override fun readInvestmentGoal(account: String) = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.investmentGoal:$account")
+    override fun writeInvestmentGoal(account: String, goal: String) { NSUserDefaults.standardUserDefaults.setObject(goal, forKey = "portfolio.investmentGoal:$account") }
+    override fun forgetInvestmentGoal(account: String) { forgetMonthlyTarget(account); NSUserDefaults.standardUserDefaults.removeObjectForKey("portfolio.investmentGoal:$account") }
     override fun forgetMonthlyTarget(account: String) { NSUserDefaults.standardUserDefaults.removeObjectForKey("portfolio.monthlyTarget:$account") }
     override fun readMonthlyTarget(account: String) = NSUserDefaults.standardUserDefaults.stringForKey("portfolio.monthlyTarget:$account")?.toLongOrNull()
     override fun writeMonthlyTarget(account: String, amount: Long) { NSUserDefaults.standardUserDefaults.setObject(amount.toString(), forKey = "portfolio.monthlyTarget:$account") }

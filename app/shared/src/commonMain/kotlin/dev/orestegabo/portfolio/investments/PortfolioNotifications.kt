@@ -21,6 +21,8 @@ internal interface PortfolioNotificationHost {
     val locked: Boolean
     val isGuest: Boolean
     val monthlyInvestmentTarget: Long
+    val investmentGoal: InvestmentGoal get() = InvestmentGoal(monthlyAmount = monthlyInvestmentTarget)
+    fun applyInvestmentGoal(goal: InvestmentGoal) = applyMonthlyTarget(goal.monthlyAmount)
     var error: String?
     fun applyMonthlyTarget(amount: Long)
     suspend fun invalidateRejectedSession(failure: Exception): Boolean
@@ -110,6 +112,7 @@ internal class PortfolioNotifications(
     private var pendingNotificationPreferences by mutableStateOf<Map<String, Boolean>>(emptyMap())
     val notificationSettingsSaving get() = pendingNotificationPreferences.isNotEmpty()
     private val notificationSettingsMutex = Mutex()
+    private var goalRevision = 0
     fun notificationPreferenceSaving(category: String? = null) = pendingNotificationPreferences.containsKey(category ?: "autoCoupon")
     fun notificationPreferenceEnabled(category: String? = null): Boolean = pendingNotificationPreferences[category ?: "autoCoupon"]
         ?: if (category == null) notificationPreferences.optBoolean("autoCoupon")
@@ -120,21 +123,44 @@ internal class PortfolioNotifications(
     var couponTrackingAvailable by mutableStateOf(false)
     suspend fun fetchNotificationSettings() = notificationSettingsMutex.withLock {
         val revision=notificationGeneration;val account=user?.text("id")
+        val goalReadRevision = goalRevision
         try {
             var value=api.request("/api/bonds/notifications/preferences")
             currentCoroutineContext().ensureActive()
             if(revision!=notificationGeneration || account!=user?.text("id") || !value.has("categories"))return@withLock
-            if(!value.optBoolean("configured")) value=api.request("/api/bonds/notifications/preferences","PUT",JsonRecord().put("monthlyTarget",monthlyInvestmentTarget))
+            if(!value.optBoolean("configured")) value=api.request("/api/bonds/notifications/preferences","PUT",host.investmentGoal.toRecord())
             currentCoroutineContext().ensureActive()
             if(revision!=notificationGeneration || account!=user?.text("id"))return@withLock
             notificationPreferences=value;notificationSettingsAvailable=true
-            value.text("monthlyTarget").toLongOrNull()?.takeIf(::validInvestmentTarget)?.let {
-                host.applyMonthlyTarget(it)
-            }
+            if (goalReadRevision == goalRevision) host.applyInvestmentGoal(investmentGoalFromRecord(value, host.investmentGoal))
         } catch(cancelled: CancellationException) { throw cancelled }
         catch(failure: Exception) {
             currentCoroutineContext().ensureActive()
             if (revision == notificationGeneration && account == user?.text("id")) invalidateRejectedSession(failure)
+        }
+    }
+    fun updateInvestmentGoal(goal: InvestmentGoal) {
+        val revision = notificationGeneration
+        val account = user?.text("id")
+        val saveRevision = ++goalRevision
+        scope.launch {
+            try {
+                notificationSettingsMutex.withLock {
+                    if (revision != notificationGeneration || account != user?.text("id") || locked) return@withLock
+                    val saved = api.request("/api/bonds/notifications/preferences", "PUT", goal.toRecord())
+                    if (goal.period == InvestmentGoalPeriod.YEARLY) check(saved.text("goalPeriod") == "yearly") {
+                        "Yearly reminder settings need a server update."
+                    }
+                    if (revision == notificationGeneration && account == user?.text("id") && saveRevision == goalRevision) {
+                        val acknowledged = investmentGoalFromRecord(saved, goal)
+                        host.applyInvestmentGoal(acknowledged)
+                        val next = JsonRecord(notificationPreferences.toString())
+                        next.put("monthlyTarget", acknowledged.monthlyAmount).put("yearlyTarget", acknowledged.yearlyAmount).put("goalPeriod", acknowledged.period.key)
+                        notificationPreferences = next
+                    }
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { if (revision == notificationGeneration && saveRevision == goalRevision) error = "Goal saved on this device. Reminder sync failed. Try saving again." }
         }
     }
     fun updateNotificationPreference(category: String? = null, enabled: Boolean) {

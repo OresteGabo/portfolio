@@ -239,11 +239,11 @@ internal fun CouponIncomeCard(
 
 /** Keep system icons legible as dashboard content scrolls beneath them. */
 @Composable
-internal fun MonthlyTargetCard(model: PortfolioModel, modifier: Modifier) {
-    val progress = model.monthlyTargetProgress()
-    InsightCard("Monthly target", InsightStyle.PAYMENT, modifier) {
+internal fun InvestmentGoalCard(model: PortfolioModel, modifier: Modifier) {
+    val progress = model.investmentGoalProgress()
+    InsightCard(if (model.investmentGoal.period == InvestmentGoalPeriod.YEARLY) "Yearly goal" else "Monthly target", InsightStyle.PAYMENT, modifier) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            FinancialText(money(model.monthlyInvestmentTarget.toDouble(), "RWF"), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            FinancialText(money(model.investmentGoal.amount.toDouble(), "RWF"), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             AppIcon(if (progress?.achieved == true) Icons.Outlined.CheckCircle else Icons.Outlined.Flag, null)
         }
         if (progress == null) {
@@ -252,7 +252,7 @@ internal fun MonthlyTargetCard(model: PortfolioModel, modifier: Modifier) {
         }
         else Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (!LocalNumbersHidden.current) CaptureRedactionRegion(Modifier.fillMaxWidth(), masked = { Spacer(Modifier.fillMaxSize()) }) {
-                LinearProgressIndicator(progress = { progress.fraction }, modifier = Modifier.fillMaxWidth())
+                InvestmentGoalProgressBar(progress)
             }
             else Spacer(Modifier.height(4.dp))
             Row(Modifier.fillMaxWidth()) {
@@ -265,7 +265,9 @@ internal fun MonthlyTargetCard(model: PortfolioModel, modifier: Modifier) {
                     FinancialText(money(progress.remaining, "RWF"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                 }
             }
-            AppText(if (progress.achieved) "${Today.monthLabel()} · Target reached" else Today.monthLabel(), style = MaterialTheme.typography.labelLarge)
+            val period = if (model.investmentGoal.period == InvestmentGoalPeriod.YEARLY) Today.year.toString() else Today.monthLabel()
+            FinancialText("${percent((progress.invested / progress.target).coerceAtLeast(0.0))} · $period", style = MaterialTheme.typography.labelLarge)
+            if (progress.achieved) AppText(if (progress.pending > 0) "Goal reached, including pending" else "Target reached", style = MaterialTheme.typography.labelSmall)
             if (progress.pending > 0) FinancialText("${money(progress.pending, "RWF")} pending", style = MaterialTheme.typography.labelSmall)
         }
     }

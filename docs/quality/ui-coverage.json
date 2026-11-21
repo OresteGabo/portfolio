@@ -3,6 +3,11 @@
   "note": "Evidence inventory, not code coverage. Required device gate runs on the reference API 36 emulator. Opt-in delivery/reboot/user-PDF tests remain separately documented.",
   "flows": [
     {
+      "flow": "monthly/yearly goal editor, remembered amounts, cancel, server acknowledgement, annual dashboard contribution progress and carousel access in both themes",
+      "class": "InvestmentGoalPeriodUiTest",
+      "method": "yearlyAndMonthlyChoicesRememberAmountsAndUpdateTheDashboardWithoutChangingHoldings"
+    },
+    {
       "flow": "owner account estimated net worth, expandable principal/share breakdown, legacy unavailable state and number privacy",
       "class": "OwnerAccountValuationTest",
       "method": "ownerAccountsShowSeparateTotalsExpandableBreakdownsAndRespectNumberHiding"

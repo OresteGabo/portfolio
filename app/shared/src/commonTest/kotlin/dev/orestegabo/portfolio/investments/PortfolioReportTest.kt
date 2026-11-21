@@ -65,4 +65,15 @@ class PortfolioReportTest {
         assertTrue(generatePortfolioReport(reportFixture().copy(quotes = null)).decodeToString().contains("unpriced position"))
         assertFailsWith<IllegalArgumentException> { generatePortfolioReport(empty.copy(snapshot = PortfolioSnapshot(recentHoldingIds = emptySet()))) }
     }
+    @Test fun yearlyReportKeepsItsSelectedGoalAndBothAmountsInTheArchive() {
+        val data = reportFixture().copy(investmentGoal = InvestmentGoal(300000, 5000000, InvestmentGoalPeriod.YEARLY))
+        val pdf = generatePortfolioReport(data).decodeToString()
+        val attachment = pdf.substringAfter("/Subtype /application#2Fjson /Length ").substringAfter("stream\n").substringBefore("\nendstream")
+        val archive = JsonRecord(attachment)
+        assertEquals("yearly", archive.text("goalPeriod"))
+        assertEquals(5000000.0, archive.optDouble("activeTargetRwf"))
+        assertEquals(300000.0, archive.optDouble("monthlyTargetRwf"))
+        assertTrue(pdf.contains("Reference yearly goal")); assertFalse(pdf.contains("Reference monthly target"))
+    }
+
 }

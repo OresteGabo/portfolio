@@ -23,6 +23,16 @@ class GuestRepositoryContractTest {
         LocalGuestPortfolioRepository(disk, documentStorage = documents, workDispatcher = Dispatchers.Unconfined,
             now = { "2027-02-01T12:00:00Z" }, today = { LocalDate(2027, 2, 1) })
 
+    @Test fun yearlyGoalAndBothAmountsSurviveReconstructionAndBackupRestore() = runTest {
+        val disk = Disk(); val docs = Documents(); val source = repository(disk, docs)
+        val goal = InvestmentGoal(300000, 5000000, InvestmentGoalPeriod.YEARLY)
+        source.setInvestmentGoal(goal)
+        assertEquals(goal, investmentGoalFromRecord(repository(disk, docs).load().metadata))
+        val restored = repository(Disk(), Documents()).restoreBackup(source.exportBackup())
+        assertEquals(goal, investmentGoalFromRecord(restored.metadata))
+        assertEquals(300000L, goal.copy(period = InvestmentGoalPeriod.MONTHLY).amount)
+    }
+
     @Test fun requiredLedgerOperationsPersistAndRemainAvailableAfterReconstruction() = runTest {
         val disk = Disk(); val documents = Documents()
         val entry = JsonRecord().put("id", "deposit-one").put("kind", "deposit").put("date", "2026-11-01")

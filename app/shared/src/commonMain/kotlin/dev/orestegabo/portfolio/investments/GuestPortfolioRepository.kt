@@ -27,6 +27,7 @@ internal class GuestDataDeletionException : IllegalStateException("Guest data de
 interface GuestPortfolioRepository : GuestInvestmentImporter {
     suspend fun deleteAll(): GuestPortfolio
     suspend fun setMonthlyTarget(amount: Long): GuestPortfolio
+    suspend fun setInvestmentGoal(goal: InvestmentGoal): GuestPortfolio
     suspend fun deleteDocument(id: String): GuestPortfolio
     suspend fun saveLedgerEntry(entry: JsonRecord): GuestPortfolio
     suspend fun deleteLedgerEntry(id: String): GuestPortfolio
