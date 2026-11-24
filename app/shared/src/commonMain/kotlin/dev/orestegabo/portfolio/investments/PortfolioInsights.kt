@@ -158,7 +158,7 @@ internal fun AllocationCard(total: CurrencyInvestment, modifier: Modifier) {
         HorizontalDivider(color = insightAccent(InsightStyle.ALLOCATION).copy(alpha = .2f))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             AppText("Total cash cost", style = MaterialTheme.typography.labelMedium)
-            FinancialText(money(total.investedCash, total.currency), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+            FinancialText(compactMoney(total.investedCash, total.currency), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -169,7 +169,7 @@ internal fun AllocationCard(total: CurrencyInvestment, modifier: Modifier) {
             Canvas(Modifier.size(7.dp)) { drawCircle(color) }
             AppText(label, style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current)
         }
-        FinancialText(money(cost, currency), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        FinancialText(compactMoney(cost, currency), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -197,10 +197,10 @@ internal fun CouponIncomeCard(
             listOf("Annual net" to total.netAnnualCoupon, "Accrued" to tracks.sumOf { it.accruedCoupon }).forEach { (label, amount) ->
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     AppText(label, style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current)
-                    FinancialText((if (label == "Annual net" && total.estimatedPendingCouponCount > 0) "≈ " else "") + money(amount, total.currency), Modifier,
+                    FinancialText((if (label == "Annual net" && total.estimatedPendingCouponCount > 0) "≈ " else "") + compactMoney(amount, total.currency), Modifier,
                         style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     if (label == "Annual net" && total.pendingAnnualCoupon > 0) {
-                        FinancialText((if (total.estimatedPendingCouponCount > 0) "≈ " else "") + "${money(total.pendingAnnualCoupon,total.currency)} ${localized("pending")}",
+                        FinancialText((if (total.estimatedPendingCouponCount > 0) "≈ " else "") + "${compactMoney(total.pendingAnnualCoupon,total.currency)} ${localized("pending")}",
                             style=MaterialTheme.typography.labelSmall,maxLines=2)
                     }
                 }
@@ -228,7 +228,7 @@ internal fun CouponIncomeCard(
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     AppText("Next coupon · ${next.date.year}", style = MaterialTheme.typography.labelSmall,
                         color = LocalContentColor.current)
-                    FinancialText(money(amount, total.currency), Modifier,
+                    FinancialText(compactMoney(amount, total.currency), Modifier,
                         style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
                 AppIcon(Icons.Outlined.ChevronRight, null, Modifier.size(20.dp), tint = accent)
@@ -243,7 +243,7 @@ internal fun InvestmentGoalCard(model: PortfolioModel, modifier: Modifier) {
     val progress = model.investmentGoalProgress()
     InsightCard(if (model.investmentGoal.period == InvestmentGoalPeriod.YEARLY) "Yearly goal" else "Monthly target", InsightStyle.PAYMENT, modifier) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            FinancialText(money(model.investmentGoal.amount.toDouble(), "RWF"), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            FinancialText(compactMoney(model.investmentGoal.amount.toDouble(), "RWF"), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             AppIcon(if (progress?.achieved == true) Icons.Outlined.CheckCircle else Icons.Outlined.Flag, null)
         }
         if (progress == null) {
@@ -258,17 +258,17 @@ internal fun InvestmentGoalCard(model: PortfolioModel, modifier: Modifier) {
             Row(Modifier.fillMaxWidth()) {
                 Column(Modifier.weight(1f)) {
                     AppText("Invested", style = MaterialTheme.typography.labelSmall)
-                    FinancialText(money(progress.invested, "RWF"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                    FinancialText(compactMoney(progress.invested, "RWF"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                 }
                 Column(Modifier.weight(1f)) {
                     AppText("Remaining", style = MaterialTheme.typography.labelSmall)
-                    FinancialText(money(progress.remaining, "RWF"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                    FinancialText(compactMoney(progress.remaining, "RWF"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                 }
             }
             val period = if (model.investmentGoal.period == InvestmentGoalPeriod.YEARLY) Today.year.toString() else Today.monthLabel()
             FinancialText("${percent((progress.invested / progress.target).coerceAtLeast(0.0))} · $period", style = MaterialTheme.typography.labelLarge)
             if (progress.achieved) AppText(if (progress.pending > 0) "Goal reached, including pending" else "Target reached", style = MaterialTheme.typography.labelSmall)
-            if (progress.pending > 0) FinancialText("${money(progress.pending, "RWF")} pending", style = MaterialTheme.typography.labelSmall)
+            if (progress.pending > 0) FinancialText("${compactMoney(progress.pending, "RWF")} pending", style = MaterialTheme.typography.labelSmall)
         }
     }
 }

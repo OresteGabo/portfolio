@@ -43,7 +43,7 @@ class InvestmentGoalPeriodUiTest {
                         ui.instrumentation.uiAutomation.waitForIdle(500, 5000)
                         ui.click("Next insight")
                         ui.instrumentation.uiAutomation.waitForIdle(500, 5000)
-                        ui.await("Yearly goal"); ui.await("RWF 3,600,000"); ui.await("RWF 600,000")
+                        ui.await("Yearly goal"); ui.await("RWF 3.60M"); ui.await("RWF 600,000")
                         val image = requireNotNull(ui.instrumentation.uiAutomation.takeScreenshot())
                         try { image.writeGolden(File(ui.instrumentation.targetContext.cacheDir, "yearly-goal-$dark.png")) } finally { image.recycle() }
                         ui.click("Settings"); ui.scroll("Investing"); ui.click("Investing"); ui.scroll("Edit investment goal"); ui.click("Edit investment goal")

@@ -30,8 +30,8 @@ internal val LocalHiddenNumbersHint = staticCompositionLocalOf<(() -> Unit)?> { 
 /** Tapping a masked value explains it; surrounding card actions remain available. */
 private fun Modifier.hiddenNumbersHint(show: (() -> Unit)?): Modifier = if (show == null) this else
     pointerInput(show) { detectTapGestures { show() } }
-private val privacyNumbers = Regex("""\b\d{4}-\d{2}-\d{2}\b|[+−-]?\d+(?:[,.]\d+)*(?:[\s\u00a0\u202f]\d{3})*(?:[,.]\d+)?(?:%|[kKmMbB])?""")
-private val financialValueOnly = Regex("""^(?:[A-Z]{3} )?[+−-]?[\d\s\u00a0\u202f,.%]+$""")
+private val privacyNumbers = Regex("""\b\d{4}-\d{2}-\d{2}\b|[+−-]?\d+(?:[,.]\d+)*(?:[\s\u00a0\u202f]\d{3})*(?:[,.]\d+)?(?:%|[kKmMbBtT])?""")
+private val financialValueOnly = Regex("""^(?:[A-Z]{3} )?[+−-]?[\d\s\u00a0\u202f,.%]+(?:[MBT])?$""")
 private val privacyDate = Regex("""\d{4}-\d{2}-\d{2}""")
 
 /** Fixed masks conceal amount length. Navigation dates remain usable. Never changes stored data. */

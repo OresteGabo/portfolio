@@ -115,7 +115,7 @@ class OfflinePortfolioUiTest {
                         scene.onActivity { first.login("offline@example.test", "synthetic-password-only", savePassword = true) }
                         ui.waitUntil("protected snapshot and quotes committed") { first.portfolioReady && !first.portfolioSyncing && !first.busy && vault.storedQuotes }
                         show(scene, first)
-                        ui.await("1,012,000")
+                        ui.await("1.01M")
                         val ciphertext = File(context.noBackupFilesDir, "offline-ui-fixtures/$name.scg").readBytes()
                         assertFalse(ciphertext.decodeToString().contains("Synthetic offline bond"))
                     }
@@ -126,7 +126,7 @@ class OfflinePortfolioUiTest {
                         ui.waitUntil("cold locked startup") { !cached.busy }
                         show(scene, cached)
                         ui.await("Portfolio locked")
-                        assertFalse(ui.nodes().any { ui.matches(it, "1,012,000") })
+                        assertFalse(ui.nodes().any { ui.matches(it, "1.01M") })
                         val requests = requestCount.get()
                         ui.click("Unlock with Face ID")
                         ui.waitUntil("cancelled biometric stays locked") { cached.locked && !cached.busy }
@@ -134,11 +134,14 @@ class OfflinePortfolioUiTest {
                         assertFalse(cached.portfolioReady)
                         vault.cancelled = false
                         ui.click("Unlock with Face ID")
-                        ui.await("Saved portfolio"); ui.await("1,012,000")
+                        ui.await("Saved portfolio"); ui.await("1.01M")
                         ui.click("Saved portfolio")
                         ui.await("Read-only · May be out of date")
                         ui.click("Close")
                         assertFalse(cached.canEditInvestments)
+                        ui.click("Valuation basis details")
+                        ui.await("RWF 1,012,000")
+                        ui.click("Done")
                         fun metricBounds() = Rect().also(ui.await("Bond principal")::getBoundsInScreen)
                         fun brandBounds() = ui.nodes().filter { ui.matches(it, "Inzira") }
                             .map { Rect().also(it::getBoundsInScreen) }.minByOrNull { it.width() }
@@ -147,18 +150,22 @@ class OfflinePortfolioUiTest {
                         val image = requireNotNull(ui.instrumentation.uiAutomation.takeScreenshot())
                         try { image.writeGolden(File(context.cacheDir, "offline-portfolio-$dark.png")) } finally { image.recycle() }
                         scene.onActivity { cached.toggleNumberVisibility() }
-                        ui.waitUntil("cached amounts still obey privacy") { ui.nodes().none { ui.matches(it, "1,012,000") } }
+                        ui.waitUntil("cached amounts still obey privacy") { ui.nodes().none { ui.matches(it, "1.01M") } }
                         scene.onActivity { cached.toggleNumberVisibility() }
-                        ui.await("1,012,000")
+                        ui.await("1.01M")
                         val prompts = vault.reads
                         offline.set(false); closing.set(125)
                         ui.scroll("Saved portfolio"); ui.click("Saved portfolio"); ui.click("Retry connection")
                         ui.waitUntil("online authorization and snapshot refresh") { !cached.viewingSavedPortfolio && !cached.portfolioSyncing && !cached.busy }
-                        ui.await("1,012,500")
+                        ui.await("1.01M")
+                        assertEquals(1_012_500.0, cached.portfolio.valuation(Today, cached.quotes).single().estimatedNetWorth, 0.001)
                         assertTrue(cached.canEditInvestments); assertEquals(prompts, vault.reads)
                         ui.instrumentation.waitForIdleSync(); Thread.sleep(300)
                         assertEquals("Reconnection must keep the dashboard header in place", savedBrandPosition, brandBounds())
                         assertEquals("Reconnection must not pull the financial cards upward", savedMetricPosition, metricBounds())
+                        ui.click("Valuation basis details")
+                        ui.await("RWF 1,012,500")
+                        ui.click("Done")
                     }
                 } finally { runBlocking { storage.delete() } }
             }

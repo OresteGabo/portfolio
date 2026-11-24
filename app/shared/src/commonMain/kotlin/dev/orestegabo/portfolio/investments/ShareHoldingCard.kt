@@ -58,20 +58,20 @@ internal fun ShareHoldingCard(valuation: ValuedSharePosition, name: String, onCl
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     AppText(if (valuation.closingPrice == null) "Purchase cost" else "Market value",
                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    FinancialText(money(valuation.estimatedValue, position.currency),
+                    FinancialText(compactMoney(valuation.estimatedValue, position.currency),
                         style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     AppText("Since purchase", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     val signedGain = gain?.let {
-                        position.currency + " " + (if (it > 0) "+" else "") + money(it, position.currency).removePrefix("${position.currency} ")
+                        position.currency + " " + (if (it > 0) "+" else "") + compactMoney(it, position.currency).removePrefix("${position.currency} ")
                     } ?: "—"
                     FinancialText(signedGain, color = returnColor, textAlign = TextAlign.End,
                         style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .6f))
-            FinancialText("${formatNumber(position.shares)} shares · Total cost ${money(position.cashCost, position.currency)}",
+            FinancialText("${formatNumber(position.shares)} shares · Total cost ${compactMoney(position.cashCost, position.currency)}",
                 style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }

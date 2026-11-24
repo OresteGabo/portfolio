@@ -118,6 +118,9 @@ private fun PortfolioBalance(valuation: CurrencyValuation, stale: Boolean, price
             title = { AppText("About this estimate") },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement=Arrangement.spacedBy(12.dp)) {
+                    Fact("Portfolio value", money(valuation.estimatedNetWorth, total.currency))
+                    Fact("Bond principal", money(total.bondFaceValue, total.currency))
+                    Fact("RSE equity value", money(valuation.shareValue, total.currency))
                     AppText("$priceBasis\n\nTracked investments, including pending requests at recorded amounts. Bonds use principal value; shares use the latest available RSE closing price. Unpriced shares use purchase cash cost. Cash balances, liabilities, dividends and selling fees are excluded. Annual coupons are shown separately.")
                     HorizontalDivider()
                     Fact("Confirmed annual net coupon",money(total.confirmedAnnualCoupon,total.currency))
@@ -141,7 +144,7 @@ private fun PortfolioBalance(valuation: CurrencyValuation, stale: Boolean, price
                         onClickLabel = localized("Valuation basis details")) { showBasis = true }
                     .semantics { contentDescription = localized("Valuation basis details") },
                     horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.Bottom) {
-                    FinancialText(money(valuation.estimatedNetWorth, total.currency).removePrefix("${total.currency} "),
+                    FinancialText(compactMoney(valuation.estimatedNetWorth, total.currency).removePrefix("${total.currency} "),
                         modifier = Modifier.weight(1f, fill = false).alignByBaseline(), textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.displayMedium.copy(fontFeatureSettings = "tnum", letterSpacing = (-1).sp),
                         color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Medium,
@@ -155,7 +158,7 @@ private fun PortfolioBalance(valuation: CurrencyValuation, stale: Boolean, price
         }
         PortfolioBalanceSurface {
             val longestAmount = listOf(total.bondFaceValue, valuation.shareValue, total.netAnnualCoupon)
-                .maxOf { money(it, total.currency).removePrefix("${total.currency} ").length }
+                .maxOf { compactMoney(it, total.currency).removePrefix("${total.currency} ").length }
             // Keep three columns at standard phone widths after the card's horizontal padding.
             val columns = portfolioMetricsUseColumns(maxWidth, LocalDensity.current.fontScale, longestAmount)
             if (columns) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -213,7 +216,7 @@ private fun MoneyMetric(label: String, value: Double, currency: String, icon: Im
     val dark = MaterialTheme.colorScheme.background.luminance() < .5f
     val accent = StructColors.Dashboard.worthAccent.resolve(dark)
     val labelColor = StructColors.Dashboard.worthMetricLabel.resolve(dark)
-    val amount = (if (estimated) "≈ " else "") + money(value, currency).removePrefix("$currency ")
+    val amount = (if (estimated) "≈ " else "") + compactMoney(value, currency).removePrefix("$currency ")
     if (column) {
         Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             AppIcon(icon, null, Modifier.size(20.dp), tint = accent)

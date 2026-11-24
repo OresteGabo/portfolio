@@ -3,7 +3,7 @@
   "note": "Evidence inventory, not code coverage. Required device gate runs on the reference API 36 emulator. Opt-in delivery/reboot/user-PDF tests remain separately documented.",
   "flows": [
     {
-      "flow": "native encrypted snapshot, cold offline device-unlock boundary, cancelled authentication, private cached balances, compact app-bar status, saved-date/retry dialog, read-only state and reconnection without shifting the dashboard in both themes and enlarged text",
+      "flow": "native encrypted snapshot, cold offline device-unlock boundary, cancelled authentication, private cached balances with compact display and exact refreshed valuation, compact app-bar status, saved-date/retry dialog, read-only state and reconnection without shifting the dashboard in both themes and enlarged text",
       "class": "OfflinePortfolioUiTest",
       "method": "coldOfflineUnlockShowsSavedValuesAndReconnectsInBothThemesAndLargeText"
     },
@@ -13,7 +13,7 @@
       "method": "searchAndNestedPagesPreservePrivacyEditorsAndBackNavigationInBothThemes"
     },
     {
-      "flow": "monthly/yearly goal editor, remembered amounts, cancel, server acknowledgement, annual dashboard contribution progress and carousel access in both themes",
+      "flow": "monthly/yearly goal editor, remembered amounts, cancel, server acknowledgement, compact annual dashboard contribution progress, exact editor amounts and carousel access in both themes",
       "class": "InvestmentGoalPeriodUiTest",
       "method": "yearlyAndMonthlyChoicesRememberAmountsAndUpdateTheDashboardWithoutChangingHoldings"
     },

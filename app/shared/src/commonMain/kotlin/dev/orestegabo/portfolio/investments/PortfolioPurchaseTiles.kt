@@ -76,11 +76,11 @@ fun BondPurchaseTile(model: PortfolioModel, purchase: JsonRecord, manage: () -> 
                     // ListItem detects multiline supporting content from its first/last baselines.
                     // Preserve the amount's baseline with the clock centered beside it.
                     if (pending) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        FinancialText(money(purchase.optDouble("faceValue"), purchase.text("currency")),
+                        FinancialText(compactMoney(purchase.optDouble("faceValue"), purchase.text("currency")),
                             Modifier.weight(1f, fill = false).alignByBaseline(), style = MaterialTheme.typography.bodySmall,
                             maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
                         PendingStatusBadge()
-                    } else FinancialText("${money(purchase.optDouble("faceValue"), purchase.text("currency"))} · ${localized(purchase.text("status"))}",
+                    } else FinancialText("${compactMoney(purchase.optDouble("faceValue"), purchase.text("currency"))} · ${localized(purchase.text("status"))}",
                         style = MaterialTheme.typography.bodySmall)
                 },
                 leadingContent = { InvestmentLogo(bond = true) },
@@ -190,7 +190,7 @@ fun SharePurchaseTile(holding: JsonRecord, open: () -> Unit) {
     val shares = if (pending) holding.optDouble("shares") else holding.optDouble("remainingShares", holding.optDouble("shares"))
     val cost = if (pending) holding.optDouble("estimatedTotal") else holding.optDouble("remainingCost", holding.optDouble("netAmountPayable"))
     InvestmentEntry(shareCardName(holding),
-        "${formatNumber(shares)} shares · ${money(cost, holding.text("currency").ifBlank { "RWF" })}",
+        "${formatNumber(shares)} shares · ${compactMoney(cost, holding.text("currency").ifBlank { "RWF" })}",
         bond = false, ticker = holding.text("ticker"), pending = pending, open = open)
 }
 

@@ -4,6 +4,7 @@ package dev.orestegabo.portfolio.investments
 internal val frenchStrings: Map<String, String> = mapOf(
     "Only saved purchases are shown." to "Seuls les achats enregistrés sur cet appareil sont affichés.",
     "Checking connection…" to "Vérification de la connexion…",
+    "Portfolio value" to "Valeur du portefeuille",
     "Saved portfolio" to "Portefeuille enregistré",
     "Read-only · May be out of date" to "Lecture seule · Peut ne pas être à jour",
     "Saved {0}" to "Enregistré le {0}",
