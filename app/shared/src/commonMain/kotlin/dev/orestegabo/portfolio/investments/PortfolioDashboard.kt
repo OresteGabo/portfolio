@@ -158,13 +158,15 @@ fun PortfolioScreen(
                     model.quoteRefreshFailed || model.quotes?.optJSONObject("source")
                         ?.optBoolean("stale") == true,
                     model.quotes?.optJSONObject("source")?.text("publishedAt").orEmpty().take(10),
-                    status = { SavedPortfolioStatus(model) }
+                    status = {
+                        if (model.viewingSavedPortfolio) SavedPortfolioStatus(model)
+                        else if (model.busy || model.portfolioSyncing) InziraLoadingMark(active = true, modifier = Modifier.size(22.dp))
+                    }
                 ) {
                     Column(
-                        Modifier.fillMaxWidth().smoothContentSize(),
+                        Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        AppLoadingLine(model.busy && !model.viewingSavedPortfolio && model.refreshPhase == PortfolioRefreshPhase.IDLE)
                         model.error?.let { Notice(it, true) { model.error = null } }
                         model.message?.let { Notice(it, false) { model.message = null } }
                     }

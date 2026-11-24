@@ -31,6 +31,7 @@ internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: Lis
     val requestedDocuments = java.util.concurrent.CopyOnWriteArrayList<String>()
     var savedGoal = InvestmentGoal()
         private set
+    var quoteStale = true
     private val testUser = JsonRecord().put("id", "ui-quality").put("email", "ui@example.test").put("isOwner", owner)
     private val engine = MockEngine { request ->
         if (request.url.encodedPath.endsWith("/mobile-overview")) initialSnapshotGate?.await()
@@ -92,7 +93,7 @@ internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: Lis
                 JsonRecord().put("holding", purchase).toString()
             }
             request.url.encodedPath.endsWith("/equities") -> JsonRecord().put("holdings", JsonList(lots)).toString()
-            request.url.encodedPath.endsWith("/rse/quotes") -> """{"source":{"publishedAt":"2000-01-02","stale":true},"quotes":[{"ticker":"TEST","name":"Synthetic UI company","closing":100}]}"""
+            request.url.encodedPath.endsWith("/rse/quotes") -> """{"source":{"publishedAt":"2000-01-02","stale":$quoteStale},"quotes":[{"ticker":"TEST","name":"Synthetic UI company","closing":100}]}"""
             else -> "{}"
         }
         respond(body, headers = headersOf(HttpHeaders.ContentType, "application/json"))

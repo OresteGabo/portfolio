@@ -3,7 +3,7 @@
   "note": "Evidence inventory, not code coverage. Required device gate runs on the reference API 36 emulator. Opt-in delivery/reboot/user-PDF tests remain separately documented.",
   "flows": [
     {
-      "flow": "native encrypted snapshot, cold offline device-unlock boundary, cancelled authentication, private cached balances, compact app-bar status, saved-date/retry dialog, read-only state and reconnection in both themes and enlarged text",
+      "flow": "native encrypted snapshot, cold offline device-unlock boundary, cancelled authentication, private cached balances, compact app-bar status, saved-date/retry dialog, read-only state and reconnection without shifting the dashboard in both themes and enlarged text",
       "class": "OfflinePortfolioUiTest",
       "method": "coldOfflineUnlockShowsSavedValuesAndReconnectsInBothThemesAndLargeText"
     },
@@ -43,7 +43,7 @@
       "method": "generalUploadAsksBeforeReplacingAPendingPurchase"
     },
     {
-      "flow": "dashboard metallic path wordmark, initial skeleton header alignment, accessible notifications and loading-to-snapshot transition in both themes and large text",
+      "flow": "dashboard metallic path wordmark, initial skeleton header alignment, accessible notifications and loading-to-snapshot transition in both themes and large text; stable metric/header positions after cached prices become fresh and startup actions finish",
       "class": "DashboardLoadingLayoutTest",
       "method": "loadingMatchesTheDashboardHeaderAndRevealsValuesOnlyAfterTheSnapshotArrives"
     },

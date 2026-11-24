@@ -80,6 +80,24 @@ class DashboardLoadingLayoutTest {
                             assertFalse(ui.nodes().any { ui.matches(it, "Loading your saved investments…") })
                             assertEquals("Loading and loaded headers must occupy the same position", loadingLogo, logoBounds())
                             capture("loaded")
+                            fun metricBounds() = Rect().also(ui.await("Bond principal")::getBoundsInScreen)
+                            val cachedPosition = metricBounds()
+                            fixture.quoteStale = false
+                            scene.onActivity { fixture.model.loadMarket(refresh = true) }
+                            ui.waitUntil("fresh quote board") { !fixture.model.busy && !fixture.model.quoteRefreshFailed }
+                            ui.instrumentation.waitForIdleSync(); Thread.sleep(300)
+                            assertEquals("Fresh prices must not pull the metric cards upward", cachedPosition, metricBounds())
+                            val actionGate = CompletableDeferred<Unit>()
+                            scene.onActivity { fixture.model.action { actionGate.await() } }
+                            ui.waitUntil("held dashboard action") { fixture.model.busy }
+                            ui.instrumentation.waitForIdleSync(); Thread.sleep(300)
+                            val busyPosition = metricBounds()
+                            actionGate.complete(Unit)
+                            ui.waitUntil("dashboard action settled") { !fixture.model.busy }
+                            ui.instrumentation.waitForIdleSync(); Thread.sleep(300)
+                            assertEquals("Finishing startup work must not collapse content above the cards", busyPosition, metricBounds())
+                            assertEquals("Status changes must keep the brand header fixed", loadingLogo, logoBounds())
+                            capture("settled")
                         }
                     }
                 } finally { snapshot.complete(Unit) }

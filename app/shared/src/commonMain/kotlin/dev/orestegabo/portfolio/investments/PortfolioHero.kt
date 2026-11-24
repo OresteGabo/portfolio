@@ -77,7 +77,7 @@ internal fun PortfolioHeroFrame(topInset: Dp, header: @Composable () -> Unit,
                 colors = listOf(glow.copy(alpha = if (dark) .10f else .09f), Color.Transparent),
                 center = Offset(size.width * .85f, size.height * .32f), radius = size.width * .85f))
         }
-        Column(Modifier.fillMaxWidth().smoothContentSize().padding(start = 20.dp, end = 20.dp, top = 16.dp + topInset),
+        Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 16.dp + topInset),
             verticalArrangement = Arrangement.spacedBy(28.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { header(); notice() }
             content()
@@ -95,7 +95,7 @@ internal fun PortfolioHeroHeader(showNotifications: Boolean, subtitle: String,
             InziraWordmark(Modifier.height(32.dp), onDark = dark, sculpted = true)
             AppText(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        status()
+        Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { status() }
         if (showNotifications) NotificationBell(unreadNotifications, openNotifications, tint = MaterialTheme.colorScheme.onBackground)
     }
 }
@@ -136,7 +136,7 @@ private fun PortfolioBalance(valuation: CurrencyValuation, stale: Boolean, price
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
             AppFadeIn(valuation.estimatedNetWorth to total.currency, Modifier.fillMaxWidth()) {
-                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                Row(Modifier.fillMaxWidth().heightIn(min = portfolioBalanceAmountHeight())
                     .clickable(role = androidx.compose.ui.semantics.Role.Button,
                         onClickLabel = localized("Valuation basis details")) { showBasis = true }
                     .semantics { contentDescription = localized("Valuation basis details") },
@@ -151,8 +151,7 @@ private fun PortfolioBalance(valuation: CurrencyValuation, stale: Boolean, price
                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            if (stale || valuation.unpricedShares > 0) AppText(priceLabel,
-                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            PortfolioPriceStatus(if (stale || valuation.unpricedShares > 0) priceLabel else "")
         }
         PortfolioBalanceSurface {
             val longestAmount = listOf(total.bondFaceValue, valuation.shareValue, total.netAnnualCoupon)
@@ -173,6 +172,19 @@ private fun PortfolioBalance(valuation: CurrencyValuation, stale: Boolean, price
             }
         }
     }
+}
+
+/** Reserve the caption and amount geometry across cached/fresh prices and the loading placeholder. */
+@Composable
+internal fun portfolioBalanceAmountHeight(): Dp = with(LocalDensity.current) {
+    // Baseline-aligning the smaller currency label also needs room below the amount's text box.
+    (MaterialTheme.typography.displayMedium.lineHeight.toDp() + 8.sp.toDp()).coerceAtLeast(48.dp)
+}
+
+@Composable
+internal fun PortfolioPriceStatus(label: String) {
+    AppText(label, minLines = 2, style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 /** The balance stays outside a panel whose upper edge fades into the page. */

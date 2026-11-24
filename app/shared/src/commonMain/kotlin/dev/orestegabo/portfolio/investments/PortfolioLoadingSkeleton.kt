@@ -50,17 +50,20 @@ internal fun PortfolioLoadingSkeleton(openNotifications: () -> Unit = {}, unread
     }, contentPadding = PaddingValues(bottom = 108.dp), verticalArrangement = Arrangement.spacedBy(InziraSpacing.screen)) {
         item(key = "hero") {
             PortfolioHeroFrame(topInset, header = {
-                PortfolioHeroHeader(showNotifications, subtitle, openNotifications, unreadNotifications)
+                PortfolioHeroHeader(showNotifications, subtitle, openNotifications, unreadNotifications) {
+                    InziraLoadingMark(active = true, modifier = Modifier.size(22.dp))
+                }
             }) {
                 Column(Modifier.fillMaxWidth().clearAndSetSemantics {}) {
                     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), horizontalArrangement = Arrangement.Center,
+                        Row(Modifier.fillMaxWidth().heightIn(min = portfolioBalanceAmountHeight()), horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.Bottom) {
-                            PortfolioPlaceholder(phase, Modifier.fillMaxWidth(.7f).height(52.dp * scale))
+                            PortfolioPlaceholder(phase, Modifier.fillMaxWidth(.7f).height(portfolioBalanceAmountHeight()))
                             Spacer(Modifier.width(8.dp))
                             PortfolioPlaceholder(phase, Modifier.width(24.dp).height(16.dp * scale))
                         }
+                        PortfolioPriceStatus("")
                     }
                     PortfolioBalanceSurface {
                         if (portfolioMetricsUseColumns(maxWidth, scale)) Row(Modifier.fillMaxWidth(),

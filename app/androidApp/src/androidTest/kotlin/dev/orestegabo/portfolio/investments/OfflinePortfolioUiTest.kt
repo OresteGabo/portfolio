@@ -1,5 +1,6 @@
 package dev.orestegabo.portfolio.investments
 
+import android.graphics.Rect
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
@@ -138,6 +139,11 @@ class OfflinePortfolioUiTest {
                         ui.await("Read-only · May be out of date")
                         ui.click("Close")
                         assertFalse(cached.canEditInvestments)
+                        fun metricBounds() = Rect().also(ui.await("Bond principal")::getBoundsInScreen)
+                        fun brandBounds() = ui.nodes().filter { ui.matches(it, "Inzira") }
+                            .map { Rect().also(it::getBoundsInScreen) }.minByOrNull { it.width() }
+                        val savedMetricPosition = metricBounds()
+                        val savedBrandPosition = brandBounds()
                         val image = requireNotNull(ui.instrumentation.uiAutomation.takeScreenshot())
                         try { image.writeGolden(File(context.cacheDir, "offline-portfolio-$dark.png")) } finally { image.recycle() }
                         scene.onActivity { cached.toggleNumberVisibility() }
@@ -150,7 +156,9 @@ class OfflinePortfolioUiTest {
                         ui.waitUntil("online authorization and snapshot refresh") { !cached.viewingSavedPortfolio && !cached.portfolioSyncing && !cached.busy }
                         ui.await("1,012,500")
                         assertTrue(cached.canEditInvestments); assertEquals(prompts, vault.reads)
-
+                        ui.instrumentation.waitForIdleSync(); Thread.sleep(300)
+                        assertEquals("Reconnection must keep the dashboard header in place", savedBrandPosition, brandBounds())
+                        assertEquals("Reconnection must not pull the financial cards upward", savedMetricPosition, metricBounds())
                     }
                 } finally { runBlocking { storage.delete() } }
             }
