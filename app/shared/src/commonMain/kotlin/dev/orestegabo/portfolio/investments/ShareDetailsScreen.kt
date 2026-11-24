@@ -37,8 +37,8 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord,
         .sumOf { it.optDouble("shares", 0.0) }
     var requestedQuotes by remember(ticker, currency) { mutableStateOf(false) }
     var allLots by rememberSaveable(ticker, currency) { mutableStateOf(false) }
-    LaunchedEffect(ticker, currency, model.historyComplete, model.busy) {
-        if (!model.busy && model.error == null) {
+    LaunchedEffect(ticker, currency, model.historyComplete, model.busy, model.viewingSavedPortfolio) {
+        if (!model.viewingSavedPortfolio && !model.busy && model.error == null) {
             if (!model.historyComplete) model.loadInvestmentHistory()
             else if (model.quotes == null && !requestedQuotes) {
                 requestedQuotes = true
@@ -88,7 +88,8 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord,
                 }
             }
         }
-        if (!model.historyComplete) item(key = "history-state") {
+        if (!model.historyComplete && model.viewingSavedPortfolio) item(key = "saved-history-note") { DetailNote("Only saved purchases are shown.") }
+        if (!model.historyComplete && !model.viewingSavedPortfolio) item(key = "history-state") {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (model.busy) {
                     AppLoadingLine(true, reserveSpace = true)
@@ -112,7 +113,7 @@ fun ShareDetailsScreen(model: PortfolioModel, selected: JsonRecord,
                 }
             }
         }
-        if (model.historyComplete && history.size > 3) item(key = "all-purchases") {
+        if ((model.historyComplete || model.viewingSavedPortfolio) && history.size > 3) item(key = "all-purchases") {
             TextButton(onClick = { allLots = !allLots }, modifier = Modifier.fillMaxWidth()) {
                 AppText(if (allLots) "Show fewer purchases" else "Show all ${history.size} purchases")
             }

@@ -24,6 +24,7 @@ import kotlin.random.Random
 import kotlin.time.TimeSource
 import kotlin.time.TimeMark
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.LocalDate
@@ -54,7 +55,7 @@ class PortfolioModel(
     private var accountEntry by mutableStateOf(false)
     val guestPath get() = GuestPath.restore(entryChoice)
     val isGuest get() = guestPath != null && !accountEntry
-    val sessionState: SessionState get() = user?.let { SessionState.Authenticated(it.text("id"), origin) }
+    val sessionState: SessionState get() = user?.let { if (offlineSession) SessionState.SavedOffline(it.text("id"), origin) else SessionState.Authenticated(it.text("id"), origin) }
         ?: if (isGuest) SessionState.Guest(requireNotNull(guestPath)) else SessionState.SignedOut
     private val guestWorkspace = PortfolioGuestWorkspace(viewModelScope, guestRepository, importWorkDispatcher,
         currentGeneration = { generation }, isForeground = { foreground }, personalMode = { isGuest && guestPath == GuestPath.PERSONAL })
@@ -64,8 +65,8 @@ class PortfolioModel(
     private var samplePortfolio by mutableStateOf(guestSamplePortfolio())
     var guestViewRevision by mutableIntStateOf(0); private set
     val sampleGuest get() = isGuest && guestPath == GuestPath.SAMPLE
-    val canEditInvestments get() = !sampleGuest && !busy
-    val canPublishPublicData get() = !isGuest && mayPublishSharedData(user)
+    val canEditInvestments get() = !sampleGuest && !busy && !viewingSavedPortfolio
+    val canPublishPublicData get() = !isGuest && !viewingSavedPortfolio && mayPublishSharedData(user)
     fun resetSample() { if (sampleGuest) { samplePortfolio = guestSamplePortfolio(); guestViewRevision++ } }
     fun deleteGuestData() {
         if (!isGuest || !canEditInvestments) return
@@ -133,10 +134,17 @@ class PortfolioModel(
     fun loadGuestPortfolio() = guestAction { requireNotNull(guestRepository).load() }
     private fun guestAction(operation: suspend () -> GuestPortfolio) = guestWorkspace.action(operation)
     private fun guestWrite(operation: suspend () -> GuestPortfolio, completed: () -> Unit = {}) = guestWorkspace.write(operation, completed)
+    var viewingSavedPortfolio by mutableStateOf(false); private set
+    var savedPortfolioAt by mutableStateOf<String?>(null); private set
+    private var offlineSession by mutableStateOf(false)
+    private var cacheAccountId: String? = null
+    private val accountCache = AccountPortfolioCache(vault as? ProtectedAccountPortfolio, importWorkDispatcher)
     private var activeApi: PortfolioSessionApi? = null
+    private fun guardAccountApi(client: PortfolioSessionApi) = SavedPortfolioApi(client) { offlineSession }
+
     internal var api: PortfolioSessionApi
-        get() { check(!isGuest) { "Account features are unavailable in guest mode." }; return activeApi ?: apiFactory(origin).also { activeApi = it } }
-        private set(value) { activeApi = value }
+        get() { check(!isGuest) { "Account features are unavailable in guest mode." }; return activeApi ?: guardAccountApi(apiFactory(origin)).also { activeApi = it } }
+        private set(value) { activeApi = guardAccountApi(value) }
     private val privacy = PortfolioPrivacy(settings, captureMaskRequired)
     val screenCaptureAllowed get() = privacy.screenCaptureAllowed
     val captureProtectionEnabled get() = privacy.captureProtectionEnabled
@@ -268,7 +276,7 @@ class PortfolioModel(
     private val guestLedger by derivedStateOf { guestPortfolio?.metadata?.rows("cashLedger").orEmpty() }
     val ledgerEntries get() = if (isGuest) guestLedger else cashLedger.entries
     val ledgerError get() = cashLedger.error
-    suspend fun reloadLedger() { if (!isGuest) cashLedger.reload() }
+    suspend fun reloadLedger() { if (!isGuest && !offlineSession) cashLedger.reload() }
     fun saveLedgerEntry(entry: JsonRecord, completed: () -> Unit) {
         if (sampleGuest) return
         if (isGuest) guestWrite({ requireNotNull(guestRepository).saveLedgerEntry(entry) }, completed)
@@ -352,8 +360,16 @@ class PortfolioModel(
         }
     }
     fun couponReceipt(purchaseId: String,dueDate: String)=couponReceipts.firstOrNull { it.text("purchaseId")==purchaseId && it.text("dueDate")==dueDate }
+    private fun discardOfflinePortfolio() {
+        try { (vault as? ProtectedAccountPortfolio)?.deleteAccountPortfolio(origin) }
+        catch (failure: Exception) {
+            // Forget the sign-in too if its account file could not be removed. A future unlock must fail closed.
+            vault?.delete(origin)
+        }
+    }
     private suspend fun invalidateRejectedSession(failure: Exception): Boolean {
         if (failure !is ApiException || failure.status != 401) return false
+        discardOfflinePortfolio()
         api.clearSession()
         if (secureSignInEnabled) lock() else { ++generation; clearPrivateData() }
         return true
@@ -401,6 +417,7 @@ class PortfolioModel(
         }
     }
     fun updateInvestmentGoal(goal: InvestmentGoal) {
+        if (viewingSavedPortfolio) { message = SAVED_PORTFOLIO_READ_ONLY; return }
         if (isGuest) { guestWrite({ requireNotNull(guestRepository).setInvestmentGoal(goal) }); return }
         requireNotNull(targetAccount())
         applyInvestmentGoalLocally(goal)
@@ -457,6 +474,7 @@ class PortfolioModel(
     fun action(block: suspend () -> Unit) = runAction(false, block = block)
     private fun runAction(allowLocked: Boolean, failureMessage: String = GENERAL_ERROR_MESSAGE, block: suspend () -> Unit) {
         if (isGuest || busy || (locked && !allowLocked)) return
+        if (viewingSavedPortfolio && !allowLocked) { message = SAVED_PORTFOLIO_READ_ONLY; return }
         busy = true
         error = null
         message = null
@@ -471,6 +489,7 @@ class PortfolioModel(
                 if (token == generation) {
                     imports.recordFailure(userErrorMessage(failure, failureMessage))
                     if (failure is ApiException && failure.status == 401) {
+                        discardOfflinePortfolio()
                         api.clearSession(); clearPrivateData()
                         locked = secureSignInEnabled
                         if (locked) vault?.lock()
@@ -491,7 +510,8 @@ class PortfolioModel(
         if (expired) lock()
         if (locked && !automaticUnlockAttempted) automaticUnlockPending = true
         tryAutomaticUnlock()
-        if(user!=null && !locked && notificationLoadedAt?.elapsedNow()?.inWholeMilliseconds?.let { it<DATA_CACHE_MILLIS }!=true)refreshNotifications()
+        if (viewingSavedPortfolio && !locked && !busy && !portfolioSyncing) retryPortfolioSync()
+        if(!viewingSavedPortfolio && user!=null && !locked && notificationLoadedAt?.elapsedNow()?.inWholeMilliseconds?.let { it<DATA_CACHE_MILLIS }!=true)refreshNotifications()
     }
     private fun tryAutomaticUnlock() {
         if (!automaticUnlockPending || !foreground || busy || !locked || !secureSignInEnabled || vault?.authenticating == true) return
@@ -544,7 +564,7 @@ class PortfolioModel(
             clearPrivateData(); error = null; message = null
         }
     }
-    fun disableSecureSignIn() = action {
+    fun disableSecureSignIn() = runAction(allowLocked = true) {
         vault?.delete(origin)
         secureSignInEnabled = false
         message = "Saved sign-in removed from this device."
@@ -581,10 +601,10 @@ class PortfolioModel(
 
     private suspend fun saveSignIn(email: String, password: String): Boolean {
         val storage = requireNotNull(vault) { "Device authentication is unavailable." }
-        val value = JsonRecord().put("origin", origin).put("email", email.trim()).put("password", password).put("session", api.sessionSnapshot()).toString()
+        val value = JsonRecord().put("accountId", user?.text("id")).put("origin", origin).put("email", email.trim()).put("password", password).put("session", api.sessionSnapshot()).toString()
         val saved = storage.save(origin, value)
         secureSignInEnabled = (entryChoice != MANUAL_ACCOUNT_ENTRY || saved) && storage.hasSaved(origin)
-        if (saved) { settings.writeSessionChoice(null); entryChoice = null }
+        if (saved) { settings.writeSessionChoice(null); entryChoice = null; cacheAccountId = user?.text("id"); persistAccountPortfolio() }
         if (!foreground && secureSignInEnabled) scheduleBackgroundLock()
         return saved
     }
@@ -610,53 +630,71 @@ class PortfolioModel(
             val storage = requireNotNull(vault)
             unlockToUi = UnlockPerformance.begin("unlock_to_first_frame")
             val raw = UnlockPerformance.measure("protected_storage_read_including_prompt") { storage.read(origin) } ?: return@runAction
-            if (revision != generation || isGuest) return@runAction
-            verifyingSession = true
-            deviceToUi = UnlockPerformance.begin("device_success_to_first_frame")
-            require(raw.length <= 48_000) { "Saved sign-in is invalid." }
-            val saved = runCatching { JsonRecord(raw) }.getOrElse { error("Saved sign-in is invalid. Use your password to sign in again.") }
-            require(saved.text("origin") == origin) { "Saved sign-in belongs to another server." }
-            val email = saved.text("email")
-            val password = saved.text("password")
-            require(email.isNotBlank() && password.length in 1..128) { "Saved sign-in is invalid." }
-            if (!foreground && backgroundGraceExpired()) { lock(); return@runAction }
-            try { UnlockPerformance.measure("cookie_restore") { api.restoreSession(saved.text("session")) } }
-            catch (failure: CancellationException) { throw failure }
-            catch (_: Exception) { api.clearSession() }
-            val session = try {
-                if (!api.hasSession()) JsonRecord().put("authenticated", false)
-                else api.request("/api/bonds/auth/session")
-            }
-            catch (failure: ApiException) { if (failure.status == 401) JsonRecord().put("authenticated", false) else throw failure }
-            var renewed = false
-            var account = session.optJSONObject("user").takeIf { session.optBoolean("authenticated") && it?.text("email").equals(email, ignoreCase = true) }
-            if (account == null) {
-                api.clearSession()
-                renewed = true
-                try {
-                    account = api.request("/api/bonds/auth/login", "POST", JsonRecord().put("email", email).put("password", password).withDeviceIdentity()).getJSONObject("user")
-                } catch (failure: ApiException) {
-                    if (failure.status == 401 || failure.status == 403) {
-                        storage.delete(origin); secureSignInEnabled = false; locked = false
-                        throw ApiException(failure.status, "Your saved sign-in no longer works. Sign in with your password.")
-                    }
-                    throw failure
-                }
-            }
-            if (revision != generation || isGuest) return@runAction
-            require(account.text("email").equals(email, ignoreCase = true)) { "Sign-in account did not match." }
-            if (calendar.isEmpty() && education.isEmpty()) loadPublicData()
-            // An unchanged opaque cookie does not need a Keychain/Keystore rewrite on every visit.
-            if (renewed) UnlockPerformance.measure("protected_storage_rotation") {
-                storage.save(origin, JsonRecord().put("origin", origin).put("email", email).put("password", password).put("session", api.sessionSnapshot()).toString())
-            }
-            if (!foreground && backgroundGraceExpired()) { lock(); return@runAction }
-            user = account
-            loadInvestmentTarget()
-            locked = false
-            startPortfolioSync()
-            if (!foreground) scheduleBackgroundLock()
+            resumeRememberedAccount(raw, revision)
         }
+    }
+
+    private suspend fun resumeRememberedAccount(raw: String, revision: Int) {
+        if (revision != generation || isGuest) return
+        val storage = requireNotNull(vault)
+        val saved = parseRememberedSignIn(raw, origin)
+        if (!foreground && backgroundGraceExpired()) { lock(); return }
+        verifyingSession = true
+        deviceToUi = UnlockPerformance.begin("device_success_to_first_frame")
+        if (!privateDataAvailable) accountCache.read(origin, saved)?.let { cached ->
+            if (revision != generation || isGuest) return
+            user = cached.user
+            loadInvestmentTarget()
+            marketData.restoreSavedQuotes(cached.quotes)
+            pendingShareOrders.restoreCached(cached.snapshot.shareOrders)
+            sharedCouponTerms = cached.snapshot.couponReferences
+            accountPortfolio = cached.snapshot
+            cashLedger.restoreCached(cached.ledger, cached.ledgerAvailable)
+            couponReceipts = cached.receipts; couponTrackingAvailable = cached.couponTrackingAvailable
+            historyComplete = cached.historyComplete
+            privateDataAvailable = true
+            savedPortfolioAt = cached.savedAt
+            viewingSavedPortfolio = true; offlineSession = true
+            locked = false
+        }
+        val verified = try {
+            withTimeoutOrNull(8_000) { verifyRememberedAccount(api, saved) }
+                ?: throw IllegalStateException(CONNECTION_ERROR_MESSAGE)
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (failure: Exception) {
+            if (revision != generation || isGuest) return
+            if (failure is RememberedAccountMismatch || failure is ApiException && failure.status in listOf(401, 403)) {
+                try { storage.delete(origin) }
+                finally { secureSignInEnabled = false; locked = false; api.clearSession(); clearPrivateData() }
+                throw ApiException(401, "Your saved sign-in no longer works. Sign in with your password.")
+            }
+            if (viewingSavedPortfolio && privateDataAvailable) return
+            throw IllegalStateException(OFFLINE_FIRST_SYNC_MESSAGE)
+        }
+        if (revision != generation || isGuest) return
+        if (!foreground && backgroundGraceExpired()) { lock(); return }
+        // Old vault records gain only the verified account ID. Financial bytes stay in native protected storage.
+        if (verified.renewed || storage is ProtectedAccountPortfolio && saved.text("accountId").isBlank()) {
+            val rotated = JsonRecord(saved.toString()).put("accountId", verified.user.text("id")).put("session", api.sessionSnapshot())
+            if (storage.save(origin, rotated.toString())) cacheAccountId = verified.user.text("id")
+        } else cacheAccountId = verified.user.text("id")
+        if (revision != generation || isGuest) return
+        user = verified.user
+        loadInvestmentTarget()
+        offlineSession = false
+        locked = false
+        startPortfolioSync()
+        if (!foreground) scheduleBackgroundLock()
+    }
+
+    private suspend fun persistAccountPortfolio() {
+        val account = user ?: return
+        if (!secureSignInEnabled || locked || viewingSavedPortfolio || !privateDataAvailable ||
+            cacheAccountId != account.text("id")) return
+        val revision = generation
+        val savedAt = accountCache.write(origin, account, accountPortfolio, historyComplete,
+            ledgerEntries, ledgerAvailable, couponReceipts, couponTrackingAvailable, quotes)
+        if (revision == generation && !locked && !isGuest) savedPortfolioAt = savedAt ?: savedPortfolioAt
     }
 
     fun connect(value: String) = action {
@@ -734,6 +772,8 @@ class PortfolioModel(
             fetchNotifications()
         }
         privateDataLoadedAt = clock.markNow()
+        viewingSavedPortfolio = false
+        persistAccountPortfolio()
     }
 
     private suspend fun refreshSharedCouponTerms() {
@@ -750,15 +790,23 @@ class PortfolioModel(
     fun retryPortfolioSync() {
         if (isGuest) { loadGuestPortfolio(); return }
         if (locked || user == null) return
+        if (offlineSession) {
+            runAction(allowLocked = true) {
+                val raw = vault?.readUnlocked(origin)
+                if (raw == null) { lock(); return@runAction }
+                resumeRememberedAccount(raw, generation)
+            }
+            return
+        }
         if (!portfolioReady) error = null
         startupSyncJob?.cancel(); startupSyncJob = null
         privateDataLoadedAt = null
         startPortfolioSync()
     }
 
-    /** Only the server-validated identity gates navigation; enrichment never owns the action lock. */
+    /** Verified sessions refresh from the server; protected saved views remain read-only until verified. */
     fun startPortfolioSync() {
-        if (locked || user == null || startupSyncJob?.isActive == true) return
+        if (locked || offlineSession || user == null || startupSyncJob?.isActive == true) return
         val revision = notificationGeneration
         val syncRevision = ++startupSyncRevision
         fun currentSync() = revision == notificationGeneration && syncRevision == startupSyncRevision
@@ -772,6 +820,7 @@ class PortfolioModel(
                     if (!currentSync()) return
                     if (failure is ApiException && failure.status == 401) {
                         // A local biometric result is never accepted as server authorization.
+                        discardOfflinePortfolio()
                         api.clearSession(); lock()
                         if (!secureSignInEnabled) clearPrivateData()
                     } else if (failureMessage == "documents") documentsSyncError = "Documents could not be loaded. Try again."
@@ -801,12 +850,16 @@ class PortfolioModel(
                     launch { section("notifications") { fetchNotifications() } }
                 }
             } finally {
-                if (currentSync()) { portfolioSyncing = false; documentsLoading = false }
+                if (currentSync()) {
+                    portfolioSyncing = false; documentsLoading = false
+                    if (portfolioSyncError == null) persistAccountPortfolio()
+                }
             }
         }
     }
 
     fun loadInvestmentHistory(force: Boolean = false) {
+        if (viewingSavedPortfolio) return
         if (isGuest) { if (!sampleGuest && (!portfolioReady || force)) loadGuestPortfolio(); return }
         if (historyComplete && !force) return
         action {
@@ -816,11 +869,12 @@ class PortfolioModel(
             privateDataAvailable = true
             historyComplete = true
             reconcileImportHistory()
+            persistAccountPortfolio()
         }
     }
 
-    fun refresh() { if (isGuest) { loadGuestPortfolio(); refreshGuestQuotes() } else refreshWithFeedback(showMessage = true) }
-    fun refreshPortfolio() { if (isGuest) { loadGuestPortfolio(); refreshGuestQuotes() } else refreshWithFeedback(showMessage = false) }
+    fun refresh() { if (isGuest) { loadGuestPortfolio(); refreshGuestQuotes() } else if (viewingSavedPortfolio) retryPortfolioSync() else refreshWithFeedback(showMessage = true) }
+    fun refreshPortfolio() { if (isGuest) { loadGuestPortfolio(); refreshGuestQuotes() } else if (viewingSavedPortfolio) retryPortfolioSync() else refreshWithFeedback(showMessage = false) }
     private fun refreshWithFeedback(showMessage: Boolean) = action {
         val token = generation
         val started = TimeSource.Monotonic.markNow()
@@ -1009,8 +1063,8 @@ class PortfolioModel(
             else "Your account has been deleted. Saved sign-in could not be cleared from this device."
     }
 
-    fun logout() = action {
-        try { api.request("/api/bonds/auth/logout", "POST", JsonRecord().apply { NativePushBridge.registration?.let { put("deviceId",it.text("deviceId")) } }) }
+    fun logout() = runAction(allowLocked = true) {
+        try { if (!offlineSession) api.request("/api/bonds/auth/logout", "POST", JsonRecord().apply { NativePushBridge.registration?.let { put("deviceId",it.text("deviceId")) } }) }
         finally {
             try { vault?.delete(origin) }
             finally { NativePdfInbox.dismiss(); NativeAppActions.clear(); secureSignInEnabled = false; locked = false; api.clearSession(); clearPrivateData() }
@@ -1032,6 +1086,7 @@ class PortfolioModel(
     }
 
     private fun clearPrivateData(clearWidgets: Boolean = true) {
+        viewingSavedPortfolio = false; offlineSession = false; savedPortfolioAt = null; cacheAccountId = null
         if (clearWidgets) HomeWidgetBridge.clear()
         NativePushBridge.reconcileReminders("")
         applicationForms.clear()

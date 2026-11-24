@@ -2,6 +2,14 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Only saved purchases are shown." to "Seuls les achats enregistrés sur cet appareil sont affichés.",
+    "Checking connection…" to "Vérification de la connexion…",
+    "Saved portfolio" to "Portefeuille enregistré",
+    "Read-only · May be out of date" to "Lecture seule · Peut ne pas être à jour",
+    "Saved {0}" to "Enregistré le {0}",
+    "Retry connection" to "Réessayer la connexion",
+    "Connect to the internet once to save your portfolio for offline access." to "Connectez-vous une fois à Internet pour enregistrer votre portefeuille et le consulter hors ligne.",
+    "Reconnect to refresh or change account data." to "Reconnectez-vous pour actualiser ou modifier les données du compte.",
     "Search settings" to "Rechercher un réglage",
     "No settings found" to "Aucun réglage trouvé",
     "Try a different word, such as privacy or goal." to "Essayez un autre mot, comme confidentialité ou objectif.",

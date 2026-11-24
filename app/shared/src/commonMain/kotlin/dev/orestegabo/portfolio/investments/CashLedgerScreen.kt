@@ -29,11 +29,11 @@ fun CashLedgerScreen(model: PortfolioModel) {
     var validation by remember { mutableStateOf<String?>(null) }
     var pending by remember { mutableStateOf<JsonRecord?>(null) }
     var removing by remember { mutableStateOf<JsonRecord?>(null) }
-    LaunchedEffect(model.user?.text("id"), model.isGuest) {
-        if (!model.isGuest) model.action { model.reloadLedger() }
-        if (!model.historyComplete && !model.busy) model.loadInvestmentHistory()
+    LaunchedEffect(model.user?.text("id"), model.isGuest, model.viewingSavedPortfolio) {
+        if (!model.isGuest && !model.viewingSavedPortfolio) model.action { model.reloadLedger() }
+        if (!model.viewingSavedPortfolio && !model.historyComplete && !model.busy) model.loadInvestmentHistory()
     }
-    LaunchedEffect(model.busy, model.historyComplete) { if (!model.historyComplete && !model.busy && model.error == null) model.loadInvestmentHistory() }
+    LaunchedEffect(model.busy, model.historyComplete, model.viewingSavedPortfolio) { if (!model.viewingSavedPortfolio && !model.historyComplete && !model.busy && model.error == null) model.loadInvestmentHistory() }
     val lots = remember(model.holdings) { model.holdings.filter { !it.text("id").startsWith("aggregate:") } }
     val displayedEntries = remember(model.ledgerEntries) { model.ledgerEntries.sortedWith(compareByDescending<JsonRecord> { it.text("date") }.thenByDescending { it.text("createdAt") }) }
     val cashSummaries = remember(model.portfolio, model.couponReceipts, model.ledgerEntries, Today) { recordedCash(model.portfolio, model.couponReceipts, model.ledgerEntries, Today) }

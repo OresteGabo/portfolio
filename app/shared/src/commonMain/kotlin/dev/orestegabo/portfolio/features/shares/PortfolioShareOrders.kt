@@ -52,5 +52,9 @@ internal class PortfolioShareOrders(
         reload()
     }
 
+    internal fun restoreCached(rows: List<JsonRecord>) {
+        orders = JsonRecord.readOnlyList(rows); available = true; publishOrders(orders)
+    }
+
     fun clear() { ++refreshGeneration; orders = emptyList(); publishOrders(orders); available = false }
 }

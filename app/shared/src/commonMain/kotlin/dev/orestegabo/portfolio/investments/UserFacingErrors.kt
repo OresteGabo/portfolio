@@ -8,7 +8,12 @@ internal const val GENERAL_ERROR_MESSAGE = "Something went wrong. Please try aga
 internal const val CONNECTION_ERROR_MESSAGE = "Could not connect. Check your connection and try again."
 
 /** Exact, app-authored messages only. Never trust free-form exception or server response text. */
+internal const val OFFLINE_FIRST_SYNC_MESSAGE = "Connect to the internet once to save your portfolio for offline access."
+internal const val SAVED_PORTFOLIO_READ_ONLY = "Reconnect to refresh or change account data."
+
 private val approvedErrorMessages = setOf(
+    OFFLINE_FIRST_SYNC_MESSAGE,
+    SAVED_PORTFOLIO_READ_ONLY,
     "Goal saved on this device. Reminder sync failed. Try saving again.",
     ApiResponseException.MESSAGE,
     ApiTimeoutException.MESSAGE,

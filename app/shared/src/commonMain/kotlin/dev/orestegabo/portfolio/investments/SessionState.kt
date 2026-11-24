@@ -4,6 +4,7 @@ package dev.orestegabo.portfolio.investments
 sealed interface SessionState {
     data object SignedOut : SessionState
     data class Guest(val path: GuestPath) : SessionState
+    data class SavedOffline(val accountId: String, val origin: String) : SessionState
     data class Authenticated(val accountId: String, val origin: String) : SessionState
 }
 enum class GuestPath(val stored: String) {

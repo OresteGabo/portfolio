@@ -23,10 +23,11 @@ import kotlin.coroutines.resume
 }
 
 /** Passcode-bound, non-migrating Keychain item whose ACL requires system user presence on read. */
-private class IosSecureSignIn : SecureSignIn {
+private class IosSecureSignIn : SecureSignIn, ProtectedAccountPortfolio {
     private val defaults = NSUserDefaults.standardUserDefaults
     private var context: LAContext? = null
     private var contextAuthorized = false
+    private var authorizedOrigin: String? = null
     override var authenticating = false
         private set
     private val service = "dev.orestegabo.portfolio.secure-sign-in.v1"
@@ -53,10 +54,11 @@ private class IosSecureSignIn : SecureSignIn {
         string(kSecAttrService, service)
         string(kSecAttrAccount, origin)
     }
-    private fun readItem(origin: String, auth: LAContext): String? = memScoped {
+    private fun readItem(origin: String, auth: LAContext, allowPrompt: Boolean = true): String? = memScoped {
         val query = query(origin)
         try {
             query.auth(auth)
+            if (!allowPrompt) query.put(kSecUseAuthenticationUI, kSecUseAuthenticationUIFail)
             query.string(kSecUseOperationPrompt, localized("Unlock your saved Gabo sign-in"))
             query.put(kSecReturnData, kCFBooleanTrue)
             query.put(kSecMatchLimit, kSecMatchLimitOne)
@@ -86,9 +88,20 @@ private class IosSecureSignIn : SecureSignIn {
             if (!UnlockPerformance.measure("native_auth_prompt") { authorize(auth) }) { lock(); null }
             else {
                 contextAuthorized = true
-                UnlockPerformance.measure("keychain_read") { withContext(Dispatchers.Default) { readItem(origin, auth) } }.also { if (it == null) lock() }
+                UnlockPerformance.measure("keychain_read") { withContext(Dispatchers.Default) { readItem(origin, auth) } }.also { if (it == null) lock() else authorizedOrigin = origin }
             }
         } finally { authenticating = false }
+    }
+    private fun portfolioStorage(origin: String) = IosGuestSnapshotStorage(accountPortfolioStoreName(origin), ACCOUNT_PORTFOLIO_MAX_BYTES, directoryName = "AccountPortfolios")
+    private val portfolioStorage = DeviceUnlockedPortfolioStorage(
+        authorized = { contextAuthorized && authorizedOrigin == it && hasSaved(it) },
+        storage = ::portfolioStorage, erase = { portfolioStorage(it).deleteNow() })
+    override suspend fun readAccountPortfolio(origin: String) = portfolioStorage.readAccountPortfolio(origin)
+    override suspend fun writeAccountPortfolio(origin: String, bytes: ByteArray) = portfolioStorage.writeAccountPortfolio(origin, bytes)
+    override fun deleteAccountPortfolio(origin: String) = portfolioStorage.deleteAccountPortfolio(origin)
+    override suspend fun readUnlocked(origin: String): String? {
+        val auth = context?.takeIf { contextAuthorized && authorizedOrigin == origin } ?: return null
+        return withContext(Dispatchers.Default) { readItem(origin, auth, allowPrompt = false) }
     }
     override suspend fun save(origin: String, value: String): Boolean {
         require(value.length <= 48_000) { "Saved sign-in is too large." }
@@ -122,7 +135,7 @@ private class IosSecureSignIn : SecureSignIn {
                 } finally { bytes.fill(0); CFRelease(data); CFRelease(update); CFRelease(query) }
             }
             val verified = withContext(Dispatchers.Default) { readItem(origin, auth) } == value
-            if (verified) defaults.setBool(true, forKey = flag(origin))
+            if (verified) { defaults.setBool(true, forKey = flag(origin)); authorizedOrigin = origin }
             else if (!existed) delete(origin)
             return verified
         } finally { authenticating = false }
@@ -136,8 +149,9 @@ private class IosSecureSignIn : SecureSignIn {
             check(status == errSecSuccess || status == errSecItemNotFound) { "Could not remove saved sign-in." }
             defaults.removeObjectForKey(flag(origin))
         } finally { CFRelease(query) }
+        deleteAccountPortfolio(origin)
     }
-    override fun lock() { context?.invalidate(); context = null; contextAuthorized = false }
+    override fun lock() { context?.invalidate(); context = null; contextAuthorized = false; authorizedOrigin = null }
 }
 
 @Composable actual fun NativePrivacyCover(protectCaptures: Boolean, protectDocument: Boolean) {

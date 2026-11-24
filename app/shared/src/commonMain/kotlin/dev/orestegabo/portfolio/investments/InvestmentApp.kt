@@ -333,6 +333,7 @@ fun InvestmentApp(model: PortfolioModel) {
                         else if (!model.locked) StructMark(Modifier.padding(start = 16.dp, end = 4.dp).size(40.dp))
                     },
                     actions = {
+                        if (!model.locked && model.user != null) SavedPortfolioStatus(model)
                         if (model.documentPreview?.source?.text("category") == "Statement" && !model.locked) IconButton(enabled = !model.busy, onClick = {
                             model.showStatementDocumentReview(model.documentPreview!!.source.text("id"))
                         }) { AppIcon(Icons.Outlined.FactCheck, "Review statement records") }
@@ -418,7 +419,7 @@ fun InvestmentApp(model: PortfolioModel) {
         ) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).imePadding().portfolioStatusBarFade(portfolioHome)) {
                 if (!portfolioHome) {
-                    AppLoadingLine(model.busy)
+                    AppLoadingLine(model.busy && !model.viewingSavedPortfolio)
                     if (model.documentPreview == null || model.documentPreview?.bytes != null) model.error?.let { Notice(it, true) { model.error = null } }
                     model.message?.let { Notice(it, false) { model.message = null } }
                 }

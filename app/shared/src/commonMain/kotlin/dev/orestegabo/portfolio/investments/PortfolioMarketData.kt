@@ -92,6 +92,15 @@ internal class PortfolioMarketData(private val currentApi: () -> PortfolioDataAp
     suspend fun equityHistory(symbol: String, period: String): JsonRecord =
         api.request("/api/bonds/rse/equity-history?tickers=$symbol&period=$period")
 
+    internal fun restoreSavedQuotes(board: JsonRecord?) {
+        if (board == null) return
+        val cached = EquityQuoteCache.sanitize(board, now())
+        val oldDate = quotes?.optJSONObject("source")?.text("publishedAt").orEmpty()
+        if (quotes == null || cached.getJSONObject("source").text("publishedAt") > oldDate) {
+            quotes = cached.put("source", cached.getJSONObject("source").put("stale", true))
+            quoteRefreshFailed = true
+        }
+    }
     fun invalidate() { marketLoadedAt = null; quoteCheckedAt = null }
     fun clear() {
         generation++; account = null; invalidate()

@@ -56,7 +56,7 @@ private var applicationVault: AndroidSecureSignIn? = null
 /** Keystore key wraps an in-memory-only data key, enabling session rotation without another prompt.
  * Android 11+ uses auth-per-operation; older OS versions use a five-second device-credential authorization.
  */
-private class AndroidSecureSignIn(private val application: Context) : SecureSignIn {
+private class AndroidSecureSignIn(private val application: Context) : SecureSignIn, ProtectedAccountPortfolio {
     private var host = WeakReference<FragmentActivity>(null)
     fun attach(activity: FragmentActivity) { host = WeakReference(activity) }
     fun detach(activity: FragmentActivity) { if (host.get() === activity) { lock(); host.clear(); confirmCredential = {} } }
@@ -161,6 +161,20 @@ private class AndroidSecureSignIn(private val application: Context) : SecureSign
         } catch (failure: CancellationException) { lock(); throw failure }
         catch (_: Exception) { lock(); error("Saved sign-in is unavailable. Use your password to sign in again.") }
     }
+    private fun portfolioStorage(origin: String) = AndroidGuestSnapshotStorage(application, accountPortfolioStoreName(origin), ACCOUNT_PORTFOLIO_MAX_BYTES, directoryName = "account-portfolios")
+    private val portfolioStorage = DeviceUnlockedPortfolioStorage(
+        authorized = { dataKey != null && unlockedOrigin == it && hasSaved(it) },
+        storage = ::portfolioStorage, erase = { portfolioStorage(it).deleteNow() })
+    override suspend fun readAccountPortfolio(origin: String) = portfolioStorage.readAccountPortfolio(origin)
+    override suspend fun writeAccountPortfolio(origin: String, bytes: ByteArray) = portfolioStorage.writeAccountPortfolio(origin, bytes)
+    override fun deleteAccountPortfolio(origin: String) = portfolioStorage.deleteAccountPortfolio(origin)
+    override suspend fun readUnlocked(origin: String): String? {
+        val secret = dataKey?.takeIf { unlockedOrigin == origin } ?: return null
+        val raw = prefs.getString(key(origin), null) ?: return null
+        val record = JsonRecord(raw)
+        val bytes = dataCipher(Cipher.DECRYPT_MODE, secret, decode(record.text("dataIv"))).doFinal(decode(record.text("data")))
+        return try { bytes.decodeToString() } finally { bytes.fill(0) }
+    }
     override suspend fun save(origin: String, value: String): Boolean {
         require(value.length <= 48_000) { "Saved sign-in is too large." }
         check(available) { "Set up device biometrics or a screen lock first." }
@@ -191,6 +205,7 @@ private class AndroidSecureSignIn(private val application: Context) : SecureSign
         val removed = prefs.edit().remove(key(origin)).commit()
         listOf(alias(origin), alias(origin, true)).distinct().forEach { if (store.containsAlias(it)) store.deleteEntry(it) }
         check(removed) { "Could not remove saved sign-in." }
+        deleteAccountPortfolio(origin)
     }
     override fun lock() { credentialResult?.cancel(); pendingAuth?.cancel(); currentPrompt?.cancelAuthentication(); dataKey?.fill(0); dataKey = null; unlockedOrigin = null }
 }

@@ -25,9 +25,9 @@ private var applicationGuestRepository: GuestPortfolioRepository? = null
 }
 
 /** Independent non-exportable key. AtomicFile's backup holds ciphertext too. Never shares auth-vault keys. */
-class AndroidGuestSnapshotStorage(context: Context, storeName: String = "personal", private val maxBytes: Int = GUEST_STORE_MAX_BYTES) : GuestSnapshotStorage {
-    init { require(storeName.matches(Regex("[A-Za-z0-9-]{1,100}"))) }
-    private val directory = File(context.noBackupFilesDir, "guest-portfolios")
+class AndroidGuestSnapshotStorage(context: Context, storeName: String = "personal", private val maxBytes: Int = GUEST_STORE_MAX_BYTES, directoryName: String = "guest-portfolios") : GuestSnapshotStorage {
+    init { require(storeName.matches(Regex("[A-Za-z0-9-]{1,100}")) && directoryName.matches(Regex("[A-Za-z0-9-]{1,100}"))) }
+    private val directory = File(context.noBackupFilesDir, directoryName)
     private val file = AtomicFile(File(directory, "$storeName.scg"))
     private val alias = "struct.guest.snapshot.$storeName.v1"
     private val header = "SCG1".toByteArray(Charsets.US_ASCII)
@@ -66,7 +66,8 @@ class AndroidGuestSnapshotStorage(context: Context, storeName: String = "persona
         catch (failure: Throwable) { file.failWrite(stream); throw failure }
         check(file.openRead().use { it.readBytes() }.contentEquals(header + cipher.iv + encrypted)) { "Guest storage commit could not be verified. Reopen the portfolio before retrying." }
     }
-    suspend fun delete(): Unit = withContext(Dispatchers.IO) {
+    suspend fun delete(): Unit = withContext(Dispatchers.IO) { deleteNow() }
+    internal fun deleteNow() {
         file.delete()
         check(!file.baseFile.exists() && !File(file.baseFile.path + ".bak").exists())
         store().deleteEntry(alias)

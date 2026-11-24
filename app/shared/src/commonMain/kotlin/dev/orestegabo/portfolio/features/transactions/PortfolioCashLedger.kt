@@ -67,6 +67,10 @@ internal class PortfolioCashLedger(
         refreshPortfolio()
     }
 
+    internal fun restoreCached(entries: List<JsonRecord>, available: Boolean) {
+        state = CashLedgerUiState(JsonRecord.readOnlyList(entries), available)
+    }
+
     fun clear() {
         ++refreshGeneration
         state = CashLedgerUiState()

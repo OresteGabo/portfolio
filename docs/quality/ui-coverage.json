@@ -3,6 +3,11 @@
   "note": "Evidence inventory, not code coverage. Required device gate runs on the reference API 36 emulator. Opt-in delivery/reboot/user-PDF tests remain separately documented.",
   "flows": [
     {
+      "flow": "native encrypted snapshot, cold offline device-unlock boundary, cancelled authentication, private cached balances, compact app-bar status, saved-date/retry dialog, read-only state and reconnection in both themes and enlarged text",
+      "class": "OfflinePortfolioUiTest",
+      "method": "coldOfflineUnlockShowsSavedValuesAndReconnectsInBothThemesAndLargeText"
+    },
+    {
       "flow": "searchable Settings categories, privacy control, nested/system Back, protected goal editor, guest/owner visibility and large text in both themes",
       "class": "SettingsNavigationUiTest",
       "method": "searchAndNestedPagesPreservePrivacyEditorsAndBackNavigationInBothThemes"

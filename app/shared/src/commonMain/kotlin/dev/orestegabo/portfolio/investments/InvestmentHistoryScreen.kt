@@ -19,8 +19,8 @@ fun InvestmentHistoryScreen(model: PortfolioModel, openShare: (JsonRecord) -> Un
     var search by rememberSaveable { mutableStateOf("") }
     var year by rememberSaveable { mutableStateOf("all") }
 
-    LaunchedEffect(model.historyComplete, model.busy) {
-        if (!model.historyComplete && !model.busy && model.error == null) model.loadInvestmentHistory()
+    LaunchedEffect(model.historyComplete, model.busy, model.viewingSavedPortfolio) {
+        if (!model.viewingSavedPortfolio && !model.historyComplete && !model.busy && model.error == null) model.loadInvestmentHistory()
     }
 
     val years = (model.purchases.map { it.text("purchaseDate").take(4) } + model.holdings.map { it.text("tradeDate").take(4) })
@@ -53,13 +53,14 @@ fun InvestmentHistoryScreen(model: PortfolioModel, openShare: (JsonRecord) -> Un
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) { ChoiceRow(InvestmentKind.entries, kind) { kind = it } }
-            IconButton(enabled = !model.busy, onClick = { model.loadInvestmentHistory(force = true) }) { AppIcon(Icons.Outlined.Refresh, "Refresh investment history") }
+            IconButton(enabled = !model.busy && !model.viewingSavedPortfolio, onClick = { model.loadInvestmentHistory(force = true) }) { AppIcon(Icons.Outlined.Refresh, "Refresh investment history") }
         } }
-        if (!model.historyComplete) item {
+        if (!model.historyComplete && !model.viewingSavedPortfolio) item {
             if (model.busy) LoadingState()
             else EmptyState("History unavailable", EmptyArtwork.PORTFOLIO, compact = true,
                 actionLabel = "Try again", onAction = { model.error = null; model.loadInvestmentHistory() })
         } else {
+            if (!model.historyComplete) item { DetailNote("Only saved purchases are shown.") }
             item { Field("Search investments", search, { search = it }) }
             if (years.isNotEmpty()) item { ChoiceRow(listOf("all") + years, year) { year = it } }
             if (bonds.isEmpty() && shares.isEmpty()) item {

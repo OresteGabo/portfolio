@@ -15,7 +15,13 @@ import kotlin.time.Duration.Companion.seconds
 
 class SecureSessionTest {
     private val origin = "https://secure.example.test"
-    private class Vault : SecureSignIn {
+    private class Vault : SecureSignIn, ProtectedAccountPortfolio {
+        var cacheEnabled = false
+        var cached: ByteArray? = null
+        var unlocked = false
+        override suspend fun readAccountPortfolio(origin: String): ByteArray? { check(unlocked); return cached?.copyOf() }
+        override suspend fun writeAccountPortfolio(origin: String, bytes: ByteArray) { check(unlocked); if (cacheEnabled) cached = bytes.copyOf() }
+        override fun deleteAccountPortfolio(origin: String) { cached?.fill(0); cached = null }
         override val available = true
         override val unlockLabel = "Device unlock"
         var value: String? = null
@@ -26,10 +32,11 @@ class SecureSessionTest {
         var readDelay = 0L
         override var authenticating = false
         override fun hasSaved(origin: String) = value != null
-        override suspend fun read(origin: String): String? { reads++; delay(readDelay); return if (cancel) null else value }
-        override suspend fun save(origin: String, value: String): Boolean { saves++; this.value = value; return true }
-        override fun delete(origin: String) { value = null }
-        override fun lock() { locks++ }
+        override suspend fun read(origin: String): String? { reads++; delay(readDelay); return if (cancel) null else value.also { unlocked = it != null } }
+        override suspend fun readUnlocked(origin: String): String? = value.takeIf { unlocked }
+        override suspend fun save(origin: String, value: String): Boolean { saves++; this.value = value; unlocked = true; return true }
+        override fun delete(origin: String) { value = null; deleteAccountPortfolio(origin) }
+        override fun lock() { locks++; unlocked = false }
     }
     private class Scenario {
         val clock = TestTimeSource()
@@ -50,7 +57,7 @@ class SecureSessionTest {
     }
     private fun seed(scenario: Scenario) {
         val cookie = JsonRecord().put("name", "__Host-bonds_session").put("value", "test-token").put("domain", "secure.example.test").put("path", "/").put("secure", true).put("httpOnly", true).put("encoding", "RAW")
-        scenario.vault.value = JsonRecord().put("origin", origin).put("email", "saved@example.test").put("password", "synthetic-password-only")
+        scenario.vault.value = JsonRecord().put("accountId", "saved").put("origin", origin).put("email", "saved@example.test").put("password", "synthetic-password-only")
             .put("session", JsonRecord().put("origin", origin).put("cookies", JsonList(listOf(cookie))).toString()).toString()
     }
     private fun TestScope.model(scenario: Scenario): PortfolioModel {
@@ -59,7 +66,7 @@ class SecureSessionTest {
         return PortfolioModel(object : ServerSettings {
             override fun readOrigin() = origin
             override fun writeOrigin(origin: String) {}
-        }, assets = { "[]".encodeToByteArray() }, vault = scenario.vault, clock = scenario.clock, apiFactory = { selected ->
+        }, assets = { "[]".encodeToByteArray() }, vault = scenario.vault, clock = scenario.clock, importWorkDispatcher = dispatcher, apiFactory = { selected ->
             PortfolioApi(selected, MockEngine(MockEngineConfig().apply {
                 this.dispatcher = dispatcher
                 addHandler { request ->
@@ -661,6 +668,176 @@ class SecureSessionTest {
             advanceTimeBy(SESSION_BACKGROUND_GRACE_MILLIS); runCurrent()
             assertTrue(model.locked)
             assertNull(model.user)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun rememberedPortfolioSurvivesLockAndColdOfflineDeviceUnlock() = runTest {
+        val scenario = Scenario().also(::seed).apply { vault.cacheEnabled = true }
+        val first = model(scenario)
+        try {
+            advanceUntilIdle(); first.unlock(); advanceUntilIdle()
+            assertNotNull(scenario.vault.cached, "A successful sync must save a protected offline snapshot")
+            scenario.store.clear()
+            scenario.offline = true
+            val offline = model(scenario)
+            advanceUntilIdle()
+            assertTrue(offline.locked); assertNull(offline.user); assertTrue(offline.purchases.isEmpty())
+            offline.unlock(); advanceUntilIdle()
+            assertFalse(offline.locked); assertNotNull(offline.user)
+            assertEquals("private", offline.purchases.single().text("id"))
+            assertTrue(offline.portfolioReady); assertFalse(offline.busy)
+            assertFalse(offline.canEditInvestments)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun offlineSnapshotRemainsProtectedWhenBiometricsAreCancelled() = runTest {
+        val scenario = Scenario().also(::seed).apply { vault.cacheEnabled = true }
+        val first = model(scenario)
+        try {
+            advanceUntilIdle(); first.unlock(); advanceUntilIdle()
+            assertNotNull(scenario.vault.cached)
+            scenario.store.clear(); scenario.offline = true; scenario.vault.cancel = true; scenario.requests = 0
+            val restarted = model(scenario)
+            advanceUntilIdle(); restarted.unlock(); advanceUntilIdle()
+            assertTrue(restarted.locked); assertNull(restarted.user); assertFalse(restarted.portfolioReady)
+            assertTrue(restarted.purchases.isEmpty()); assertEquals(0, scenario.requests)
+            assertNotNull(scenario.vault.cached)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun cachedFirstFrameDoesNotWaitForADeadServerAndVerificationIsBounded() = runTest {
+        val scenario = Scenario().also(::seed).apply { vault.cacheEnabled = true }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); advanceUntilIdle(); model.lock()
+            scenario.requestDelay = { 120000 }
+            model.unlock(); runCurrent()
+            assertFalse(model.locked); assertTrue(model.portfolioReady); assertTrue(model.viewingSavedPortfolio)
+            assertTrue(model.verifyingSession); assertFalse(model.canEditInvestments)
+            assertEquals("private", model.purchases.single().text("id"))
+            advanceTimeBy(8001); runCurrent()
+            assertFalse(model.busy); assertFalse(model.verifyingSession)
+            assertTrue(model.viewingSavedPortfolio); assertNotNull(model.savedPortfolioAt)
+            assertIs<SessionState.SavedOffline>(model.sessionState)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun offlineViewingCannotExecuteAccountActionsOrBypassTheApiGuard() = runTest {
+        val scenario = Scenario().also(::seed).apply { vault.cacheEnabled = true }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); advanceUntilIdle(); model.lock()
+            scenario.offline = true
+            model.unlock(); advanceUntilIdle()
+            val requests = scenario.requests
+            var ran = false
+            model.action { ran = true }; advanceUntilIdle()
+            assertFalse(ran)
+            assertFailsWith<IllegalStateException> { model.api.request("/api/bonds/purchases", "POST", JsonRecord()) }
+            assertFailsWith<IllegalStateException> { model.api.bytes("/api/bonds/documents/private") }
+            val goal = model.investmentGoal
+            model.updateInvestmentGoal(goal.copy(monthlyAmount = 999999))
+            assertEquals(goal, model.investmentGoal)
+            assertEquals(requests, scenario.requests)
+            model.toggleNumberVisibility() // Device-only privacy remains available offline.
+            assertNotNull(model.user); assertTrue(model.portfolioReady)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun reconnectRenewsAnExpiredSessionAndRefreshesWithoutAnotherBiometricPrompt() = runTest {
+        val scenario = Scenario().also(::seed).apply { vault.cacheEnabled = true }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); advanceUntilIdle(); model.lock()
+            scenario.offline = true
+            model.unlock(); advanceUntilIdle()
+            val prompts = scenario.vault.reads
+            assertTrue(model.viewingSavedPortfolio)
+            scenario.offline = false; scenario.sessionValid = false
+            model.retryPortfolioSync(); advanceUntilIdle()
+            assertFalse(model.viewingSavedPortfolio); assertFalse(model.locked)
+            assertTrue(model.canEditInvestments); assertTrue(model.portfolioReady)
+            assertEquals(prompts, scenario.vault.reads); assertEquals(1, scenario.logins)
+            assertIs<SessionState.Authenticated>(model.sessionState)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun rejectedSavedPasswordClearsCachedDataInsteadOfFallingBackOffline() = runTest {
+        val scenario = Scenario().also(::seed).apply { vault.cacheEnabled = true }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); advanceUntilIdle(); model.lock()
+            assertNotNull(scenario.vault.cached)
+            scenario.sessionValid = false; scenario.rejectPassword = true
+            model.unlock(); advanceUntilIdle()
+            assertNull(scenario.vault.cached); assertNull(scenario.vault.value)
+            assertNull(model.user); assertFalse(model.portfolioReady); assertFalse(model.viewingSavedPortfolio)
+            assertFalse(model.secureSignInEnabled)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun backgroundDuringCachedSessionVerificationCannotRestorePrivateDataLate() = runTest {
+        val scenario = Scenario().also(::seed).apply { vault.cacheEnabled = true }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); advanceUntilIdle(); model.lock()
+            scenario.requestDelay = { 60000 }
+            model.unlock(); runCurrent()
+            assertTrue(model.viewingSavedPortfolio); assertTrue(model.verifyingSession)
+            model.background(); scenario.clock += 31.seconds
+            advanceTimeBy(SESSION_BACKGROUND_GRACE_MILLIS); runCurrent(); advanceUntilIdle()
+            assertTrue(model.locked); assertNull(model.user); assertTrue(model.purchases.isEmpty())
+            assertFalse(model.viewingSavedPortfolio); assertNull(model.savedPortfolioAt)
+            assertNotNull(scenario.vault.cached)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun cachedReadModelSurvivesServerFailureButUnauthorizedDataInvalidatesIt() = runTest {
+        val scenario = Scenario().also(::seed).apply { vault.cacheEnabled = true }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); advanceUntilIdle(); model.lock()
+            val savedBytes = requireNotNull(scenario.vault.cached).copyOf()
+            scenario.failures["/api/bonds/mobile-overview"] = HttpStatusCode.ServiceUnavailable
+            scenario.failures["/api/bonds/purchases"] = HttpStatusCode.ServiceUnavailable
+            model.unlock(); advanceUntilIdle()
+            assertTrue(model.viewingSavedPortfolio); assertTrue(model.portfolioReady)
+            assertContentEquals(savedBytes, scenario.vault.cached)
+            scenario.failures["/api/bonds/mobile-overview"] = HttpStatusCode.Unauthorized
+            scenario.failures["/api/bonds/purchases"] = HttpStatusCode.Unauthorized
+            model.retryPortfolioSync(); advanceUntilIdle()
+            assertTrue(model.locked); assertNull(model.user); assertNull(scenario.vault.cached)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun offlineSignOutImmediatelyRemovesCredentialsAndSnapshotWithoutHttp() = runTest {
+        val scenario = Scenario().also(::seed).apply { vault.cacheEnabled = true }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); advanceUntilIdle(); model.lock()
+            scenario.offline = true
+            model.unlock(); advanceUntilIdle()
+            val requests = scenario.requests
+            model.logout(); advanceUntilIdle()
+            assertEquals(requests, scenario.requests)
+            assertNull(scenario.vault.value); assertNull(scenario.vault.cached)
+            assertNull(model.user); assertFalse(model.secureSignInEnabled); assertFalse(model.portfolioReady)
+            assertNull(model.error)
+        } finally { scenario.store.clear(); Dispatchers.resetMain() }
+    }
+
+    @Test fun legacyRememberedSignInGainsAnAccountBindingOnceAfterSuccessfulVerification() = runTest {
+        val scenario = Scenario().also(::seed).apply {
+            vault.cacheEnabled = true
+            vault.value = JsonRecord(requireNotNull(vault.value)).put("accountId", null).toString()
+        }
+        val model = model(scenario)
+        try {
+            advanceUntilIdle(); model.unlock(); advanceUntilIdle()
+            assertEquals("saved", JsonRecord(requireNotNull(scenario.vault.value)).text("accountId"))
+            assertEquals(1, scenario.vault.saves); assertNotNull(scenario.vault.cached)
+            model.lock(); model.unlock(); advanceUntilIdle()
+            assertEquals(1, scenario.vault.saves)
         } finally { scenario.store.clear(); Dispatchers.resetMain() }
     }
 

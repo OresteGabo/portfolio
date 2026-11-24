@@ -157,13 +157,14 @@ fun PortfolioScreen(
                     unreadNotifications,
                     model.quoteRefreshFailed || model.quotes?.optJSONObject("source")
                         ?.optBoolean("stale") == true,
-                    model.quotes?.optJSONObject("source")?.text("publishedAt").orEmpty().take(10)
+                    model.quotes?.optJSONObject("source")?.text("publishedAt").orEmpty().take(10),
+                    status = { SavedPortfolioStatus(model) }
                 ) {
                     Column(
                         Modifier.fillMaxWidth().smoothContentSize(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        AppLoadingLine(model.busy && model.refreshPhase == PortfolioRefreshPhase.IDLE)
+                        AppLoadingLine(model.busy && !model.viewingSavedPortfolio && model.refreshPhase == PortfolioRefreshPhase.IDLE)
                         model.error?.let { Notice(it, true) { model.error = null } }
                         model.message?.let { Notice(it, false) { model.message = null } }
                     }

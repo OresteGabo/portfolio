@@ -56,9 +56,9 @@ import androidx.compose.ui.unit.sp
 import dev.orestegabo.portfolio.design.StructColors
 
 @Composable
-internal fun PortfolioHero(showNotifications: Boolean, subtitle: String, totals: List<CurrencyValuation>, topInset: Dp, openNotifications: () -> Unit, unreadNotifications: Int, stale: Boolean, priceDate: String, notice: @Composable () -> Unit) {
+internal fun PortfolioHero(showNotifications: Boolean, subtitle: String, totals: List<CurrencyValuation>, topInset: Dp, openNotifications: () -> Unit, unreadNotifications: Int, stale: Boolean, priceDate: String, status: @Composable () -> Unit = {}, notice: @Composable () -> Unit) {
     PortfolioHeroFrame(topInset, header = {
-        PortfolioHeroHeader(showNotifications, subtitle, openNotifications, unreadNotifications)
+        PortfolioHeroHeader(showNotifications, subtitle, openNotifications, unreadNotifications, status)
     }, notice = notice) {
         if (totals.isEmpty()) Spacer(Modifier.height(46.dp))
         else totals.forEach { total -> PortfolioBalance(total, stale, priceDate) }
@@ -87,7 +87,7 @@ internal fun PortfolioHeroFrame(topInset: Dp, header: @Composable () -> Unit,
 
 @Composable
 internal fun PortfolioHeroHeader(showNotifications: Boolean, subtitle: String,
-    openNotifications: () -> Unit, unreadNotifications: Int) {
+    openNotifications: () -> Unit, unreadNotifications: Int, status: @Composable () -> Unit = {}) {
     val dark = MaterialTheme.colorScheme.background.luminance() < .5f
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         DashboardBrandMark(Modifier.size(44.dp))
@@ -95,6 +95,7 @@ internal fun PortfolioHeroHeader(showNotifications: Boolean, subtitle: String,
             InziraWordmark(Modifier.height(32.dp), onDark = dark, sculpted = true)
             AppText(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        status()
         if (showNotifications) NotificationBell(unreadNotifications, openNotifications, tint = MaterialTheme.colorScheme.onBackground)
     }
 }
