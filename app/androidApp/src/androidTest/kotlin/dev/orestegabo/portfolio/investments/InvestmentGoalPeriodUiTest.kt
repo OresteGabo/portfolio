@@ -34,19 +34,19 @@ class InvestmentGoalPeriodUiTest {
                         scene.onActivity { host -> host.setContent {
                             CompositionLocalProvider(LocalNativeActions provides native, LocalImportEngine provides engine) { InvestmentApp(f.model) }
                         } }
-                        ui.click("Settings"); ui.scroll("Edit investment goal"); ui.click("Edit investment goal")
+                        ui.click("Settings"); ui.scroll("Investing"); ui.click("Investing"); ui.scroll("Edit investment goal"); ui.click("Edit investment goal")
                         ui.await("Investment goal"); ui.click("Yearly"); ui.await("January–December")
                         ui.click("3.6m"); ui.click("Save")
                         ui.waitUntil("yearly goal acknowledged") { f.savedGoal.period == InvestmentGoalPeriod.YEARLY && f.savedGoal.yearlyAmount == 3600000L }
                         assertEquals(100000L, f.model.monthlyInvestmentTarget)
-                        ui.click("Home"); ui.scroll("Next insight"); ui.click("Next insight")
+                        ui.click("Back"); ui.click("Home"); ui.scroll("Next insight"); ui.click("Next insight")
                         ui.instrumentation.uiAutomation.waitForIdle(500, 5000)
                         ui.click("Next insight")
                         ui.instrumentation.uiAutomation.waitForIdle(500, 5000)
                         ui.await("Yearly goal"); ui.await("RWF 3,600,000"); ui.await("RWF 600,000")
                         val image = requireNotNull(ui.instrumentation.uiAutomation.takeScreenshot())
                         try { image.writeGolden(File(ui.instrumentation.targetContext.cacheDir, "yearly-goal-$dark.png")) } finally { image.recycle() }
-                        ui.click("Settings"); ui.scroll("Edit investment goal"); ui.click("Edit investment goal")
+                        ui.click("Settings"); ui.scroll("Investing"); ui.click("Investing"); ui.scroll("Edit investment goal"); ui.click("Edit investment goal")
                         ui.click("Monthly"); ui.await("100000"); ui.click("300k"); ui.click("Save")
                         ui.waitUntil("monthly choice saved") { f.savedGoal.period == InvestmentGoalPeriod.MONTHLY && f.savedGoal.monthlyAmount == 300000L }
                         assertEquals(3600000L, f.model.investmentGoal.yearlyAmount)

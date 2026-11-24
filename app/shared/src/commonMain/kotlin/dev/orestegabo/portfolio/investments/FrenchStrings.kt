@@ -2,6 +2,19 @@ package dev.orestegabo.portfolio.investments
 
 // English source phrases are stable presentation keys; never use translated values as API identifiers.
 internal val frenchStrings: Map<String, String> = mapOf(
+    "Search settings" to "Rechercher un réglage",
+    "No settings found" to "Aucun réglage trouvé",
+    "Try a different word, such as privacy or goal." to "Essayez un autre mot, comme confidentialité ou objectif.",
+    "Preferences" to "Préférences",
+    "Number visibility, screenshots & documents" to "Visibilité des montants, captures et documents",
+    "Device unlock & sign-in activity" to "Déverrouillage et activité de connexion",
+    "Language, theme & charts" to "Langue, thème et graphiques",
+    "Goals, cash & transactions" to "Objectifs, trésorerie et opérations",
+    "Reminders & home screen widgets" to "Rappels et widgets d’accueil",
+    "Reports, outlook & learning" to "Rapports, prévisions et apprentissage",
+    "Help, about Inzira & legal documents" to "Aide, à propos d’Inzira et documents juridiques",
+    "Accounts & invitations" to "Comptes et invitations",
+    "Guest data & sign out" to "Données invité et déconnexion",
     "Goal saved on this device. Reminder sync failed. Try saving again." to "Objectif enregistré sur cet appareil. Synchronisation des rappels impossible. Réessayez l’enregistrement.",
     "Goal reached, including pending" to "Objectif atteint, demandes en attente comprises",
     "This year’s goal reached" to "Objectif de cette année atteint",

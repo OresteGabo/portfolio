@@ -55,7 +55,7 @@ class NavigationUsabilityTest {
                 path.endsWith("/equities") -> """{"holdings":[{"id":"ux-holding","ticker":"BLR","securityName":"Bralirwa","currency":"RWF","status":"active","shares":100,"pricePerShare":571,"grossConsideration":57100,"netAmountPayable":57100,"totalCharges":0,"tradeDate":"$Today","settlementDate":"$Today"}]}"""
                 path.endsWith("/share-orders") -> JsonRecord().put("orders", JsonList(listOfNotNull(saved))).toString()
                 path.contains("/share-orders/") -> JsonRecord().put("order", saved).toString()
-                path.endsWith("/rse/quotes") -> """{"source":{"status":"available"},"quotes":[{"ticker":"BOK","name":"Synthetic Bank","closing":720},{"ticker":"BLR","name":"Bralirwa","closing":571}]}"""
+                path.endsWith("/rse/quotes") -> """{"source":{"status":"available","publishedAt":"2000-01-02"},"quotes":[{"ticker":"BOK","name":"Synthetic Bank","closing":720},{"ticker":"BLR","name":"Bralirwa","closing":571}]}"""
                 else -> "{}"
             }
             respond(body, headers = headersOf(HttpHeaders.ContentType, "application/json"))
@@ -84,7 +84,9 @@ class NavigationUsabilityTest {
                 }
                 ui.waitUntil("account ready") { model.user != null && model.portfolioReady && !model.busy && model.shareOrdersAvailable }
                 ui.scroll("Investment actions"); ui.click("Investment actions"); ui.click("Shares", last = true)
-                ui.await("Security name"); ui.click("Security name"); ui.click("Synthetic Bank (BOK)")
+                ui.await("Security name")
+                ui.waitUntil("synthetic share quotes ready") { model.quotes?.rows("quotes")?.any { it.text("ticker") == "BOK" } == true }
+                ui.click("Security name"); ui.click("Synthetic Bank (BOK)")
                 repeat(2) { ui.click("Increase shares") }
                 ui.await("RWF 146,462.4")
                 ui.click("Back"); ui.await("Discard changes?"); ui.click("Keep editing")
@@ -98,7 +100,9 @@ class NavigationUsabilityTest {
                 ui.scroll("Investment actions")
                 assertFalse(ui.nodes().any { ui.matches(it, "Discard changes?") })
                 ui.click("Investment actions"); ui.click("Shares", last = true)
-                ui.await("Security name"); ui.click("Security name"); ui.click("Synthetic Bank (BOK)")
+                ui.await("Security name")
+                ui.waitUntil("synthetic share quotes ready") { model.quotes?.rows("quotes")?.any { it.text("ticker") == "BOK" } == true }
+                ui.click("Security name"); ui.click("Synthetic Bank (BOK)")
                 repeat(2) { ui.click("Increase shares") }
                 quoteFails.set(true)
                 scene.onActivity { model.loadMarket(refresh = true) }
@@ -126,7 +130,7 @@ class NavigationUsabilityTest {
                 ui.scroll("Your investments")
                 assertEquals(200.0, requireNotNull(saved).getDouble("shares"), 0.0)
                 // A widget request must open Calendar even while an unrelated read-only child is displayed.
-                ui.click("Settings"); ui.scroll("About Inzira"); ui.click("About Inzira")
+                ui.click("Settings"); ui.scroll("Help & support"); ui.click("Help & support"); ui.scroll("About Inzira"); ui.click("About Inzira")
                 ui.await("A little structure. A clearer view.")
                 scene.onActivity { HomeWidgetBridge.openCalendar("2030-02-18") }
                 ui.await("Calendar")

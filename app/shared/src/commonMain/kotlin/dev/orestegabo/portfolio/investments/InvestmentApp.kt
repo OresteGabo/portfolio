@@ -56,6 +56,7 @@ fun InvestmentApp(model: PortfolioModel) {
     var showGuestChoice by rememberSaveable { mutableStateOf(false) }
     var issueReportSource by remember(model.user?.text("id"), model.isGuest, model.locked) { mutableStateOf<String?>(null) }
     var tab by rememberSaveable { mutableStateOf("Portfolio") }
+    var settingsPage by rememberSaveable(model.origin, model.user?.text("id"), model.guestPath) { mutableStateOf<String?>(null) }
     var documentSection by rememberSaveable(model.user?.text("id")) { mutableStateOf("Library") }
     var couponList by rememberSaveable { mutableStateOf(false) }
     var calendarFocus by rememberSaveable { mutableStateOf<String?>(null) }
@@ -246,7 +247,8 @@ fun InvestmentApp(model: PortfolioModel) {
         }
         val guestImportActive = model.isGuest && (model.guestImport?.review != null || model.guestImport?.previewBytes != null)
         val childScreen = model.applicationBidForm != null || model.cashLedgerRequested || model.backupRequested || model.guestMigration != null || guestImportActive || couponList || documentDetail != null || model.documentPreview != null || notificationPanel == "security" || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || shareDetail != null || editor != null || equityEditor != null || shareOrderEditor != null || simulator || investmentTools || education
-        val nested = childScreen || tab == "Notifications"
+        val settingsNested = tab == "Settings" && settingsPage != null
+        val nested = childScreen || settingsNested || tab == "Notifications"
         val documentsHome = (model.user != null || model.isGuest) && !model.locked && !nested && tab == "Documents"
         val importChat = !model.isGuest && documentsHome && documentSection == "Import"
         val navigateBack = {
@@ -259,6 +261,7 @@ fun InvestmentApp(model: PortfolioModel) {
             } else if (sharePurchaseDetail != null) { sharePurchaseDetail = null
             } else if (couponList && detail == null && shareDetail == null && editor == null && equityEditor == null && shareOrderEditor == null && model.documentPreview == null) { couponList = false
             } else if (documentDetail != null && detail == null && shareDetail == null && editor == null && equityEditor == null && shareOrderEditor == null) { documentDetail = null
+            } else if (settingsNested && !childScreen) { settingsPage = null
             } else if (tab == "Notifications" && !childScreen) { tab = "Portfolio" } else {
                 if (detail == null && shareDetail == null && editor == null && equityEditor == null && shareOrderEditor == null && importReview == null && !pendingEntry && !simulator && !investmentTools && !education) investmentHistory = false
                 missingDocuments = false; detail = null; shareDetail = null; editor = null; equityEditor = null; shareOrderEditor = null; pendingEntry = false; simulator = false; investmentTools = false; education = false
@@ -296,7 +299,9 @@ fun InvestmentApp(model: PortfolioModel) {
             couponList -> "Coupons"
             investmentHistory -> "All investments"
             model.user == null && !model.isGuest -> "Inzira"
-            tab == "Settings" -> "Settings"
+            tab == "Settings" -> settingsDestinations(model.isGuest, model.user?.optBoolean("isOwner") == true,
+                model.isGuest && !model.sampleGuest, HomeWidgetBridge.available, NativePushBridge.available,
+                model.canDeleteAccount, model.secureSignInEnabled).firstOrNull { it.key == settingsPage }?.title ?: "Settings"
             else -> destinations.firstOrNull { it.key == tab }?.label ?: tab
         }
         var supportMenuOpen by remember(screenTitle) { mutableStateOf(false) }
@@ -477,7 +482,8 @@ fun InvestmentApp(model: PortfolioModel) {
                     }
                     tab == "Settings" && !childScreen -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
                         chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
-                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { brandIntroRequested = true; replayIntroduction = true; introductionRequested = true }, openInvestmentTools = { investmentTools = true }, openSignInActivity = { securityNotificationId = null; notificationPanel = "security" }, openGuest = { showGuestChoice = true }, openIssueReport = { issueReportSource = "Settings" })
+                        openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { brandIntroRequested = true; replayIntroduction = true; introductionRequested = true }, openInvestmentTools = { investmentTools = true }, openSignInActivity = { securityNotificationId = null; notificationPanel = "security" }, openGuest = { showGuestChoice = true }, openIssueReport = { issueReportSource = "Settings" },
+                        page = settingsPage, openPage = { settingsPage = it })
                     editor != null -> PurchaseEditor(model, editor!!, { editor = null })
                     shareOrderEditor != null -> ShareOrderScreen(model, shareOrderEditor!!, { shareOrderEditor = null }, recordExecution = { equityEditor = it; shareOrderEditor = null }, uploadContract = ::uploadShareOrderContract)
                     equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null; shareOrderEditor = null }, pendingOrder = if (model.user != null) ({ shareOrderEditor = JsonRecord(); equityEditor = null }) else null)

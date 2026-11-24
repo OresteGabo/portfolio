@@ -36,7 +36,7 @@ class OwnerAccountValuationTest {
                     scene.onActivity { host -> host.setContent {
                         CompositionLocalProvider(LocalNativeActions provides actions, LocalImportEngine provides engine) { InvestmentApp(fixture.model) }
                     } }
-                    ui.click("Settings"); ui.scroll("Accounts"); ui.click("Accounts")
+                    ui.click("Settings"); ui.scroll("Administration"); ui.click("Administration"); ui.scroll("Accounts"); ui.click("Accounts")
                     ui.await("≈ RWF 1,060,000")
                     ui.await("Unavailable")
                     assertFalse(ui.nodes().any { ui.matches(it, "Bond principal") })

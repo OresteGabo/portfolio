@@ -112,7 +112,7 @@ class SettingsTargetEditorTest {
                                 // Reproduce the app's parent Column, which previously placed the
                                 // full-height editor after the full-height Settings list.
                                 Column(Modifier.fillMaxSize()) {
-                                    SettingsScreen(model, "light", {}, "area", {}, {}, {}, {})
+                                    SettingsScreen(model, "light", {}, "area", {}, {}, {}, {}, page = "investing")
                                 }
                             }
                         }

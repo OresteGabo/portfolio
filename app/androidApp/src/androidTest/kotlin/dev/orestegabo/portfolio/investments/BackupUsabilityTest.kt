@@ -76,7 +76,7 @@ class BackupUsabilityTest {
                         host.setContent { CompositionLocalProvider(LocalImportEngine provides engine, LocalNativeActions provides actions) { InvestmentApp(model) } }
                     }
                     ui.waitUntil("guest ready") { model.guestPortfolio != null && !model.guestStorageLoading }
-                    ui.click("Settings"); ui.scroll("Encrypted backup"); ui.click("Encrypted backup")
+                    ui.click("Settings"); ui.scroll("Investing"); ui.click("Investing"); ui.scroll("Encrypted backup"); ui.click("Encrypted backup")
                     ui.scroll("Export encrypted backup"); ui.click("Export encrypted backup")
                     ui.await("Use a backup password between 12 and 256 characters.")
                     assertEquals(0, saves.get())

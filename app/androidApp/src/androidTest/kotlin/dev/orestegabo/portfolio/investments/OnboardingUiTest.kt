@@ -161,7 +161,7 @@ class OnboardingUiTest {
                         tap("Continue")
                         await("A year of investing.\nClearly documented.")
                         tap("Get started")
-                        if (authenticated) { tap("Settings"); await("Notifications") }
+                        if (authenticated) { tap("Settings"); await("Search settings") }
                         else await("Welcome back")
                         assertTrue(prefs.getBoolean("onboardingCompleted", false))
                     }
@@ -304,7 +304,8 @@ class OnboardingUiTest {
             signedIn.set(true)
             launch().use {
                 tap("Settings")
-                await("Notifications")
+                await("Search settings")
+                UsabilityTestDriver().scroll("Help & support"); tap("Help & support")
                 for (direction in listOf(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD, AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
                     repeat(16) {
                         if (nodes().none { node -> node.isVisibleToUser && node.text?.toString() == "Replay introduction" }) {
@@ -318,8 +319,8 @@ class OnboardingUiTest {
                 await("Your portfolio.\nA clearer picture.")
                 screenshot("onboarding-replay.png")
                 tap("Close")
-                await("Notifications") // Settings returns at its normal top position.
-                await("Settings")
+                await("Help & support") // Replay returns to the Settings page that opened it.
+                tap("Back"); await("Search settings")
             }
         } finally {
             sessionGate.get().countDown()

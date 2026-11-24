@@ -70,6 +70,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -91,8 +97,22 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -> Unit,
     chartStyle: String, changeChartStyle: (String) -> Unit,
-    openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit, openLegal: () -> Unit = {}, openAbout: () -> Unit = {}, openIntroduction: () -> Unit = {}, openInvestmentTools: () -> Unit = {}, openSignInActivity: () -> Unit = {}, openGuest: () -> Unit = {}, openIssueReport: () -> Unit = {}) {
+    openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit, openLegal: () -> Unit = {}, openAbout: () -> Unit = {}, openIntroduction: () -> Unit = {}, openInvestmentTools: () -> Unit = {}, openSignInActivity: () -> Unit = {}, openGuest: () -> Unit = {}, openIssueReport: () -> Unit = {},
+    page: String? = null, openPage: (String?) -> Unit = {}) {
     val actions = LocalNativeActions.current
+    var search by rememberSaveable { mutableStateOf("") }
+    val keyboard = LocalSoftwareKeyboardController.current
+    val focus = LocalFocusManager.current
+    val destinations = settingsDestinations(model.isGuest, model.user?.optBoolean("isOwner") == true,
+        model.isGuest && !model.sampleGuest, HomeWidgetBridge.available, NativePushBridge.available,
+        model.canDeleteAccount, model.secureSignInEnabled)
+    val currentPage = destinations.firstOrNull { it.key == page }?.key
+    fun navigate(destination: SettingsDestination) {
+        keyboard?.hide()
+        focus.clearFocus()
+        openPage(destination.key)
+    }
+
     var setupSecure by remember { mutableStateOf(false) }
     var targetExpanded by remember { mutableStateOf(false) }
     var password by remember { mutableStateOf("") }
@@ -126,10 +146,22 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
 
     // In-scene financial editors must overlay the list, not become another child of the app's Column.
     Box(Modifier.fillMaxSize()) {
+        key(currentPage) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)) {
-            if (model.isGuest) item { GuestStorageSettings(model, openGuest) }
-            else item {
+            if (currentPage == null) item {
+                OutlinedTextField(search, { search = it }, Modifier.fillMaxWidth(),
+                    label = { AppText("Search settings") }, singleLine = true,
+                    leadingIcon = { AppIcon(Icons.Outlined.Search, null) },
+                    trailingIcon = { if (search.isNotEmpty()) IconButton(onClick = { search = "" }) {
+                        AppIcon(Icons.Outlined.Close, "Clear search")
+                    } },
+                    shape = RoundedCornerShape(20.dp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { keyboard?.hide(); focus.clearFocus() }))
+            }
+            if (currentPage == null && search.isBlank() && model.isGuest) item { GuestStorageSettings(model, openGuest) }
+            else if (currentPage == null && search.isBlank()) item {
                 Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
                     Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -144,19 +176,42 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                     }
                 }
             }
-            if (!model.isGuest) item { SettingsSection("Notifications") {
+            if (currentPage == null) {
+                if (search.isBlank()) item {
+                    SettingsSection("Preferences") {
+                        destinations.forEachIndexed { index, destination ->
+                            if (index > 0) SettingsDivider()
+                            SettingsRow(settingsDestinationIcon(destination.key), destination.title, destination.summary,
+                                onClick = { navigate(destination) })
+                        }
+                    }
+                } else {
+                    val results = searchSettings(destinations, search) { localized(it) }
+                    if (results.isEmpty()) item {
+                        EmptyState("No settings found", Icons.Outlined.Search, compact = true,
+                            description = "Try a different word, such as privacy or goal.")
+                    }
+                    results.forEach { result -> item(key = "${result.destination.key}:${result.label}") {
+                        Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
+                            SettingsRow(settingsDestinationIcon(result.destination.key), result.label, result.destination.title,
+                                onClick = { navigate(result.destination) })
+                        }
+                    } }
+                }
+            }
+            if (currentPage == "notifications" && !model.isGuest) item { SettingsSection("Notifications") {
                 SettingsRow(Icons.Outlined.Notifications, "Notification preferences", "Categories & coupon receipts", onClick={ dialog="notifications" })
                 if(NativePushBridge.available) {
                     SettingsDivider()
                     SettingsRow(Icons.Outlined.PhoneIphone, "Phone notifications",if(NativePushBridge.allowed) "Enabled" else "Disabled",onClick=NativePushBridge::requestPermission)
                 }
             } }
-            if (HomeWidgetBridge.available && !model.isGuest) item { SettingsSection("Home screen widgets") {
+            if (currentPage == "notifications" && HomeWidgetBridge.available && !model.isGuest) item { SettingsSection("Home screen widgets") {
                 SettingsRow(Icons.Outlined.CalendarMonth, "What’s next · Small", "One upcoming event · no amounts", onClick = { HomeWidgetBridge.requestPin(false) })
                 SettingsDivider()
                 SettingsRow(Icons.Outlined.CalendarMonth, "What’s next · Medium", "Two upcoming events · no amounts", onClick = { HomeWidgetBridge.requestPin(true) })
             } }
-            item { SettingsSection("Privacy") {
+            if (currentPage == "privacy") item { SettingsSection("Privacy") {
                 SettingsRow(Icons.Outlined.ScreenLockPortrait, "Protect screenshots & recordings",
                     captureProtectionDescription,
                     toggleState = model.captureProtectionEnabled,
@@ -180,7 +235,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                         onClick = { deletionPassword = ""; dialog = "deleteAccount" })
                 }
             } }
-            item { SettingsSection("Appearance") {
+            if (currentPage == "appearance") item { SettingsSection("Appearance") {
                 LanguageOptions()
                 SettingsDivider()
                 AppearanceOptions(theme, changeTheme)
@@ -188,7 +243,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 SettingsRow(Icons.AutoMirrored.Outlined.ShowChart, "Chart style", chartStyle.replaceFirstChar { it.uppercase() },
                     onClick = { dialog = "chartStyle" })
             } }
-            item { SettingsSection("Investing") {
+            if (currentPage == "investing") item { SettingsSection("Investing") {
                 SettingsRow(Icons.Outlined.AccountBalanceWallet, "Cash & transactions", "Sales, dividends, deposits and withdrawals", onClick = { model.openCashLedger() })
                 SettingsDivider()
                 if (model.isGuest && !model.sampleGuest) {
@@ -214,7 +269,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                     }
                 }
             } }
-            if (!model.isGuest) item { SettingsSection("Security") {
+            if (currentPage == "security" && !model.isGuest) item { SettingsSection("Security") {
                 SettingsRow(Icons.Outlined.Devices, "Sign-in activity", "Review recorded devices", onClick = openSignInActivity)
                 SettingsDivider()
                 SettingsRow(when (model.unlockLabel) { "Face ID" -> Icons.Outlined.Face; "Touch ID" -> Icons.Outlined.Fingerprint; else -> Icons.Outlined.Lock },
@@ -234,7 +289,7 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 SettingsDivider()
                 SettingsRow(Icons.Outlined.Password, "Passwords & AutoFill", "Use your phone’s password manager", onClick = { dialog = "passwords" })
             } }
-            if (!model.isGuest) item { SettingsSection("Tools") {
+            if (currentPage == "tools" && !model.isGuest) item { SettingsSection("Tools") {
                 SettingsRow(Icons.Outlined.PictureAsPdf, "Portfolio report", "All years · PDF export", enabled = !model.busy,
                     onClick = { dialog = "report" })
                 SettingsDivider()
@@ -250,20 +305,20 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                 SettingsDivider()
                 SettingsRow(Icons.Outlined.Search, "Find bond purchases", onClick = { ownerSection = "bonds" })
             } }
-            item { SettingsSection("About") {
+            if (currentPage == "help") item { SettingsSection("About") {
                 SettingsRow(Icons.Outlined.Info, "About Inzira", "The app, the brand and how to reach us", onClick = openAbout)
                 SettingsDivider()
                 SettingsRow(Icons.Outlined.AutoStories, "Replay introduction", "A quick tour of Inzira", onClick = openIntroduction)
             } }
-            item { SettingsSection("Help & support") {
+            if (currentPage == "help") item { SettingsSection("Help & support") {
                 SettingsRow(Icons.Outlined.BugReport, "Report a problem", "Bugs, incorrect data or anything that is not working", onClick = openIssueReport)
                 SettingsDivider()
                 SettingsRow(Icons.Outlined.Email, "Contact support", BrandContacts.SUPPORT, onClick = { actions.openEmail(BrandContacts.SUPPORT) })
             } }
-            item { SettingsSection("Legal & privacy") {
+            if (currentPage == "help") item { SettingsSection("Legal & privacy") {
                 SettingsRow(Icons.Outlined.Policy, "Legal documents", "Terms, privacy, data rights & credits", onClick = openLegal)
             } }
-            item { SettingsSection("Links", "These links open in your browser.") {
+            if (currentPage == "help") item { SettingsSection("Links", "These links open in your browser.") {
                 val links = listOf(
                     Triple(OFFICIAL_WEBSITE_ORIGIN, "Inzira", Icons.Outlined.Language),
                     *if (!model.isGuest) arrayOf(Triple(model.origin + "/portfolio", "Portfolio website", Icons.Outlined.AccountBalanceWallet)) else emptyArray(),
@@ -282,19 +337,21 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
                         })
                 }
             } }
-            if (owner) item { SettingsSection("Administration") {
+            if (currentPage == "administration" && owner && !model.isGuest) item { SettingsSection("Administration") {
                 SettingsRow(Icons.Outlined.ManageAccounts, "Accounts", "View registered accounts", enabled = !model.busy, onClick = { loadOwner("accounts") })
                 SettingsDivider()
                 SettingsRow(Icons.Outlined.PersonAdd, "Invitations", "Create and manage invitations", enabled = !model.busy, onClick = { loadOwner("invitations") })
             } }
-            if (!model.isGuest) item { SettingsSection("Guest data") {
+            if (currentPage == "account" && !model.isGuest) item { SettingsSection("Guest data") {
                 SettingsRow(Icons.Outlined.PhoneIphone, "Transfer Guest Data", "Review data saved on this device", enabled = !model.busy, onClick = model::reviewGuestMigration)
             } }
-            if (!model.isGuest) item { SettingsSection("Session") {
+            if (currentPage == "account" && !model.isGuest) item { SettingsSection("Session") {
                 SettingsRow(Icons.Outlined.PersonOutline, "Continue as Guest", onClick = openGuest, trailing = {})
                 SettingsRow(Icons.AutoMirrored.Filled.Logout, "Sign out", enabled = !model.busy,
                     tint = MaterialTheme.colorScheme.error, onClick = { dialog = "logout" }, trailing = {})
             } }
+        }
+
         }
 
         if (dialog == "investmentTarget") InvestmentTargetDialog(model) { dialog = null }
@@ -358,4 +415,16 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
         SettingsRecordsSheet(model, ownerSection, administration, dismiss = { ownerSection = null },
             changePublisher = { publisherChange = it }, openBond = openBond)
     }
+}
+
+private fun settingsDestinationIcon(key: String) = when (key) {
+    "privacy" -> Icons.Outlined.PrivacyTip
+    "security" -> Icons.Outlined.Lock
+    "appearance" -> Icons.Outlined.Language
+    "investing" -> Icons.Outlined.AccountBalanceWallet
+    "notifications" -> Icons.Outlined.Notifications
+    "tools" -> Icons.Outlined.Calculate
+    "administration" -> Icons.Outlined.ManageAccounts
+    "account" -> Icons.Outlined.Person
+    else -> Icons.Outlined.Info
 }
