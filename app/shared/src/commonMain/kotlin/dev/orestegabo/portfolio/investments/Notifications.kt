@@ -9,6 +9,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -75,6 +77,7 @@ fun NotificationBell(unread: Int, open: () -> Unit, tint: androidx.compose.ui.gr
 
 @Composable
 fun NotificationsScreen(model: PortfolioModel, openPortfolio: () -> Unit, openNotification: (JsonRecord) -> Unit) {
+    val groups=notificationDateGroups(model.notifications,model.notificationDate)
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         if(model.notifications.isNotEmpty()) item {
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
@@ -105,12 +108,16 @@ fun NotificationsScreen(model: PortfolioModel, openPortfolio: () -> Unit, openNo
                     else EmptyStateAction("Go to Home",openPortfolio,Icons.Outlined.Home),
                 secondaryAction=if(enablePush) EmptyStateAction("Go to Home",openPortfolio) else null)
         }
-        items(model.notifications,key={ it.text("id") }) { item ->
-            if(item.text("kind").isNotBlank() && item.text("kind")!="prices") {
-                GeneralNotificationCard(model,item,openNotification)
-                return@items
+        groups.forEach { (group,notifications) ->
+            item(key="notification-date/${group.name}") {
+                AppText(group.title,modifier=Modifier.padding(top=8.dp).semantics { heading() },
+                    style=MaterialTheme.typography.titleSmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            PriceNotificationCard(item) { model.readNotification(item.text("id")) }
+            items(notifications,key={ it.text("id") }) { item ->
+                if(item.text("kind").isNotBlank() && item.text("kind")!="prices") {
+                    GeneralNotificationCard(model,item,openNotification)
+                } else PriceNotificationCard(item) { model.readNotification(item.text("id")) }
+            }
         }
         if(model.notificationNextBefore!=null) item {
             TextButton(onClick={ model.moreNotifications() },enabled=!model.notificationsLoading,modifier=Modifier.fillMaxWidth()) { AppText("Earlier notifications") }
