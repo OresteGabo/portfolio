@@ -156,7 +156,8 @@ private fun GeneralNotificationCard(model: PortfolioModel,item: JsonRecord,open:
         else -> Icons.Outlined.Notifications
     }
     Card(onClick={ model.readNotification(item.text("id")) },colors=CardDefaults.cardColors(
-        containerColor=if(item.optBoolean("read"))MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.secondaryContainer)) {
+        containerColor=if(item.optBoolean("read"))MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.secondaryContainer),
+        elevation=CardDefaults.cardElevation(defaultElevation=1.dp,pressedElevation=1.dp)) {
         Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
             Row(horizontalArrangement=Arrangement.spacedBy(12.dp),verticalAlignment=Alignment.CenterVertically) {
                 AppIcon(icon,null,Modifier.size(26.dp))

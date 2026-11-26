@@ -18,7 +18,8 @@ fun PriceNotificationCard(item: JsonRecord, onRead: () -> Unit) {
     val color =
         if (up) StructColors.Financial.notificationGain else MaterialTheme.colorScheme.error
     Card(onClick={ expanded=!expanded;if(expanded)onRead() },
-        colors=CardDefaults.cardColors(containerColor=if(item.optBoolean("read")) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.secondaryContainer)) {
+        colors=CardDefaults.cardColors(containerColor=if(item.optBoolean("read")) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.secondaryContainer),
+        elevation=CardDefaults.cardElevation(defaultElevation=1.dp,pressedElevation=1.dp)) {
         Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
                 InvestmentLogo(ticker=item.text("ticker"))
