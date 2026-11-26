@@ -434,7 +434,8 @@ fun InvestmentApp(model: PortfolioModel) {
                 }
             }
         ) { padding ->
-            Column(Modifier.fillMaxSize().padding(padding).imePadding().portfolioStatusBarFade(portfolioHome)) {
+            // Scaffold padding already accounts for the bars; the IME must only add its remaining inset.
+            Column(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).imePadding().portfolioStatusBarFade(portfolioHome)) {
                 if (!portfolioHome) {
                     AppLoadingLine(model.busy && !model.viewingSavedPortfolio)
                     if (model.documentPreview == null || model.documentPreview?.bytes != null) model.error?.let { Notice(it, true) { model.error = null } }

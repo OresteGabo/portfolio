@@ -1,5 +1,6 @@
 package dev.orestegabo.portfolio.investments
 
+import android.graphics.Rect
 import androidx.activity.compose.setContent
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -65,6 +66,19 @@ class SettingsNavigationUiTest {
                         ui.click("Search settings")
                         ui.waitUntil("search field receives focus automatically") { ui.nodes().any { it.isVisibleToUser && it.isEditable && it.isFocused } }
                         ui.waitUntil("search opens the software keyboard") { keyboardVisible() }
+                        ui.instrumentation.waitForIdleSync(); Thread.sleep(300)
+                        var keyboardTop = 0
+                        scene.onActivity { host ->
+                            val view = host.window.decorView
+                            val origin = IntArray(2).also(view::getLocationOnScreen)
+                            val bottom = requireNotNull(ViewCompat.getRootWindowInsets(view))
+                                .getInsets(WindowInsetsCompat.Type.ime()).bottom
+                            keyboardTop = origin[1] + view.height - bottom
+                        }
+                        val viewport = requireNotNull(ui.nodes().filter { it.isVisibleToUser && it.isScrollable && !it.isEditable }
+                            .map { Rect().also(it::getBoundsInScreen) }.maxByOrNull { it.height() })
+                        assertTrue("Settings must reach the keyboard without reserving a bottom-bar gap: viewport=$viewport, keyboardTop=$keyboardTop",
+                            kotlin.math.abs(viewport.bottom - keyboardTop) <= 8)
                         ui.enter("Search settings", "yearly")
                         ui.await("Investment goal")
                         assertFalse("Search shows matching options only", ui.nodes().any { ui.matches(it, "Hide numbers") })
