@@ -82,10 +82,16 @@ fun NotificationsScreen(model: PortfolioModel, openPortfolio: () -> Unit, openNo
         if(model.notifications.isNotEmpty()) item {
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                 AppText("Latest",style=MaterialTheme.typography.titleMedium,modifier=Modifier.weight(1f))
-                IconButton(onClick={ model.refreshNotifications() },enabled=!model.notificationsLoading) { AppIcon(Icons.Outlined.Refresh,"Refresh") }
+                if(model.unreadNotifications>0 || model.markingAllNotificationsRead) {
+                    TextButton(onClick=model::markAllNotificationsAsRead,
+                        enabled=!model.notificationsLoading && !model.markingAllNotificationsRead) {
+                        AppText(if(model.markingAllNotificationsRead) "Marking as read…" else "Mark all as read")
+                    }
+                }
+                IconButton(onClick={ model.refreshNotifications() },enabled=!model.notificationsLoading && !model.markingAllNotificationsRead) { AppIcon(Icons.Outlined.Refresh,"Refresh") }
             }
         }
-        if(model.notificationsLoading) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
+        if(model.notificationsLoading || model.markingAllNotificationsRead) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
         if(model.notifications.isNotEmpty() && NativePushBridge.available && !NativePushBridge.allowed) item {
             OutlinedButton(onClick=NativePushBridge::requestPermission,modifier=Modifier.fillMaxWidth()) { AppText("Enable phone notifications") }
         }
@@ -120,7 +126,7 @@ fun NotificationsScreen(model: PortfolioModel, openPortfolio: () -> Unit, openNo
             }
         }
         if(model.notificationNextBefore!=null) item {
-            TextButton(onClick={ model.moreNotifications() },enabled=!model.notificationsLoading,modifier=Modifier.fillMaxWidth()) { AppText("Earlier notifications") }
+            TextButton(onClick={ model.moreNotifications() },enabled=!model.notificationsLoading && !model.markingAllNotificationsRead,modifier=Modifier.fillMaxWidth()) { AppText("Earlier notifications") }
         }
     }
 }

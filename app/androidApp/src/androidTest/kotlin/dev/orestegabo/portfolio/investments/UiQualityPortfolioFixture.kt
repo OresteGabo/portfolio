@@ -9,13 +9,18 @@ import io.ktor.http.content.OutgoingContent
 internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: List<JsonRecord>? = null,
     private val documentRecords: List<JsonRecord> = emptyList(), pendingRecords: List<JsonRecord> = emptyList(),
     initialSnapshotGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null, bondRecords: List<JsonRecord> = emptyList(),
-    owner: Boolean = false, accountRecords: List<JsonRecord> = emptyList()) : AutoCloseable {
+    owner: Boolean = false, accountRecords: List<JsonRecord> = emptyList(),
+    notificationRecords: List<JsonRecord> = emptyList()) : AutoCloseable {
     val settings = object : ServerSettings {
         override fun readOrigin() = "https://ui-quality.example.test"
         override fun writeOrigin(origin: String) = Unit
         override fun readLanguage() = "en"
         override fun readScreenCaptureAllowed() = true
     }
+    private var alerts = notificationRecords
+    var bulkReadFailure = false
+    var bulkReadGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+    val bulkReadCalls = java.util.concurrent.atomic.AtomicInteger()
     private var bonds = bondRecords
     val linkedBonds = java.util.concurrent.CopyOnWriteArrayList<String>()
     val createdBondPurchases = java.util.concurrent.atomic.AtomicInteger()
@@ -40,6 +45,15 @@ internal class UiQualityPortfolioFixture(lotCount: Int = 1, purchaseRecords: Lis
             return@MockEngine respond(readerFixturePdf(pageCount = 1), headers = headersOf(HttpHeaders.ContentType, "application/pdf"))
         }
         val body = when {
+            request.url.encodedPath.endsWith("/notifications/read-all") -> {
+                bulkReadCalls.incrementAndGet()
+                bulkReadGate?.await()
+                if(bulkReadFailure)return@MockEngine respond("{}",HttpStatusCode.ServiceUnavailable)
+                alerts=alerts.map { JsonRecord(it.toString()).put("read",true) }
+                JsonRecord().put("saved",true).put("unreadCount",0).toString()
+            }
+            request.url.encodedPath.endsWith("/notifications") -> JsonRecord().put("notifications",JsonList(alerts))
+                .put("unreadCount",alerts.count { !it.optBoolean("read") }).put("serverDate",Today.toString()).toString()
             request.url.encodedPath.endsWith("/notifications/preferences") -> {
                 if (request.method == HttpMethod.Put) savedGoal = investmentGoalFromRecord(JsonRecord((request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString()), savedGoal)
                 savedGoal.toRecord().put("configured", true).put("autoCoupon", false).put("categories", JsonRecord().apply {

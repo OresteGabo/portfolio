@@ -327,6 +327,7 @@ class PortfolioModel(
     val notifications get() = notificationCenter.notifications
     val unreadNotifications get() = notificationCenter.unreadNotifications
     val notificationNextBefore get() = notificationCenter.notificationNextBefore
+    val markingAllNotificationsRead get() = notificationCenter.markingAllRead
     val notificationsLoading get() = notificationCenter.notificationsLoading
     val notificationsError get() = notificationCenter.notificationsError
     var notificationPreferences: JsonRecord
@@ -343,6 +344,7 @@ class PortfolioModel(
     fun updateNotificationPreference(category: String? = null, enabled: Boolean) = notificationCenter.updateNotificationPreference(category, enabled)
     fun refreshNotifications() = notificationCenter.refreshNotifications()
     fun moreNotifications() = notificationCenter.moreNotifications()
+    fun markAllNotificationsAsRead() = notificationCenter.markAllAsRead()
     fun readNotification(id: String) = notificationCenter.readNotification(id)
     suspend fun syncPushDevice() = notificationCenter.syncPushDevice()
     var couponReceipts: List<JsonRecord>

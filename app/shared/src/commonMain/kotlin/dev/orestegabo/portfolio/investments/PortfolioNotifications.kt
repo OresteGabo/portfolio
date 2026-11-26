@@ -213,12 +213,15 @@ internal class PortfolioNotifications(
         private set
     var notificationsLoading by mutableStateOf(false)
         private set
+    var markingAllRead by mutableStateOf(false)
+        private set
+    private var inboxReadRevision = 0
     var notificationsError by mutableStateOf<String?>(null)
         private set
     var notificationLoadedAt: TimeMark? = null; private set
     var notificationGeneration = 0; private set
     suspend fun fetchNotifications(more: Boolean = false) {
-        if(user==null || notificationsLoading)return
+        if(user==null || notificationsLoading || markingAllRead)return
         val account=user?.text("id");val revision=notificationGeneration
         notificationsLoading=true
         try {
@@ -254,19 +257,47 @@ internal class PortfolioNotifications(
     private suspend fun invalidateRejectedSession(failure: Exception) = host.invalidateRejectedSession(failure)
     fun refreshNotifications() { if(user!=null && !locked)scope.launch { fetchNotifications() } }
     fun moreNotifications() { if(user!=null && !locked)scope.launch { fetchNotifications(true) } }
-    fun readNotification(id: String) { scope.launch {
-        val revision=notificationGeneration
-        try {
-            api.request("/api/bonds/notifications/read","POST",JsonRecord().put("ids",JsonList(listOf(id))))
-            if(revision==notificationGeneration) {
-                val wasUnread=notifications.any { it.text("id")==id && !it.optBoolean("read") }
-                notifications=notifications.map { if(it.text("id")==id)JsonRecord(it.toString()).put("read",true) else it }
-                if(wasUnread)unreadNotifications=(unreadNotifications-1).coerceAtLeast(0)
+    fun readNotification(id: String) {
+        if(markingAllRead)return
+        val revision=notificationGeneration;val readRevision=inboxReadRevision
+        scope.launch {
+            try {
+                api.request("/api/bonds/notifications/read","POST",JsonRecord().put("ids",JsonList(listOf(id))))
+                if(revision==notificationGeneration && readRevision==inboxReadRevision) {
+                    val wasUnread=notifications.any { it.text("id")==id && !it.optBoolean("read") }
+                    notifications=notifications.map { if(it.text("id")==id)JsonRecord(it.toString()).put("read",true) else it }
+                    if(wasUnread)unreadNotifications=(unreadNotifications-1).coerceAtLeast(0)
+                    notificationsError=null
+                }
+            } catch(cancelled: CancellationException) { throw cancelled }
+            catch(_: Exception) { if(revision==notificationGeneration && readRevision==inboxReadRevision)notificationsError="Could not mark this notification as read." }
+        }
+    }
+
+    fun markAllAsRead() {
+        if(user==null || locked || isGuest || markingAllRead || notificationsLoading || unreadNotifications==0)return
+        val revision=notificationGeneration;val account=user?.text("id")
+        markingAllRead=true;inboxReadRevision++
+        scope.launch {
+            try {
+                val response=api.request("/api/bonds/notifications/read-all","POST",JsonRecord())
+                currentCoroutineContext().ensureActive()
+                if(revision!=notificationGeneration || account!=user?.text("id"))return@launch
+                val remaining=response.optInt("unreadCount",-1)
+                check(response.optBoolean("saved") && remaining>=0)
+                notifications=notifications.map { JsonRecord(it.toString()).put("read",true) }
+                unreadNotifications=remaining
                 notificationsError=null
-            }
-        } catch(cancelled: CancellationException) { throw cancelled }
-        catch(_: Exception) { if(revision==notificationGeneration)notificationsError="Could not mark this notification as read." }
-    } }
+            } catch(cancelled: CancellationException) { throw cancelled }
+            catch(failure: Exception) {
+                currentCoroutineContext().ensureActive()
+                if(revision!=notificationGeneration || account!=user?.text("id"))return@launch
+                if(invalidateRejectedSession(failure))return@launch
+                notificationsError="Could not mark all notifications as read. Try again."
+            } finally { if(revision==notificationGeneration)markingAllRead=false }
+        }
+    }
+
     suspend fun signInActivity(notificationId: String?): JsonRecord {
         require(notificationId == null || notificationId.matches(Regex("[A-Za-z0-9_-]{1,120}"))) { "Invalid security notification." }
         return api.request("/api/bonds/notifications/sign-in-activity" + (notificationId?.let { "?notificationId=$it" } ?: ""))
@@ -298,6 +329,6 @@ internal class PortfolioNotifications(
         couponReceipts = emptyList(); couponTrackingAvailable = false; notificationDate = Today
         notificationGeneration++
         notifications = emptyList(); unreadNotifications = 0; notificationNextBefore = null
-        notificationsError = null; notificationsLoading = false; notificationLoadedAt = null
+        notificationsError = null; notificationsLoading = false; markingAllRead = false; inboxReadRevision++; notificationLoadedAt = null
     }
 }

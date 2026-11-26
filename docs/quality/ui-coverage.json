@@ -196,6 +196,11 @@
       "flow": "historical price alert closing/comparison dates before expansion, dated RWF change, historical-price explanation, read action and number privacy in English/French, light/dark and enlarged text",
       "class": "PriceNotificationDateUiTest",
       "method": "historicalCloseAndComparisonDatesStayVisibleAcrossThemesLanguagesAndNumberPrivacy"
+    },
+    {
+      "flow": "account-wide mark all as read, server acknowledgement, recoverable failure/retry, retained dated cards and hidden action after completion in English/light and French/dark with enlarged text",
+      "class": "MarkAllNotificationsReadUiTest",
+      "method": "bulkReadWaitsForServerRecoversFromFailureAndKeepsDatedCards"
     }
   ]
 }
