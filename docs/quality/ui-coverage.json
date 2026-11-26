@@ -191,6 +191,11 @@
       "flow": "offline native bond/share/statement import, protected guest retention, duplicate detection and exact scanned share quantities/prices/payable",
       "class": "GuestPdfNativeTest",
       "method": "privateEngineSelectReviewSavePreviewAndDuplicateWorkWithoutNetwork"
+    },
+    {
+      "flow": "historical price alert closing/comparison dates before expansion, dated RWF change, historical-price explanation, read action and number privacy in English/French, light/dark and enlarged text",
+      "class": "PriceNotificationDateUiTest",
+      "method": "historicalCloseAndComparisonDatesStayVisibleAcrossThemesLanguagesAndNumberPrivacy"
     }
   ]
 }

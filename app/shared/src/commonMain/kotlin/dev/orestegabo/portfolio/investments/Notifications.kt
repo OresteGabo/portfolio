@@ -1,7 +1,5 @@
 package dev.orestegabo.portfolio.investments
 
-import dev.orestegabo.portfolio.design.StructColors
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,7 +7,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -113,40 +110,7 @@ fun NotificationsScreen(model: PortfolioModel, openPortfolio: () -> Unit, openNo
                 GeneralNotificationCard(model,item,openNotification)
                 return@items
             }
-            var expanded by rememberSaveable(item.text("id")) { mutableStateOf(false) }
-            val up=item.optDouble("impact")>=0
-            val color =
-                if (up) StructColors.Financial.notificationGain else MaterialTheme.colorScheme.error
-            Card(onClick={ expanded=!expanded;if(expanded)model.readNotification(item.text("id")) },
-                colors=CardDefaults.cardColors(containerColor=if(item.optBoolean("read")) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.secondaryContainer)) {
-                Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
-                    Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-                        InvestmentLogo(ticker=item.text("ticker"))
-                        Column(Modifier.weight(1f)) {
-                            AppText(item.text("ticker"),fontWeight=FontWeight.Bold)
-                            AppText(item.text("date"),style=MaterialTheme.typography.labelSmall)
-                        }
-                        FinancialText((if(up) "+" else "")+"${kotlin.math.round(item.optDouble("percent")*100)/100}%",color=color,fontWeight=FontWeight.Bold)
-                    }
-                    FinancialText("${money(item.optDouble("previousPrice"))} → ${money(item.optDouble("closingPrice"))}",style=MaterialTheme.typography.titleMedium)
-                    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
-                        AppText("Holding value change",style=MaterialTheme.typography.bodySmall)
-                        FinancialText((if(up) "+" else "")+money(item.optDouble("impact")),color=color,fontWeight=FontWeight.Bold)
-                    }
-                    if(expanded) {
-                        HorizontalDivider()
-                        AppText(localized("Compared with {0}").replace("{0}",displayDate(item.text("previousDate"))),style=MaterialTheme.typography.labelSmall)
-                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
-                            AppText("Estimated total gain/loss",style=MaterialTheme.typography.bodySmall)
-                            FinancialText(
-                                money(item.optDouble("totalGain")),
-                                color = if (item.optDouble("totalGain") >= 0) StructColors.Financial.notificationGain else MaterialTheme.colorScheme.error
-                            )
-                        }
-                        AppText("Based on your holdings at this market date. Unrealised, before selling costs.",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
+            PriceNotificationCard(item) { model.readNotification(item.text("id")) }
         }
         if(model.notificationNextBefore!=null) item {
             TextButton(onClick={ model.moreNotifications() },enabled=!model.notificationsLoading,modifier=Modifier.fillMaxWidth()) { AppText("Earlier notifications") }
