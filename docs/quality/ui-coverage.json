@@ -8,7 +8,7 @@
       "method": "coldOfflineUnlockShowsSavedValuesAndReconnectsInBothThemesAndLargeText"
     },
     {
-      "flow": "searchable Settings categories, privacy control, nested/system Back, protected goal editor, guest/owner visibility and large text in both themes",
+      "flow": "on-demand toolbar search with automatic focus/software keyboard and close/Back dismissal, searchable Settings categories, privacy control, nested/system Back, protected goal editor, guest/owner visibility and large text in both themes",
       "class": "SettingsNavigationUiTest",
       "method": "searchAndNestedPagesPreservePrivacyEditorsAndBackNavigationInBothThemes"
     },

@@ -11,6 +11,7 @@ internal val frenchStrings: Map<String, String> = mapOf(
     "Retry connection" to "Réessayer la connexion",
     "Connect to the internet once to save your portfolio for offline access." to "Connectez-vous une fois à Internet pour enregistrer votre portefeuille et le consulter hors ligne.",
     "Reconnect to refresh or change account data." to "Reconnectez-vous pour actualiser ou modifier les données du compte.",
+    "Close search" to "Fermer la recherche",
     "Search settings" to "Rechercher un réglage",
     "No settings found" to "Aucun réglage trouvé",
     "Try a different word, such as privacy or goal." to "Essayez un autre mot, comme confidentialité ou objectif.",

@@ -73,9 +73,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.material.icons.outlined.Close
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -98,9 +95,8 @@ import androidx.compose.ui.unit.dp
 fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -> Unit,
     chartStyle: String, changeChartStyle: (String) -> Unit,
     openSimulator: () -> Unit, openEducation: () -> Unit, openBond: (JsonRecord) -> Unit, openLegal: () -> Unit = {}, openAbout: () -> Unit = {}, openIntroduction: () -> Unit = {}, openInvestmentTools: () -> Unit = {}, openSignInActivity: () -> Unit = {}, openGuest: () -> Unit = {}, openIssueReport: () -> Unit = {},
-    page: String? = null, openPage: (String?) -> Unit = {}) {
+    page: String? = null, openPage: (String?) -> Unit = {}, search: String = "") {
     val actions = LocalNativeActions.current
-    var search by rememberSaveable { mutableStateOf("") }
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = LocalFocusManager.current
     val destinations = settingsDestinations(model.isGuest, model.user?.optBoolean("isOwner") == true,
@@ -149,17 +145,6 @@ fun SettingsScreen(model: PortfolioModel, theme: String, changeTheme: (String) -
         key(currentPage) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)) {
-            if (currentPage == null) item {
-                OutlinedTextField(search, { search = it }, Modifier.fillMaxWidth(),
-                    label = { AppText("Search settings") }, singleLine = true,
-                    leadingIcon = { AppIcon(Icons.Outlined.Search, null) },
-                    trailingIcon = { if (search.isNotEmpty()) IconButton(onClick = { search = "" }) {
-                        AppIcon(Icons.Outlined.Close, "Clear search")
-                    } },
-                    shape = RoundedCornerShape(20.dp),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = { keyboard?.hide(); focus.clearFocus() }))
-            }
             if (currentPage == null && search.isBlank() && model.isGuest) item { GuestStorageSettings(model, openGuest) }
             else if (currentPage == null && search.isBlank()) item {
                 Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {

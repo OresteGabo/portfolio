@@ -1,6 +1,8 @@
 package dev.orestegabo.portfolio.investments
 
 import androidx.activity.compose.setContent
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
@@ -43,6 +45,13 @@ class SettingsNavigationUiTest {
                                 LocalDensity provides Density(density.density, if (dark) 1.6f else 1f)) { InvestmentApp(f.model) }
                         } }
                         ui.click("Settings"); ui.await("Search settings")
+                        assertFalse("Search must stay collapsed until its toolbar icon is tapped", ui.nodes().any { it.isVisibleToUser && it.isEditable })
+                        fun keyboardVisible(): Boolean {
+                            var visible = false
+                            scene.onActivity { host -> visible = ViewCompat.getRootWindowInsets(host.window.decorView)
+                                ?.isVisible(WindowInsetsCompat.Type.ime()) == true }
+                            return visible
+                        }
                         assertFalse("Controls belong on their nested pages", ui.nodes().any { ui.matches(it, "Hide numbers") })
                         screenshot("settings-directory-$dark.png")
                         ui.scroll("Privacy"); ui.click("Privacy"); ui.await("Hide numbers")
@@ -53,6 +62,9 @@ class SettingsNavigationUiTest {
                         // Exercise system Back as well as the app toolbar; neither leaves Settings.
                         scene.onActivity { it.onBackPressedDispatcher.onBackPressed() }
                         ui.await("Search settings")
+                        ui.click("Search settings")
+                        ui.waitUntil("search field receives focus automatically") { ui.nodes().any { it.isVisibleToUser && it.isEditable && it.isFocused } }
+                        ui.waitUntil("search opens the software keyboard") { keyboardVisible() }
                         ui.enter("Search settings", "yearly")
                         ui.await("Investment goal")
                         assertFalse("Search shows matching options only", ui.nodes().any { ui.matches(it, "Hide numbers") })
@@ -67,6 +79,12 @@ class SettingsNavigationUiTest {
                         ui.enter("Search settings", "Accounts"); ui.await("No settings found")
                         ui.enter("Search settings", "unknown-setting"); ui.await("No settings found")
                         ui.click("Clear search"); ui.await("Privacy")
+                        ui.click("Close search")
+                        ui.waitUntil("closing search removes the field and keyboard") { ui.nodes().none { it.isVisibleToUser && it.isEditable } && !keyboardVisible() }
+                        ui.click("Search settings")
+                        ui.waitUntil("reopened search is focused") { ui.nodes().any { it.isVisibleToUser && it.isEditable && it.isFocused } }
+                        scene.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+                        ui.waitUntil("system Back collapses search") { ui.nodes().none { it.isVisibleToUser && it.isEditable } && !keyboardVisible() }
                         // Existing child screens return to their originating Settings page.
                         ui.scroll("Investing"); ui.click("Investing"); ui.click("Cash & transactions")
                         ui.await("Cash & transactions"); ui.click("Back"); ui.await("Edit investment goal")

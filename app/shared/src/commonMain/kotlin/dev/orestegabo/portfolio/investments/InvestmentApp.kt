@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
@@ -57,6 +58,11 @@ fun InvestmentApp(model: PortfolioModel) {
     var issueReportSource by remember(model.user?.text("id"), model.isGuest, model.locked) { mutableStateOf<String?>(null) }
     var tab by rememberSaveable { mutableStateOf("Portfolio") }
     var settingsPage by rememberSaveable(model.origin, model.user?.text("id"), model.guestPath) { mutableStateOf<String?>(null) }
+    var settingsSearch by rememberSaveable(model.origin, model.user?.text("id"), model.guestPath) { mutableStateOf("") }
+    var settingsSearchOpen by rememberSaveable(model.origin, model.user?.text("id"), model.guestPath) { mutableStateOf(false) }
+    LaunchedEffect(tab, model.locked) {
+        if (tab != "Settings" || model.locked) { settingsSearchOpen = false; settingsSearch = "" }
+    }
     var documentSection by rememberSaveable(model.user?.text("id")) { mutableStateOf("Library") }
     var couponList by rememberSaveable { mutableStateOf(false) }
     var calendarFocus by rememberSaveable { mutableStateOf<String?>(null) }
@@ -248,11 +254,14 @@ fun InvestmentApp(model: PortfolioModel) {
         val guestImportActive = model.isGuest && (model.guestImport?.review != null || model.guestImport?.previewBytes != null)
         val childScreen = model.applicationBidForm != null || model.cashLedgerRequested || model.backupRequested || model.guestMigration != null || guestImportActive || couponList || documentDetail != null || model.documentPreview != null || notificationPanel == "security" || legalRoute != null || missingDocuments || pendingEntry || investmentHistory || detail != null || shareDetail != null || editor != null || equityEditor != null || shareOrderEditor != null || simulator || investmentTools || education
         val settingsNested = tab == "Settings" && settingsPage != null
+        val settingsHome = tab == "Settings" && !childScreen && settingsPage == null && !model.locked && (model.user != null || model.isGuest)
+        val settingsSearching = settingsHome && settingsSearchOpen
+        fun closeSettingsSearch() { settingsSearchOpen = false; settingsSearch = "" }
         val nested = childScreen || settingsNested || tab == "Notifications"
         val documentsHome = (model.user != null || model.isGuest) && !model.locked && !nested && tab == "Documents"
         val importChat = !model.isGuest && documentsHome && documentSection == "Import"
         val navigateBack = {
-            if (model.applicationBidForm != null) { model.closeApplicationBid() } else if (model.cashLedgerRequested) { model.cashLedgerRequested = false } else if (model.backupRequested) { model.backupRequested = false } else if (model.guestMigration != null) { if (model.guestMigration?.preview != null) { model.guestMigration?.closePreview(); Unit } else model.closeGuestMigration() } else if (guestImportActive) { if (model.guestImport?.previewBytes != null) model.guestImport.closePreview() else model.cancelGuestImport() } else if (model.documentPreview != null) { model.closeDocumentPreview() } else if (importChat) { documentSection = "Library" } else if (notificationPanel == "security") { notificationPanel=null;securityNotificationId=null } else if (legalRoute != null) {
+            if (settingsSearching) { closeSettingsSearch() } else if (model.applicationBidForm != null) { model.closeApplicationBid() } else if (model.cashLedgerRequested) { model.cashLedgerRequested = false } else if (model.backupRequested) { model.backupRequested = false } else if (model.guestMigration != null) { if (model.guestMigration?.preview != null) { model.guestMigration?.closePreview(); Unit } else model.closeGuestMigration() } else if (guestImportActive) { if (model.guestImport?.previewBytes != null) model.guestImport.closePreview() else model.cancelGuestImport() } else if (model.documentPreview != null) { model.closeDocumentPreview() } else if (importChat) { documentSection = "Library" } else if (notificationPanel == "security") { notificationPanel=null;securityNotificationId=null } else if (legalRoute != null) {
                 legalRoute = legalHistory.lastOrNull()
                 legalHistory = legalHistory.dropLast(1)
             } else if (equityEditor != null && sharePurchaseDetail != null) { equityEditor = null
@@ -310,7 +319,7 @@ fun InvestmentApp(model: PortfolioModel) {
             PdfImportProgressDialog(progress, model::cancelPdfImport)
         }
         PlatformSystemBarAppearance(dark)
-        PlatformBackHandler(nested || importChat, back)
+        PlatformBackHandler(nested || importChat || settingsSearching, back)
         val investmentDetailsVisible = ((shareDetail != null && screenTitle in listOf("Share details", "Share purchase")) ||
             (detail != null && screenTitle == "Bond details")) && model.documentPreview == null && !model.locked &&
             (model.user != null || model.isGuest) && !guestImportActive
@@ -323,49 +332,57 @@ fun InvestmentApp(model: PortfolioModel) {
             contentWindowInsets = if (portfolioHome) WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal) else ScaffoldDefaults.contentWindowInsets,
             topBar = {
                 if (!portfolioHome && (model.user != null || model.isGuest || model.locked || nested)) TopAppBar(
+                    expandedHeight = if (settingsSearching) with(LocalDensity.current) {
+                        (MaterialTheme.typography.bodyLarge.lineHeight.toDp() + 16.dp).coerceAtLeast(TopAppBarDefaults.TopAppBarExpandedHeight)
+                    } else TopAppBarDefaults.TopAppBarExpandedHeight,
                     title = {
-                        if (documentsHome) DocumentHeader(documentSection, model.user?.text("email").orEmpty())
+                        if (settingsSearching) SettingsToolbarSearch(settingsSearch) { settingsSearch = it }
+                        else if (documentsHome) DocumentHeader(documentSection, model.user?.text("email").orEmpty())
                         else if (model.documentPreview != null) FinancialText(screenTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         else AppText(screenTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                     },
                     navigationIcon = {
-                        if (nested || importChat) IconButton(enabled = !model.isGuest || !model.busy, onClick = back) { AppIcon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                        if (settingsSearching) IconButton(onClick = ::closeSettingsSearch) { AppIcon(Icons.AutoMirrored.Filled.ArrowBack, "Close search") }
+                        else if (nested || importChat) IconButton(enabled = !model.isGuest || !model.busy, onClick = back) { AppIcon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                         else if (!model.locked) StructMark(Modifier.padding(start = 16.dp, end = 4.dp).size(40.dp))
                     },
                     actions = {
-                        if (!model.locked && model.user != null) SavedPortfolioStatus(model)
-                        if (model.documentPreview?.source?.text("category") == "Statement" && !model.locked) IconButton(enabled = !model.busy, onClick = {
-                            model.showStatementDocumentReview(model.documentPreview!!.source.text("id"))
-                        }) { AppIcon(Icons.Outlined.FactCheck, "Review statement records") }
-                        model.documentPreview?.source?.takeIf { it.text("category") == BOND_APPLICATION_CATEGORY }?.let { form ->
-                            val issue = model.calendar.firstOrNull { it.text("id") == form.optJSONObject("applicationForm")?.text("calendarId") }
-                            if (issue != null && applicationBidAllowed(form, issue, bondSubscriptionDate(kotlin.time.Clock.System.now()))) {
-                                TextButton(enabled = !model.busy, onClick = { model.startApplicationBid(form) }) { AppText("Record bid") }
+                        if (!settingsSearching) {
+                            if (settingsHome) IconButton(onClick = { settingsSearchOpen = true }) { AppIcon(Icons.Outlined.Search, "Search settings") }
+                            if (!model.locked && model.user != null) SavedPortfolioStatus(model)
+                            if (model.documentPreview?.source?.text("category") == "Statement" && !model.locked) IconButton(enabled = !model.busy, onClick = {
+                                model.showStatementDocumentReview(model.documentPreview!!.source.text("id"))
+                            }) { AppIcon(Icons.Outlined.FactCheck, "Review statement records") }
+                            model.documentPreview?.source?.takeIf { it.text("category") == BOND_APPLICATION_CATEGORY }?.let { form ->
+                                val issue = model.calendar.firstOrNull { it.text("id") == form.optJSONObject("applicationForm")?.text("calendarId") }
+                                if (issue != null && applicationBidAllowed(form, issue, bondSubscriptionDate(kotlin.time.Clock.System.now()))) {
+                                    TextButton(enabled = !model.busy, onClick = { model.startApplicationBid(form) }) { AppText("Record bid") }
+                                }
                             }
-                        }
-                        if (model.documentPreview?.bytes != null) IconButton(enabled = !model.busy, onClick = {
-                            val preview = model.documentPreview!!
-                            model.documentAction { actions.sharePdf(preview.fileName, preview.bytes!!) }
-                        }) { AppIcon(Icons.Outlined.Share, "Share PDF") }
-                        else if (documentsHome && !model.isGuest) {
-                            TextButton(onClick = {
-                                documentSection = if (documentSection == "Import") "Library" else "Import"
-                                selectionFeedback()
-                            }) { AppText(if (documentSection == "Import") "Library" else "Chat", style = MaterialTheme.typography.labelLarge) }
-                        }
-                        else if (tab == "Calendar" && !childScreen && (model.user != null || model.isGuest) && !model.locked) {
-                            TextButton(modifier = Modifier.semantics { contentDescription = localized("View yearly coupons") }, onClick = { calendarUi.removeState(couponsStateKey); couponList = true }) { AppText("Coupons", style = MaterialTheme.typography.labelLarge) }
-                        }
-                        else if (tab == "Notifications" && !childScreen && model.user != null && !model.locked) {
-                            IconButton(onClick = { notificationPanel = "preferences" }) { AppIcon(Icons.Outlined.Tune, "Notification preferences") }
-                        }
-                        if (!model.locked) Box {
-                            IconButton(onClick = { supportMenuOpen = true }) { AppIcon(Icons.Outlined.MoreVert, "More options") }
-                            DropdownMenu(expanded = supportMenuOpen, onDismissRequest = { supportMenuOpen = false }) {
-                                DropdownMenuItem(text = { AppText("Report a problem") }, onClick = {
-                                    supportMenuOpen = false
-                                    issueReportSource = issueReportScreenName(screenTitle, model.documentPreview != null)
-                                })
+                            if (model.documentPreview?.bytes != null) IconButton(enabled = !model.busy, onClick = {
+                                val preview = model.documentPreview!!
+                                model.documentAction { actions.sharePdf(preview.fileName, preview.bytes!!) }
+                            }) { AppIcon(Icons.Outlined.Share, "Share PDF") }
+                            else if (documentsHome && !model.isGuest) {
+                                TextButton(onClick = {
+                                    documentSection = if (documentSection == "Import") "Library" else "Import"
+                                    selectionFeedback()
+                                }) { AppText(if (documentSection == "Import") "Library" else "Chat", style = MaterialTheme.typography.labelLarge) }
+                            }
+                            else if (tab == "Calendar" && !childScreen && (model.user != null || model.isGuest) && !model.locked) {
+                                TextButton(modifier = Modifier.semantics { contentDescription = localized("View yearly coupons") }, onClick = { calendarUi.removeState(couponsStateKey); couponList = true }) { AppText("Coupons", style = MaterialTheme.typography.labelLarge) }
+                            }
+                            else if (tab == "Notifications" && !childScreen && model.user != null && !model.locked) {
+                                IconButton(onClick = { notificationPanel = "preferences" }) { AppIcon(Icons.Outlined.Tune, "Notification preferences") }
+                            }
+                            if (!model.locked) Box {
+                                IconButton(onClick = { supportMenuOpen = true }) { AppIcon(Icons.Outlined.MoreVert, "More options") }
+                                DropdownMenu(expanded = supportMenuOpen, onDismissRequest = { supportMenuOpen = false }) {
+                                    DropdownMenuItem(text = { AppText("Report a problem") }, onClick = {
+                                        supportMenuOpen = false
+                                        issueReportSource = issueReportScreenName(screenTitle, model.documentPreview != null)
+                                    })
+                                }
                             }
                         }
                     },
@@ -484,7 +501,7 @@ fun InvestmentApp(model: PortfolioModel) {
                     tab == "Settings" && !childScreen -> SettingsScreen(model, theme, changeTheme = { value -> theme = value; preferences.writeTheme(value) },
                         chartStyle = chartStyle, changeChartStyle = { value -> chartStyle = value; preferences.writeChartStyle(value) },
                         openSimulator = { simulator = true }, openEducation = { education = true }, openBond = { detail = it }, openLegal = { legalRoute = "hub" }, openAbout = { legalRoute = "about" }, openIntroduction = { brandIntroRequested = true; replayIntroduction = true; introductionRequested = true }, openInvestmentTools = { investmentTools = true }, openSignInActivity = { securityNotificationId = null; notificationPanel = "security" }, openGuest = { showGuestChoice = true }, openIssueReport = { issueReportSource = "Settings" },
-                        page = settingsPage, openPage = { settingsPage = it })
+                        page = settingsPage, openPage = { settingsPage = it }, search = settingsSearch)
                     editor != null -> PurchaseEditor(model, editor!!, { editor = null })
                     shareOrderEditor != null -> ShareOrderScreen(model, shareOrderEditor!!, { shareOrderEditor = null }, recordExecution = { equityEditor = it; shareOrderEditor = null }, uploadContract = ::uploadShareOrderContract)
                     equityEditor != null -> EquityEditor(model, equityEditor!!, { equityEditor = null; shareOrderEditor = null }, pendingOrder = if (model.user != null) ({ shareOrderEditor = JsonRecord(); equityEditor = null }) else null)
